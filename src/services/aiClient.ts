@@ -21,7 +21,7 @@ export async function requestAiAnalysis(prompt: string): Promise<AiAnalysis> {
 
   const payload = await readJson(response);
   if (!response.ok) {
-    throw new Error(payload.error ?? 'Не удалось получить ИИ-анализ');
+    throw new Error(payload.error ?? 'Backend /api/analyze недоступен. Для локального ИИ-запуска нужен vercel dev или production deploy.');
   }
 
   if (!payload.analysis) {

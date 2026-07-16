@@ -34,6 +34,12 @@ OPENAI_MODEL=gpt-5.6
 
 `OPENAI_MODEL` можно не задавать: endpoint использует `gpt-5.6` по умолчанию.
 
+Обычный `npm run dev` поднимает только Vite frontend. Чтобы локально проверить `/api/analyze`, запускай приложение через Vercel CLI:
+
+```bash
+vercel dev
+```
+
 ## Как будет выглядеть ИИ
 
 Правильная архитектура:
