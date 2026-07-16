@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildObservations, buildReviewCues, entriesForWeek, factorSummaries, summarize, weekSummaryText } from '../src/services/analytics';
+import { buildObservations, buildReviewCues, entriesForPeriod, entriesForWeek, factorSummaries, summarize, weekSummaryText } from '../src/services/analytics';
 import { buildAiReportPayload } from '../src/services/aiReport';
+import { addMonths, monthsBetween } from '../src/services/dates';
 import { defaultSettings, emptyDailyEntry, type DailyEntry } from '../src/types';
 
 function entry(date: string, patch: Partial<DailyEntry>): DailyEntry {
@@ -32,6 +33,22 @@ describe('analytics', () => {
       entry('2026-07-20', {})
     ];
     expect(entriesForWeek(entries, '2026-07-16').map(({ date }) => date)).toEqual(['2026-07-13', '2026-07-19']);
+  });
+
+  it('selects entries from an arbitrary calendar period', () => {
+    const entries = [
+      entry('2026-04-30', {}),
+      entry('2026-05-01', {}),
+      entry('2026-07-31', {}),
+      entry('2026-08-01', {})
+    ];
+
+    expect(entriesForPeriod(entries, '2026-05-01', '2026-07-31').map(({ date }) => date)).toEqual(['2026-05-01', '2026-07-31']);
+  });
+
+  it('builds calendar month ranges for long trends', () => {
+    expect(addMonths('2026-07-16', -2)).toBe('2026-05-01');
+    expect(monthsBetween('2026-05-15', '2026-07-31')).toEqual(['2026-05-01', '2026-06-01', '2026-07-01']);
   });
 
   it('creates a factual summary without a score', () => {

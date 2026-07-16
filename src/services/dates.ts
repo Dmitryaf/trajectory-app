@@ -20,6 +20,12 @@ export function addDays(key: string, days: number): string {
   return toDateKey(date);
 }
 
+export function addMonths(key: string, months: number): string {
+  const date = fromDateKey(key);
+  date.setMonth(date.getMonth() + months, 1);
+  return toDateKey(date);
+}
+
 export function startOfWeek(key: string): string {
   const date = fromDateKey(key);
   const day = date.getDay() || 7;
@@ -43,6 +49,14 @@ export function endOfMonth(key: string): string {
 
 export function monthKey(key: string): string {
   return key.slice(0, 7);
+}
+
+export function monthsBetween(start: string, end: string): string[] {
+  const result: string[] = [];
+  for (let current = startOfMonth(start); current <= startOfMonth(end); current = addMonths(current, 1)) {
+    result.push(current);
+  }
+  return result;
 }
 
 export function dateRange(start: string, end: string): string[] {

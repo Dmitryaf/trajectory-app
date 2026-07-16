@@ -8,6 +8,7 @@ import ResultsView from './views/ResultsView.vue';
 import EventsView from './views/EventsView.vue';
 import WeekView from './views/WeekView.vue';
 import MonthView from './views/MonthView.vue';
+import TrendsView from './views/TrendsView.vue';
 import SettingsView from './views/SettingsView.vue';
 import './style.css';
 
@@ -21,6 +22,7 @@ const router = createRouter({
     { path: '/events', component: EventsView, meta: { title: 'Архив' } },
     { path: '/week', component: WeekView, meta: { title: 'Неделя' } },
     { path: '/month', component: MonthView, meta: { title: 'Месяц' } },
+    { path: '/trends', component: TrendsView, meta: { title: 'Тренды' } },
     { path: '/settings', component: SettingsView, meta: { title: 'Настройки' } }
   ]
 });

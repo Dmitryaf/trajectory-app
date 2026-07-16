@@ -18,6 +18,7 @@ const navItems = [
   { to: '/events', label: 'Архив', icon: '◆' },
   { to: '/week', label: 'Неделя', icon: '▦' },
   { to: '/month', label: 'Месяц', icon: '▥' },
+  { to: '/trends', label: 'Тренды', icon: '≋' },
   { to: '/settings', label: 'Ещё', icon: '•••' }
 ];
 </script>

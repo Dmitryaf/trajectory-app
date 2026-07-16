@@ -3,8 +3,8 @@ import { computed, reactive, ref, watch } from 'vue';
 import ChipGroup from '../components/ChipGroup.vue';
 import ScalePicker from '../components/ScalePicker.vue';
 import { useAppStore } from '../stores/app';
-import { addDays, formatDate, formatMinutes, todayKey } from '../services/dates';
-import { buildObservations, entriesForWeek, summarize } from '../services/analytics';
+import { addDays, endOfMonth, endOfWeek, formatDate, formatMinutes, startOfMonth, todayKey } from '../services/dates';
+import { buildObservations, entriesForPeriod, entriesForWeek, summarize } from '../services/analytics';
 import { plainCopy } from '../services/plain';
 import {
   activityOptions,
@@ -34,7 +34,18 @@ const currentWeekEntries = computed(() => entriesForWeek(store.dailyEntries, tod
 const externalCareerIds = computed(() => ['external', 'interview', 'result', ...store.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id)]);
 const currentWeekSummary = computed(() => summarize(currentWeekEntries.value, externalCareerIds.value));
 const currentWeekObservation = computed(() => buildObservations(currentWeekEntries.value)[0]);
-const weeklyReviewReady = computed(() => isToday.value && currentWeekSummary.value.entriesCount >= 4);
+const currentMonthEntries = computed(() => entriesForPeriod(store.dailyEntries, startOfMonth(todayKey()), endOfMonth(todayKey())));
+const currentMonthSummary = computed(() => summarize(currentMonthEntries.value, externalCareerIds.value));
+const isWeekReviewWindow = computed(() => isToday.value && todayKey() >= addDays(endOfWeek(todayKey()), -1));
+const isMonthReviewWindow = computed(() => isToday.value && todayKey() >= addDays(endOfMonth(todayKey()), -2));
+const reviewReminders = computed(() => [
+  isWeekReviewWindow.value && currentWeekSummary.value.entriesCount >= 3
+    ? { id: 'week', title: 'Пора разобрать неделю', text: `${currentWeekSummary.value.entriesCount} записанных дней уже достаточно для короткого недельного обзора.`, to: '/week', label: 'Открыть неделю' }
+    : null,
+  isMonthReviewWindow.value && currentMonthSummary.value.entriesCount >= 8
+    ? { id: 'month', title: 'Пора разобрать месяц', text: `${currentMonthSummary.value.entriesCount} записанных дней дают материал для месячного анализа и длинной динамики.`, to: '/month', label: 'Открыть месяц' }
+    : null,
+].filter((item): item is { id: string; title: string; text: string; to: string; label: string } => item !== null));
 const yesterday = computed(() => addDays(todayKey(), -1));
 const yesterdayMissing = computed(() => isToday.value && store.loaded && !store.entryByDate(yesterday.value));
 
@@ -86,12 +97,12 @@ function fillYesterday() {
       <button class="secondary-button" type="button" @click="fillYesterday">Заполнить вчера</button>
     </section>
 
-    <section v-if="weeklyReviewReady" class="review-nudge" aria-label="Неделя готова к обзору">
+    <section v-for="reminder in reviewReminders" :key="reminder.id" class="review-nudge" aria-label="Период готов к обзору">
       <div>
-        <strong>Уже есть материал для обзора</strong>
-        <p>{{ currentWeekSummary.entriesCount }} заполненных дней достаточно, чтобы увидеть повторяющиеся факторы без ИИ.</p>
+        <strong>{{ reminder.title }}</strong>
+        <p>{{ reminder.text }} JSON для GPT можно скачать в настройках.</p>
       </div>
-      <RouterLink class="secondary-button" to="/week">Открыть неделю</RouterLink>
+      <RouterLink class="secondary-button" :to="reminder.to">{{ reminder.label }}</RouterLink>
     </section>
 
     <form class="checkin-grid" @submit.prevent="save">

@@ -73,6 +73,10 @@ export function entriesForMonth(entries: DailyEntry[], anchor: string): DailyEnt
   return entries.filter((entry) => entry.date >= start && entry.date <= end);
 }
 
+export function entriesForPeriod(entries: DailyEntry[], start: string, end: string): DailyEntry[] {
+  return entries.filter((entry) => entry.date >= start && entry.date <= end);
+}
+
 export function resultsForPeriod(results: ResultRecord[], start: string, end: string): ResultRecord[] {
   return results.filter((result) => result.date >= start && result.date <= end).sort((a, b) => b.date.localeCompare(a.date));
 }
