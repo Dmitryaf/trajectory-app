@@ -1,5 +1,5 @@
 import type { DailyEntry, LifeAreaId, Option, ResultRecord } from '../types';
-import { activityOptions, careerOptions, externalCareerStates, lifeAreaOptions } from '../types';
+import { activityOptions, careerOptions, externalCareerStates, lifeAreaOptions, specialDayOptions } from '../types';
 import { dateRange, endOfMonth, endOfWeek, formatMinutes, startOfMonth, startOfWeek } from './dates';
 
 export type PeriodSummary = {
@@ -10,7 +10,14 @@ export type PeriodSummary = {
   careerDays: number;
   externalSteps: number;
   sportSessions: number;
+  specialDays: number;
   areaCounts: Record<string, number>;
+};
+
+export type Observation = {
+  id: string;
+  title: string;
+  text: string;
 };
 
 function average(values: Array<number | null>): number | null {
@@ -33,6 +40,7 @@ export function summarize(entries: DailyEntry[], externalCareerIds: string[] = e
     careerDays: entries.filter((entry) => entry.careerState !== null).length,
     externalSteps: entries.filter((entry) => externalCareerIds.includes(entry.careerState ?? '')).length,
     sportSessions: entries.reduce((sum, entry) => sum + entry.activities.filter((item) => item !== 'recovery').length, 0),
+    specialDays: entries.filter((entry) => entry.specialDay !== null).length,
     areaCounts
   };
 }
@@ -78,6 +86,52 @@ export function hasArea(entry: DailyEntry | undefined, area: string): boolean {
   return entry.lifeAreas.includes(area as LifeAreaId);
 }
 
+export function hasMovement(entry: DailyEntry): boolean {
+  return entry.activities.some((activity) => activity !== 'recovery');
+}
+
+export function buildObservations(entries: DailyEntry[]): Observation[] {
+  const observations: Observation[] = [];
+  const energyEntries = entries.filter((entry) => entry.energy !== null);
+  const movementEntries = energyEntries.filter(hasMovement);
+  const stillEntries = energyEntries.filter((entry) => !hasMovement(entry));
+  const restedEntries = energyEntries.filter((entry) => (entry.sleepMinutes ?? 0) >= 420);
+  const shortSleepEntries = energyEntries.filter((entry) => entry.sleepMinutes !== null && entry.sleepMinutes < 420);
+  const specialEntries = entries.filter((entry) => entry.specialDay !== null);
+
+  const movementEnergy = average(movementEntries.map((entry) => entry.energy));
+  const stillEnergy = average(stillEntries.map((entry) => entry.energy));
+  if (movementEntries.length >= 2 && stillEntries.length >= 2 && movementEnergy !== null && stillEnergy !== null && Math.abs(movementEnergy - stillEnergy) >= 0.5) {
+    const direction = movementEnergy > stillEnergy ? 'выше' : 'ниже';
+    observations.push({
+      id: 'movement-energy',
+      title: 'Движение и энергия',
+      text: `В дни с движением энергия в среднем ${direction}: ${formatNumber(movementEnergy)} против ${formatNumber(stillEnergy)}.`,
+    });
+  }
+
+  const restedEnergy = average(restedEntries.map((entry) => entry.energy));
+  const shortSleepEnergy = average(shortSleepEntries.map((entry) => entry.energy));
+  if (restedEntries.length >= 2 && shortSleepEntries.length >= 2 && restedEnergy !== null && shortSleepEnergy !== null && Math.abs(restedEnergy - shortSleepEnergy) >= 0.5) {
+    const direction = restedEnergy > shortSleepEnergy ? 'выше' : 'ниже';
+    observations.push({
+      id: 'sleep-energy',
+      title: 'Сон и энергия',
+      text: `После сна от 7 часов энергия в среднем ${direction}: ${formatNumber(restedEnergy)} против ${formatNumber(shortSleepEnergy)}.`,
+    });
+  }
+
+  if (specialEntries.length) {
+    observations.push({
+      id: 'special-days',
+      title: 'Особые дни',
+      text: `${specialEntries.length} ${plural(specialEntries.length, 'день отмечен', 'дня отмечены', 'дней отмечены')} как особые. Их стоит учитывать отдельно от обычного ритма.`,
+    });
+  }
+
+  return observations;
+}
+
 export function periodDays(anchor: string, period: 'week' | 'month'): string[] {
   return period === 'week'
     ? dateRange(startOfWeek(anchor), endOfWeek(anchor))
@@ -90,6 +144,14 @@ export function careerLabel(value: string | null): string {
 
 export function activityLabel(value: string): string {
   return activityOptions.find((option) => option.id === value)?.label ?? value;
+}
+
+export function specialDayLabel(value: string | null): string {
+  return specialDayOptions.find((option) => option.id === value)?.label ?? 'Особый день';
+}
+
+function formatNumber(value: number): string {
+  return value.toFixed(1).replace('.0', '');
 }
 
 function plural(value: number, one: string, few: string, many: string): string {

@@ -2,7 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
-import { entriesForWeek, hasArea, resultsForPeriod, summarize, weekSummaryText } from '../services/analytics';
+import { entriesForWeek, hasArea, resultsForPeriod, specialDayLabel, summarize, weekSummaryText } from '../services/analytics';
 import { addDays, endOfWeek, formatDate, formatMinutes, startOfWeek, todayKey } from '../services/dates';
 import { plainCopy } from '../services/plain';
 import { useAppStore } from '../stores/app';
@@ -27,6 +27,7 @@ const rows = computed(() => [
 ]);
 const summaryText = computed(() => weekSummaryText(summary.value, store.settings.activeLifeAreas, lifeAreaItems.value));
 const stateNotes = computed(() => entries.value.filter((entry) => entry.stateContext.trim()).sort((a, b) => a.date.localeCompare(b.date)));
+const specialDays = computed(() => entries.value.filter((entry) => entry.specialDay !== null).sort((a, b) => a.date.localeCompare(b.date)));
 const review = reactive<WeeklyReview>(emptyWeeklyReview(start.value));
 
 function loadReview() {
@@ -60,6 +61,17 @@ async function saveReview() {
     </div>
 
     <article class="insight-card"><span class="insight-card__mark">⌁</span><p>{{ summaryText }}</p></article>
+
+    <article v-if="specialDays.length" class="dashboard-card">
+      <div class="section-heading"><div><span class="eyebrow">Поправка на контекст</span><h2>Особые дни</h2></div><span class="count-badge">{{ specialDays.length }}</span></div>
+      <div class="special-day-list">
+        <article v-for="entry in specialDays" :key="entry.date" class="special-day-item">
+          <time>{{ formatDate(entry.date, { weekday: 'short', day: 'numeric' }) }}</time>
+          <strong>{{ specialDayLabel(entry.specialDay) }}</strong>
+          <p v-if="entry.specialDayNote">{{ entry.specialDayNote }}</p>
+        </article>
+      </div>
+    </article>
 
     <article v-if="stateNotes.length" class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Контекст состояния</span><h2>Что влияло на сон и энергию</h2></div><span class="count-badge">{{ stateNotes.length }}</span></div>

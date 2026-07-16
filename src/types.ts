@@ -6,6 +6,7 @@ export type BaseCareerState =
   | "result";
 export type CareerState = BaseCareerState | string;
 export type ActivityId = "boxing" | "bachata" | "walk" | "workout" | "recovery";
+export type SpecialDayId = "sick" | "travel" | "overload" | "event" | "recovery" | "other";
 export type BaseLifeAreaId =
   | "family"
   | "reading"
@@ -22,6 +23,8 @@ export type DailyEntry = {
   sleepQuality: number | null;
   energy: number | null;
   stateContext: string;
+  specialDay: SpecialDayId | null;
+  specialDayNote: string;
   careerState: CareerState | null;
   activities: ActivityId[];
   lifeAreas: LifeAreaId[];
@@ -83,6 +86,15 @@ export const activityOptions: Option<ActivityId>[] = [
   { id: "walk", label: "Прогулка", icon: "→" },
   { id: "workout", label: "Тренировка", icon: "△" },
   { id: "recovery", label: "Восстановление", icon: "○" },
+];
+
+export const specialDayOptions: Option<SpecialDayId>[] = [
+  { id: "sick", label: "Болел", icon: "+" },
+  { id: "travel", label: "Поездка", icon: "→" },
+  { id: "overload", label: "Перегруз", icon: "!" },
+  { id: "event", label: "Событие", icon: "◉" },
+  { id: "recovery", label: "Восстановление", icon: "○" },
+  { id: "other", label: "Другое", icon: "·" },
 ];
 
 export const lifeAreaOptions: Option<BaseLifeAreaId>[] = [
@@ -154,6 +166,8 @@ export function emptyDailyEntry(date: string): DailyEntry {
     sleepQuality: null,
     energy: null,
     stateContext: "",
+    specialDay: null,
+    specialDayNote: "",
     careerState: null,
     activities: [],
     lifeAreas: [],
@@ -170,6 +184,8 @@ export function normalizeDailyEntry(entry: Partial<DailyEntry> & { date: string 
     activities: Array.isArray(entry.activities) ? entry.activities : [],
     lifeAreas: Array.isArray(entry.lifeAreas) ? entry.lifeAreas : [],
     stateContext: typeof entry.stateContext === "string" ? entry.stateContext : "",
+    specialDay: typeof entry.specialDay === "string" ? entry.specialDay : null,
+    specialDayNote: typeof entry.specialDayNote === "string" ? entry.specialDayNote : "",
     importantFact: typeof entry.importantFact === "string" ? entry.importantFact : "",
   };
 }

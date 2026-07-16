@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { entriesForWeek, summarize, weekSummaryText } from '../src/services/analytics';
+import { buildObservations, entriesForWeek, summarize, weekSummaryText } from '../src/services/analytics';
 import { emptyDailyEntry, type DailyEntry } from '../src/types';
 
 function entry(date: string, patch: Partial<DailyEntry>): DailyEntry {
@@ -18,6 +18,7 @@ describe('analytics', () => {
     expect(summary.careerDays).toBe(2);
     expect(summary.externalSteps).toBe(1);
     expect(summary.sportSessions).toBe(2);
+    expect(summary.specialDays).toBe(0);
     expect(summary.areaCounts.reading).toBe(2);
     expect(summary.areaCounts.family).toBe(1);
   });
@@ -41,5 +42,29 @@ describe('analytics', () => {
     expect(text).toContain('Присутствовали: семья');
     expect(text).toContain('Не появлялись: чтение');
     expect(text).not.toContain('%');
+  });
+
+  it('counts special days separately from activity', () => {
+    const summary = summarize([
+      entry('2026-07-13', { specialDay: 'sick', specialDayNote: 'простуда' }),
+      entry('2026-07-14', { activities: ['walk'] })
+    ]);
+
+    expect(summary.specialDays).toBe(1);
+    expect(summary.sportSessions).toBe(1);
+  });
+
+  it('builds cautious observations from repeated patterns', () => {
+    const observations = buildObservations([
+      entry('2026-07-13', { sleepMinutes: 480, energy: 5, activities: ['walk'] }),
+      entry('2026-07-14', { sleepMinutes: 450, energy: 4, activities: ['boxing'] }),
+      entry('2026-07-15', { sleepMinutes: 360, energy: 2, activities: [] }),
+      entry('2026-07-16', { sleepMinutes: 390, energy: 3, activities: [] }),
+      entry('2026-07-17', { specialDay: 'travel' })
+    ]);
+
+    expect(observations.map((item) => item.id)).toContain('movement-energy');
+    expect(observations.map((item) => item.id)).toContain('sleep-energy');
+    expect(observations.map((item) => item.id)).toContain('special-days');
   });
 });

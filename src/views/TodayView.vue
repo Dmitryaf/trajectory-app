@@ -10,6 +10,7 @@ import {
   careerOptions,
   emptyDailyEntry,
   lifeAreaOptions,
+  specialDayOptions,
   type ActivityId,
   type CareerState,
   type DailyEntry,
@@ -102,6 +103,18 @@ async function save() {
           <div><h2>Что ещё было в жизни</h2><p>Отметь присутствие областей, не расписывая каждое действие.</p></div>
         </div>
         <ChipGroup v-model="form.lifeAreas as LifeAreaId[]" :options="activeLifeOptions" multiple />
+      </article>
+
+      <article class="form-card form-card--special">
+        <div class="form-card__heading">
+          <span class="section-icon section-icon--orange">!</span>
+          <div><h2>Особый день</h2><p>Если день выбивался из обычного ритма, отметь причину для будущих сравнений.</p></div>
+        </div>
+        <ChipGroup v-model="form.specialDay" :options="specialDayOptions" allow-clear />
+        <template v-if="form.specialDay">
+          <label class="field-label" for="special-day-note">Короткое уточнение</label>
+          <input id="special-day-note" v-model="form.specialDayNote" type="text" maxlength="120" placeholder="Например: перелёт, простуда, дедлайн, семейное событие" />
+        </template>
       </article>
 
       <article v-if="store.settings.experiment.active" class="form-card form-card--experiment">
