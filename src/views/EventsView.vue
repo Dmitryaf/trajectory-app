@@ -62,11 +62,11 @@ function eventMeta(value: LifeEventRecord['type']) {
 <template>
   <section class="page">
     <div class="page-heading">
-      <div><span class="eyebrow">Длинная дуга</span><h1>Архив</h1><p>Важные изменения, решения и жизненные события отдельно от ежедневного чек-ина.</p></div>
+      <div><span class="eyebrow">Жизненный контекст</span><h1>Архив</h1><p>Важные изменения, решения и события отдельно от ежедневной записи.</p></div>
     </div>
 
     <article class="result-composer">
-      <div class="form-card__heading"><span class="section-icon section-icon--amber">◆</span><div><h2>{{ editingId === null ? 'Добавить событие' : 'Редактировать событие' }}</h2><p>Коротко зафиксируй то, что важно увидеть в будущем.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--amber">◆</span><div><h2>{{ editingId === null ? 'Добавить событие' : 'Редактировать событие' }}</h2><p>Событие, которое поможет понять будущие тренды.</p></div></div>
       <ChipGroup v-model="type" :options="lifeEventTypeOptions" />
       <div class="event-composer__fields">
         <input v-model="title" type="text" maxlength="140" placeholder="Например: решил сменить направление поиска работы" @keyup.enter="saveEvent" />

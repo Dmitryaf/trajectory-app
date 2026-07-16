@@ -61,12 +61,12 @@ function createPackage() {
 
 async function copyPrompt() {
   await copyPackagePrompt(createPackage(), store.settings);
-  showExportStatus('Промпт недели скопирован');
+  showExportStatus('Промпт для GPT скопирован');
 }
 
 function downloadJson() {
   downloadAiPackage(createPackage());
-  showExportStatus('JSON недели скачан');
+  showExportStatus('Пакет недели скачан');
 }
 
 function showExportStatus(message: string) {
@@ -77,7 +77,7 @@ function showExportStatus(message: string) {
 
 <template>
   <section class="page">
-    <div class="page-heading"><div><span class="eyebrow">Автоматический обзор</span><h1>Неделя</h1><p>Что действительно происходило, без общего балла.</p></div></div>
+    <div class="page-heading"><div><span class="eyebrow">Недельная сводка</span><h1>Неделя</h1><p>Факты недели без общего балла.</p></div></div>
     <PeriodNavigator
       :title="`${formatDate(start, { day: 'numeric', month: 'short' })} — ${formatDate(end, { day: 'numeric', month: 'short' })}`"
       :subtitle="start === startOfWeek(todayKey()) ? 'Текущая неделя' : ''"
@@ -95,10 +95,10 @@ function showExportStatus(message: string) {
 
     <article class="dashboard-card">
       <div class="section-heading">
-        <div><span class="eyebrow">Без ИИ</span><h2>На что смотреть в обзоре</h2></div>
+        <div><span class="eyebrow">Разбор без ИИ</span><h2>На что обратить внимание</h2></div>
         <div class="period-actions">
-          <button class="secondary-button" type="button" @click="copyPrompt">Промпт</button>
-          <button class="secondary-button" type="button" @click="downloadJson">JSON</button>
+          <button class="secondary-button" type="button" @click="copyPrompt">Скопировать промпт</button>
+          <button class="secondary-button" type="button" @click="downloadJson">Скачать пакет</button>
         </div>
       </div>
       <p v-if="exportStatus" class="settings-status">{{ exportStatus }}</p>
@@ -179,11 +179,11 @@ function showExportStatus(message: string) {
         <div><span class="eyebrow">До 10 минут</span><h2>Короткий обзор</h2></div>
         <span class="period-pill">До {{ formatDate(end, { day: 'numeric', month: 'long', year: 'numeric' }) }}</span>
       </div>
-      <label class="field-label">Три факта, почему неделя прошла не зря</label>
+      <label class="field-label">Три опорных факта недели</label>
       <input v-for="(_, index) in review.results" :key="index" v-model="review.results[index]" type="text" :placeholder="`${index + 1}. Результат или значимый факт`" />
-      <label class="field-label">Что поддержало?</label><textarea v-model="review.support" rows="2" placeholder="Люди, режим, место, привычка или решение, которое помогло"></textarea>
-      <label class="field-label">Что сильнее всего мешало?</label><textarea v-model="review.obstacle" rows="2" placeholder="Один главный фактор"></textarea>
-      <label class="field-label">Какой один рычаг меняем?</label><textarea v-model="review.nextLever" rows="2" placeholder="Одно конкретное изменение на следующую неделю"></textarea>
+      <label class="field-label">Что помогало?</label><textarea v-model="review.support" rows="2" placeholder="Люди, режим, место, привычка или решение"></textarea>
+      <label class="field-label">Что мешало сильнее всего?</label><textarea v-model="review.obstacle" rows="2" placeholder="Один главный фактор"></textarea>
+      <label class="field-label">Один рычаг на следующую неделю</label><textarea v-model="review.nextLever" rows="2" placeholder="Одно конкретное изменение"></textarea>
       <button class="primary-button" type="button" @click="saveReview">{{ saved ? 'Сохранено ✓' : 'Сохранить обзор' }}</button>
     </article>
   </section>

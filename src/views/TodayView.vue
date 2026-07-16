@@ -45,7 +45,7 @@ const currentEntrySnapshot = computed(() => snapshotEntry(form));
 const isDirty = computed(() => currentEntrySnapshot.value !== originalEntrySnapshot.value);
 const entryChangeNotice = computed(() => {
   if (saved.value) return '';
-  if (isDirty.value && hasSavedEntry.value) return `День изменён: ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })}. Сохрани, чтобы обновить запись.`;
+  if (isDirty.value && hasSavedEntry.value) return `Есть изменения за ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })}. Сохрани, чтобы обновить запись.`;
   if (isDirty.value) return `Есть несохранённая запись за ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })}.`;
   return '';
 });
@@ -58,10 +58,10 @@ const saveButtonText = computed(() => {
 const saveButtonDisabled = computed(() => hasSavedEntry.value && !isDirty.value && !saved.value);
 const reviewReminders = computed(() => [
   isWeekReviewWindow.value && currentWeekSummary.value.entriesCount >= 3
-    ? { id: 'week', title: 'Пора разобрать неделю', text: `${currentWeekSummary.value.entriesCount} записанных дней уже достаточно для короткого недельного обзора.`, to: '/week', label: 'Открыть неделю' }
+    ? { id: 'week', title: 'Неделя готова к разбору', text: `${currentWeekSummary.value.entriesCount} записанных дней уже достаточно для короткого обзора.`, to: '/week', label: 'Открыть неделю' }
     : null,
   isMonthReviewWindow.value && currentMonthSummary.value.entriesCount >= 8
-    ? { id: 'month', title: 'Пора разобрать месяц', text: `${currentMonthSummary.value.entriesCount} записанных дней дают материал для месячного анализа и длинной динамики.`, to: '/month', label: 'Открыть месяц' }
+    ? { id: 'month', title: 'Месяц готов к разбору', text: `${currentMonthSummary.value.entriesCount} записанных дней дают материал для месячного обзора.`, to: '/month', label: 'Открыть месяц' }
     : null,
 ].filter((item): item is { id: string; title: string; text: string; to: string; label: string } => item !== null));
 const yesterday = computed(() => addDays(todayKey(), -1));
@@ -107,7 +107,7 @@ function fillYesterday() {
   <section class="page page--today">
     <div class="page-heading">
       <div>
-        <span class="eyebrow">Ежедневный чек-ин</span>
+        <span class="eyebrow">Ежедневная запись</span>
         <h1>{{ isToday ? 'Сегодня' : formatDate(selectedDate, { day: 'numeric', month: 'long', weekday: 'long' }) }}</h1>
         <p>Только факты. Обычно это занимает меньше минуты.</p>
       </div>
@@ -138,7 +138,7 @@ function fillYesterday() {
     <section v-for="reminder in reviewReminders" :key="reminder.id" class="review-nudge" aria-label="Период готов к обзору">
       <div>
         <strong>{{ reminder.title }}</strong>
-        <p>{{ reminder.text }} JSON для GPT можно скачать рядом с обзором периода.</p>
+        <p>{{ reminder.text }} Пакет для GPT можно скачать в обзоре периода.</p>
       </div>
       <RouterLink class="secondary-button" :to="reminder.to">{{ reminder.label }}</RouterLink>
     </section>
@@ -147,18 +147,18 @@ function fillYesterday() {
       <article class="form-card form-card--sleep">
         <div class="form-card__heading">
           <span class="section-icon section-icon--purple">◒</span>
-          <div><h2>Сон и состояние</h2><p>Не действие и не достижение — просто данные.</p></div>
+          <div><h2>Сон и состояние</h2><p>Сон, энергия и факторы без оценки себя.</p></div>
         </div>
         <div class="sleep-field-grid">
           <div>
-            <label class="field-label" for="sleep-hours">Примерно спал</label>
+            <label class="field-label" for="sleep-hours">Сон</label>
             <div class="number-field">
               <input id="sleep-hours" v-model.number="sleepHours" type="number" min="0" max="16" step="0.25" inputmode="decimal" placeholder="7.5" />
               <span>часов</span>
             </div>
           </div>
           <div>
-            <label class="field-label" for="time-in-bed-hours">Был в кровати</label>
+            <label class="field-label" for="time-in-bed-hours">В кровати</label>
             <div class="number-field">
               <input id="time-in-bed-hours" v-model.number="timeInBedHours" type="number" min="0" max="18" step="0.25" inputmode="decimal" placeholder="8.5" />
               <span>часов</span>
@@ -169,23 +169,23 @@ function fillYesterday() {
           <div class="form-control"><label class="field-label">Качество сна</label><ScalePicker v-model="form.sleepQuality" low-label="плохо" high-label="хорошо" /></div>
           <div class="form-control"><label class="field-label">Энергия</label><ScalePicker v-model="form.energy" low-label="нет сил" high-label="много сил" /></div>
         </div>
-        <label class="field-label" for="state-context">Контекст сна и состояния</label>
+        <label class="field-label" for="state-context">Что мешало или влияло</label>
         <textarea
           id="state-context"
           v-model="form.stateContext"
           rows="2"
           maxlength="220"
-          placeholder="Например: поздний кофе, тревожные мысли, шум, перегруз, просыпался ночью"
+          placeholder="Например: поздний кофе, тревога, шум, перегруз, просыпался ночью"
         ></textarea>
         <div class="factor-block">
-          <label class="field-label">Что могло повлиять на сон или состояние?</label>
+          <label class="field-label">Вечерние факторы</label>
           <ChipGroup v-model="form.eveningFactors" :options="eveningFactorOptions" multiple />
           <textarea
             v-if="form.eveningFactors.length"
             v-model="form.eveningFactorNote"
             rows="2"
             maxlength="180"
-            placeholder="Короткое уточнение, если нужно. Без отчёта и саморазбора."
+            placeholder="Короткое уточнение, если нужно."
           ></textarea>
         </div>
       </article>
@@ -193,7 +193,7 @@ function fillYesterday() {
       <article class="form-card">
         <div class="form-card__heading">
           <span class="section-icon section-icon--blue">↗</span>
-          <div><h2>Карьера</h2><p>Выбери самый значимый уровень контакта с карьерой.</p></div>
+          <div><h2>Карьера</h2><p>Самый заметный контакт с карьерой за день.</p></div>
         </div>
         <ChipGroup v-model="form.careerState as CareerState | null" :options="careerItems" allow-clear />
       </article>
@@ -209,7 +209,7 @@ function fillYesterday() {
       <article class="form-card">
         <div class="form-card__heading">
           <span class="section-icon section-icon--amber">✦</span>
-          <div><h2>Что ещё было в жизни</h2><p>Отметь присутствие областей, не расписывая каждое действие.</p></div>
+          <div><h2>Области жизни</h2><p>Отметь, что присутствовало сегодня.</p></div>
         </div>
         <ChipGroup v-model="form.lifeAreas as LifeAreaId[]" :options="activeLifeOptions" multiple />
       </article>
@@ -217,7 +217,7 @@ function fillYesterday() {
       <article class="form-card form-card--special">
         <div class="form-card__heading">
           <span class="section-icon section-icon--orange">!</span>
-          <div><h2>Особый день</h2><p>Если день выбивался из обычного ритма, отметь причину для будущих сравнений.</p></div>
+          <div><h2>Особый день</h2><p>Отметка для будущих сравнений и контекста.</p></div>
         </div>
         <ChipGroup v-model="form.specialDay" :options="specialDayOptions" allow-clear />
         <template v-if="form.specialDay">
@@ -234,14 +234,14 @@ function fillYesterday() {
         <div class="binary-choice">
           <button type="button" :class="{ selected: form.experimentCompleted === true }" @click="form.experimentCompleted = true">Да</button>
           <button type="button" :class="{ selected: form.experimentCompleted === false }" @click="form.experimentCompleted = false">Нет</button>
-          <button type="button" :class="{ selected: form.experimentCompleted === null }" @click="form.experimentCompleted = null">Не отмечать</button>
+          <button type="button" :class="{ selected: form.experimentCompleted === null }" @click="form.experimentCompleted = null">Пропустить</button>
         </div>
       </article>
 
       <article class="form-card">
         <div class="form-card__heading">
           <span class="section-icon">·</span>
-          <div><h2>Главный факт дня</h2><p>Необязательно. Одна короткая фраза без анализа жизни.</p></div>
+          <div><h2>Главный факт дня</h2><p>Необязательно. Один факт без анализа.</p></div>
         </div>
         <textarea v-model="form.importantFact" rows="2" maxlength="240" placeholder="Например: отправил резюме напрямую в две компании"></textarea>
       </article>

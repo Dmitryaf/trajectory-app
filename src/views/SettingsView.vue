@@ -71,7 +71,7 @@ function exportData() {
 async function copyAiPrompt(period: Exclude<AiReportPeriod, 'range'>) {
   const payload = createAiPayload(period);
   await navigator.clipboard.writeText(buildAiReportPrompt(payload, store.settings));
-  aiStatus.value = period === 'week' ? 'Промпт недели скопирован' : 'Промпт месяца скопирован';
+  aiStatus.value = 'Промпт для GPT скопирован';
   window.setTimeout(() => (aiStatus.value = ''), 1800);
 }
 
@@ -122,13 +122,13 @@ async function clearAll() {
 
 <template>
   <section class="page">
-    <div class="page-heading"><div><span class="eyebrow">Меньше настроек — лучше</span><h1>Настройки</h1><p>Здесь нет конструктора KPI. Только области жизни, один эксперимент и резервная копия.</p></div></div>
+    <div class="page-heading"><div><span class="eyebrow">Настройка трекера</span><h1>Настройки</h1><p>Активные области, карьерные пункты, один эксперимент и резервная копия.</p></div></div>
 
     <article class="settings-card">
-      <div class="form-card__heading"><span class="section-icon section-icon--amber">✦</span><div><h2>Области жизни</h2><p>Выбранные области появятся в ежедневном чек-ине и обзорах.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--amber">✦</span><div><h2>Области жизни</h2><p>Выбранные области появятся в ежедневной записи и обзорах.</p></div></div>
       <ChipGroup v-model="settings.activeLifeAreas as LifeAreaId[]" :options="allLifeAreaOptions" multiple />
       <div class="custom-options">
-        <label class="field-label" for="new-life-area">Добавить свою область</label>
+        <label class="field-label" for="new-life-area">Своя область</label>
         <div class="inline-add">
           <input id="new-life-area" v-model="newLifeAreaLabel" type="text" maxlength="32" placeholder="Питание" @keyup.enter="addLifeArea" />
           <button class="secondary-button" type="button" :disabled="!newLifeAreaLabel.trim()" @click="addLifeArea">Добавить</button>
@@ -143,14 +143,14 @@ async function clearAll() {
     </article>
 
     <article class="settings-card">
-      <div class="form-card__heading"><span class="section-icon section-icon--blue">↗</span><div><h2>Карьера</h2><p>Можно добавить свой пункт для ежедневного чек-ина, например «Отклики».</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--blue">↗</span><div><h2>Карьера</h2><p>Добавь пункт, который важно видеть в ежедневной записи: например «Отклики».</p></div></div>
       <div class="option-preview">
         <span v-for="option in allCareerOptions" :key="option.id" class="option-pill">
           <i v-if="option.icon">{{ option.icon }}</i>{{ option.label }}
         </span>
       </div>
       <div class="custom-options">
-        <label class="field-label" for="new-career-option">Добавить карьерный пункт</label>
+        <label class="field-label" for="new-career-option">Карьерный пункт</label>
         <div class="inline-add">
           <input id="new-career-option" v-model="newCareerLabel" type="text" maxlength="32" placeholder="Отклики" @keyup.enter="addCareerOption" />
           <button class="secondary-button" type="button" :disabled="!newCareerLabel.trim()" @click="addCareerOption">Добавить</button>
@@ -166,8 +166,8 @@ async function clearAll() {
     </article>
 
     <article class="settings-card">
-      <div class="form-card__heading"><span class="section-icon section-icon--orange">⌁</span><div><h2>Один временный эксперимент</h2><p>Например: не читать новости после 22:00 в течение двух недель.</p></div></div>
-      <label class="toggle-row"><span><strong>Эксперимент активен</strong><small>В ежедневном чек-ине появится один дополнительный вопрос.</small></span><input v-model="settings.experiment.active" type="checkbox" /></label>
+      <div class="form-card__heading"><span class="section-icon section-icon--orange">⌁</span><div><h2>Временный эксперимент</h2><p>Например: не читать новости после 22:00 в течение двух недель.</p></div></div>
+      <label class="toggle-row"><span><strong>Включить эксперимент</strong><small>В ежедневной записи появится один дополнительный вопрос.</small></span><input v-model="settings.experiment.active" type="checkbox" /></label>
       <label class="field-label" for="experiment-title">Условие эксперимента</label>
       <input id="experiment-title" v-model="settings.experiment.title" type="text" maxlength="140" placeholder="Не читать новости после 22:00" />
       <div class="form-row">
@@ -178,9 +178,9 @@ async function clearAll() {
     </article>
 
     <article class="settings-card">
-      <div class="form-card__heading"><span class="section-icon section-icon--blue">↓</span><div><h2>Данные и резервная копия</h2><p>Сейчас данные хранятся только в этом браузере.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--blue">↓</span><div><h2>Резервная копия</h2><p>Данные пока хранятся только в этом браузере.</p></div></div>
       <div class="data-actions">
-        <button class="secondary-button" type="button" @click="exportData">Скачать JSON-копию</button>
+        <button class="secondary-button" type="button" @click="exportData">Скачать копию</button>
         <button class="secondary-button" type="button" @click="importInput?.click()">Восстановить из копии</button>
         <input ref="importInput" class="visually-hidden" type="file" accept="application/json" @change="importData" />
       </div>
@@ -188,12 +188,12 @@ async function clearAll() {
     </article>
 
     <article class="settings-card">
-      <div class="form-card__heading"><span class="section-icon section-icon--green">AI</span><div><h2>ИИ позже</h2><p>Пока можно сохранить пакет анализа без платного API. Автоматический запуск подключим при деплое.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--green">AI</span><div><h2>Пакет для GPT</h2><p>Без платного API: скопируй промпт или скачай JSON для ручного анализа.</p></div></div>
       <div class="ai-actions">
         <button class="secondary-button" type="button" @click="copyAiPrompt('week')">Скопировать промпт недели</button>
         <button class="secondary-button" type="button" @click="copyAiPrompt('month')">Скопировать промпт месяца</button>
-        <button class="secondary-button" type="button" @click="downloadAiPackage('week')">Скачать JSON недели</button>
-        <button class="secondary-button" type="button" @click="downloadAiPackage('month')">Скачать JSON месяца</button>
+        <button class="secondary-button" type="button" @click="downloadAiPackage('week')">Скачать пакет недели</button>
+        <button class="secondary-button" type="button" @click="downloadAiPackage('month')">Скачать пакет месяца</button>
       </div>
       <p v-if="aiStatus" class="settings-status">{{ aiStatus }}</p>
     </article>

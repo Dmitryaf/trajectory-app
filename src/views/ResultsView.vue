@@ -59,21 +59,21 @@ function areaMeta(value: ResultRecord['area']) {
 <template>
   <section class="page">
     <div class="page-heading">
-      <div><span class="eyebrow">Не просто активность</span><h1>Результаты</h1><p>Законченные вещи, которые останутся видны в итогах месяца.</p></div>
+      <div><span class="eyebrow">Завершённые вещи</span><h1>Результаты</h1><p>Факты, которые уже произошли и останутся видны в итогах месяца.</p></div>
     </div>
 
     <article class="result-composer">
-      <div class="form-card__heading"><span class="section-icon section-icon--green">✓</span><div><h2>{{ editingId === null ? 'Добавить результат' : 'Редактировать результат' }}</h2><p>Коротко и конкретно.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--green">✓</span><div><h2>{{ editingId === null ? 'Добавить результат' : 'Редактировать результат' }}</h2><p>Один завершённый факт.</p></div></div>
       <ChipGroup v-model="area" :options="resultOptions" />
       <div class="result-composer__fields">
         <input v-model="title" type="text" maxlength="160" placeholder="Например: прошёл техническое собеседование" @keyup.enter="saveResult" />
         <input v-model="date" class="date-input" type="date" aria-label="Дата результата" />
-        <button class="primary-button" type="button" :disabled="!title.trim() || saving" @click="saveResult">{{ editingId === null ? 'Добавить' : 'Сохранить' }}</button>
+        <button class="primary-button" type="button" :disabled="!title.trim() || saving" @click="saveResult">{{ editingId === null ? 'Добавить результат' : 'Сохранить результат' }}</button>
       </div>
       <button v-if="editingId !== null" class="secondary-button composer-cancel" type="button" @click="resetForm">Отменить редактирование</button>
     </article>
 
-    <div class="section-heading"><div><span class="eyebrow">Архив фактов</span><h2>Все результаты</h2></div><span class="count-badge">{{ recentResults.length }}</span></div>
+    <div class="section-heading"><div><span class="eyebrow">Список</span><h2>Все результаты</h2></div><span class="count-badge">{{ recentResults.length }}</span></div>
     <div v-if="recentResults.length" class="results-list">
       <article v-for="result in recentResults" :key="result.id" class="result-item">
         <span class="result-item__icon">{{ areaMeta(result.area).icon }}</span>
@@ -84,6 +84,6 @@ function areaMeta(value: ResultRecord['area']) {
         </div>
       </article>
     </div>
-    <div v-else class="empty-state"><span>✓</span><h3>Результатов пока нет</h3><p>Они появятся здесь и в месячном обзоре.</p></div>
+    <div v-else class="empty-state"><span>✓</span><h3>Результатов пока нет</h3><p>Добавь завершённый факт — он появится в месячном обзоре.</p></div>
   </section>
 </template>

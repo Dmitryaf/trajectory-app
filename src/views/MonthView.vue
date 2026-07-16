@@ -48,12 +48,12 @@ function createPackage() {
 
 async function copyPrompt() {
   await copyPackagePrompt(createPackage(), store.settings);
-  showExportStatus('Промпт месяца скопирован');
+  showExportStatus('Промпт для GPT скопирован');
 }
 
 function downloadJson() {
   downloadAiPackage(createPackage());
-  showExportStatus('JSON месяца скачан');
+  showExportStatus('Пакет месяца скачан');
 }
 
 function showExportStatus(message: string) {
@@ -64,7 +64,7 @@ function showExportStatus(message: string) {
 
 <template>
   <section class="page">
-    <div class="page-heading"><div><span class="eyebrow">Агрегация недель</span><h1>Месяц</h1><p>Динамика и законченные результаты — без отдельной системы нормативов.</p></div></div>
+    <div class="page-heading"><div><span class="eyebrow">Месячная сводка</span><h1>Месяц</h1><p>Результаты, состояние и контекст месяца без общей оценки.</p></div></div>
     <PeriodNavigator
       :title="formatDate(start, { month: 'long', year: 'numeric' })"
       :subtitle="start === startOfMonth(todayKey()) ? 'Текущий месяц' : ''"
@@ -73,17 +73,17 @@ function showExportStatus(message: string) {
 
     <div class="metrics-grid">
       <MetricCard label="Заполнено дней" :value="summary.entriesCount" accent="#5865db" />
-      <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="summary.averageSleepEfficiency === null ? '' : `эффективность ${Math.round(summary.averageSleepEfficiency)}%`" accent="#7367f0" />
+      <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="summary.averageSleepEfficiency === null ? '' : `доля сна ${Math.round(summary.averageSleepEfficiency)}%`" accent="#7367f0" />
       <MetricCard label="Внешних шагов" :value="summary.externalSteps" accent="#4188e8" />
       <MetricCard label="Особых дней" :value="summary.specialDays" :hint="`${results.length} результатов`" accent="#eb7458" />
     </div>
 
     <article class="dashboard-card">
       <div class="section-heading">
-        <div><span class="eyebrow">Без ИИ</span><h2>Месячный разбор</h2></div>
+        <div><span class="eyebrow">Разбор без ИИ</span><h2>Месячный обзор</h2></div>
         <div class="period-actions">
-          <button class="secondary-button" type="button" @click="copyPrompt">Промпт</button>
-          <button class="secondary-button" type="button" @click="downloadJson">JSON</button>
+          <button class="secondary-button" type="button" @click="copyPrompt">Скопировать промпт</button>
+          <button class="secondary-button" type="button" @click="downloadJson">Скачать пакет</button>
         </div>
       </div>
       <p v-if="exportStatus" class="settings-status">{{ exportStatus }}</p>
@@ -109,7 +109,7 @@ function showExportStatus(message: string) {
     </article>
 
     <article class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Не цель, а состояние</span><h2>Продолжительность сна</h2></div><small>0–12 часов</small></div>
+      <div class="section-heading"><div><span class="eyebrow">Сон</span><h2>Динамика сна</h2></div><small>0–12 часов</small></div>
       <div v-if="sleepEntries.length" class="bar-chart">
         <div v-for="entry in sleepEntries" :key="entry.date" class="bar-chart__item" :title="`${formatDate(entry.date)}: ${formatMinutes(entry.sleepMinutes)}`">
           <div class="bar-chart__bar" :style="{ height: `${Math.min(100, ((entry.sleepMinutes ?? 0) / 720) * 100)}%` }"></div>
@@ -172,7 +172,7 @@ function showExportStatus(message: string) {
       </article>
 
       <article class="dashboard-card">
-        <div class="section-heading"><div><span class="eyebrow">Ответ на главный вопрос</span><h2>Результаты месяца</h2></div><span class="count-badge">{{ results.length }}</span></div>
+        <div class="section-heading"><div><span class="eyebrow">Завершённые вещи</span><h2>Результаты месяца</h2></div><span class="count-badge">{{ results.length }}</span></div>
         <ul v-if="results.length" class="compact-results"><li v-for="result in results" :key="result.id"><span>✓</span><div>{{ result.title }}<small>{{ formatDate(result.date, { day: 'numeric', month: 'short' }) }}</small></div></li></ul>
         <div v-else class="empty-state empty-state--compact"><p>Пока нет зафиксированных результатов.</p></div>
       </article>
@@ -189,7 +189,7 @@ function showExportStatus(message: string) {
     </article>
 
     <article v-if="stateNotes.length" class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Мешающие факторы</span><h2>Контекст сна и состояния</h2></div><span class="count-badge">{{ stateNotes.length }}</span></div>
+      <div class="section-heading"><div><span class="eyebrow">Контекст состояния</span><h2>Сон и энергия</h2></div><span class="count-badge">{{ stateNotes.length }}</span></div>
       <div class="note-list note-list--columns">
         <article v-for="entry in stateNotes" :key="entry.date" class="note-item">
           <time>{{ formatDate(entry.date, { day: 'numeric', month: 'short' }) }}</time>

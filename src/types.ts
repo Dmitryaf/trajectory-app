@@ -126,7 +126,7 @@ export const lifeEventTypeOptions: Option<LifeEventType>[] = [
   { id: "milestone", label: "Веха", icon: "◆" },
   { id: "decision", label: "Решение", icon: "✓" },
   { id: "event", label: "Событие", icon: "◉" },
-  { id: "insight", label: "Осознание", icon: "✦" },
+  { id: "insight", label: "Наблюдение", icon: "✦" },
   { id: "other", label: "Другое", icon: "·" },
 ];
 

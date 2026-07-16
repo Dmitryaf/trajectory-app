@@ -61,7 +61,7 @@ async function copyPrompt() {
 
 function downloadJson() {
   downloadAiPackage(createPackage());
-  showExportStatus(`JSON за ${range.value} мес. скачан`);
+  showExportStatus(`Пакет за ${range.value} мес. скачан`);
 }
 
 function showExportStatus(message: string) {
@@ -73,7 +73,7 @@ function showExportStatus(message: string) {
 <template>
   <section class="page">
     <div class="page-heading">
-      <div><span class="eyebrow">Длинная динамика</span><h1>Тренды</h1><p>Календарные 3, 6 и 12 месяцев: не для самосуда, а чтобы увидеть устойчивые контуры.</p></div>
+      <div><span class="eyebrow">Длинная динамика</span><h1>Тренды</h1><p>Календарные 3, 6 и 12 месяцев: не для самооценки, а чтобы увидеть устойчивые контуры.</p></div>
     </div>
 
     <div class="range-tabs" aria-label="Период динамики">
@@ -91,8 +91,8 @@ function showExportStatus(message: string) {
       <div class="section-heading">
         <div><span class="eyebrow">Опорные выводы</span><h2>Что видно на длинном периоде</h2></div>
         <div class="period-actions">
-          <button class="secondary-button" type="button" @click="copyPrompt">Промпт</button>
-          <button class="secondary-button" type="button" @click="downloadJson">JSON</button>
+          <button class="secondary-button" type="button" @click="copyPrompt">Скопировать промпт</button>
+          <button class="secondary-button" type="button" @click="downloadJson">Скачать пакет</button>
         </div>
       </div>
       <p v-if="exportStatus" class="settings-status">{{ exportStatus }}</p>
