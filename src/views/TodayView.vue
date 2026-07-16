@@ -34,6 +34,7 @@ const currentWeekEntries = computed(() => entriesForWeek(store.dailyEntries, tod
 const externalCareerIds = computed(() => ['external', 'interview', 'result', ...store.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id)]);
 const currentWeekSummary = computed(() => summarize(currentWeekEntries.value, externalCareerIds.value));
 const currentWeekObservation = computed(() => buildObservations(currentWeekEntries.value)[0]);
+const weeklyReviewReady = computed(() => isToday.value && currentWeekSummary.value.entriesCount >= 4);
 const yesterday = computed(() => addDays(todayKey(), -1));
 const yesterdayMissing = computed(() => isToday.value && store.loaded && !store.entryByDate(yesterday.value));
 
@@ -83,6 +84,14 @@ function fillYesterday() {
         <p>Можно заполнить коротко сейчас или спокойно продолжить с сегодняшнего дня.</p>
       </div>
       <button class="secondary-button" type="button" @click="fillYesterday">Заполнить вчера</button>
+    </section>
+
+    <section v-if="weeklyReviewReady" class="review-nudge" aria-label="Неделя готова к обзору">
+      <div>
+        <strong>Уже есть материал для обзора</strong>
+        <p>{{ currentWeekSummary.entriesCount }} заполненных дней достаточно, чтобы увидеть повторяющиеся факторы без ИИ.</p>
+      </div>
+      <RouterLink class="secondary-button" to="/week">Открыть неделю</RouterLink>
     </section>
 
     <form class="checkin-grid" @submit.prevent="save">

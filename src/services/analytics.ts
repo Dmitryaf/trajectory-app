@@ -1,4 +1,4 @@
-import type { DailyEntry, EveningFactorId, LifeAreaId, Option, ResultRecord } from '../types';
+import type { DailyEntry, EveningFactorId, LifeAreaId, LifeEventRecord, Option, ResultRecord } from '../types';
 import { activityOptions, careerOptions, eveningFactorOptions, externalCareerStates, lifeAreaOptions, specialDayOptions } from '../types';
 import { dateRange, endOfMonth, endOfWeek, formatMinutes, startOfMonth, startOfWeek } from './dates';
 
@@ -27,6 +27,13 @@ export type FactorSummary = {
   count: number;
   averageSleep: number | null;
   averageEnergy: number | null;
+};
+
+export type ReviewCue = {
+  id: string;
+  title: string;
+  text: string;
+  tone: 'good' | 'warning' | 'neutral';
 };
 
 function average(values: Array<number | null>): number | null {
@@ -169,6 +176,88 @@ export function factorSummaries(entries: DailyEntry[]): FactorSummary[] {
     })
     .filter((summary) => summary.count > 0)
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+}
+
+export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[], results: ResultRecord[], lifeEvents: LifeEventRecord[], externalCareerIds: string[] = externalCareerStates): ReviewCue[] {
+  const summary = summarize(entries, externalCareerIds);
+  const factors = factorSummaries(entries);
+  const cues: ReviewCue[] = [];
+  const enoughEntries = period === 'week' ? summary.entriesCount >= 4 : summary.entriesCount >= 12;
+  const minTarget = period === 'week' ? '4 дня' : '12 дней';
+
+  cues.push({
+    id: 'coverage',
+    title: enoughEntries ? 'Данных достаточно для вывода' : 'Данных пока мало',
+    text: enoughEntries
+      ? `${summary.entriesCount} ${plural(summary.entriesCount, 'заполненный день', 'заполненных дня', 'заполненных дней')} уже дают рабочую картину периода.`
+      : `Для уверенного обзора лучше иметь хотя бы ${minTarget}. Сейчас есть ${summary.entriesCount}.`,
+    tone: enoughEntries ? 'good' : 'warning',
+  });
+
+  const shortSleepDays = entries.filter((entry) => entry.sleepMinutes !== null && entry.sleepMinutes < 420).length;
+  if (shortSleepDays >= 2) {
+    cues.push({
+      id: 'short-sleep',
+      title: 'Сон проседал несколько раз',
+      text: `${shortSleepDays} ${plural(shortSleepDays, 'день был', 'дня были', 'дней были')} со сном меньше 7 часов. Это стоит проверить перед выводами про мотивацию и дисциплину.`,
+      tone: 'warning',
+    });
+  } else if (summary.averageSleep !== null) {
+    cues.push({
+      id: 'sleep-baseline',
+      title: 'База сна',
+      text: `Средний сон за период: ${formatMinutes(Math.round(summary.averageSleep))}. Это первый контекст для оценки энергии и действий.`,
+      tone: 'neutral',
+    });
+  }
+
+  const leadingFactor = factors[0];
+  if (leadingFactor && leadingFactor.count >= 2) {
+    cues.push({
+      id: 'factor',
+      title: 'Повторяющийся мешающий фактор',
+      text: `${leadingFactor.label} встретился ${leadingFactor.count} ${plural(leadingFactor.count, 'раз', 'раза', 'раз')}. На следующий период лучше менять один такой фактор, а не всю жизнь сразу.`,
+      tone: 'warning',
+    });
+  }
+
+  if (summary.externalSteps > 0 || summary.careerDays > 0) {
+    cues.push({
+      id: 'career',
+      title: summary.externalSteps > 0 ? 'Были внешние карьерные шаги' : 'Карьера была в контакте',
+      text: `${summary.careerDays} карьерных ${plural(summary.careerDays, 'день', 'дня', 'дней')}, ${summary.externalSteps} внешних ${plural(summary.externalSteps, 'шаг', 'шага', 'шагов')}. Это лучше оценивать фактами, а не ощущением "я ничего не делал".`,
+      tone: summary.externalSteps > 0 ? 'good' : 'neutral',
+    });
+  }
+
+  if (summary.specialDays || lifeEvents.length) {
+    cues.push({
+      id: 'context',
+      title: 'Есть поправка на контекст',
+      text: `${summary.specialDays} особых ${plural(summary.specialDays, 'день', 'дня', 'дней')} и ${lifeEvents.length} ${plural(lifeEvents.length, 'событие архива', 'события архива', 'событий архива')}. Не сравнивай этот период с обычным ритмом напрямую.`,
+      tone: 'neutral',
+    });
+  }
+
+  if (results.length) {
+    cues.push({
+      id: 'results',
+      title: 'Есть завершённые вещи',
+      text: `${results.length} ${plural(results.length, 'результат', 'результата', 'результатов')} за период. Это отдельный слой прогресса, даже если состояние было неровным.`,
+      tone: 'good',
+    });
+  }
+
+  return cues.slice(0, 6);
+}
+
+export function buildReviewQuestions(period: 'week' | 'month'): string[] {
+  const label = period === 'week' ? 'неделе' : 'месяце';
+  return [
+    `Что в этой ${label} повторялось чаще всего и реально влияло на состояние?`,
+    'Какой один фактор стоит уменьшить в следующем периоде?',
+    'Какое одно действие или условие стоит сохранить, потому что оно помогало?',
+  ];
 }
 
 export function periodDays(anchor: string, period: 'week' | 'month'): string[] {

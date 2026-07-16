@@ -2,7 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
-import { entriesForWeek, eveningFactorLabel, hasArea, resultsForPeriod, specialDayLabel, summarize, weekSummaryText } from '../services/analytics';
+import { buildReviewCues, buildReviewQuestions, entriesForWeek, eveningFactorLabel, hasArea, resultsForPeriod, specialDayLabel, summarize, weekSummaryText } from '../services/analytics';
 import { addDays, endOfWeek, formatDate, formatMinutes, startOfWeek, todayKey } from '../services/dates';
 import { plainCopy } from '../services/plain';
 import { useAppStore } from '../stores/app';
@@ -20,6 +20,9 @@ const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.cust
 const externalCareerIds = computed(() => ['external', 'interview', 'result', ...store.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id)]);
 const summary = computed(() => summarize(entries.value, externalCareerIds.value));
 const results = computed(() => resultsForPeriod(store.results, start.value, end.value));
+const lifeEvents = computed(() => store.lifeEvents.filter((event) => event.date >= start.value && event.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)));
+const reviewCues = computed(() => buildReviewCues('week', entries.value, results.value, lifeEvents.value, externalCareerIds.value));
+const reviewQuestions = buildReviewQuestions('week');
 const rows = computed(() => [
   { id: 'career', label: 'Карьера', icon: '↗' },
   { id: 'sport', label: 'Спорт', icon: '△' },
@@ -62,6 +65,19 @@ async function saveReview() {
     </div>
 
     <article class="insight-card"><span class="insight-card__mark">⌁</span><p>{{ summaryText }}</p></article>
+
+    <article class="dashboard-card">
+      <div class="section-heading"><div><span class="eyebrow">Без ИИ</span><h2>На что смотреть в обзоре</h2></div></div>
+      <div class="review-cue-grid">
+        <article v-for="cue in reviewCues" :key="cue.id" class="review-cue" :class="`review-cue--${cue.tone}`">
+          <strong>{{ cue.title }}</strong>
+          <p>{{ cue.text }}</p>
+        </article>
+      </div>
+      <ol class="review-question-list">
+        <li v-for="question in reviewQuestions" :key="question">{{ question }}</li>
+      </ol>
+    </article>
 
     <article v-if="specialDays.length" class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Поправка на контекст</span><h2>Особые дни</h2></div><span class="count-badge">{{ specialDays.length }}</span></div>
@@ -112,6 +128,16 @@ async function saveReview() {
     <article v-if="results.length" class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Законченные вещи</span><h2>Результаты недели</h2></div></div>
       <ul class="compact-results"><li v-for="result in results" :key="result.id"><span>✓</span>{{ result.title }}</li></ul>
+    </article>
+
+    <article v-if="lifeEvents.length" class="dashboard-card">
+      <div class="section-heading"><div><span class="eyebrow">Длинная дуга</span><h2>События из архива</h2></div><span class="count-badge">{{ lifeEvents.length }}</span></div>
+      <div class="note-list">
+        <article v-for="event in lifeEvents" :key="event.id" class="note-item">
+          <time>{{ formatDate(event.date, { weekday: 'short', day: 'numeric' }) }}</time>
+          <p><strong>{{ event.title }}</strong><span v-if="event.note"><br />{{ event.note }}</span></p>
+        </article>
+      </div>
     </article>
 
     <article class="review-card">

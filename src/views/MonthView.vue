@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
-import { buildObservations, entriesForMonth, factorSummaries, hasMovement, resultsForPeriod, specialDayLabel, summarize } from '../services/analytics';
+import { buildObservations, buildReviewCues, buildReviewQuestions, entriesForMonth, factorSummaries, hasMovement, resultsForPeriod, specialDayLabel, summarize } from '../services/analytics';
 import { addDays, endOfMonth, formatDate, formatMinutes, fromDateKey, startOfMonth, todayKey, toDateKey } from '../services/dates';
 import { useAppStore } from '../stores/app';
 import { lifeAreaOptions } from '../types';
@@ -17,6 +17,9 @@ const summary = computed(() => summarize(entries.value, externalCareerIds.value)
 const observations = computed(() => buildObservations(entries.value));
 const factors = computed(() => factorSummaries(entries.value));
 const results = computed(() => resultsForPeriod(store.results, start.value, end.value));
+const lifeEvents = computed(() => store.lifeEvents.filter((event) => event.date >= start.value && event.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)));
+const reviewCues = computed(() => buildReviewCues('month', entries.value, results.value, lifeEvents.value, externalCareerIds.value));
+const reviewQuestions = buildReviewQuestions('month');
 const sleepEntries = computed(() => [...entries.value].filter((entry) => entry.sleepMinutes !== null).sort((a, b) => a.date.localeCompare(b.date)));
 const energySleepEntries = computed(() => entries.value.filter((entry) => entry.sleepMinutes !== null && entry.energy !== null).sort((a, b) => a.date.localeCompare(b.date)));
 const stateNotes = computed(() => entries.value.filter((entry) => entry.stateContext.trim()).sort((a, b) => b.date.localeCompare(a.date)));
@@ -47,6 +50,19 @@ function shiftMonth(offset: number) {
       <MetricCard label="Внешних шагов" :value="summary.externalSteps" accent="#4188e8" />
       <MetricCard label="Особых дней" :value="summary.specialDays" :hint="`${results.length} результатов`" accent="#eb7458" />
     </div>
+
+    <article class="dashboard-card">
+      <div class="section-heading"><div><span class="eyebrow">Без ИИ</span><h2>Месячный разбор</h2></div></div>
+      <div class="review-cue-grid">
+        <article v-for="cue in reviewCues" :key="cue.id" class="review-cue" :class="`review-cue--${cue.tone}`">
+          <strong>{{ cue.title }}</strong>
+          <p>{{ cue.text }}</p>
+        </article>
+      </div>
+      <ol class="review-question-list">
+        <li v-for="question in reviewQuestions" :key="question">{{ question }}</li>
+      </ol>
+    </article>
 
     <article v-if="observations.length" class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Автоматические наблюдения</span><h2>Что видно по данным</h2></div></div>
@@ -127,6 +143,16 @@ function shiftMonth(offset: number) {
         <div v-else class="empty-state empty-state--compact"><p>Пока нет зафиксированных результатов.</p></div>
       </article>
     </div>
+
+    <article v-if="lifeEvents.length" class="dashboard-card">
+      <div class="section-heading"><div><span class="eyebrow">Длинная дуга</span><h2>События из архива</h2></div><span class="count-badge">{{ lifeEvents.length }}</span></div>
+      <div class="note-list note-list--columns">
+        <article v-for="event in lifeEvents" :key="event.id" class="note-item">
+          <time>{{ formatDate(event.date, { day: 'numeric', month: 'short' }) }}</time>
+          <p><strong>{{ event.title }}</strong><span v-if="event.note"><br />{{ event.note }}</span></p>
+        </article>
+      </div>
+    </article>
 
     <article v-if="stateNotes.length" class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Мешающие факторы</span><h2>Контекст сна и состояния</h2></div><span class="count-badge">{{ stateNotes.length }}</span></div>

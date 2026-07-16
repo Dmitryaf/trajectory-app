@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildObservations, entriesForWeek, factorSummaries, summarize, weekSummaryText } from '../src/services/analytics';
+import { buildObservations, buildReviewCues, entriesForWeek, factorSummaries, summarize, weekSummaryText } from '../src/services/analytics';
 import { buildAiReportPayload } from '../src/services/aiReport';
 import { defaultSettings, emptyDailyEntry, type DailyEntry } from '../src/types';
 
@@ -98,5 +98,22 @@ describe('analytics', () => {
     expect(payload.version).toBe(2);
     expect(payload.lifeEvents).toHaveLength(1);
     expect(payload.lifeEvents[0].title).toBe('Сменил фокус поиска');
+  });
+
+  it('builds local review cues from factual period data', () => {
+    const cues = buildReviewCues('week', [
+      entry('2026-07-13', { sleepMinutes: 360, eveningFactors: ['news'], careerState: 'external' }),
+      entry('2026-07-14', { sleepMinutes: 390, eveningFactors: ['news'] }),
+      entry('2026-07-15', { sleepMinutes: 480 }),
+      entry('2026-07-16', { sleepMinutes: 450 })
+    ], [
+      { id: 1, date: '2026-07-16', area: 'career', title: 'Отправил отклики', createdAt: '2026-07-16T10:00:00.000Z' }
+    ], [
+      { id: 1, date: '2026-07-15', type: 'decision', title: 'Сменил фокус', note: '', createdAt: '2026-07-15T10:00:00.000Z' }
+    ]);
+
+    expect(cues.map((cue) => cue.id)).toEqual(expect.arrayContaining(['coverage', 'short-sleep', 'factor', 'career', 'context', 'results']));
+    expect(cues.find((cue) => cue.id === 'coverage')?.tone).toBe('good');
+    expect(cues.find((cue) => cue.id === 'factor')?.text).toContain('Новости');
   });
 });
