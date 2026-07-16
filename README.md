@@ -58,4 +58,6 @@ npm run build
 
 План развёртывания и будущей ИИ-интеграции описан в [DEPLOYMENT_AND_AI.md](./DEPLOYMENT_AND_AI.md).
 
+Правила развития продукта, научной осторожности и добавления новых полей описаны в [PRODUCT_RULES.md](./PRODUCT_RULES.md).
+
 Для автоматического ИИ-анализа на хостинге нужен backend endpoint `/api/analyze` и переменная окружения `OPENAI_API_KEY`. Опционально можно задать `OPENAI_MODEL`.
