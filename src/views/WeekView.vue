@@ -4,6 +4,7 @@ import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
 import { buildReviewCues, buildReviewQuestions, entriesForWeek, eveningFactorLabel, hasArea, resultsForPeriod, specialDayLabel, summarize, weekSummaryText } from '../services/analytics';
 import { addDays, endOfWeek, formatDate, formatMinutes, startOfWeek, todayKey } from '../services/dates';
+import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../services/exportPackage';
 import { plainCopy } from '../services/plain';
 import { useAppStore } from '../stores/app';
 import { emptyWeeklyReview, lifeAreaOptions, type WeeklyReview } from '../types';
@@ -11,6 +12,7 @@ import { emptyWeeklyReview, lifeAreaOptions, type WeeklyReview } from '../types'
 const store = useAppStore();
 const anchor = ref(todayKey());
 const saved = ref(false);
+const exportStatus = ref('');
 const start = computed(() => startOfWeek(anchor.value));
 const end = computed(() => endOfWeek(anchor.value));
 const days = computed(() => Array.from({ length: 7 }, (_, index) => addDays(start.value, index)));
@@ -46,6 +48,31 @@ async function saveReview() {
   saved.value = true;
   window.setTimeout(() => (saved.value = false), 1800);
 }
+
+function createPackage() {
+  return buildPeriodPackage('week', anchor.value, {
+    entries: store.dailyEntries,
+    results: store.results,
+    lifeEvents: store.lifeEvents,
+    reviews: store.weeklyReviews,
+    settings: store.settings
+  });
+}
+
+async function copyPrompt() {
+  await copyPackagePrompt(createPackage(), store.settings);
+  showExportStatus('Промпт недели скопирован');
+}
+
+function downloadJson() {
+  downloadAiPackage(createPackage());
+  showExportStatus('JSON недели скачан');
+}
+
+function showExportStatus(message: string) {
+  exportStatus.value = message;
+  window.setTimeout(() => (exportStatus.value = ''), 1800);
+}
 </script>
 
 <template>
@@ -67,7 +94,14 @@ async function saveReview() {
     <article class="insight-card"><span class="insight-card__mark">⌁</span><p>{{ summaryText }}</p></article>
 
     <article class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Без ИИ</span><h2>На что смотреть в обзоре</h2></div></div>
+      <div class="section-heading">
+        <div><span class="eyebrow">Без ИИ</span><h2>На что смотреть в обзоре</h2></div>
+        <div class="period-actions">
+          <button class="secondary-button" type="button" @click="copyPrompt">Промпт</button>
+          <button class="secondary-button" type="button" @click="downloadJson">JSON</button>
+        </div>
+      </div>
+      <p v-if="exportStatus" class="settings-status">{{ exportStatus }}</p>
       <div class="review-cue-grid">
         <article v-for="cue in reviewCues" :key="cue.id" class="review-cue" :class="`review-cue--${cue.tone}`">
           <strong>{{ cue.title }}</strong>

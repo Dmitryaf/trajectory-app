@@ -4,11 +4,13 @@ import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
 import { buildObservations, buildReviewCues, buildReviewQuestions, entriesForMonth, factorSummaries, hasMovement, resultsForPeriod, specialDayLabel, summarize } from '../services/analytics';
 import { addDays, endOfMonth, formatDate, formatMinutes, fromDateKey, startOfMonth, todayKey, toDateKey } from '../services/dates';
+import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../services/exportPackage';
 import { useAppStore } from '../stores/app';
 import { lifeAreaOptions } from '../types';
 
 const store = useAppStore();
 const anchor = ref(todayKey());
+const exportStatus = ref('');
 const start = computed(() => startOfMonth(anchor.value));
 const end = computed(() => endOfMonth(anchor.value));
 const entries = computed(() => entriesForMonth(store.dailyEntries, anchor.value));
@@ -33,6 +35,31 @@ function shiftMonth(offset: number) {
   date.setMonth(date.getMonth() + offset, 1);
   anchor.value = toDateKey(date);
 }
+
+function createPackage() {
+  return buildPeriodPackage('month', anchor.value, {
+    entries: store.dailyEntries,
+    results: store.results,
+    lifeEvents: store.lifeEvents,
+    reviews: store.weeklyReviews,
+    settings: store.settings
+  });
+}
+
+async function copyPrompt() {
+  await copyPackagePrompt(createPackage(), store.settings);
+  showExportStatus('Промпт месяца скопирован');
+}
+
+function downloadJson() {
+  downloadAiPackage(createPackage());
+  showExportStatus('JSON месяца скачан');
+}
+
+function showExportStatus(message: string) {
+  exportStatus.value = message;
+  window.setTimeout(() => (exportStatus.value = ''), 1800);
+}
 </script>
 
 <template>
@@ -52,7 +79,14 @@ function shiftMonth(offset: number) {
     </div>
 
     <article class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Без ИИ</span><h2>Месячный разбор</h2></div></div>
+      <div class="section-heading">
+        <div><span class="eyebrow">Без ИИ</span><h2>Месячный разбор</h2></div>
+        <div class="period-actions">
+          <button class="secondary-button" type="button" @click="copyPrompt">Промпт</button>
+          <button class="secondary-button" type="button" @click="downloadJson">JSON</button>
+        </div>
+      </div>
+      <p v-if="exportStatus" class="settings-status">{{ exportStatus }}</p>
       <div class="review-cue-grid">
         <article v-for="cue in reviewCues" :key="cue.id" class="review-cue" :class="`review-cue--${cue.tone}`">
           <strong>{{ cue.title }}</strong>

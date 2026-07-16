@@ -3,12 +3,14 @@ import { computed, ref } from 'vue';
 import MetricCard from '../components/MetricCard.vue';
 import { buildReviewCues, entriesForPeriod, factorSummaries, resultsForPeriod, summarize } from '../services/analytics';
 import { addMonths, endOfMonth, formatDate, formatMinutes, monthsBetween, startOfMonth, todayKey } from '../services/dates';
+import { buildRangePackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../services/exportPackage';
 import { useAppStore } from '../stores/app';
 
 type RangeMonths = 3 | 6 | 12;
 
 const store = useAppStore();
 const range = ref<RangeMonths>(3);
+const exportStatus = ref('');
 const rangeOptions: Array<{ value: RangeMonths; label: string }> = [
   { value: 3, label: '3 месяца' },
   { value: 6, label: '6 месяцев' },
@@ -41,6 +43,31 @@ const monthRows = computed(() => monthsBetween(start.value, end.value).map((mont
 const maxEntries = computed(() => Math.max(1, ...monthRows.value.map((row) => row.summary.entriesCount)));
 const maxExternalSteps = computed(() => Math.max(1, ...monthRows.value.map((row) => row.summary.externalSteps)));
 const maxResults = computed(() => Math.max(1, ...monthRows.value.map((row) => row.resultsCount)));
+
+function createPackage() {
+  return buildRangePackage(range.value, todayKey(), {
+    entries: store.dailyEntries,
+    results: store.results,
+    lifeEvents: store.lifeEvents,
+    reviews: store.weeklyReviews,
+    settings: store.settings
+  });
+}
+
+async function copyPrompt() {
+  await copyPackagePrompt(createPackage(), store.settings);
+  showExportStatus(`Промпт за ${range.value} мес. скопирован`);
+}
+
+function downloadJson() {
+  downloadAiPackage(createPackage());
+  showExportStatus(`JSON за ${range.value} мес. скачан`);
+}
+
+function showExportStatus(message: string) {
+  exportStatus.value = message;
+  window.setTimeout(() => (exportStatus.value = ''), 1800);
+}
 </script>
 
 <template>
@@ -61,7 +88,14 @@ const maxResults = computed(() => Math.max(1, ...monthRows.value.map((row) => ro
     </div>
 
     <article class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Опорные выводы</span><h2>Что видно на длинном периоде</h2></div></div>
+      <div class="section-heading">
+        <div><span class="eyebrow">Опорные выводы</span><h2>Что видно на длинном периоде</h2></div>
+        <div class="period-actions">
+          <button class="secondary-button" type="button" @click="copyPrompt">Промпт</button>
+          <button class="secondary-button" type="button" @click="downloadJson">JSON</button>
+        </div>
+      </div>
+      <p v-if="exportStatus" class="settings-status">{{ exportStatus }}</p>
       <div class="review-cue-grid">
         <article v-for="cue in cues" :key="cue.id" class="review-cue" :class="`review-cue--${cue.tone}`">
           <strong>{{ cue.title }}</strong>

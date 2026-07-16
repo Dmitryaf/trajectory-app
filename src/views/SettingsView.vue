@@ -68,14 +68,14 @@ function exportData() {
   URL.revokeObjectURL(url);
 }
 
-async function copyAiPrompt(period: AiReportPeriod) {
+async function copyAiPrompt(period: Exclude<AiReportPeriod, 'range'>) {
   const payload = createAiPayload(period);
   await navigator.clipboard.writeText(buildAiReportPrompt(payload, store.settings));
   aiStatus.value = period === 'week' ? 'Промпт недели скопирован' : 'Промпт месяца скопирован';
   window.setTimeout(() => (aiStatus.value = ''), 1800);
 }
 
-function downloadAiPackage(period: AiReportPeriod) {
+function downloadAiPackage(period: Exclude<AiReportPeriod, 'range'>) {
   const payload = createAiPayload(period);
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -88,7 +88,7 @@ function downloadAiPackage(period: AiReportPeriod) {
   window.setTimeout(() => (aiStatus.value = ''), 1800);
 }
 
-function createAiPayload(period: AiReportPeriod) {
+function createAiPayload(period: Exclude<AiReportPeriod, 'range'>) {
   return buildAiReportPayload(period, todayKey(), {
     entries: store.dailyEntries,
     results: store.results,

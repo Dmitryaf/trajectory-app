@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildObservations, buildReviewCues, entriesForPeriod, entriesForWeek, factorSummaries, summarize, weekSummaryText } from '../src/services/analytics';
-import { buildAiReportPayload } from '../src/services/aiReport';
+import { buildAiReportPayload, buildAiReportRangePayload } from '../src/services/aiReport';
 import { addMonths, monthsBetween } from '../src/services/dates';
 import { defaultSettings, emptyDailyEntry, type DailyEntry } from '../src/types';
 
@@ -115,6 +115,32 @@ describe('analytics', () => {
     expect(payload.version).toBe(2);
     expect(payload.lifeEvents).toHaveLength(1);
     expect(payload.lifeEvents[0].title).toBe('Сменил фокус поиска');
+  });
+
+  it('builds AI packages for long trend ranges', () => {
+    const payload = buildAiReportRangePayload(3, '2026-07-16', {
+      entries: [
+        entry('2026-04-30', { energy: 1 }),
+        entry('2026-05-01', { energy: 3 }),
+        entry('2026-07-16', { energy: 5 })
+      ],
+      results: [
+        { id: 1, date: '2026-06-10', area: 'career', title: 'Сделал проект', createdAt: '2026-06-10T10:00:00.000Z' }
+      ],
+      lifeEvents: [
+        { id: 1, date: '2026-07-01', type: 'change', title: 'Новый режим', note: '', createdAt: '2026-07-01T10:00:00.000Z' }
+      ],
+      reviews: [],
+      settings: defaultSettings
+    });
+
+    expect(payload.period).toBe('range');
+    expect(payload.rangeMonths).toBe(3);
+    expect(payload.start).toBe('2026-05-01');
+    expect(payload.end).toBe('2026-07-31');
+    expect(payload.entries.map((item) => item.date)).toEqual(['2026-05-01', '2026-07-16']);
+    expect(payload.results).toHaveLength(1);
+    expect(payload.lifeEvents).toHaveLength(1);
   });
 
   it('builds local review cues from factual period data', () => {

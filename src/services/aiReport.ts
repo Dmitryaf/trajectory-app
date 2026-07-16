@@ -1,14 +1,15 @@
-import { buildObservations, entriesForMonth, entriesForWeek, factorSummaries, resultsForPeriod, summarize, weekSummaryText } from './analytics';
-import { endOfMonth, endOfWeek, formatDate, startOfMonth, startOfWeek } from './dates';
+import { buildObservations, entriesForMonth, entriesForPeriod, entriesForWeek, factorSummaries, resultsForPeriod, summarize, weekSummaryText } from './analytics';
+import { addMonths, endOfMonth, endOfWeek, formatDate, startOfMonth, startOfWeek } from './dates';
 import type { AppSettings, DailyEntry, LifeEventRecord, ResultRecord, WeeklyReview } from '../types';
 import { lifeAreaOptions } from '../types';
 
-export type AiReportPeriod = 'week' | 'month';
+export type AiReportPeriod = 'week' | 'month' | 'range';
 
 export type AiReportPayload = {
   app: 'trajectory';
   version: 2;
   period: AiReportPeriod;
+  rangeMonths?: number;
   start: string;
   end: string;
   generatedAt: string;
@@ -26,7 +27,7 @@ export type AiReportPayload = {
   };
 };
 
-type SourceData = {
+export type AiReportSourceData = {
   entries: DailyEntry[];
   results: ResultRecord[];
   lifeEvents: LifeEventRecord[];
@@ -34,7 +35,7 @@ type SourceData = {
   settings: AppSettings;
 };
 
-export function buildAiReportPayload(period: AiReportPeriod, anchor: string, source: SourceData): AiReportPayload {
+export function buildAiReportPayload(period: Exclude<AiReportPeriod, 'range'>, anchor: string, source: AiReportSourceData): AiReportPayload {
   const start = period === 'week' ? startOfWeek(anchor) : startOfMonth(anchor);
   const end = period === 'week' ? endOfWeek(anchor) : endOfMonth(anchor);
   const entries = period === 'week' ? entriesForWeek(source.entries, anchor) : entriesForMonth(source.entries, anchor);
@@ -62,12 +63,42 @@ export function buildAiReportPayload(period: AiReportPeriod, anchor: string, sou
   };
 }
 
+export function buildAiReportRangePayload(rangeMonths: number, anchor: string, source: AiReportSourceData): AiReportPayload {
+  const start = startOfMonth(addMonths(anchor, -(rangeMonths - 1)));
+  const end = endOfMonth(anchor);
+  const entries = entriesForPeriod(source.entries, start, end);
+  const externalCareerIds = ['external', 'interview', 'result', ...source.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id)];
+
+  return {
+    app: 'trajectory',
+    version: 2,
+    period: 'range',
+    rangeMonths,
+    start,
+    end,
+    generatedAt: new Date().toISOString(),
+    summary: summarize(entries, externalCareerIds),
+    observations: buildObservations(entries),
+    factorSummaries: factorSummaries(entries),
+    entries,
+    results: resultsForPeriod(source.results, start, end),
+    lifeEvents: source.lifeEvents.filter((event) => event.date >= start && event.date <= end).sort((a, b) => b.date.localeCompare(a.date)),
+    settingsSnapshot: {
+      activeLifeAreas: source.settings.activeLifeAreas,
+      experimentActive: source.settings.experiment.active,
+      experimentTitle: source.settings.experiment.title,
+    },
+  };
+}
+
 export function buildAiReportPrompt(payload: AiReportPayload, settings: AppSettings): string {
   const areaOptions = [...lifeAreaOptions, ...settings.customLifeAreaOptions];
   const summaryText = payload.period === 'week' ? weekSummaryText(payload.summary, settings.activeLifeAreas, areaOptions) : '';
   const periodTitle = payload.period === 'week'
     ? `неделю ${formatDate(payload.start, { day: 'numeric', month: 'short' })} — ${formatDate(payload.end, { day: 'numeric', month: 'short' })}`
-    : `месяц ${formatDate(payload.start, { month: 'long', year: 'numeric' })}`;
+    : payload.period === 'month'
+      ? `месяц ${formatDate(payload.start, { month: 'long', year: 'numeric' })}`
+      : `${payload.rangeMonths ?? 'несколько'} месяцев: ${formatDate(payload.start, { month: 'short', year: 'numeric' })} — ${formatDate(payload.end, { month: 'short', year: 'numeric' })}`;
 
   return [
     `Проанализируй данные приложения "Траектория" за ${periodTitle}.`,
