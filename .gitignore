@@ -1,0 +1,7 @@
+node_modules/
+dist/
+qa/
+.chromium-tmp/
+trajectory-app/
+*.tsbuildinfo
+.DS_Store

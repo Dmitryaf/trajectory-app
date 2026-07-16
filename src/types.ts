@@ -1,0 +1,196 @@
+export type BaseCareerState =
+  | "preparation"
+  | "project"
+  | "external"
+  | "interview"
+  | "result";
+export type CareerState = BaseCareerState | string;
+export type ActivityId = "boxing" | "bachata" | "walk" | "workout" | "recovery";
+export type BaseLifeAreaId =
+  | "family"
+  | "reading"
+  | "creativity"
+  | "spiritual"
+  | "rest"
+  | "friends"
+  | "english";
+export type LifeAreaId = BaseLifeAreaId | string;
+
+export type DailyEntry = {
+  date: string;
+  sleepMinutes: number | null;
+  sleepQuality: number | null;
+  energy: number | null;
+  stateContext: string;
+  careerState: CareerState | null;
+  activities: ActivityId[];
+  lifeAreas: LifeAreaId[];
+  importantFact: string;
+  experimentCompleted: boolean | null;
+  updatedAt: string;
+};
+
+export type ResultRecord = {
+  id?: number;
+  date: string;
+  area: LifeAreaId | "career" | "sport" | "sleep" | "health";
+  title: string;
+  createdAt: string;
+};
+
+export type WeeklyReview = {
+  weekStart: string;
+  results: string[];
+  support: string;
+  obstacle: string;
+  nextLever: string;
+};
+
+export type Experiment = {
+  active: boolean;
+  title: string;
+  startDate: string;
+  endDate: string;
+};
+
+export type AppSettings = {
+  id: "main";
+  activeLifeAreas: LifeAreaId[];
+  customCareerOptions: Option<CareerState>[];
+  customLifeAreaOptions: Option<LifeAreaId>[];
+  experiment: Experiment;
+};
+
+export type Option<T extends string = string> = {
+  id: T;
+  label: string;
+  icon?: string;
+  custom?: boolean;
+  countsAsExternal?: boolean;
+};
+
+export const careerOptions: Option<BaseCareerState>[] = [
+  { id: "preparation", label: "Подготовка", icon: "◫" },
+  { id: "project", label: "Проект", icon: "◇" },
+  { id: "external", label: "Внешний шаг", icon: "↗" },
+  { id: "interview", label: "Собеседование", icon: "◉" },
+  { id: "result", label: "Результат", icon: "✓" },
+];
+
+export const activityOptions: Option<ActivityId>[] = [
+  { id: "boxing", label: "Бокс", icon: "◈" },
+  { id: "bachata", label: "Бачата", icon: "♪" },
+  { id: "walk", label: "Прогулка", icon: "→" },
+  { id: "workout", label: "Тренировка", icon: "△" },
+  { id: "recovery", label: "Восстановление", icon: "○" },
+];
+
+export const lifeAreaOptions: Option<BaseLifeAreaId>[] = [
+  { id: "family", label: "Семья", icon: "⌂" },
+  { id: "reading", label: "Чтение", icon: "▤" },
+  { id: "creativity", label: "Творчество", icon: "✦" },
+  { id: "spiritual", label: "Духовное", icon: "◎" },
+  { id: "rest", label: "Отдых", icon: "☼" },
+  { id: "friends", label: "Друзья", icon: "◌" },
+  { id: "english", label: "Английский", icon: "A" },
+];
+
+export const resultAreaOptions: Option<ResultRecord["area"]>[] = [
+  { id: "career", label: "Карьера", icon: "↗" },
+  { id: "sport", label: "Спорт", icon: "△" },
+  { id: "sleep", label: "Сон", icon: "◒" },
+  { id: "health", label: "Здоровье", icon: "+" },
+  ...lifeAreaOptions,
+];
+
+export const defaultSettings: AppSettings = {
+  id: "main",
+  activeLifeAreas: ["family", "reading", "creativity", "spiritual", "rest"],
+  customCareerOptions: [],
+  customLifeAreaOptions: [],
+  experiment: { active: false, title: "", startDate: "", endDate: "" },
+};
+
+export const externalCareerStates: CareerState[] = ["external", "interview", "result"];
+
+export function normalizeSettings(settings: Partial<AppSettings> | null | undefined): AppSettings {
+  const source = settings ?? {};
+  const customCareerOptions = sanitizeOptions(source.customCareerOptions);
+  const customLifeAreaOptions = sanitizeOptions(source.customLifeAreaOptions);
+
+  return {
+    ...structuredClone(defaultSettings),
+    ...source,
+    id: "main",
+    activeLifeAreas: Array.isArray(source.activeLifeAreas) ? source.activeLifeAreas.filter((area): area is LifeAreaId => typeof area === "string") : defaultSettings.activeLifeAreas,
+    customCareerOptions,
+    customLifeAreaOptions,
+    experiment: { ...defaultSettings.experiment, ...(source.experiment ?? {}) },
+  };
+}
+
+export function createCustomOption(label: string, prefix: "career" | "life"): Option<string> {
+  const suffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+  return { id: `custom:${prefix}:${suffix}`, label: label.trim(), icon: "+", custom: true };
+}
+
+function sanitizeOptions(options: unknown): Option<string>[] {
+  if (!Array.isArray(options)) return [];
+  return options
+    .filter((option): option is Option<string> => Boolean(option) && typeof option.id === "string" && typeof option.label === "string")
+    .map((option) => ({
+      id: option.id,
+      label: option.label,
+      icon: option.icon ?? "+",
+      custom: true,
+      countsAsExternal: Boolean(option.countsAsExternal),
+    }));
+}
+
+export function emptyDailyEntry(date: string): DailyEntry {
+  return {
+    date,
+    sleepMinutes: null,
+    sleepQuality: null,
+    energy: null,
+    stateContext: "",
+    careerState: null,
+    activities: [],
+    lifeAreas: [],
+    importantFact: "",
+    experimentCompleted: null,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export function normalizeDailyEntry(entry: Partial<DailyEntry> & { date: string }): DailyEntry {
+  return {
+    ...emptyDailyEntry(entry.date),
+    ...entry,
+    activities: Array.isArray(entry.activities) ? entry.activities : [],
+    lifeAreas: Array.isArray(entry.lifeAreas) ? entry.lifeAreas : [],
+    stateContext: typeof entry.stateContext === "string" ? entry.stateContext : "",
+    importantFact: typeof entry.importantFact === "string" ? entry.importantFact : "",
+  };
+}
+
+export function emptyWeeklyReview(weekStart: string): WeeklyReview {
+  return {
+    weekStart,
+    results: ["", "", ""],
+    support: "",
+    obstacle: "",
+    nextLever: "",
+  };
+}
+
+export function normalizeWeeklyReview(review: Partial<WeeklyReview> & { weekStart: string }): WeeklyReview {
+  return {
+    ...emptyWeeklyReview(review.weekStart),
+    ...review,
+    results: Array.isArray(review.results) ? review.results : ["", "", ""],
+    support: typeof review.support === "string" ? review.support : "",
+    obstacle: typeof review.obstacle === "string" ? review.obstacle : "",
+    nextLever: typeof review.nextLever === "string" ? review.nextLever : "",
+  };
+}
