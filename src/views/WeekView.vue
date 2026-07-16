@@ -175,7 +175,10 @@ function showExportStatus(message: string) {
     </article>
 
     <article class="review-card">
-      <div class="section-heading"><div><span class="eyebrow">До 10 минут</span><h2>Короткий обзор</h2></div></div>
+      <div class="section-heading">
+        <div><span class="eyebrow">До 10 минут</span><h2>Короткий обзор</h2></div>
+        <span class="period-pill">До {{ formatDate(end, { day: 'numeric', month: 'long', year: 'numeric' }) }}</span>
+      </div>
       <label class="field-label">Три факта, почему неделя прошла не зря</label>
       <input v-for="(_, index) in review.results" :key="index" v-model="review.results[index]" type="text" :placeholder="`${index + 1}. Результат или значимый факт`" />
       <label class="field-label">Что поддержало?</label><textarea v-model="review.support" rows="2" placeholder="Люди, режим, место, привычка или решение, которое помогло"></textarea>

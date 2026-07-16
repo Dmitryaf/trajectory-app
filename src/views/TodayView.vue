@@ -24,6 +24,7 @@ const selectedDate = ref(todayKey());
 const sleepHours = ref<number | null>(null);
 const timeInBedHours = ref<number | null>(null);
 const saved = ref(false);
+const originalEntrySnapshot = ref('');
 const form = reactive<DailyEntry>(emptyDailyEntry(selectedDate.value));
 
 const careerItems = computed(() => [...careerOptions, ...store.settings.customCareerOptions]);
@@ -39,6 +40,22 @@ const currentMonthEntries = computed(() => entriesForPeriod(store.dailyEntries, 
 const currentMonthSummary = computed(() => summarize(currentMonthEntries.value, externalCareerIds.value));
 const isWeekReviewWindow = computed(() => isToday.value && todayKey() >= addDays(endOfWeek(todayKey()), -1));
 const isMonthReviewWindow = computed(() => isToday.value && todayKey() >= addDays(endOfMonth(todayKey()), -2));
+const hasSavedEntry = computed(() => Boolean(store.entryByDate(selectedDate.value)));
+const currentEntrySnapshot = computed(() => snapshotEntry(form));
+const isDirty = computed(() => currentEntrySnapshot.value !== originalEntrySnapshot.value);
+const entryChangeNotice = computed(() => {
+  if (saved.value) return '';
+  if (isDirty.value && hasSavedEntry.value) return `День изменён: ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })}. Сохрани, чтобы обновить запись.`;
+  if (isDirty.value) return `Есть несохранённая запись за ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })}.`;
+  return '';
+});
+const saveButtonText = computed(() => {
+  if (saved.value) return `Сохранено · ${weekEntryCount.value} дн. на неделе`;
+  if (hasSavedEntry.value && isDirty.value) return 'Сохранить изменения';
+  if (hasSavedEntry.value) return 'Запись сохранена';
+  return 'Сохранить день';
+});
+const saveButtonDisabled = computed(() => hasSavedEntry.value && !isDirty.value && !saved.value);
 const reviewReminders = computed(() => [
   isWeekReviewWindow.value && currentWeekSummary.value.entriesCount >= 3
     ? { id: 'week', title: 'Пора разобрать неделю', text: `${currentWeekSummary.value.entriesCount} записанных дней уже достаточно для короткого недельного обзора.`, to: '/week', label: 'Открыть неделю' }
@@ -50,20 +67,33 @@ const reviewReminders = computed(() => [
 const yesterday = computed(() => addDays(todayKey(), -1));
 const yesterdayMissing = computed(() => isToday.value && store.loaded && !store.entryByDate(yesterday.value));
 
+function snapshotEntry(entry: DailyEntry) {
+  const entryForSnapshot = { ...plainCopy(entry), updatedAt: '' };
+  return JSON.stringify({
+    ...entryForSnapshot,
+    sleepMinutes: sleepHours.value === null ? null : Math.round(sleepHours.value * 60),
+    timeInBedMinutes: timeInBedHours.value === null ? null : Math.round(timeInBedHours.value * 60)
+  });
+}
+
 function loadEntry(date: string) {
   const existing = store.entryByDate(date);
   Object.assign(form, existing ? plainCopy(existing) : emptyDailyEntry(date));
   sleepHours.value = form.sleepMinutes === null ? null : form.sleepMinutes / 60;
   timeInBedHours.value = form.timeInBedMinutes === null ? null : form.timeInBedMinutes / 60;
+  originalEntrySnapshot.value = snapshotEntry(form);
   saved.value = false;
 }
 
 watch(selectedDate, loadEntry, { immediate: true });
 
 async function save() {
-  form.sleepMinutes = sleepHours.value === null ? null : Math.round(sleepHours.value * 60);
-  form.timeInBedMinutes = timeInBedHours.value === null ? null : Math.round(timeInBedHours.value * 60);
-  await store.saveEntry(plainCopy(form));
+  const entry = plainCopy(form);
+  entry.sleepMinutes = sleepHours.value === null ? null : Math.round(sleepHours.value * 60);
+  entry.timeInBedMinutes = timeInBedHours.value === null ? null : Math.round(timeInBedHours.value * 60);
+  await store.saveEntry(entry);
+  Object.assign(form, entry);
+  originalEntrySnapshot.value = snapshotEntry(form);
   saved.value = true;
   window.setTimeout(() => (saved.value = false), 2200);
 }
@@ -98,6 +128,11 @@ function fillYesterday() {
         <p>Можно заполнить коротко сейчас или спокойно продолжить с сегодняшнего дня.</p>
       </div>
       <button class="secondary-button" type="button" @click="fillYesterday">Заполнить вчера</button>
+    </section>
+
+    <section v-if="entryChangeNotice" class="entry-change-notice" aria-live="polite">
+      <strong>{{ hasSavedEntry ? 'Изменения не сохранены' : 'Новая запись не сохранена' }}</strong>
+      <p>{{ entryChangeNotice }}</p>
     </section>
 
     <section v-for="reminder in reviewReminders" :key="reminder.id" class="review-nudge" aria-label="Период готов к обзору">
@@ -211,8 +246,8 @@ function fillYesterday() {
         <textarea v-model="form.importantFact" rows="2" maxlength="240" placeholder="Например: отправил резюме напрямую в две компании"></textarea>
       </article>
 
-      <button class="primary-button primary-button--save" type="submit">
-        <span>{{ saved ? `Сохранено · ${weekEntryCount} дн. на неделе` : 'Сохранить день' }}</span><span>{{ saved ? '✓' : '→' }}</span>
+      <button class="primary-button primary-button--save" type="submit" :disabled="saveButtonDisabled">
+        <span>{{ saveButtonText }}</span><span>{{ saved ? '✓' : '→' }}</span>
       </button>
     </form>
   </section>
