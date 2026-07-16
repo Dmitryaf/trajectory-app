@@ -4,6 +4,7 @@ import ChipGroup from '../components/ChipGroup.vue';
 import ScalePicker from '../components/ScalePicker.vue';
 import { useAppStore } from '../stores/app';
 import { formatDate, todayKey } from '../services/dates';
+import { entriesForWeek } from '../services/analytics';
 import { plainCopy } from '../services/plain';
 import {
   activityOptions,
@@ -28,6 +29,7 @@ const careerItems = computed(() => [...careerOptions, ...store.settings.customCa
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
 const activeLifeOptions = computed(() => lifeAreaItems.value.filter((option) => store.settings.activeLifeAreas.includes(option.id)));
 const isToday = computed(() => selectedDate.value === todayKey());
+const weekEntryCount = computed(() => entriesForWeek(store.dailyEntries, selectedDate.value).length);
 
 function loadEntry(date: string) {
   const existing = store.entryByDate(date);
@@ -150,7 +152,7 @@ async function save() {
       </article>
 
       <button class="primary-button primary-button--save" type="submit">
-        <span>{{ saved ? 'Сохранено' : 'Сохранить день' }}</span><span>{{ saved ? '✓' : '→' }}</span>
+        <span>{{ saved ? `Сохранено · ${weekEntryCount} дн. на неделе` : 'Сохранить день' }}</span><span>{{ saved ? '✓' : '→' }}</span>
       </button>
     </form>
   </section>
