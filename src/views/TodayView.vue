@@ -22,6 +22,7 @@ import {
 const store = useAppStore();
 const selectedDate = ref(todayKey());
 const sleepHours = ref<number | null>(null);
+const timeInBedHours = ref<number | null>(null);
 const saved = ref(false);
 const form = reactive<DailyEntry>(emptyDailyEntry(selectedDate.value));
 
@@ -53,6 +54,7 @@ function loadEntry(date: string) {
   const existing = store.entryByDate(date);
   Object.assign(form, existing ? plainCopy(existing) : emptyDailyEntry(date));
   sleepHours.value = form.sleepMinutes === null ? null : form.sleepMinutes / 60;
+  timeInBedHours.value = form.timeInBedMinutes === null ? null : form.timeInBedMinutes / 60;
   saved.value = false;
 }
 
@@ -60,6 +62,7 @@ watch(selectedDate, loadEntry, { immediate: true });
 
 async function save() {
   form.sleepMinutes = sleepHours.value === null ? null : Math.round(sleepHours.value * 60);
+  form.timeInBedMinutes = timeInBedHours.value === null ? null : Math.round(timeInBedHours.value * 60);
   await store.saveEntry(plainCopy(form));
   saved.value = true;
   window.setTimeout(() => (saved.value = false), 2200);
@@ -100,7 +103,7 @@ function fillYesterday() {
     <section v-for="reminder in reviewReminders" :key="reminder.id" class="review-nudge" aria-label="Период готов к обзору">
       <div>
         <strong>{{ reminder.title }}</strong>
-        <p>{{ reminder.text }} JSON для GPT можно скачать в настройках.</p>
+        <p>{{ reminder.text }} JSON для GPT можно скачать рядом с обзором периода.</p>
       </div>
       <RouterLink class="secondary-button" :to="reminder.to">{{ reminder.label }}</RouterLink>
     </section>
@@ -111,10 +114,21 @@ function fillYesterday() {
           <span class="section-icon section-icon--purple">◒</span>
           <div><h2>Сон и состояние</h2><p>Не действие и не достижение — просто данные.</p></div>
         </div>
-        <label class="field-label" for="sleep-hours">Сколько спал</label>
-        <div class="number-field">
-          <input id="sleep-hours" v-model.number="sleepHours" type="number" min="0" max="16" step="0.25" inputmode="decimal" placeholder="7.5" />
-          <span>часов</span>
+        <div class="sleep-field-grid">
+          <div>
+            <label class="field-label" for="sleep-hours">Примерно спал</label>
+            <div class="number-field">
+              <input id="sleep-hours" v-model.number="sleepHours" type="number" min="0" max="16" step="0.25" inputmode="decimal" placeholder="7.5" />
+              <span>часов</span>
+            </div>
+          </div>
+          <div>
+            <label class="field-label" for="time-in-bed-hours">Был в кровати</label>
+            <div class="number-field">
+              <input id="time-in-bed-hours" v-model.number="timeInBedHours" type="number" min="0" max="18" step="0.25" inputmode="decimal" placeholder="8.5" />
+              <span>часов</span>
+            </div>
+          </div>
         </div>
         <div class="form-row">
           <div class="form-control"><label class="field-label">Качество сна</label><ScalePicker v-model="form.sleepQuality" low-label="плохо" high-label="хорошо" /></div>

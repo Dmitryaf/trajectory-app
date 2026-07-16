@@ -73,7 +73,7 @@ function showExportStatus(message: string) {
 
     <div class="metrics-grid">
       <MetricCard label="Заполнено дней" :value="summary.entriesCount" accent="#5865db" />
-      <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" accent="#7367f0" />
+      <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="summary.averageSleepEfficiency === null ? '' : `эффективность ${Math.round(summary.averageSleepEfficiency)}%`" accent="#7367f0" />
       <MetricCard label="Внешних шагов" :value="summary.externalSteps" accent="#4188e8" />
       <MetricCard label="Особых дней" :value="summary.specialDays" :hint="`${results.length} результатов`" accent="#eb7458" />
     </div>

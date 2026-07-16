@@ -5,6 +5,8 @@ import { dateRange, endOfMonth, endOfWeek, formatMinutes, startOfMonth, startOfW
 export type PeriodSummary = {
   entriesCount: number;
   averageSleep: number | null;
+  averageTimeInBed: number | null;
+  averageSleepEfficiency: number | null;
   averageEnergy: number | null;
   averageSleepQuality: number | null;
   careerDays: number;
@@ -51,6 +53,8 @@ export function summarize(entries: DailyEntry[], externalCareerIds: string[] = e
   return {
     entriesCount: entries.length,
     averageSleep: average(entries.map((entry) => entry.sleepMinutes)),
+    averageTimeInBed: average(entries.map((entry) => entry.timeInBedMinutes)),
+    averageSleepEfficiency: average(entries.map((entry) => sleepEfficiency(entry))),
     averageEnergy: average(entries.map((entry) => entry.energy)),
     averageSleepQuality: average(entries.map((entry) => entry.sleepQuality)),
     careerDays: entries.filter((entry) => entry.careerState !== null).length,
@@ -93,6 +97,9 @@ export function weekSummaryText(summary: PeriodSummary, activeAreas: LifeAreaId[
     `${summary.sportSessions} ${plural(summary.sportSessions, 'тренировка', 'тренировки', 'тренировок')}`
   ];
   if (summary.averageSleep !== null) parts.push(`средний сон ${formatMinutes(Math.round(summary.averageSleep))}`);
+  if (summary.averageTimeInBed !== null && summary.averageSleep !== null && summary.averageTimeInBed - summary.averageSleep >= 45) {
+    parts.push(`в кровати ${formatMinutes(Math.round(summary.averageTimeInBed))}`);
+  }
   let text = `За неделю: ${parts.join(', ')}.`;
   if (present.length) text += ` Присутствовали: ${present.join(', ')}.`;
   if (absent.length) text += ` Не появлялись: ${absent.join(', ')}.`;
@@ -210,7 +217,7 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
     cues.push({
       id: 'sleep-baseline',
       title: 'База сна',
-      text: `Средний сон за период: ${formatMinutes(Math.round(summary.averageSleep))}. Это первый контекст для оценки энергии и действий.`,
+      text: sleepContextText(summary),
       tone: 'neutral',
     });
   }
@@ -253,6 +260,18 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
   }
 
   return cues.slice(0, 6);
+}
+
+function sleepEfficiency(entry: DailyEntry): number | null {
+  if (entry.sleepMinutes === null || entry.timeInBedMinutes === null || entry.timeInBedMinutes <= 0) return null;
+  return Math.min(100, (entry.sleepMinutes / entry.timeInBedMinutes) * 100);
+}
+
+function sleepContextText(summary: PeriodSummary): string {
+  const sleep = summary.averageSleep === null ? '—' : formatMinutes(Math.round(summary.averageSleep));
+  const inBed = summary.averageTimeInBed === null ? '' : `, в кровати ${formatMinutes(Math.round(summary.averageTimeInBed))}`;
+  const efficiency = summary.averageSleepEfficiency === null ? '' : `, эффективность около ${Math.round(summary.averageSleepEfficiency)}%`;
+  return `Средний сон за период: ${sleep}${inBed}${efficiency}. Это первый контекст для оценки энергии и действий.`;
 }
 
 export function buildReviewQuestions(period: 'week' | 'month'): string[] {

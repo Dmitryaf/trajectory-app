@@ -11,11 +11,13 @@ function entry(date: string, patch: Partial<DailyEntry>): DailyEntry {
 describe('analytics', () => {
   it('aggregates sleep, career, sport and life areas', () => {
     const summary = summarize([
-      entry('2026-07-13', { sleepMinutes: 420, energy: 3, careerState: 'external', activities: ['boxing'], lifeAreas: ['reading'] }),
-      entry('2026-07-14', { sleepMinutes: 480, energy: 5, careerState: 'preparation', activities: ['bachata'], lifeAreas: ['family', 'reading'] })
+      entry('2026-07-13', { sleepMinutes: 420, timeInBedMinutes: 480, energy: 3, careerState: 'external', activities: ['boxing'], lifeAreas: ['reading'] }),
+      entry('2026-07-14', { sleepMinutes: 480, timeInBedMinutes: 600, energy: 5, careerState: 'preparation', activities: ['bachata'], lifeAreas: ['family', 'reading'] })
     ]);
 
     expect(summary.averageSleep).toBe(450);
+    expect(summary.averageTimeInBed).toBe(540);
+    expect(summary.averageSleepEfficiency).toBeCloseTo(83.75);
     expect(summary.averageEnergy).toBe(4);
     expect(summary.careerDays).toBe(2);
     expect(summary.externalSteps).toBe(1);

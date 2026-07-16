@@ -64,6 +64,14 @@ export const useAppStore = defineStore('app', {
       const id = await db.results.add(record);
       this.results.unshift({ ...record, id });
     },
+    async updateResult(result: ResultRecord) {
+      if (result.id === undefined) return;
+      const record = plainCopy(result);
+      await db.results.put(record);
+      const index = this.results.findIndex((item) => item.id === record.id);
+      if (index >= 0) this.results[index] = record;
+      this.results.sort((a, b) => b.date.localeCompare(a.date));
+    },
     async removeResult(id: number) {
       await db.results.delete(id);
       this.results = this.results.filter((result) => result.id !== id);
@@ -73,6 +81,14 @@ export const useAppStore = defineStore('app', {
       const id = await db.lifeEvents.add(record);
       this.lifeEvents.unshift({ ...record, id });
       this.lifeEvents.sort((a, b) => b.date.localeCompare(a.date));
+    },
+    async updateLifeEvent(event: LifeEventRecord) {
+      if (event.id === undefined) return;
+      const record = plainCopy(event);
+      await db.lifeEvents.put(record);
+      const index = this.lifeEvents.findIndex((item) => item.id === record.id);
+      if (index >= 0) this.lifeEvents[index] = record;
+      this.lifeEvents.sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
     },
     async removeLifeEvent(id: number) {
       await db.lifeEvents.delete(id);

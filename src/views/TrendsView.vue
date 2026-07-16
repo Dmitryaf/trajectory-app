@@ -82,7 +82,7 @@ function showExportStatus(message: string) {
 
     <div class="metrics-grid">
       <MetricCard label="Заполнено дней" :value="summary.entriesCount" accent="#5865db" />
-      <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" accent="#7367f0" />
+      <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="summary.averageTimeInBed === null ? '' : `в кровати ${formatMinutes(Math.round(summary.averageTimeInBed))}`" accent="#7367f0" />
       <MetricCard label="Внешних шагов" :value="summary.externalSteps" accent="#4188e8" />
       <MetricCard label="Результатов" :value="results.length" :hint="`${lifeEvents.length} событий архива`" accent="#f0ad42" />
     </div>
@@ -127,10 +127,11 @@ function showExportStatus(message: string) {
     <article class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Состояние</span><h2>Сон и энергия по месяцам</h2></div></div>
       <div class="trend-table">
-        <div class="trend-table__head"><span>месяц</span><span>сон</span><span>энергия</span><span>особые дни</span><span>события</span></div>
+        <div class="trend-table__head"><span>месяц</span><span>сон</span><span>в кровати</span><span>энергия</span><span>особые</span><span>события</span></div>
         <div v-for="row in monthRows" :key="`${row.monthStart}-state`" class="trend-table__row">
           <strong>{{ row.label }}</strong>
           <span>{{ formatMinutes(row.summary.averageSleep === null ? null : Math.round(row.summary.averageSleep)) }}</span>
+          <span>{{ formatMinutes(row.summary.averageTimeInBed === null ? null : Math.round(row.summary.averageTimeInBed)) }}</span>
           <span>{{ row.summary.averageEnergy === null ? '—' : `${row.summary.averageEnergy.toFixed(1).replace('.0', '')}/5` }}</span>
           <span>{{ row.summary.specialDays }}</span>
           <span>{{ row.eventsCount }}</span>

@@ -32,6 +32,7 @@ export type LifeAreaId = BaseLifeAreaId | string;
 export type DailyEntry = {
   date: string;
   sleepMinutes: number | null;
+  timeInBedMinutes: number | null;
   sleepQuality: number | null;
   energy: number | null;
   stateContext: string;
@@ -208,6 +209,7 @@ export function emptyDailyEntry(date: string): DailyEntry {
   return {
     date,
     sleepMinutes: null,
+    timeInBedMinutes: null,
     sleepQuality: null,
     energy: null,
     stateContext: "",
@@ -228,6 +230,7 @@ export function normalizeDailyEntry(entry: Partial<DailyEntry> & { date: string 
   return {
     ...emptyDailyEntry(entry.date),
     ...entry,
+    timeInBedMinutes: typeof entry.timeInBedMinutes === "number" ? entry.timeInBedMinutes : null,
     activities: Array.isArray(entry.activities) ? entry.activities : [],
     lifeAreas: Array.isArray(entry.lifeAreas) ? entry.lifeAreas : [],
     stateContext: typeof entry.stateContext === "string" ? entry.stateContext : "",
