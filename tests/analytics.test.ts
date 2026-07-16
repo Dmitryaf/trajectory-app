@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildObservations, entriesForWeek, summarize, weekSummaryText } from '../src/services/analytics';
+import { buildObservations, entriesForWeek, factorSummaries, summarize, weekSummaryText } from '../src/services/analytics';
 import { emptyDailyEntry, type DailyEntry } from '../src/types';
 
 function entry(date: string, patch: Partial<DailyEntry>): DailyEntry {
@@ -60,11 +60,25 @@ describe('analytics', () => {
       entry('2026-07-14', { sleepMinutes: 450, energy: 4, activities: ['boxing'] }),
       entry('2026-07-15', { sleepMinutes: 360, energy: 2, activities: [] }),
       entry('2026-07-16', { sleepMinutes: 390, energy: 3, activities: [] }),
-      entry('2026-07-17', { specialDay: 'travel' })
+      entry('2026-07-17', { specialDay: 'travel', eveningFactors: ['news'] }),
+      entry('2026-07-18', { eveningFactors: ['news'] })
     ]);
 
     expect(observations.map((item) => item.id)).toContain('movement-energy');
     expect(observations.map((item) => item.id)).toContain('sleep-energy');
     expect(observations.map((item) => item.id)).toContain('special-days');
+    expect(observations.map((item) => item.id)).toContain('evening-factor');
+  });
+
+  it('summarizes evening factors without scoring them', () => {
+    const factors = factorSummaries([
+      entry('2026-07-13', { sleepMinutes: 360, energy: 2, eveningFactors: ['news', 'screen'] }),
+      entry('2026-07-14', { sleepMinutes: 420, energy: 3, eveningFactors: ['news'] })
+    ]);
+
+    expect(factors[0].id).toBe('news');
+    expect(factors[0].count).toBe(2);
+    expect(factors[0].averageSleep).toBe(390);
+    expect(factors[0].averageEnergy).toBe(2.5);
   });
 });

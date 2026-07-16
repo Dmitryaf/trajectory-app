@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
-import { buildObservations, entriesForMonth, hasMovement, resultsForPeriod, specialDayLabel, summarize } from '../services/analytics';
+import { buildObservations, entriesForMonth, factorSummaries, hasMovement, resultsForPeriod, specialDayLabel, summarize } from '../services/analytics';
 import { addDays, endOfMonth, formatDate, formatMinutes, fromDateKey, startOfMonth, todayKey, toDateKey } from '../services/dates';
 import { useAppStore } from '../stores/app';
 import { lifeAreaOptions } from '../types';
@@ -15,6 +15,7 @@ const entries = computed(() => entriesForMonth(store.dailyEntries, anchor.value)
 const externalCareerIds = computed(() => ['external', 'interview', 'result', ...store.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id)]);
 const summary = computed(() => summarize(entries.value, externalCareerIds.value));
 const observations = computed(() => buildObservations(entries.value));
+const factors = computed(() => factorSummaries(entries.value));
 const results = computed(() => resultsForPeriod(store.results, start.value, end.value));
 const sleepEntries = computed(() => [...entries.value].filter((entry) => entry.sleepMinutes !== null).sort((a, b) => a.date.localeCompare(b.date)));
 const energySleepEntries = computed(() => entries.value.filter((entry) => entry.sleepMinutes !== null && entry.energy !== null).sort((a, b) => a.date.localeCompare(b.date)));
@@ -90,6 +91,21 @@ function shiftMonth(offset: number) {
         <span><i class="legend-dot"></i>без движения</span>
         <span><i class="legend-dot legend-dot--movement"></i>с движением</span>
         <span><i class="legend-dot legend-dot--special"></i>особый день</span>
+      </div>
+    </article>
+
+    <article v-if="factors.length" class="dashboard-card">
+      <div class="section-heading"><div><span class="eyebrow">Факторы состояния</span><h2>Что повторялось перед сном</h2></div><span class="count-badge">{{ factors.length }}</span></div>
+      <div class="factor-summary-head">
+        <span>фактор</span><span>дни</span><span>сон</span><span>энергия</span>
+      </div>
+      <div class="factor-summary-list">
+        <article v-for="factor in factors" :key="factor.id" class="factor-summary-item">
+          <span class="factor-summary-item__name"><i>{{ factor.icon }}</i>{{ factor.label }}</span>
+          <strong>{{ factor.count }}</strong>
+          <small>{{ formatMinutes(factor.averageSleep === null ? null : Math.round(factor.averageSleep)) }}</small>
+          <small>{{ factor.averageEnergy === null ? '—' : `${factor.averageEnergy.toFixed(1).replace('.0', '')}/5` }}</small>
+        </article>
       </div>
     </article>
 

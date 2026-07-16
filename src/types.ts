@@ -7,6 +7,17 @@ export type BaseCareerState =
 export type CareerState = BaseCareerState | string;
 export type ActivityId = "boxing" | "bachata" | "walk" | "workout" | "recovery";
 export type SpecialDayId = "sick" | "travel" | "overload" | "event" | "recovery" | "other";
+export type EveningFactorId =
+  | "late_bedtime"
+  | "screen"
+  | "news"
+  | "series_video"
+  | "porn"
+  | "work_code"
+  | "late_food"
+  | "caffeine_alcohol"
+  | "anxiety_overload"
+  | "other";
 export type BaseLifeAreaId =
   | "family"
   | "reading"
@@ -23,6 +34,8 @@ export type DailyEntry = {
   sleepQuality: number | null;
   energy: number | null;
   stateContext: string;
+  eveningFactors: EveningFactorId[];
+  eveningFactorNote: string;
   specialDay: SpecialDayId | null;
   specialDayNote: string;
   careerState: CareerState | null;
@@ -97,6 +110,19 @@ export const specialDayOptions: Option<SpecialDayId>[] = [
   { id: "other", label: "Другое", icon: "·" },
 ];
 
+export const eveningFactorOptions: Option<EveningFactorId>[] = [
+  { id: "late_bedtime", label: "Поздно лёг", icon: "◷" },
+  { id: "screen", label: "Экран перед сном", icon: "▣" },
+  { id: "news", label: "Новости", icon: "!" },
+  { id: "series_video", label: "Сериалы/видео", icon: "▶" },
+  { id: "porn", label: "Порно", icon: "·" },
+  { id: "work_code", label: "Работа/код", icon: "◇" },
+  { id: "late_food", label: "Поздняя еда", icon: "+" },
+  { id: "caffeine_alcohol", label: "Кофеин/алкоголь", icon: "◌" },
+  { id: "anxiety_overload", label: "Тревога/перегруз", icon: "⌁" },
+  { id: "other", label: "Другое", icon: "…" },
+];
+
 export const lifeAreaOptions: Option<BaseLifeAreaId>[] = [
   { id: "family", label: "Семья", icon: "⌂" },
   { id: "reading", label: "Чтение", icon: "▤" },
@@ -166,6 +192,8 @@ export function emptyDailyEntry(date: string): DailyEntry {
     sleepQuality: null,
     energy: null,
     stateContext: "",
+    eveningFactors: [],
+    eveningFactorNote: "",
     specialDay: null,
     specialDayNote: "",
     careerState: null,
@@ -184,6 +212,8 @@ export function normalizeDailyEntry(entry: Partial<DailyEntry> & { date: string 
     activities: Array.isArray(entry.activities) ? entry.activities : [],
     lifeAreas: Array.isArray(entry.lifeAreas) ? entry.lifeAreas : [],
     stateContext: typeof entry.stateContext === "string" ? entry.stateContext : "",
+    eveningFactors: Array.isArray(entry.eveningFactors) ? entry.eveningFactors : [],
+    eveningFactorNote: typeof entry.eveningFactorNote === "string" ? entry.eveningFactorNote : "",
     specialDay: typeof entry.specialDay === "string" ? entry.specialDay : null,
     specialDayNote: typeof entry.specialDayNote === "string" ? entry.specialDayNote : "",
     importantFact: typeof entry.importantFact === "string" ? entry.importantFact : "",

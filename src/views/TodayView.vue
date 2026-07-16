@@ -9,6 +9,7 @@ import {
   activityOptions,
   careerOptions,
   emptyDailyEntry,
+  eveningFactorOptions,
   lifeAreaOptions,
   specialDayOptions,
   type ActivityId,
@@ -79,6 +80,17 @@ async function save() {
           maxlength="220"
           placeholder="Например: поздний кофе, тревожные мысли, шум, перегруз, просыпался ночью"
         ></textarea>
+        <div class="factor-block">
+          <label class="field-label">Что могло повлиять на сон или состояние?</label>
+          <ChipGroup v-model="form.eveningFactors" :options="eveningFactorOptions" multiple />
+          <textarea
+            v-if="form.eveningFactors.length"
+            v-model="form.eveningFactorNote"
+            rows="2"
+            maxlength="180"
+            placeholder="Короткое уточнение, если нужно. Без отчёта и саморазбора."
+          ></textarea>
+        </div>
       </article>
 
       <article class="form-card">

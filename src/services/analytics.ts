@@ -1,5 +1,5 @@
-import type { DailyEntry, LifeAreaId, Option, ResultRecord } from '../types';
-import { activityOptions, careerOptions, externalCareerStates, lifeAreaOptions, specialDayOptions } from '../types';
+import type { DailyEntry, EveningFactorId, LifeAreaId, Option, ResultRecord } from '../types';
+import { activityOptions, careerOptions, eveningFactorOptions, externalCareerStates, lifeAreaOptions, specialDayOptions } from '../types';
 import { dateRange, endOfMonth, endOfWeek, formatMinutes, startOfMonth, startOfWeek } from './dates';
 
 export type PeriodSummary = {
@@ -18,6 +18,15 @@ export type Observation = {
   id: string;
   title: string;
   text: string;
+};
+
+export type FactorSummary = {
+  id: EveningFactorId;
+  label: string;
+  icon?: string;
+  count: number;
+  averageSleep: number | null;
+  averageEnergy: number | null;
 };
 
 function average(values: Array<number | null>): number | null {
@@ -129,7 +138,37 @@ export function buildObservations(entries: DailyEntry[]): Observation[] {
     });
   }
 
+  const leadingFactor = factorSummaries(entries)[0];
+  if (leadingFactor && leadingFactor.count >= 2) {
+    const details = [
+      leadingFactor.averageSleep !== null ? `сон ${formatMinutes(Math.round(leadingFactor.averageSleep))}` : '',
+      leadingFactor.averageEnergy !== null ? `энергия ${formatNumber(leadingFactor.averageEnergy)}` : ''
+    ].filter(Boolean).join(', ');
+    observations.push({
+      id: 'evening-factor',
+      title: 'Повторяющийся фактор',
+      text: `${leadingFactor.label.toLowerCase()} встречался ${leadingFactor.count} ${plural(leadingFactor.count, 'раз', 'раза', 'раз')}${details ? `: ${details}` : ''}.`,
+    });
+  }
+
   return observations;
+}
+
+export function factorSummaries(entries: DailyEntry[]): FactorSummary[] {
+  return eveningFactorOptions
+    .map((option) => {
+      const matching = entries.filter((entry) => entry.eveningFactors.includes(option.id));
+      return {
+        id: option.id,
+        label: option.label,
+        icon: option.icon,
+        count: matching.length,
+        averageSleep: average(matching.map((entry) => entry.sleepMinutes)),
+        averageEnergy: average(matching.map((entry) => entry.energy)),
+      };
+    })
+    .filter((summary) => summary.count > 0)
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 }
 
 export function periodDays(anchor: string, period: 'week' | 'month'): string[] {
@@ -148,6 +187,10 @@ export function activityLabel(value: string): string {
 
 export function specialDayLabel(value: string | null): string {
   return specialDayOptions.find((option) => option.id === value)?.label ?? 'Особый день';
+}
+
+export function eveningFactorLabel(value: string): string {
+  return eveningFactorOptions.find((option) => option.id === value)?.label ?? value;
 }
 
 function formatNumber(value: number): string {

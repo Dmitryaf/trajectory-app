@@ -2,7 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
-import { entriesForWeek, hasArea, resultsForPeriod, specialDayLabel, summarize, weekSummaryText } from '../services/analytics';
+import { entriesForWeek, eveningFactorLabel, hasArea, resultsForPeriod, specialDayLabel, summarize, weekSummaryText } from '../services/analytics';
 import { addDays, endOfWeek, formatDate, formatMinutes, startOfWeek, todayKey } from '../services/dates';
 import { plainCopy } from '../services/plain';
 import { useAppStore } from '../stores/app';
@@ -27,6 +27,7 @@ const rows = computed(() => [
 ]);
 const summaryText = computed(() => weekSummaryText(summary.value, store.settings.activeLifeAreas, lifeAreaItems.value));
 const stateNotes = computed(() => entries.value.filter((entry) => entry.stateContext.trim()).sort((a, b) => a.date.localeCompare(b.date)));
+const factorNotes = computed(() => entries.value.filter((entry) => entry.eveningFactors.length).sort((a, b) => a.date.localeCompare(b.date)));
 const specialDays = computed(() => entries.value.filter((entry) => entry.specialDay !== null).sort((a, b) => a.date.localeCompare(b.date)));
 const review = reactive<WeeklyReview>(emptyWeeklyReview(start.value));
 
@@ -79,6 +80,19 @@ async function saveReview() {
         <article v-for="entry in stateNotes" :key="entry.date" class="note-item">
           <time>{{ formatDate(entry.date, { weekday: 'short', day: 'numeric' }) }}</time>
           <p>{{ entry.stateContext }}</p>
+        </article>
+      </div>
+    </article>
+
+    <article v-if="factorNotes.length" class="dashboard-card">
+      <div class="section-heading"><div><span class="eyebrow">Вечерние факторы</span><h2>Что могло влиять</h2></div><span class="count-badge">{{ factorNotes.length }}</span></div>
+      <div class="factor-note-list">
+        <article v-for="entry in factorNotes" :key="entry.date" class="factor-note-item">
+          <time>{{ formatDate(entry.date, { weekday: 'short', day: 'numeric' }) }}</time>
+          <div>
+            <span v-for="factor in entry.eveningFactors" :key="factor" class="mini-pill">{{ eveningFactorLabel(factor) }}</span>
+            <p v-if="entry.eveningFactorNote">{{ entry.eveningFactorNote }}</p>
+          </div>
         </article>
       </div>
     </article>

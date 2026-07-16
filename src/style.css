@@ -73,6 +73,8 @@ textarea { resize: vertical; min-height: 64px; }
 .section-icon--amber { color: #a66c10; background: #fff3d9; }
 .section-icon--orange { color: #ba4d37; background: #ffede7; }
 .field-label { display: block; margin: 16px 0 8px; font-size: 12px; color: #5d687e; font-weight: 750; }
+.factor-block { margin-top: 4px; }
+.factor-block textarea { margin-top: 10px; }
 .number-field { display: flex; align-items: center; width: 185px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: white; }
 .number-field input { border: 0; box-shadow: none; border-radius: 0; font-size: 22px; font-weight: 750; padding: 10px 4px 10px 14px; }
 .number-field span { padding-right: 14px; white-space: nowrap; color: var(--muted); font-size: 13px; }
@@ -155,6 +157,11 @@ textarea { resize: vertical; min-height: 64px; }
 .note-item { display: grid; grid-template-columns: 86px 1fr; gap: 12px; align-items: start; padding: 12px 14px; border: 1px solid #e7ebf2; border-radius: 14px; background: #f8fafc; }
 .note-item time { color: #667189; font-size: 12px; font-weight: 800; text-transform: capitalize; }
 .note-item p { margin: 0; color: #3d485e; font-size: 13px; line-height: 1.45; }
+.factor-note-list { display: grid; gap: 9px; }
+.factor-note-item { display: grid; grid-template-columns: 86px 1fr; gap: 12px; align-items: start; padding: 12px 14px; border: 1px solid #e7ebf2; border-radius: 14px; background: #fbfcff; }
+.factor-note-item time { color: #667189; font-size: 12px; font-weight: 800; text-transform: capitalize; }
+.factor-note-item p { margin: 7px 0 0; color: #677187; font-size: 13px; line-height: 1.4; }
+.mini-pill { display: inline-flex; margin: 0 5px 5px 0; padding: 5px 8px; border-radius: 999px; background: #eef2f7; color: #536075; font-size: 11px; font-weight: 750; }
 .special-day-list { display: grid; gap: 9px; }
 .special-day-list--columns { grid-template-columns: repeat(2, 1fr); }
 .special-day-item { display: grid; grid-template-columns: 86px 120px 1fr; gap: 10px; align-items: center; padding: 12px 14px; border: 1px solid #f0ddd8; border-radius: 14px; background: #fff8f5; }
@@ -195,6 +202,14 @@ textarea { resize: vertical; min-height: 64px; }
 .legend-dot { width: 10px; height: 10px; border-radius: 50%; background: #7f8ba1; }
 .legend-dot--movement { background: var(--accent); }
 .legend-dot--special { background: var(--orange); }
+.factor-summary-head, .factor-summary-item { display: grid; grid-template-columns: 1fr 54px 76px 64px; gap: 10px; align-items: center; }
+.factor-summary-head { margin-bottom: 7px; color: #8b94a5; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.factor-summary-list { display: grid; gap: 8px; }
+.factor-summary-item { min-height: 46px; padding: 10px 12px; border: 1px solid #e7ebf2; border-radius: 14px; background: #f9fbfd; }
+.factor-summary-item__name { display: flex; align-items: center; gap: 8px; color: #4d596d; font-size: 13px; font-weight: 750; }
+.factor-summary-item__name i { font-style: normal; color: #68758c; font-weight: 900; }
+.factor-summary-item strong { color: var(--navy); font-size: 14px; }
+.factor-summary-item small { color: #667187; font-size: 12px; }
 .month-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .coverage-list { display: grid; gap: 13px; }
 .coverage-row { display: grid; grid-template-columns: 135px 1fr 24px; gap: 10px; align-items: center; }
@@ -244,6 +259,8 @@ textarea { resize: vertical; min-height: 64px; }
   .observation-grid { grid-template-columns: 1fr; }
   .note-list--columns { grid-template-columns: 1fr; }
   .note-item { grid-template-columns: 76px 1fr; }
+  .factor-note-item { grid-template-columns: 76px 1fr; }
+  .factor-summary-head, .factor-summary-item { grid-template-columns: 1fr 38px 62px 54px; gap: 8px; }
   .special-day-list--columns { grid-template-columns: 1fr; }
   .special-day-item { grid-template-columns: 76px 1fr; }
   .special-day-item p { grid-column: 2; }
