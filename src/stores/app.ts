@@ -1,13 +1,14 @@
 import { defineStore } from 'pinia';
 import { db } from '../db';
 import { plainCopy } from '../services/plain';
-import { defaultSettings, normalizeDailyEntry, normalizeSettings, normalizeWeeklyReview, type AppSettings, type DailyEntry, type ResultRecord, type WeeklyReview } from '../types';
+import { defaultSettings, normalizeDailyEntry, normalizeLifeEvent, normalizeSettings, normalizeWeeklyReview, type AppSettings, type DailyEntry, type LifeEventRecord, type ResultRecord, type WeeklyReview } from '../types';
 
 type ExportPayload = {
-  version: 1;
+  version: 1 | 2;
   exportedAt: string;
   dailyEntries: DailyEntry[];
   results: ResultRecord[];
+  lifeEvents?: LifeEventRecord[];
   weeklyReviews: WeeklyReview[];
   settings: AppSettings;
 };
@@ -18,6 +19,7 @@ export const useAppStore = defineStore('app', {
     loadError: '',
     dailyEntries: [] as DailyEntry[],
     results: [] as ResultRecord[],
+    lifeEvents: [] as LifeEventRecord[],
     weeklyReviews: [] as WeeklyReview[],
     settings: structuredClone(defaultSettings) as AppSettings
   }),
@@ -29,14 +31,16 @@ export const useAppStore = defineStore('app', {
     async load() {
       this.loadError = '';
       try {
-        const [dailyEntries, results, weeklyReviews, settings] = await Promise.all([
+        const [dailyEntries, results, lifeEvents, weeklyReviews, settings] = await Promise.all([
           db.dailyEntries.toArray(),
           db.results.toArray(),
+          db.lifeEvents.toArray(),
           db.weeklyReviews.toArray(),
           db.settings.get('main')
         ]);
         this.dailyEntries = dailyEntries.map((entry) => normalizeDailyEntry(entry));
         this.results = results.sort((a, b) => b.date.localeCompare(a.date));
+        this.lifeEvents = lifeEvents.map((event) => normalizeLifeEvent(event)).sort((a, b) => b.date.localeCompare(a.date));
         this.weeklyReviews = weeklyReviews.map((review) => normalizeWeeklyReview(review));
         const activeSettings = normalizeSettings(settings);
         this.settings = activeSettings;
@@ -64,6 +68,16 @@ export const useAppStore = defineStore('app', {
       await db.results.delete(id);
       this.results = this.results.filter((result) => result.id !== id);
     },
+    async addLifeEvent(event: Omit<LifeEventRecord, 'id' | 'createdAt'>) {
+      const record: LifeEventRecord = plainCopy({ ...event, createdAt: new Date().toISOString() });
+      const id = await db.lifeEvents.add(record);
+      this.lifeEvents.unshift({ ...record, id });
+      this.lifeEvents.sort((a, b) => b.date.localeCompare(a.date));
+    },
+    async removeLifeEvent(id: number) {
+      await db.lifeEvents.delete(id);
+      this.lifeEvents = this.lifeEvents.filter((event) => event.id !== id);
+    },
     async saveReview(review: WeeklyReview) {
       const plainReview = plainCopy(normalizeWeeklyReview(review));
       await db.weeklyReviews.put(plainReview);
@@ -77,33 +91,36 @@ export const useAppStore = defineStore('app', {
     },
     exportData(): ExportPayload {
       return {
-        version: 1,
+        version: 2,
         exportedAt: new Date().toISOString(),
         dailyEntries: this.dailyEntries,
         results: this.results,
+        lifeEvents: this.lifeEvents,
         weeklyReviews: this.weeklyReviews,
         settings: this.settings
       };
     },
     async importData(payload: ExportPayload) {
-      if (payload.version !== 1 || !Array.isArray(payload.dailyEntries) || !Array.isArray(payload.results)) {
+      if (![1, 2].includes(payload.version) || !Array.isArray(payload.dailyEntries) || !Array.isArray(payload.results)) {
         throw new Error('Неподдерживаемый формат резервной копии');
       }
-      await db.transaction('rw', [db.dailyEntries, db.results, db.weeklyReviews, db.settings], async () => {
-        await Promise.all([db.dailyEntries.clear(), db.results.clear(), db.weeklyReviews.clear(), db.settings.clear()]);
+      await db.transaction('rw', [db.dailyEntries, db.results, db.lifeEvents, db.weeklyReviews, db.settings], async () => {
+        await Promise.all([db.dailyEntries.clear(), db.results.clear(), db.lifeEvents.clear(), db.weeklyReviews.clear(), db.settings.clear()]);
         await db.dailyEntries.bulkPut(payload.dailyEntries.map((entry) => normalizeDailyEntry(entry)));
         await db.results.bulkPut(payload.results);
+        await db.lifeEvents.bulkPut((payload.lifeEvents ?? []).map((event) => normalizeLifeEvent(event)));
         await db.weeklyReviews.bulkPut((payload.weeklyReviews ?? []).map((review) => normalizeWeeklyReview(review)));
         await db.settings.put(plainCopy(normalizeSettings(payload.settings ?? defaultSettings)));
       });
       await this.load();
     },
     async clearAll() {
-      await db.transaction('rw', [db.dailyEntries, db.results, db.weeklyReviews, db.settings], async () => {
-        await Promise.all([db.dailyEntries.clear(), db.results.clear(), db.weeklyReviews.clear(), db.settings.clear()]);
+      await db.transaction('rw', [db.dailyEntries, db.results, db.lifeEvents, db.weeklyReviews, db.settings], async () => {
+        await Promise.all([db.dailyEntries.clear(), db.results.clear(), db.lifeEvents.clear(), db.weeklyReviews.clear(), db.settings.clear()]);
       });
       this.dailyEntries = [];
       this.results = [];
+      this.lifeEvents = [];
       this.weeklyReviews = [];
       this.settings = structuredClone(defaultSettings);
       await db.settings.put(plainCopy(this.settings));

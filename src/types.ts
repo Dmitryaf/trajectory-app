@@ -7,6 +7,7 @@ export type BaseCareerState =
 export type CareerState = BaseCareerState | string;
 export type ActivityId = "boxing" | "bachata" | "walk" | "workout" | "recovery";
 export type SpecialDayId = "sick" | "travel" | "overload" | "event" | "recovery" | "other";
+export type LifeEventType = "change" | "milestone" | "decision" | "event" | "insight" | "other";
 export type EveningFactorId =
   | "late_bedtime"
   | "screen"
@@ -51,6 +52,15 @@ export type ResultRecord = {
   date: string;
   area: LifeAreaId | "career" | "sport" | "sleep" | "health";
   title: string;
+  createdAt: string;
+};
+
+export type LifeEventRecord = {
+  id?: number;
+  date: string;
+  type: LifeEventType;
+  title: string;
+  note: string;
   createdAt: string;
 };
 
@@ -107,6 +117,15 @@ export const specialDayOptions: Option<SpecialDayId>[] = [
   { id: "overload", label: "Перегруз", icon: "!" },
   { id: "event", label: "Событие", icon: "◉" },
   { id: "recovery", label: "Восстановление", icon: "○" },
+  { id: "other", label: "Другое", icon: "·" },
+];
+
+export const lifeEventTypeOptions: Option<LifeEventType>[] = [
+  { id: "change", label: "Изменение", icon: "↻" },
+  { id: "milestone", label: "Веха", icon: "◆" },
+  { id: "decision", label: "Решение", icon: "✓" },
+  { id: "event", label: "Событие", icon: "◉" },
+  { id: "insight", label: "Осознание", icon: "✦" },
   { id: "other", label: "Другое", icon: "·" },
 ];
 
@@ -217,6 +236,17 @@ export function normalizeDailyEntry(entry: Partial<DailyEntry> & { date: string 
     specialDay: typeof entry.specialDay === "string" ? entry.specialDay : null,
     specialDayNote: typeof entry.specialDayNote === "string" ? entry.specialDayNote : "",
     importantFact: typeof entry.importantFact === "string" ? entry.importantFact : "",
+  };
+}
+
+export function normalizeLifeEvent(event: Partial<LifeEventRecord> & { date: string; title: string }): LifeEventRecord {
+  return {
+    date: event.date,
+    type: typeof event.type === "string" ? event.type : "event",
+    title: typeof event.title === "string" ? event.title : "",
+    note: typeof event.note === "string" ? event.note : "",
+    createdAt: typeof event.createdAt === "string" ? event.createdAt : new Date().toISOString(),
+    ...(typeof event.id === "number" ? { id: event.id } : {}),
   };
 }
 

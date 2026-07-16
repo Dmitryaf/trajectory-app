@@ -3,6 +3,7 @@ import { computed, reactive, ref } from 'vue';
 import ChipGroup from '../components/ChipGroup.vue';
 import { useAppStore } from '../stores/app';
 import { buildAiReportPayload, buildAiReportPrompt, type AiReportPeriod } from '../services/aiReport';
+import { requestAiAnalysis, type AiAnalysis } from '../services/aiClient';
 import { todayKey } from '../services/dates';
 import { plainCopy } from '../services/plain';
 import { careerOptions, createCustomOption, lifeAreaOptions, type AppSettings, type CareerState, type LifeAreaId } from '../types';
@@ -11,6 +12,9 @@ const store = useAppStore();
 const settings = reactive<AppSettings>(plainCopy(store.settings));
 const status = ref('');
 const aiStatus = ref('');
+const aiError = ref('');
+const aiLoading = ref<AiReportPeriod | ''>('');
+const aiAnalysis = ref<AiAnalysis | null>(null);
 const importInput = ref<HTMLInputElement>();
 const newCareerLabel = ref('');
 const newCareerCountsAsExternal = ref(true);
@@ -69,24 +73,14 @@ function exportData() {
 }
 
 async function copyAiPrompt(period: AiReportPeriod) {
-  const payload = buildAiReportPayload(period, todayKey(), {
-    entries: store.dailyEntries,
-    results: store.results,
-    reviews: store.weeklyReviews,
-    settings: store.settings
-  });
+  const payload = createAiPayload(period);
   await navigator.clipboard.writeText(buildAiReportPrompt(payload, store.settings));
   aiStatus.value = period === 'week' ? 'Промпт недели скопирован' : 'Промпт месяца скопирован';
   window.setTimeout(() => (aiStatus.value = ''), 1800);
 }
 
 function downloadAiPackage(period: AiReportPeriod) {
-  const payload = buildAiReportPayload(period, todayKey(), {
-    entries: store.dailyEntries,
-    results: store.results,
-    reviews: store.weeklyReviews,
-    settings: store.settings
-  });
+  const payload = createAiPayload(period);
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -96,6 +90,32 @@ function downloadAiPackage(period: AiReportPeriod) {
   URL.revokeObjectURL(url);
   aiStatus.value = period === 'week' ? 'Пакет недели скачан' : 'Пакет месяца скачан';
   window.setTimeout(() => (aiStatus.value = ''), 1800);
+}
+
+async function runAiAnalysis(period: AiReportPeriod) {
+  aiError.value = '';
+  aiStatus.value = '';
+  aiLoading.value = period;
+  try {
+    const payload = createAiPayload(period);
+    aiAnalysis.value = await requestAiAnalysis(buildAiReportPrompt(payload, store.settings));
+    aiStatus.value = period === 'week' ? 'Анализ недели готов' : 'Анализ месяца готов';
+  } catch (error) {
+    aiAnalysis.value = null;
+    aiError.value = error instanceof Error ? error.message : 'Не удалось получить ИИ-анализ';
+  } finally {
+    aiLoading.value = '';
+  }
+}
+
+function createAiPayload(period: AiReportPeriod) {
+  return buildAiReportPayload(period, todayKey(), {
+    entries: store.dailyEntries,
+    results: store.results,
+    lifeEvents: store.lifeEvents,
+    reviews: store.weeklyReviews,
+    settings: store.settings
+  });
 }
 
 async function importData(event: Event) {
@@ -188,14 +208,27 @@ async function clearAll() {
     </article>
 
     <article class="settings-card">
-      <div class="form-card__heading"><span class="section-icon section-icon--green">AI</span><div><h2>Пакет для ИИ-анализа</h2><p>Можно скопировать готовый промпт или скачать JSON без подключения API.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--green">AI</span><div><h2>ИИ-анализ</h2><p>Автоматический анализ работает через серверный endpoint, экспорт остаётся запасным режимом.</p></div></div>
       <div class="ai-actions">
+        <button class="primary-button" type="button" :disabled="Boolean(aiLoading)" @click="runAiAnalysis('week')">{{ aiLoading === 'week' ? 'Анализ...' : 'Анализ недели' }}</button>
+        <button class="primary-button" type="button" :disabled="Boolean(aiLoading)" @click="runAiAnalysis('month')">{{ aiLoading === 'month' ? 'Анализ...' : 'Анализ месяца' }}</button>
         <button class="secondary-button" type="button" @click="copyAiPrompt('week')">Скопировать промпт недели</button>
         <button class="secondary-button" type="button" @click="copyAiPrompt('month')">Скопировать промпт месяца</button>
         <button class="secondary-button" type="button" @click="downloadAiPackage('week')">Скачать JSON недели</button>
         <button class="secondary-button" type="button" @click="downloadAiPackage('month')">Скачать JSON месяца</button>
       </div>
       <p v-if="aiStatus" class="settings-status">{{ aiStatus }}</p>
+      <p v-if="aiError" class="settings-status settings-status--error">{{ aiError }}</p>
+      <div v-if="aiAnalysis" class="ai-result">
+        <strong>{{ aiAnalysis.summary }}</strong>
+        <div class="ai-result__grid">
+          <div><span>Поддерживало</span><ul><li v-for="item in aiAnalysis.supportingFactors" :key="item">{{ item }}</li></ul></div>
+          <div><span>Мешало</span><ul><li v-for="item in aiAnalysis.blockingFactors" :key="item">{{ item }}</li></ul></div>
+          <div><span>Гипотезы</span><ul><li v-for="item in aiAnalysis.hypotheses" :key="item">{{ item }}</li></ul></div>
+          <div><span>Ограничения</span><ul><li v-for="item in aiAnalysis.caveats" :key="item">{{ item }}</li></ul></div>
+        </div>
+        <p>{{ aiAnalysis.nextLever }}</p>
+      </div>
     </article>
   </section>
 </template>

@@ -15,6 +15,7 @@ onMounted(async () => {
 const navItems = [
   { to: '/', label: 'Сегодня', icon: '●' },
   { to: '/results', label: 'Результаты', icon: '✓' },
+  { to: '/events', label: 'Архив', icon: '◆' },
   { to: '/week', label: 'Неделя', icon: '▦' },
   { to: '/month', label: 'Месяц', icon: '▥' },
   { to: '/settings', label: 'Ещё', icon: '•••' }

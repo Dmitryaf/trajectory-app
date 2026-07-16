@@ -1,9 +1,10 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { AppSettings, DailyEntry, ResultRecord, WeeklyReview } from './types';
+import type { AppSettings, DailyEntry, LifeEventRecord, ResultRecord, WeeklyReview } from './types';
 
 class TrajectoryDatabase extends Dexie {
   dailyEntries!: EntityTable<DailyEntry, 'date'>;
   results!: EntityTable<ResultRecord, 'id'>;
+  lifeEvents!: EntityTable<LifeEventRecord, 'id'>;
   weeklyReviews!: EntityTable<WeeklyReview, 'weekStart'>;
   settings!: EntityTable<AppSettings, 'id'>;
 
@@ -12,6 +13,13 @@ class TrajectoryDatabase extends Dexie {
     this.version(1).stores({
       dailyEntries: '&date, updatedAt, careerState',
       results: '++id, date, area, createdAt',
+      weeklyReviews: '&weekStart',
+      settings: '&id'
+    });
+    this.version(2).stores({
+      dailyEntries: '&date, updatedAt, careerState',
+      results: '++id, date, area, createdAt',
+      lifeEvents: '++id, date, type, createdAt',
       weeklyReviews: '&weekStart',
       settings: '&id'
     });

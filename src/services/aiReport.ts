@@ -1,13 +1,13 @@
 import { buildObservations, entriesForMonth, entriesForWeek, factorSummaries, resultsForPeriod, summarize, weekSummaryText } from './analytics';
 import { endOfMonth, endOfWeek, formatDate, startOfMonth, startOfWeek } from './dates';
-import type { AppSettings, DailyEntry, ResultRecord, WeeklyReview } from '../types';
+import type { AppSettings, DailyEntry, LifeEventRecord, ResultRecord, WeeklyReview } from '../types';
 import { lifeAreaOptions } from '../types';
 
 export type AiReportPeriod = 'week' | 'month';
 
 export type AiReportPayload = {
   app: 'trajectory';
-  version: 1;
+  version: 2;
   period: AiReportPeriod;
   start: string;
   end: string;
@@ -17,6 +17,7 @@ export type AiReportPayload = {
   factorSummaries: ReturnType<typeof factorSummaries>;
   entries: DailyEntry[];
   results: ResultRecord[];
+  lifeEvents: LifeEventRecord[];
   weeklyReview?: WeeklyReview;
   settingsSnapshot: {
     activeLifeAreas: string[];
@@ -28,6 +29,7 @@ export type AiReportPayload = {
 type SourceData = {
   entries: DailyEntry[];
   results: ResultRecord[];
+  lifeEvents: LifeEventRecord[];
   reviews: WeeklyReview[];
   settings: AppSettings;
 };
@@ -40,7 +42,7 @@ export function buildAiReportPayload(period: AiReportPeriod, anchor: string, sou
 
   return {
     app: 'trajectory',
-    version: 1,
+    version: 2,
     period,
     start,
     end,
@@ -50,6 +52,7 @@ export function buildAiReportPayload(period: AiReportPeriod, anchor: string, sou
     factorSummaries: factorSummaries(entries),
     entries,
     results: resultsForPeriod(source.results, start, end),
+    lifeEvents: source.lifeEvents.filter((event) => event.date >= start && event.date <= end).sort((a, b) => b.date.localeCompare(a.date)),
     weeklyReview: period === 'week' ? source.reviews.find((review) => review.weekStart === start) : undefined,
     settingsSnapshot: {
       activeLifeAreas: source.settings.activeLifeAreas,

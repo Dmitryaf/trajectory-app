@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildObservations, entriesForWeek, factorSummaries, summarize, weekSummaryText } from '../src/services/analytics';
-import { emptyDailyEntry, type DailyEntry } from '../src/types';
+import { buildAiReportPayload } from '../src/services/aiReport';
+import { defaultSettings, emptyDailyEntry, type DailyEntry } from '../src/types';
 
 function entry(date: string, patch: Partial<DailyEntry>): DailyEntry {
   return { ...emptyDailyEntry(date), ...patch };
@@ -80,5 +81,22 @@ describe('analytics', () => {
     expect(factors[0].count).toBe(2);
     expect(factors[0].averageSleep).toBe(390);
     expect(factors[0].averageEnergy).toBe(2.5);
+  });
+
+  it('includes life events in the AI package only for the selected period', () => {
+    const payload = buildAiReportPayload('week', '2026-07-16', {
+      entries: [entry('2026-07-13', { energy: 3 })],
+      results: [],
+      lifeEvents: [
+        { id: 1, date: '2026-07-15', type: 'decision', title: 'Сменил фокус поиска', note: 'Больше фронтенда', createdAt: '2026-07-15T10:00:00.000Z' },
+        { id: 2, date: '2026-07-21', type: 'event', title: 'Будущее событие', note: '', createdAt: '2026-07-21T10:00:00.000Z' }
+      ],
+      reviews: [],
+      settings: defaultSettings
+    });
+
+    expect(payload.version).toBe(2);
+    expect(payload.lifeEvents).toHaveLength(1);
+    expect(payload.lifeEvents[0].title).toBe('Сменил фокус поиска');
   });
 });

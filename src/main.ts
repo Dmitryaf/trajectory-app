@@ -5,6 +5,7 @@ import { registerSW } from 'virtual:pwa-register';
 import App from './App.vue';
 import TodayView from './views/TodayView.vue';
 import ResultsView from './views/ResultsView.vue';
+import EventsView from './views/EventsView.vue';
 import WeekView from './views/WeekView.vue';
 import MonthView from './views/MonthView.vue';
 import SettingsView from './views/SettingsView.vue';
@@ -17,6 +18,7 @@ const router = createRouter({
   routes: [
     { path: '/', component: TodayView, meta: { title: 'Сегодня' } },
     { path: '/results', component: ResultsView, meta: { title: 'Результаты' } },
+    { path: '/events', component: EventsView, meta: { title: 'Архив' } },
     { path: '/week', component: WeekView, meta: { title: 'Неделя' } },
     { path: '/month', component: MonthView, meta: { title: 'Месяц' } },
     { path: '/settings', component: SettingsView, meta: { title: 'Настройки' } }
