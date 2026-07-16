@@ -130,7 +130,7 @@ async function clearAll() {
       <div class="custom-options">
         <label class="field-label" for="new-life-area">Своя область</label>
         <div class="inline-add">
-          <input id="new-life-area" v-model="newLifeAreaLabel" type="text" maxlength="32" placeholder="Питание" @keyup.enter="addLifeArea" />
+          <input id="new-life-area" v-model="newLifeAreaLabel" type="text" maxlength="32" placeholder="Учёба" @keyup.enter="addLifeArea" />
           <button class="secondary-button" type="button" :disabled="!newLifeAreaLabel.trim()" @click="addLifeArea">Добавить</button>
         </div>
         <div v-if="settings.customLifeAreaOptions.length" class="custom-list">

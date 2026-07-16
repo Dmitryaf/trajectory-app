@@ -216,6 +216,10 @@ function sanitizeOptions(options: unknown): Option<string>[] {
     }));
 }
 
+function isNutritionState(value: unknown): value is NutritionState {
+  return typeof value === "string" && nutritionOptions.some((option) => option.id === value);
+}
+
 export function emptyDailyEntry(date: string): DailyEntry {
   return {
     date,
@@ -247,7 +251,7 @@ export function normalizeDailyEntry(entry: Partial<DailyEntry> & { date: string 
     timeInBedMinutes: typeof entry.timeInBedMinutes === "number" ? entry.timeInBedMinutes : null,
     weightKg: typeof entry.weightKg === "number" ? entry.weightKg : null,
     activities: Array.isArray(entry.activities) ? entry.activities : [],
-    nutritionState: typeof entry.nutritionState === "string" ? entry.nutritionState : null,
+    nutritionState: isNutritionState(entry.nutritionState) ? entry.nutritionState : null,
     nutritionNote: typeof entry.nutritionNote === "string" ? entry.nutritionNote : "",
     lifeAreas: Array.isArray(entry.lifeAreas) ? entry.lifeAreas : [],
     stateContext: typeof entry.stateContext === "string" ? entry.stateContext : "",

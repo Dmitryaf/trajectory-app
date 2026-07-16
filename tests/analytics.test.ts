@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildObservations, buildReviewCues, entriesForPeriod, entriesForWeek, factorSummaries, summarize, weekSummaryText } from '../src/services/analytics';
 import { buildAiReportPayload, buildAiReportRangePayload } from '../src/services/aiReport';
 import { addMonths, monthsBetween } from '../src/services/dates';
-import { defaultSettings, emptyDailyEntry, type DailyEntry } from '../src/types';
+import { defaultSettings, emptyDailyEntry, normalizeDailyEntry, type DailyEntry } from '../src/types';
 
 function entry(date: string, patch: Partial<DailyEntry>): DailyEntry {
   return { ...emptyDailyEntry(date), ...patch };
@@ -39,6 +39,12 @@ describe('analytics', () => {
     expect(summary.nutritionSupportDays).toBe(1);
     expect(summary.nutritionBlockDays).toBe(1);
     expect(summary.averageWeightKg).toBe(82.6);
+  });
+
+  it('drops unsupported nutrition states from imported data', () => {
+    const normalized = normalizeDailyEntry({ date: '2026-07-13', nutritionState: 'unknown' as never });
+
+    expect(normalized.nutritionState).toBeNull();
   });
 
   it('selects entries only from the requested Monday-Sunday week', () => {
@@ -174,5 +180,21 @@ describe('analytics', () => {
     expect(cues.map((cue) => cue.id)).toEqual(expect.arrayContaining(['coverage', 'short-sleep', 'factor', 'career', 'context', 'results']));
     expect(cues.find((cue) => cue.id === 'coverage')?.tone).toBe('good');
     expect(cues.find((cue) => cue.id === 'factor')?.text).toContain('Новости');
+  });
+
+  it('keeps completed results visible when review cues are crowded', () => {
+    const cues = buildReviewCues('week', [
+      entry('2026-07-13', { sleepMinutes: 360, eveningFactors: ['news'], careerState: 'external', nutritionState: 'blocks_goal', specialDay: 'overload' }),
+      entry('2026-07-14', { sleepMinutes: 390, eveningFactors: ['news'], nutritionState: 'blocks_goal' }),
+      entry('2026-07-15', { sleepMinutes: 480 }),
+      entry('2026-07-16', { sleepMinutes: 450 })
+    ], [
+      { id: 1, date: '2026-07-16', area: 'career', title: 'Закончил отклики недели', createdAt: '2026-07-16T10:00:00.000Z' }
+    ], [
+      { id: 1, date: '2026-07-15', type: 'event', title: 'Сложный внешний день', note: '', createdAt: '2026-07-15T10:00:00.000Z' }
+    ]);
+
+    expect(cues).toHaveLength(6);
+    expect(cues.map((cue) => cue.id)).toContain('results');
   });
 });

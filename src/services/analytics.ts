@@ -102,7 +102,9 @@ export function weekSummaryText(summary: PeriodSummary, activeAreas: LifeAreaId[
     `${summary.externalSteps} внешних ${plural(summary.externalSteps, 'шаг', 'шага', 'шагов')}`,
     `${summary.sportSessions} ${plural(summary.sportSessions, 'тренировка', 'тренировки', 'тренировок')}`
   ];
-  if (summary.nutritionSupportDays || summary.nutritionBlockDays) parts.push(`питание: ${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`);
+  if (summary.nutritionSupportDays || summary.nutritionBlockDays) {
+    parts.push(`питание поддержало ${summary.nutritionSupportDays}, мешало ${summary.nutritionBlockDays}`);
+  }
   if (summary.averageSleep !== null) parts.push(`средний сон ${formatMinutes(Math.round(summary.averageSleep))}`);
   if (summary.averageTimeInBed !== null && summary.averageSleep !== null && summary.averageTimeInBed - summary.averageSleep >= 45) {
     parts.push(`в кровати ${formatMinutes(Math.round(summary.averageTimeInBed))}`);
@@ -248,6 +250,15 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
     });
   }
 
+  if (results.length) {
+    cues.push({
+      id: 'results',
+      title: 'Есть завершённые вещи',
+      text: `${results.length} ${plural(results.length, 'результат', 'результата', 'результатов')} за период. Это отдельный слой прогресса, даже если состояние было неровным.`,
+      tone: 'good',
+    });
+  }
+
   if (summary.nutritionBlockDays >= 2 || summary.nutritionSupportDays >= 3) {
     cues.push({
       id: 'nutrition',
@@ -265,15 +276,6 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
       title: 'Есть поправка на контекст',
       text: `${summary.specialDays} особых ${plural(summary.specialDays, 'день', 'дня', 'дней')} и ${lifeEvents.length} ${plural(lifeEvents.length, 'событие архива', 'события архива', 'событий архива')}. Такой период лучше не сравнивать с обычным ритмом напрямую.`,
       tone: 'neutral',
-    });
-  }
-
-  if (results.length) {
-    cues.push({
-      id: 'results',
-      title: 'Есть завершённые вещи',
-      text: `${results.length} ${plural(results.length, 'результат', 'результата', 'результатов')} за период. Это отдельный слой прогресса, даже если состояние было неровным.`,
-      tone: 'good',
     });
   }
 
