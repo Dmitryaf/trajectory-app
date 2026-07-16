@@ -12,17 +12,20 @@ import {
   emptyDailyEntry,
   eveningFactorOptions,
   lifeAreaOptions,
+  nutritionOptions,
   specialDayOptions,
   type ActivityId,
   type CareerState,
   type DailyEntry,
-  type LifeAreaId
+  type LifeAreaId,
+  type NutritionState
 } from '../types';
 
 const store = useAppStore();
 const selectedDate = ref(todayKey());
 const sleepHours = ref<number | null>(null);
 const timeInBedHours = ref<number | null>(null);
+const weightKg = ref<number | null>(null);
 const saved = ref(false);
 const originalEntrySnapshot = ref('');
 const form = reactive<DailyEntry>(emptyDailyEntry(selectedDate.value));
@@ -72,8 +75,13 @@ function snapshotEntry(entry: DailyEntry) {
   return JSON.stringify({
     ...entryForSnapshot,
     sleepMinutes: sleepHours.value === null ? null : Math.round(sleepHours.value * 60),
-    timeInBedMinutes: timeInBedHours.value === null ? null : Math.round(timeInBedHours.value * 60)
+    timeInBedMinutes: timeInBedHours.value === null ? null : Math.round(timeInBedHours.value * 60),
+    weightKg: normalizeWeight(weightKg.value)
   });
+}
+
+function normalizeWeight(value: number | null) {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.round(value * 10) / 10 : null;
 }
 
 function loadEntry(date: string) {
@@ -81,6 +89,7 @@ function loadEntry(date: string) {
   Object.assign(form, existing ? plainCopy(existing) : emptyDailyEntry(date));
   sleepHours.value = form.sleepMinutes === null ? null : form.sleepMinutes / 60;
   timeInBedHours.value = form.timeInBedMinutes === null ? null : form.timeInBedMinutes / 60;
+  weightKg.value = form.weightKg;
   originalEntrySnapshot.value = snapshotEntry(form);
   saved.value = false;
 }
@@ -91,6 +100,7 @@ async function save() {
   const entry = plainCopy(form);
   entry.sleepMinutes = sleepHours.value === null ? null : Math.round(sleepHours.value * 60);
   entry.timeInBedMinutes = timeInBedHours.value === null ? null : Math.round(timeInBedHours.value * 60);
+  entry.weightKg = normalizeWeight(weightKg.value);
   await store.saveEntry(entry);
   Object.assign(form, entry);
   originalEntrySnapshot.value = snapshotEntry(form);
@@ -204,6 +214,24 @@ function fillYesterday() {
           <div><h2>Движение</h2><p>Можно выбрать несколько вариантов.</p></div>
         </div>
         <ChipGroup v-model="form.activities as ActivityId[]" :options="activityOptions" multiple />
+      </article>
+
+      <article class="form-card form-card--nutrition">
+        <div class="form-card__heading">
+          <span class="section-icon section-icon--green">◐</span>
+          <div><h2>Питание</h2><p>Отметь, поддерживало ли оно цель по весу.</p></div>
+        </div>
+        <ChipGroup v-model="form.nutritionState as NutritionState | null" :options="nutritionOptions" allow-clear />
+        <div class="sleep-field-grid">
+          <div>
+            <label class="field-label" for="weight-kg">Вес</label>
+            <div class="number-field">
+              <input id="weight-kg" v-model.number="weightKg" type="number" min="30" max="250" step="0.1" inputmode="decimal" placeholder="82.4" />
+              <span>кг</span>
+            </div>
+          </div>
+        </div>
+        <textarea v-model="form.nutritionNote" rows="2" maxlength="180" placeholder="Например: много перекусов вечером, ел по плану, пропустил нормальный ужин"></textarea>
       </article>
 
       <article class="form-card">

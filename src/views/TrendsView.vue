@@ -68,6 +68,21 @@ const trendBands = computed(() => [
     }))
   },
   {
+    id: 'nutrition',
+    label: 'Питание',
+    cells: monthRows.value.map((row) => {
+      const support = row.summary.nutritionSupportDays;
+      const block = row.summary.nutritionBlockDays;
+      return {
+        key: `${row.monthStart}-nutrition`,
+        label: row.label,
+        percent: percentOf(support + block, Math.max(1, row.summary.entriesCount)),
+        level: block > support ? 'low' : support > 0 ? 'high' : 'empty',
+        title: `${formatDate(row.monthStart, { month: 'long', year: 'numeric' })}: питание ${support}/${block}, вес ${row.summary.averageWeightKg === null ? '—' : `${row.summary.averageWeightKg.toFixed(1).replace('.0', '')} кг`}`
+      };
+    })
+  },
+  {
     id: 'external',
     label: 'Внешние шаги',
     cells: monthRows.value.map((row) => ({
@@ -143,6 +158,7 @@ function showExportStatus(message: string) {
       <MetricCard label="Заполнено дней" :value="summary.entriesCount" accent="#5865db" />
       <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="summary.averageTimeInBed === null ? '' : `в кровати ${formatMinutes(Math.round(summary.averageTimeInBed))}`" accent="#7367f0" />
       <MetricCard label="Внешних шагов" :value="summary.externalSteps" accent="#4188e8" />
+      <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="summary.averageWeightKg === null ? 'поддержало / мешало' : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг`" accent="#d39b2f" />
       <MetricCard label="Результатов" :value="results.length" :hint="`${lifeEvents.length} событий архива`" accent="#f0ad42" />
     </div>
 
@@ -207,14 +223,14 @@ function showExportStatus(message: string) {
     <article class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Состояние</span><h2>Сон и энергия по месяцам</h2></div></div>
       <div class="trend-table">
-        <div class="trend-table__head"><span>месяц</span><span>сон</span><span>в кровати</span><span>энергия</span><span>особые</span><span>события</span></div>
+        <div class="trend-table__head"><span>месяц</span><span>сон</span><span>вес</span><span>энергия</span><span>питание</span><span>особые</span></div>
         <div v-for="row in monthRows" :key="`${row.monthStart}-state`" class="trend-table__row">
           <strong>{{ row.label }}</strong>
           <span>{{ formatMinutes(row.summary.averageSleep === null ? null : Math.round(row.summary.averageSleep)) }}</span>
-          <span>{{ formatMinutes(row.summary.averageTimeInBed === null ? null : Math.round(row.summary.averageTimeInBed)) }}</span>
+          <span>{{ row.summary.averageWeightKg === null ? '—' : `${row.summary.averageWeightKg.toFixed(1).replace('.0', '')} кг` }}</span>
           <span>{{ row.summary.averageEnergy === null ? '—' : `${row.summary.averageEnergy.toFixed(1).replace('.0', '')}/5` }}</span>
+          <span>{{ row.summary.nutritionSupportDays }}/{{ row.summary.nutritionBlockDays }}</span>
           <span>{{ row.summary.specialDays }}</span>
-          <span>{{ row.eventsCount }}</span>
         </div>
       </div>
     </article>

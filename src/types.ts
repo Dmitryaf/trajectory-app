@@ -6,6 +6,7 @@ export type BaseCareerState =
   | "result";
 export type CareerState = BaseCareerState | string;
 export type ActivityId = "boxing" | "bachata" | "walk" | "workout" | "recovery";
+export type NutritionState = "supports_goal" | "neutral" | "blocks_goal";
 export type SpecialDayId = "sick" | "travel" | "overload" | "event" | "recovery" | "other";
 export type LifeEventType = "change" | "milestone" | "decision" | "event" | "insight" | "other";
 export type EveningFactorId =
@@ -42,6 +43,9 @@ export type DailyEntry = {
   specialDayNote: string;
   careerState: CareerState | null;
   activities: ActivityId[];
+  nutritionState: NutritionState | null;
+  nutritionNote: string;
+  weightKg: number | null;
   lifeAreas: LifeAreaId[];
   importantFact: string;
   experimentCompleted: boolean | null;
@@ -51,7 +55,7 @@ export type DailyEntry = {
 export type ResultRecord = {
   id?: number;
   date: string;
-  area: LifeAreaId | "career" | "sport" | "sleep" | "health";
+  area: LifeAreaId | "career" | "sport" | "nutrition" | "sleep" | "health";
   title: string;
   createdAt: string;
 };
@@ -112,6 +116,12 @@ export const activityOptions: Option<ActivityId>[] = [
   { id: "recovery", label: "Восстановление", icon: "○" },
 ];
 
+export const nutritionOptions: Option<NutritionState>[] = [
+  { id: "supports_goal", label: "Поддержало цель", icon: "✓" },
+  { id: "neutral", label: "Нейтрально", icon: "·" },
+  { id: "blocks_goal", label: "Мешало цели", icon: "!" },
+];
+
 export const specialDayOptions: Option<SpecialDayId>[] = [
   { id: "sick", label: "Болел", icon: "+" },
   { id: "travel", label: "Поездка", icon: "→" },
@@ -156,6 +166,7 @@ export const lifeAreaOptions: Option<BaseLifeAreaId>[] = [
 export const resultAreaOptions: Option<ResultRecord["area"]>[] = [
   { id: "career", label: "Карьера", icon: "↗" },
   { id: "sport", label: "Спорт", icon: "△" },
+  { id: "nutrition", label: "Питание", icon: "◐" },
   { id: "sleep", label: "Сон", icon: "◒" },
   { id: "health", label: "Здоровье", icon: "+" },
   ...lifeAreaOptions,
@@ -219,6 +230,9 @@ export function emptyDailyEntry(date: string): DailyEntry {
     specialDayNote: "",
     careerState: null,
     activities: [],
+    nutritionState: null,
+    nutritionNote: "",
+    weightKg: null,
     lifeAreas: [],
     importantFact: "",
     experimentCompleted: null,
@@ -231,7 +245,10 @@ export function normalizeDailyEntry(entry: Partial<DailyEntry> & { date: string 
     ...emptyDailyEntry(entry.date),
     ...entry,
     timeInBedMinutes: typeof entry.timeInBedMinutes === "number" ? entry.timeInBedMinutes : null,
+    weightKg: typeof entry.weightKg === "number" ? entry.weightKg : null,
     activities: Array.isArray(entry.activities) ? entry.activities : [],
+    nutritionState: typeof entry.nutritionState === "string" ? entry.nutritionState : null,
+    nutritionNote: typeof entry.nutritionNote === "string" ? entry.nutritionNote : "",
     lifeAreas: Array.isArray(entry.lifeAreas) ? entry.lifeAreas : [],
     stateContext: typeof entry.stateContext === "string" ? entry.stateContext : "",
     eveningFactors: Array.isArray(entry.eveningFactors) ? entry.eveningFactors : [],

@@ -45,8 +45,10 @@ const rhythmDays = computed(() => days.value.map((day) => {
     energyPercent,
     hasCareer: Boolean(entry?.careerState),
     hasMovement: Boolean(entry?.activities.some((activity) => activity !== 'recovery')),
+    hasNutritionSupport: entry?.nutritionState === 'supports_goal',
+    hasNutritionBlock: entry?.nutritionState === 'blocks_goal',
     title: entry
-      ? `${formatDate(day)} · сон ${formatMinutes(entry.sleepMinutes)} · энергия ${entry.energy ?? '—'}`
+      ? `${formatDate(day)} · сон ${formatMinutes(entry.sleepMinutes)} · энергия ${entry.energy ?? '—'}${entry.nutritionState ? ` · питание ${nutritionText(entry.nutritionState)}` : ''}`
       : `${formatDate(day)} · записи нет`
   };
 }));
@@ -54,6 +56,12 @@ const review = reactive<WeeklyReview>(emptyWeeklyReview(start.value));
 
 function clampPercent(value: number): number {
   return Math.min(100, Math.max(0, Math.round(value)));
+}
+
+function nutritionText(value: string): string {
+  if (value === 'supports_goal') return 'поддержало цель';
+  if (value === 'blocks_goal') return 'мешало цели';
+  return 'нейтрально';
 }
 
 function loadReview() {
@@ -108,6 +116,7 @@ function showExportStatus(message: string) {
       <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="summary.averageTimeInBed === null ? '' : `в кровати ${formatMinutes(Math.round(summary.averageTimeInBed))}`" accent="#7367f0" />
       <MetricCard label="Карьерных дней" :value="summary.careerDays" :hint="`${summary.externalSteps} внешних шагов`" accent="#4188e8" />
       <MetricCard label="Тренировок" :value="summary.sportSessions" accent="#38b989" />
+      <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" hint="поддержало / мешало" accent="#d39b2f" />
       <MetricCard label="Результатов" :value="results.length" accent="#f0ad42" />
     </div>
 
@@ -130,6 +139,8 @@ function showExportStatus(message: string) {
           <div class="rhythm-day__marks">
             <span v-if="item.hasCareer" class="legend-dot legend-dot--career"></span>
             <span v-if="item.hasMovement" class="legend-dot legend-dot--movement"></span>
+            <span v-if="item.hasNutritionSupport" class="legend-dot legend-dot--nutrition"></span>
+            <span v-if="item.hasNutritionBlock" class="legend-dot legend-dot--nutrition-block"></span>
             <span v-if="item.entry?.specialDay" class="legend-dot legend-dot--special"></span>
           </div>
           <strong>{{ formatDate(item.day, { weekday: 'short' }) }}</strong>
@@ -141,6 +152,7 @@ function showExportStatus(message: string) {
         <span><i class="legend-dot"></i>энергия</span>
         <span><i class="legend-dot legend-dot--career"></i>карьера</span>
         <span><i class="legend-dot legend-dot--movement"></i>движение</span>
+        <span><i class="legend-dot legend-dot--nutrition"></i>питание</span>
         <span><i class="legend-dot legend-dot--special"></i>особый день</span>
       </div>
     </article>

@@ -44,8 +44,10 @@ const monthCalendarDays = computed(() => {
       hasShortSleep: entry?.sleepMinutes !== null && entry?.sleepMinutes !== undefined && entry.sleepMinutes < 420,
       hasMovement: Boolean(entry?.activities.some((activity) => activity !== 'recovery')),
       hasCareer: Boolean(entry?.careerState),
+      hasNutritionSupport: entry?.nutritionState === 'supports_goal',
+      hasNutritionBlock: entry?.nutritionState === 'blocks_goal',
       title: entry
-        ? `${formatDate(date)} · сон ${formatMinutes(entry.sleepMinutes)} · энергия ${entry.energy ?? '—'}`
+        ? `${formatDate(date)} · сон ${formatMinutes(entry.sleepMinutes)} · энергия ${entry.energy ?? '—'}${entry.nutritionState ? ` · питание ${nutritionText(entry.nutritionState)}` : ''}${entry.weightKg ? ` · вес ${entry.weightKg} кг` : ''}`
         : `${formatDate(date)} · записи нет`
     };
   });
@@ -58,6 +60,12 @@ function energyLevel(value: number | null): 'empty' | 'low' | 'mid' | 'high' {
   if (value <= 2) return 'low';
   if (value <= 3) return 'mid';
   return 'high';
+}
+
+function nutritionText(value: string): string {
+  if (value === 'supports_goal') return 'поддержало цель';
+  if (value === 'blocks_goal') return 'мешало цели';
+  return 'нейтрально';
 }
 
 function shiftMonth(offset: number) {
@@ -105,6 +113,7 @@ function showExportStatus(message: string) {
       <MetricCard label="Заполнено дней" :value="summary.entriesCount" accent="#5865db" />
       <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="summary.averageSleepEfficiency === null ? '' : `доля сна ${Math.round(summary.averageSleepEfficiency)}%`" accent="#7367f0" />
       <MetricCard label="Внешних шагов" :value="summary.externalSteps" accent="#4188e8" />
+      <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="summary.averageWeightKg === null ? 'поддержало / мешало' : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг`" accent="#d39b2f" />
       <MetricCard label="Особых дней" :value="summary.specialDays" :hint="`${results.length} результатов`" accent="#eb7458" />
     </div>
 
@@ -125,6 +134,8 @@ function showExportStatus(message: string) {
             <div class="month-day__marks">
               <i v-if="day.hasCareer" class="legend-dot legend-dot--career"></i>
               <i v-if="day.hasMovement" class="legend-dot legend-dot--movement"></i>
+              <i v-if="day.hasNutritionSupport" class="legend-dot legend-dot--nutrition"></i>
+              <i v-if="day.hasNutritionBlock" class="legend-dot legend-dot--nutrition-block"></i>
               <i v-if="day.entry?.specialDay" class="legend-dot legend-dot--special"></i>
             </div>
           </template>
@@ -135,6 +146,8 @@ function showExportStatus(message: string) {
         <span><i class="legend-dot legend-dot--energy-high"></i>высокая энергия</span>
         <span><i class="legend-dot legend-dot--career"></i>карьера</span>
         <span><i class="legend-dot legend-dot--movement"></i>движение</span>
+        <span><i class="legend-dot legend-dot--nutrition"></i>питание поддержало</span>
+        <span><i class="legend-dot legend-dot--nutrition-block"></i>питание мешало</span>
         <span><i class="legend-dot legend-dot--special"></i>особый день</span>
       </div>
     </article>

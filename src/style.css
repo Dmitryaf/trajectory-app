@@ -78,6 +78,7 @@ textarea { resize: vertical; min-height: 64px; }
   padding: 24px; border: 1px solid rgba(222, 227, 238, .9); border-radius: 22px; background: rgba(255,255,255,.92); box-shadow: var(--shadow);
 }
 .form-card--sleep { background: linear-gradient(135deg, rgba(115,103,240,.055), rgba(255,255,255,.96) 45%); }
+.form-card--nutrition { background: linear-gradient(135deg, rgba(240,173,66,.075), rgba(255,255,255,.96) 48%); border-color: #f0dfc2; }
 .form-card--experiment { background: linear-gradient(135deg, #fff6ee, #fff); border-color: #f4ddcc; }
 .form-card--special { background: linear-gradient(135deg, rgba(235,116,88,.06), rgba(255,255,255,.96) 48%); border-color: #f1ddd8; }
 .form-card__heading { display: flex; gap: 13px; align-items: flex-start; margin-bottom: 20px; }
@@ -246,11 +247,11 @@ textarea { resize: vertical; min-height: 64px; }
 .bar-chart__bar { width: min(14px, 72%); min-height: 2px; border-radius: 5px 5px 2px 2px; background: linear-gradient(#766bf2, #5750c8); }
 .bar-chart__item small { height: 15px; color: #8b93a2; font-size: 8px; }
 .empty-chart { height: 170px; display: grid; place-items: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 15px; }
-.scatter-chart { position: relative; height: 260px; margin: 8px 0 12px 34px; border-left: 1px solid #dfe4ed; border-bottom: 1px solid #dfe4ed; background: linear-gradient(to top, rgba(227,231,240,.65) 1px, transparent 1px) 0 0 / 100% 25%, linear-gradient(to right, rgba(227,231,240,.55) 1px, transparent 1px) 0 0 / 16.666% 100%; }
+.scatter-chart { position: relative; height: 260px; margin: 12px 0 18px 54px; border-left: 1px solid #dfe4ed; border-bottom: 1px solid #dfe4ed; background: linear-gradient(to top, rgba(227,231,240,.65) 1px, transparent 1px) 0 0 / 100% 25%, linear-gradient(to right, rgba(227,231,240,.55) 1px, transparent 1px) 0 0 / 16.666% 100%; }
 .scatter-chart__axis { position: absolute; color: #8a93a5; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
-.scatter-chart__axis--y { left: -34px; top: 0; writing-mode: vertical-rl; transform: rotate(180deg); }
+.scatter-chart__axis--y { left: -54px; top: 0; writing-mode: vertical-rl; transform: rotate(180deg); }
 .scatter-chart__axis--x { right: 0; bottom: -24px; }
-.scatter-chart__tick { position: absolute; left: -25px; transform: translateY(50%); color: #8992a4; font-size: 10px; }
+.scatter-chart__tick { position: absolute; left: -31px; width: 18px; text-align: right; transform: translateY(50%); color: #8992a4; font-size: 10px; }
 .scatter-chart__point { position: absolute; width: 18px; height: 18px; border: 2px solid #fff; border-radius: 50%; background: #7f8ba1; box-shadow: 0 3px 8px rgba(36,45,66,.2); transform: translate(-50%, 50%); cursor: help; }
 .scatter-chart__point--movement { background: var(--accent); }
 .scatter-chart__point--special { width: 20px; height: 20px; background: var(--orange); box-shadow: 0 0 0 4px rgba(235,116,88,.13), 0 3px 8px rgba(36,45,66,.2); }
@@ -259,6 +260,8 @@ textarea { resize: vertical; min-height: 64px; }
 .legend-dot { width: 10px; height: 10px; border-radius: 50%; background: #7f8ba1; }
 .legend-dot--movement { background: var(--accent); }
 .legend-dot--special { background: var(--orange); }
+.legend-dot--nutrition { background: var(--amber); }
+.legend-dot--nutrition-block { background: #b85c4c; }
 .legend-dot--sleep { background: var(--purple); }
 .legend-dot--energy-low { background: #f0ad42; }
 .legend-dot--energy-high { background: var(--accent); }
@@ -389,7 +392,7 @@ textarea { resize: vertical; min-height: 64px; }
   .special-day-list--columns { grid-template-columns: 1fr; }
   .special-day-item { grid-template-columns: 76px 1fr; }
   .special-day-item p { grid-column: 2; }
-  .scatter-chart { height: 230px; margin-left: 28px; }
+  .scatter-chart { height: 230px; margin-left: 48px; }
   .month-layout { grid-template-columns: 1fr; }
   .bottom-nav { left: 10px; right: 10px; bottom: max(8px, env(safe-area-inset-bottom)); transform: none; justify-content: space-between; border-radius: 18px; }
   .bottom-nav__item { min-width: 0; flex: 1; padding: 7px 2px; }

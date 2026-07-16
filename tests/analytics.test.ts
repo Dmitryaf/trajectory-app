@@ -22,9 +22,23 @@ describe('analytics', () => {
     expect(summary.careerDays).toBe(2);
     expect(summary.externalSteps).toBe(1);
     expect(summary.sportSessions).toBe(2);
+    expect(summary.nutritionSupportDays).toBe(0);
+    expect(summary.nutritionBlockDays).toBe(0);
     expect(summary.specialDays).toBe(0);
     expect(summary.areaCounts.reading).toBe(2);
     expect(summary.areaCounts.family).toBe(1);
+  });
+
+  it('tracks nutrition state and weight without scoring the day', () => {
+    const summary = summarize([
+      entry('2026-07-13', { nutritionState: 'supports_goal', weightKg: 82.4 }),
+      entry('2026-07-14', { nutritionState: 'blocks_goal', weightKg: 82.8 }),
+      entry('2026-07-15', { nutritionState: 'neutral' })
+    ]);
+
+    expect(summary.nutritionSupportDays).toBe(1);
+    expect(summary.nutritionBlockDays).toBe(1);
+    expect(summary.averageWeightKg).toBe(82.6);
   });
 
   it('selects entries only from the requested Monday-Sunday week', () => {

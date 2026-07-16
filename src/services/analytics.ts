@@ -12,6 +12,9 @@ export type PeriodSummary = {
   careerDays: number;
   externalSteps: number;
   sportSessions: number;
+  nutritionSupportDays: number;
+  nutritionBlockDays: number;
+  averageWeightKg: number | null;
   specialDays: number;
   areaCounts: Record<string, number>;
 };
@@ -60,6 +63,9 @@ export function summarize(entries: DailyEntry[], externalCareerIds: string[] = e
     careerDays: entries.filter((entry) => entry.careerState !== null).length,
     externalSteps: entries.filter((entry) => externalCareerIds.includes(entry.careerState ?? '')).length,
     sportSessions: entries.reduce((sum, entry) => sum + entry.activities.filter((item) => item !== 'recovery').length, 0),
+    nutritionSupportDays: entries.filter((entry) => entry.nutritionState === 'supports_goal').length,
+    nutritionBlockDays: entries.filter((entry) => entry.nutritionState === 'blocks_goal').length,
+    averageWeightKg: average(entries.map((entry) => entry.weightKg)),
     specialDays: entries.filter((entry) => entry.specialDay !== null).length,
     areaCounts
   };
@@ -96,6 +102,7 @@ export function weekSummaryText(summary: PeriodSummary, activeAreas: LifeAreaId[
     `${summary.externalSteps} внешних ${plural(summary.externalSteps, 'шаг', 'шага', 'шагов')}`,
     `${summary.sportSessions} ${plural(summary.sportSessions, 'тренировка', 'тренировки', 'тренировок')}`
   ];
+  if (summary.nutritionSupportDays || summary.nutritionBlockDays) parts.push(`питание: ${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`);
   if (summary.averageSleep !== null) parts.push(`средний сон ${formatMinutes(Math.round(summary.averageSleep))}`);
   if (summary.averageTimeInBed !== null && summary.averageSleep !== null && summary.averageTimeInBed - summary.averageSleep >= 45) {
     parts.push(`в кровати ${formatMinutes(Math.round(summary.averageTimeInBed))}`);
@@ -238,6 +245,17 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
       title: summary.externalSteps > 0 ? 'Были внешние карьерные шаги' : 'Карьера появлялась',
       text: `${summary.careerDays} карьерных ${plural(summary.careerDays, 'день', 'дня', 'дней')}, ${summary.externalSteps} внешних ${plural(summary.externalSteps, 'шаг', 'шага', 'шагов')}. Так проще сверить ощущение с фактами.`,
       tone: summary.externalSteps > 0 ? 'good' : 'neutral',
+    });
+  }
+
+  if (summary.nutritionBlockDays >= 2 || summary.nutritionSupportDays >= 3) {
+    cues.push({
+      id: 'nutrition',
+      title: summary.nutritionBlockDays >= 2 ? 'Питание мешало цели' : 'Питание поддерживало цель',
+      text: summary.nutritionBlockDays >= 2
+        ? `${summary.nutritionBlockDays} ${plural(summary.nutritionBlockDays, 'день', 'дня', 'дней')} питание отмечено как мешающее цели. Лучше искать один повторяющийся сценарий, а не менять всё сразу.`
+        : `${summary.nutritionSupportDays} ${plural(summary.nutritionSupportDays, 'день', 'дня', 'дней')} питание поддерживало цель. Это стоит сохранить как рабочее условие.`,
+      tone: summary.nutritionBlockDays >= 2 ? 'warning' : 'good',
     });
   }
 
