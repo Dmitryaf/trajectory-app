@@ -3,8 +3,8 @@ import { computed, reactive, ref, watch } from 'vue';
 import ChipGroup from '../components/ChipGroup.vue';
 import ScalePicker from '../components/ScalePicker.vue';
 import { useAppStore } from '../stores/app';
-import { formatDate, todayKey } from '../services/dates';
-import { entriesForWeek } from '../services/analytics';
+import { addDays, formatDate, formatMinutes, todayKey } from '../services/dates';
+import { buildObservations, entriesForWeek, summarize } from '../services/analytics';
 import { plainCopy } from '../services/plain';
 import {
   activityOptions,
@@ -30,6 +30,12 @@ const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.cust
 const activeLifeOptions = computed(() => lifeAreaItems.value.filter((option) => store.settings.activeLifeAreas.includes(option.id)));
 const isToday = computed(() => selectedDate.value === todayKey());
 const weekEntryCount = computed(() => entriesForWeek(store.dailyEntries, selectedDate.value).length);
+const currentWeekEntries = computed(() => entriesForWeek(store.dailyEntries, todayKey()));
+const externalCareerIds = computed(() => ['external', 'interview', 'result', ...store.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id)]);
+const currentWeekSummary = computed(() => summarize(currentWeekEntries.value, externalCareerIds.value));
+const currentWeekObservation = computed(() => buildObservations(currentWeekEntries.value)[0]);
+const yesterday = computed(() => addDays(todayKey(), -1));
+const yesterdayMissing = computed(() => isToday.value && store.loaded && !store.entryByDate(yesterday.value));
 
 function loadEntry(date: string) {
   const existing = store.entryByDate(date);
@@ -46,6 +52,10 @@ async function save() {
   saved.value = true;
   window.setTimeout(() => (saved.value = false), 2200);
 }
+
+function fillYesterday() {
+  selectedDate.value = yesterday.value;
+}
 </script>
 
 <template>
@@ -58,6 +68,22 @@ async function save() {
       </div>
       <input v-model="selectedDate" class="date-input" type="date" aria-label="Дата записи" />
     </div>
+
+    <section v-if="isToday && currentWeekSummary.entriesCount" class="today-pulse" aria-label="Пульс недели">
+      <div>
+        <span class="eyebrow">Пульс недели</span>
+        <p>{{ currentWeekSummary.entriesCount }} заполненных {{ currentWeekSummary.entriesCount === 1 ? 'день' : 'дней' }} · сон {{ formatMinutes(currentWeekSummary.averageSleep === null ? null : Math.round(currentWeekSummary.averageSleep)) }} · {{ currentWeekSummary.externalSteps }} внешних шагов</p>
+      </div>
+      <p v-if="currentWeekObservation">{{ currentWeekObservation.text }}</p>
+    </section>
+
+    <section v-if="yesterdayMissing" class="recovery-nudge" aria-label="Вчера без записи">
+      <div>
+        <strong>Вчера без записи</strong>
+        <p>Можно заполнить коротко сейчас или спокойно продолжить с сегодняшнего дня.</p>
+      </div>
+      <button class="secondary-button" type="button" @click="fillYesterday">Заполнить вчера</button>
+    </section>
 
     <form class="checkin-grid" @submit.prevent="save">
       <article class="form-card form-card--sleep">
