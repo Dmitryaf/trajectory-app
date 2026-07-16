@@ -43,6 +43,65 @@ const monthRows = computed(() => monthsBetween(start.value, end.value).map((mont
 const maxEntries = computed(() => Math.max(1, ...monthRows.value.map((row) => row.summary.entriesCount)));
 const maxExternalSteps = computed(() => Math.max(1, ...monthRows.value.map((row) => row.summary.externalSteps)));
 const maxResults = computed(() => Math.max(1, ...monthRows.value.map((row) => row.resultsCount)));
+const maxSpecialDays = computed(() => Math.max(1, ...monthRows.value.map((row) => row.summary.specialDays)));
+const trendBands = computed(() => [
+  {
+    id: 'sleep',
+    label: 'Сон',
+    cells: monthRows.value.map((row) => ({
+      key: `${row.monthStart}-sleep`,
+      label: row.label,
+      percent: percentOf(row.summary.averageSleep, 540),
+      level: levelFromPercent(percentOf(row.summary.averageSleep, 540)),
+      title: `${formatDate(row.monthStart, { month: 'long', year: 'numeric' })}: сон ${formatMinutes(row.summary.averageSleep === null ? null : Math.round(row.summary.averageSleep))}`
+    }))
+  },
+  {
+    id: 'energy',
+    label: 'Энергия',
+    cells: monthRows.value.map((row) => ({
+      key: `${row.monthStart}-energy`,
+      label: row.label,
+      percent: percentOf(row.summary.averageEnergy, 5),
+      level: levelFromPercent(percentOf(row.summary.averageEnergy, 5)),
+      title: `${formatDate(row.monthStart, { month: 'long', year: 'numeric' })}: энергия ${row.summary.averageEnergy === null ? '—' : row.summary.averageEnergy.toFixed(1).replace('.0', '')}/5`
+    }))
+  },
+  {
+    id: 'external',
+    label: 'Внешние шаги',
+    cells: monthRows.value.map((row) => ({
+      key: `${row.monthStart}-external`,
+      label: row.label,
+      percent: percentOf(row.summary.externalSteps, maxExternalSteps.value),
+      level: levelFromPercent(percentOf(row.summary.externalSteps, maxExternalSteps.value)),
+      title: `${formatDate(row.monthStart, { month: 'long', year: 'numeric' })}: ${row.summary.externalSteps} внешних шагов`
+    }))
+  },
+  {
+    id: 'context',
+    label: 'Особые дни',
+    cells: monthRows.value.map((row) => ({
+      key: `${row.monthStart}-context`,
+      label: row.label,
+      percent: percentOf(row.summary.specialDays, maxSpecialDays.value),
+      level: row.summary.specialDays > 0 ? 'context' : 'empty',
+      title: `${formatDate(row.monthStart, { month: 'long', year: 'numeric' })}: ${row.summary.specialDays} особых дней`
+    }))
+  }
+]);
+
+function percentOf(value: number | null, max: number): number {
+  if (value === null || max <= 0) return 0;
+  return Math.min(100, Math.max(0, Math.round((value / max) * 100)));
+}
+
+function levelFromPercent(percent: number): 'empty' | 'low' | 'mid' | 'high' {
+  if (percent <= 0) return 'empty';
+  if (percent < 45) return 'low';
+  if (percent < 75) return 'mid';
+  return 'high';
+}
 
 function createPackage() {
   return buildRangePackage(range.value, todayKey(), {
@@ -86,6 +145,27 @@ function showExportStatus(message: string) {
       <MetricCard label="Внешних шагов" :value="summary.externalSteps" accent="#4188e8" />
       <MetricCard label="Результатов" :value="results.length" :hint="`${lifeEvents.length} событий архива`" accent="#f0ad42" />
     </div>
+
+    <article class="dashboard-card">
+      <div class="section-heading"><div><span class="eyebrow">Ленты периода</span><h2>Как менялась траектория</h2></div></div>
+      <div class="trend-ribbons">
+        <div v-for="band in trendBands" :key="band.id" class="trend-ribbon">
+          <strong>{{ band.label }}</strong>
+          <div class="trend-ribbon__cells">
+            <span
+              v-for="cell in band.cells"
+              :key="cell.key"
+              class="trend-ribbon__cell"
+              :class="`trend-ribbon__cell--${cell.level}`"
+              :title="cell.title"
+            >
+              <i :style="{ height: `${cell.percent}%` }"></i>
+              <small>{{ cell.label }}</small>
+            </span>
+          </div>
+        </div>
+      </div>
+    </article>
 
     <article class="dashboard-card">
       <div class="section-heading">

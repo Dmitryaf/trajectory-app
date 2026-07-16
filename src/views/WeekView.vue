@@ -34,7 +34,27 @@ const summaryText = computed(() => weekSummaryText(summary.value, store.settings
 const stateNotes = computed(() => entries.value.filter((entry) => entry.stateContext.trim()).sort((a, b) => a.date.localeCompare(b.date)));
 const factorNotes = computed(() => entries.value.filter((entry) => entry.eveningFactors.length).sort((a, b) => a.date.localeCompare(b.date)));
 const specialDays = computed(() => entries.value.filter((entry) => entry.specialDay !== null).sort((a, b) => a.date.localeCompare(b.date)));
+const rhythmDays = computed(() => days.value.map((day) => {
+  const entry = entriesByDate.value.get(day);
+  const sleepPercent = entry?.sleepMinutes === null || entry?.sleepMinutes === undefined ? null : clampPercent((entry.sleepMinutes / 720) * 100);
+  const energyPercent = entry?.energy === null || entry?.energy === undefined ? null : clampPercent(((entry.energy - 1) / 4) * 100);
+  return {
+    day,
+    entry,
+    sleepPercent,
+    energyPercent,
+    hasCareer: Boolean(entry?.careerState),
+    hasMovement: Boolean(entry?.activities.some((activity) => activity !== 'recovery')),
+    title: entry
+      ? `${formatDate(day)} · сон ${formatMinutes(entry.sleepMinutes)} · энергия ${entry.energy ?? '—'}`
+      : `${formatDate(day)} · записи нет`
+  };
+}));
 const review = reactive<WeeklyReview>(emptyWeeklyReview(start.value));
+
+function clampPercent(value: number): number {
+  return Math.min(100, Math.max(0, Math.round(value)));
+}
 
 function loadReview() {
   const existing = store.reviewByWeek(start.value);
@@ -92,6 +112,38 @@ function showExportStatus(message: string) {
     </div>
 
     <article class="insight-card"><span class="insight-card__mark">⌁</span><p>{{ summaryText }}</p></article>
+
+    <article class="dashboard-card">
+      <div class="section-heading"><div><span class="eyebrow">Ритм недели</span><h2>Сон, энергия и действия</h2></div></div>
+      <div class="rhythm-chart">
+        <article
+          v-for="item in rhythmDays"
+          :key="item.day"
+          class="rhythm-day"
+          :class="{ 'rhythm-day--empty': !item.entry, 'rhythm-day--special': item.entry?.specialDay }"
+          :title="item.title"
+        >
+          <div class="rhythm-day__plot">
+            <span v-if="item.sleepPercent !== null" class="rhythm-day__bar" :style="{ height: `${item.sleepPercent}%` }"></span>
+            <span v-if="item.energyPercent !== null" class="rhythm-day__dot" :style="{ bottom: `${item.energyPercent}%` }"></span>
+          </div>
+          <div class="rhythm-day__marks">
+            <span v-if="item.hasCareer" class="legend-dot legend-dot--career"></span>
+            <span v-if="item.hasMovement" class="legend-dot legend-dot--movement"></span>
+            <span v-if="item.entry?.specialDay" class="legend-dot legend-dot--special"></span>
+          </div>
+          <strong>{{ formatDate(item.day, { weekday: 'short' }) }}</strong>
+          <small>{{ formatDate(item.day, { day: '2-digit' }) }}</small>
+        </article>
+      </div>
+      <div class="chart-legend">
+        <span><i class="legend-dot legend-dot--sleep"></i>сон</span>
+        <span><i class="legend-dot"></i>энергия</span>
+        <span><i class="legend-dot legend-dot--career"></i>карьера</span>
+        <span><i class="legend-dot legend-dot--movement"></i>движение</span>
+        <span><i class="legend-dot legend-dot--special"></i>особый день</span>
+      </div>
+    </article>
 
     <article class="dashboard-card">
       <div class="section-heading">

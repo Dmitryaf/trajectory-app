@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
 import { buildObservations, buildReviewCues, buildReviewQuestions, entriesForMonth, factorSummaries, hasMovement, resultsForPeriod, specialDayLabel, summarize } from '../services/analytics';
-import { addDays, endOfMonth, formatDate, formatMinutes, fromDateKey, startOfMonth, todayKey, toDateKey } from '../services/dates';
+import { dateRange, endOfMonth, formatDate, formatMinutes, fromDateKey, startOfMonth, todayKey, toDateKey } from '../services/dates';
 import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../services/exportPackage';
 import { useAppStore } from '../stores/app';
 import { lifeAreaOptions } from '../types';
@@ -29,6 +29,36 @@ const specialDays = computed(() => entries.value.filter((entry) => entry.special
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
 const activeAreas = computed(() => lifeAreaItems.value.filter((option) => store.settings.activeLifeAreas.includes(option.id)));
 const maxAreaCount = computed(() => Math.max(1, ...activeAreas.value.map((area) => summary.value.areaCounts[area.id] ?? 0)));
+const entriesByDate = computed(() => new Map(entries.value.map((entry) => [entry.date, entry])));
+const monthCalendarDays = computed(() => {
+  const leadingDays = (fromDateKey(start.value).getDay() || 7) - 1;
+  const blanks = Array.from({ length: leadingDays }, (_, index) => ({ id: `blank-${index}`, date: '', blank: true as const }));
+  const monthDays = dateRange(start.value, end.value).map((date) => {
+    const entry = entriesByDate.value.get(date);
+    return {
+      id: date,
+      date,
+      blank: false as const,
+      entry,
+      energyLevel: energyLevel(entry?.energy ?? null),
+      hasShortSleep: entry?.sleepMinutes !== null && entry?.sleepMinutes !== undefined && entry.sleepMinutes < 420,
+      hasMovement: Boolean(entry?.activities.some((activity) => activity !== 'recovery')),
+      hasCareer: Boolean(entry?.careerState),
+      title: entry
+        ? `${formatDate(date)} · сон ${formatMinutes(entry.sleepMinutes)} · энергия ${entry.energy ?? '—'}`
+        : `${formatDate(date)} · записи нет`
+    };
+  });
+  return [...blanks, ...monthDays];
+});
+const monthWeekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+function energyLevel(value: number | null): 'empty' | 'low' | 'mid' | 'high' {
+  if (value === null) return 'empty';
+  if (value <= 2) return 'low';
+  if (value <= 3) return 'mid';
+  return 'high';
+}
 
 function shiftMonth(offset: number) {
   const date = fromDateKey(anchor.value);
@@ -77,6 +107,37 @@ function showExportStatus(message: string) {
       <MetricCard label="Внешних шагов" :value="summary.externalSteps" accent="#4188e8" />
       <MetricCard label="Особых дней" :value="summary.specialDays" :hint="`${results.length} результатов`" accent="#eb7458" />
     </div>
+
+    <article class="dashboard-card">
+      <div class="section-heading"><div><span class="eyebrow">Карта месяца</span><h2>Энергия, сон и контекст по дням</h2></div></div>
+      <div class="month-calendar">
+        <div v-for="weekday in monthWeekdays" :key="weekday" class="month-calendar__head">{{ weekday }}</div>
+        <article
+          v-for="day in monthCalendarDays"
+          :key="day.id"
+          class="month-day"
+          :class="day.blank ? 'month-day--blank' : [`month-day--${day.energyLevel}`, { 'month-day--short-sleep': day.hasShortSleep, 'month-day--special': day.entry?.specialDay }]"
+          :title="day.blank ? '' : day.title"
+        >
+          <template v-if="!day.blank">
+            <strong>{{ formatDate(day.date, { day: 'numeric' }) }}</strong>
+            <span v-if="day.entry?.energy" class="month-day__energy">{{ day.entry.energy }}/5</span>
+            <div class="month-day__marks">
+              <i v-if="day.hasCareer" class="legend-dot legend-dot--career"></i>
+              <i v-if="day.hasMovement" class="legend-dot legend-dot--movement"></i>
+              <i v-if="day.entry?.specialDay" class="legend-dot legend-dot--special"></i>
+            </div>
+          </template>
+        </article>
+      </div>
+      <div class="chart-legend">
+        <span><i class="legend-dot legend-dot--energy-low"></i>низкая энергия</span>
+        <span><i class="legend-dot legend-dot--energy-high"></i>высокая энергия</span>
+        <span><i class="legend-dot legend-dot--career"></i>карьера</span>
+        <span><i class="legend-dot legend-dot--movement"></i>движение</span>
+        <span><i class="legend-dot legend-dot--special"></i>особый день</span>
+      </div>
+    </article>
 
     <article class="dashboard-card">
       <div class="section-heading">
