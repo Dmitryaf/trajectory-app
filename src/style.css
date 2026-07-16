@@ -99,8 +99,8 @@ textarea { resize: vertical; min-height: 64px; }
 .number-field span { padding-right: 14px; white-space: nowrap; color: var(--muted); font-size: 13px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .chip-group { display: flex; flex-wrap: wrap; gap: 9px; }
-.chip { border: 1px solid var(--line); border-radius: 999px; padding: 10px 14px; background: var(--surface-soft); color: #596379; cursor: pointer; font-weight: 650; font-size: 13px; transition: all .15s ease; }
-.chip:hover { border-color: #c1c9d9; transform: translateY(-1px); }
+.chip { border: 1px solid var(--line); border-radius: 999px; padding: 10px 14px; background: var(--surface-soft); color: #596379; cursor: pointer; font-weight: 650; font-size: 13px; transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease; }
+.chip:hover { border-color: #c1c9d9; background: #fff; box-shadow: 0 3px 10px rgba(39, 50, 75, .06); }
 .chip--selected { color: #145e49; border-color: rgba(75,205,160,.65); background: #e5f8f1; box-shadow: 0 3px 10px rgba(75,205,160,.13); }
 .chip__icon { margin-right: 6px; font-weight: 900; }
 .option-preview { display: flex; flex-wrap: wrap; gap: 9px; }
@@ -117,11 +117,12 @@ textarea { resize: vertical; min-height: 64px; }
 .range-tabs button { border: 1px solid var(--line); border-radius: 13px; background: #fff; padding: 10px 14px; color: #667189; cursor: pointer; font-weight: 750; }
 .range-tabs button.active { color: #145e49; border-color: rgba(75,205,160,.65); background: #e5f8f1; }
 .primary-button, .secondary-button, .danger-button {
-  border: 0; border-radius: 14px; padding: 13px 18px; cursor: pointer; font-weight: 750; transition: transform .15s, box-shadow .15s, opacity .15s;
+  border: 0; border-radius: 14px; padding: 13px 18px; cursor: pointer; font-weight: 750; transition: background-color .15s, box-shadow .15s, opacity .15s;
 }
 .primary-button { color: white; background: var(--navy); box-shadow: 0 8px 18px rgba(17,24,43,.16); }
-.primary-button:hover, .secondary-button:hover { transform: translateY(-1px); }
-.primary-button:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+.primary-button:hover { box-shadow: 0 10px 22px rgba(17,24,43,.2); }
+.secondary-button:hover { background: #e4e8f0; }
+.primary-button:disabled { opacity: .45; cursor: not-allowed; box-shadow: 0 8px 18px rgba(17,24,43,.1); }
 .primary-button--save { position: sticky; bottom: 84px; min-height: 56px; display: flex; justify-content: space-between; align-items: center; font-size: 15px; z-index: 4; }
 .secondary-button { color: var(--navy); background: #eef1f6; }
 .danger-button { color: #a6392c; background: #fdebe8; }
@@ -291,7 +292,7 @@ textarea { resize: vertical; min-height: 64px; }
 .custom-options { margin-top: 14px; padding-top: 2px; }
 .inline-add { display: grid; grid-template-columns: 1fr auto; gap: 9px; align-items: center; }
 .inline-add .secondary-button { height: 48px; }
-.inline-add .secondary-button:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+.inline-add .secondary-button:disabled { opacity: .45; cursor: not-allowed; }
 .custom-list { display: grid; gap: 8px; margin-top: 12px; }
 .custom-list__item { display: grid; grid-template-columns: 1fr 32px; gap: 10px; align-items: center; min-height: 42px; padding: 8px 10px 8px 13px; border: 1px solid var(--line); border-radius: 13px; background: #fff; }
 .custom-list__item span { display: flex; align-items: center; gap: 7px; color: #4d586e; font-weight: 700; font-size: 13px; }
