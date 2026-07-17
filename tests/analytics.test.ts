@@ -44,6 +44,16 @@ describe('analytics', () => {
     expect(summary.averageWeightKg).toBe(82.6);
   });
 
+  it('counts multiple career actions from one day', () => {
+    const summary = summarize([
+      entry('2026-07-13', { careerStates: ['preparation', 'external', 'interview'] }),
+      entry('2026-07-14', { careerStates: ['result'] })
+    ]);
+
+    expect(summary.careerDays).toBe(2);
+    expect(summary.externalSteps).toBe(3);
+  });
+
   it('drops unsupported imported enum values', () => {
     const normalized = normalizeDailyEntry({ date: '2026-07-13', nutritionState: 'unknown' as never, actionDirection: 'noise' as never });
 

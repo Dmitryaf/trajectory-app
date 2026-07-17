@@ -94,6 +94,10 @@ textarea { resize: vertical; min-height: 64px; }
 .field-label { display: block; margin: 16px 0 8px; font-size: 12px; color: #5d687e; font-weight: 750; }
 .factor-block { margin-top: 4px; }
 .factor-block textarea { margin-top: 10px; }
+.form-card > .chip-group + textarea,
+.form-card > .chip-group + .sleep-field-grid,
+.form-card > .sleep-field-grid + textarea,
+.form-card > .binary-choice + textarea { margin-top: 14px; }
 .sleep-field-grid { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
 .sleep-field-grid > div { flex: 0 1 185px; }
 .number-field { display: flex; align-items: center; width: 185px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: white; }

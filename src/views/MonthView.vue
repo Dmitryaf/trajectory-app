@@ -4,7 +4,7 @@ import EnergySleepScatter from '../components/charts/EnergySleepScatter.vue';
 import SleepBarChart from '../components/charts/SleepBarChart.vue';
 import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
-import { actionDirectionLabel, buildObservations, buildReviewCues, buildReviewQuestions, entriesForMonth, factorSummaries, hasMovement, resultsForPeriod, specialDayLabel, summarize } from '../services/analytics';
+import { actionDirectionLabel, buildObservations, buildReviewCues, buildReviewQuestions, careerStatesForEntry, entriesForMonth, factorSummaries, hasMovement, resultsForPeriod, specialDayLabel, summarize } from '../services/analytics';
 import { dateRange, endOfMonth, formatDate, formatMinutes, fromDateKey, startOfMonth, todayKey, toDateKey } from '../services/dates';
 import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../services/exportPackage';
 import { useAppStore } from '../stores/app';
@@ -60,7 +60,7 @@ const monthCalendarDays = computed(() => {
       energyLevel: energyLevel(entry?.energy ?? null),
       hasShortSleep: entry?.sleepMinutes !== null && entry?.sleepMinutes !== undefined && entry.sleepMinutes < 420,
       hasMovement: Boolean(entry?.activities.some((activity) => activity !== 'recovery')),
-      hasCareer: Boolean(entry?.careerState),
+      hasCareer: entry ? careerStatesForEntry(entry).length > 0 : false,
       hasExternalAction: entry?.actionDirection === 'external',
       hasDrift: entry?.actionDirection === 'drift',
       hasNutritionSupport: entry?.nutritionState === 'supports_goal',

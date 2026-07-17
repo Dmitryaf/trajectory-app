@@ -43,6 +43,7 @@ export type DailyEntry = {
   specialDay: SpecialDayId | null;
   specialDayNote: string;
   careerState: CareerState | null;
+  careerStates: CareerState[];
   activities: ActivityId[];
   nutritionState: NutritionState | null;
   nutritionNote: string;
@@ -248,6 +249,7 @@ export function emptyDailyEntry(date: string): DailyEntry {
     specialDay: null,
     specialDayNote: "",
     careerState: null,
+    careerStates: [],
     activities: [],
     nutritionState: null,
     nutritionNote: "",
@@ -262,9 +264,15 @@ export function emptyDailyEntry(date: string): DailyEntry {
 }
 
 export function normalizeDailyEntry(entry: Partial<DailyEntry> & { date: string }): DailyEntry {
+  const careerStates = Array.isArray(entry.careerStates)
+    ? Array.from(new Set(entry.careerStates.filter((state): state is CareerState => typeof state === "string")))
+    : typeof entry.careerState === "string" ? [entry.careerState] : [];
+
   return {
     ...emptyDailyEntry(entry.date),
     ...entry,
+    careerState: careerStates[0] ?? null,
+    careerStates,
     timeInBedMinutes: typeof entry.timeInBedMinutes === "number" ? entry.timeInBedMinutes : null,
     weightKg: typeof entry.weightKg === "number" ? entry.weightKg : null,
     activities: Array.isArray(entry.activities) ? entry.activities : [],

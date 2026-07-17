@@ -207,7 +207,7 @@ function fillYesterday() {
           <span class="section-icon section-icon--blue">↗</span>
           <div><h2>Карьера</h2><p>Самый заметный контакт с карьерой за день.</p></div>
         </div>
-        <ChipGroup v-model="form.careerState as CareerState | null" :options="careerItems" allow-clear />
+        <ChipGroup v-model="form.careerStates as CareerState[]" :options="careerItems" multiple />
       </article>
 
       <article class="form-card form-card--direction">

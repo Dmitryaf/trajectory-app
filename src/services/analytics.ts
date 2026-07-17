@@ -66,8 +66,8 @@ export function summarize(entries: DailyEntry[], externalCareerIds: string[] = e
     averageSleepEfficiency: average(entries.map((entry) => sleepEfficiency(entry))),
     averageEnergy: average(entries.map((entry) => entry.energy)),
     averageSleepQuality: average(entries.map((entry) => entry.sleepQuality)),
-    careerDays: entries.filter((entry) => entry.careerState !== null).length,
-    externalSteps: entries.filter((entry) => externalCareerIds.includes(entry.careerState ?? '')).length,
+    careerDays: entries.filter((entry) => careerStatesForEntry(entry).length > 0).length,
+    externalSteps: entries.reduce((sum, entry) => sum + careerStatesForEntry(entry).filter((state) => externalCareerIds.includes(state)).length, 0),
     sportSessions: entries.reduce((sum, entry) => sum + entry.activities.filter((item) => item !== 'recovery').length, 0),
     nutritionSupportDays: entries.filter((entry) => entry.nutritionState === 'supports_goal').length,
     nutritionBlockDays: entries.filter((entry) => entry.nutritionState === 'blocks_goal').length,
@@ -130,9 +130,13 @@ export function weekSummaryText(summary: PeriodSummary, activeAreas: LifeAreaId[
 
 export function hasArea(entry: DailyEntry | undefined, area: string): boolean {
   if (!entry) return false;
-  if (area === 'career') return entry.careerState !== null;
+  if (area === 'career') return careerStatesForEntry(entry).length > 0;
   if (area === 'sport') return entry.activities.some((activity) => activity !== 'recovery');
   return entry.lifeAreas.includes(area as LifeAreaId);
+}
+
+export function careerStatesForEntry(entry: DailyEntry): string[] {
+  return entry.careerStates.length ? entry.careerStates : entry.careerState ? [entry.careerState] : [];
 }
 
 export function hasMovement(entry: DailyEntry): boolean {

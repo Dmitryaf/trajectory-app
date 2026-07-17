@@ -2,7 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
-import { actionDirectionLabel, buildReviewCues, buildReviewQuestions, entriesForWeek, eveningFactorLabel, hasArea, resultsForPeriod, specialDayLabel, summarize, weekSummaryText } from '../services/analytics';
+import { actionDirectionLabel, buildReviewCues, buildReviewQuestions, careerStatesForEntry, entriesForWeek, eveningFactorLabel, hasArea, resultsForPeriod, specialDayLabel, summarize, weekSummaryText } from '../services/analytics';
 import { addDays, endOfWeek, formatDate, formatMinutes, startOfWeek, todayKey } from '../services/dates';
 import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../services/exportPackage';
 import { plainCopy } from '../services/plain';
@@ -44,7 +44,7 @@ const rhythmDays = computed(() => days.value.map((day) => {
     entry,
     sleepPercent,
     energyPercent,
-    hasCareer: Boolean(entry?.careerState),
+    hasCareer: entry ? careerStatesForEntry(entry).length > 0 : false,
     hasExternalAction: entry?.actionDirection === 'external',
     hasDrift: entry?.actionDirection === 'drift',
     hasMovement: Boolean(entry?.activities.some((activity) => activity !== 'recovery')),
