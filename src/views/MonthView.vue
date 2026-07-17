@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import EnergySleepScatter from '../components/charts/EnergySleepScatter.vue';
+import SleepBarChart from '../components/charts/SleepBarChart.vue';
 import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
 import { buildObservations, buildReviewCues, buildReviewQuestions, entriesForMonth, factorSummaries, hasMovement, resultsForPeriod, specialDayLabel, summarize } from '../services/analytics';
@@ -24,6 +26,20 @@ const reviewCues = computed(() => buildReviewCues('month', entries.value, result
 const reviewQuestions = buildReviewQuestions('month');
 const sleepEntries = computed(() => [...entries.value].filter((entry) => entry.sleepMinutes !== null).sort((a, b) => a.date.localeCompare(b.date)));
 const energySleepEntries = computed(() => entries.value.filter((entry) => entry.sleepMinutes !== null && entry.energy !== null).sort((a, b) => a.date.localeCompare(b.date)));
+const sleepChartData = computed(() => sleepEntries.value.map((entry) => ({
+  key: entry.date,
+  label: formatDate(entry.date, { day: 'numeric' }),
+  value: entry.sleepMinutes,
+  title: `${formatDate(entry.date)}: ${formatMinutes(entry.sleepMinutes)}`
+})));
+const energySleepPoints = computed(() => energySleepEntries.value.map((entry) => ({
+  key: entry.date,
+  sleepMinutes: entry.sleepMinutes ?? 0,
+  energy: entry.energy ?? 1,
+  hasMovement: hasMovement(entry),
+  isSpecial: Boolean(entry.specialDay),
+  title: `${formatDate(entry.date)} · сон ${formatMinutes(entry.sleepMinutes)} · энергия ${entry.energy}${hasMovement(entry) ? ' · было движение' : ''}${entry.specialDay ? ` · ${specialDayLabel(entry.specialDay)}` : ''}`
+})));
 const stateNotes = computed(() => entries.value.filter((entry) => entry.stateContext.trim()).sort((a, b) => b.date.localeCompare(a.date)));
 const specialDays = computed(() => entries.value.filter((entry) => entry.specialDay !== null).sort((a, b) => b.date.localeCompare(a.date)));
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
@@ -184,32 +200,13 @@ function showExportStatus(message: string) {
 
     <article class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Сон</span><h2>Динамика сна</h2></div><small>0–12 часов</small></div>
-      <div v-if="sleepEntries.length" class="bar-chart">
-        <div v-for="entry in sleepEntries" :key="entry.date" class="bar-chart__item" :title="`${formatDate(entry.date)}: ${formatMinutes(entry.sleepMinutes)}`">
-          <div class="bar-chart__bar" :style="{ height: `${Math.min(100, ((entry.sleepMinutes ?? 0) / 720) * 100)}%` }"></div>
-          <small>{{ formatDate(entry.date, { day: 'numeric' }) }}</small>
-        </div>
-      </div>
+      <SleepBarChart v-if="sleepEntries.length" :data="sleepChartData" />
       <div v-else class="empty-chart">Добавь данные о сне — здесь появится динамика.</div>
     </article>
 
     <article class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Связь показателей</span><h2>Сон, энергия и движение</h2></div><small>точки: дни</small></div>
-      <div v-if="energySleepEntries.length" class="scatter-chart" aria-label="График связи сна, энергии и движения">
-        <div class="scatter-chart__axis scatter-chart__axis--y">энергия</div>
-        <div class="scatter-chart__axis scatter-chart__axis--x">сон</div>
-        <span v-for="level in [5, 4, 3, 2, 1]" :key="level" class="scatter-chart__tick" :style="{ bottom: `${((level - 1) / 4) * 100}%` }">{{ level }}</span>
-        <button
-          v-for="entry in energySleepEntries"
-          :key="entry.date"
-          type="button"
-          class="scatter-chart__point"
-          :class="{ 'scatter-chart__point--movement': hasMovement(entry), 'scatter-chart__point--special': entry.specialDay }"
-          :style="{ left: `${Math.min(100, ((entry.sleepMinutes ?? 0) / 720) * 100)}%`, bottom: `${(((entry.energy ?? 1) - 1) / 4) * 100}%` }"
-          :title="`${formatDate(entry.date)} · сон ${formatMinutes(entry.sleepMinutes)} · энергия ${entry.energy}${hasMovement(entry) ? ' · было движение' : ''}${entry.specialDay ? ` · ${specialDayLabel(entry.specialDay)}` : ''}`"
-          :aria-label="`${formatDate(entry.date)}: сон ${formatMinutes(entry.sleepMinutes)}, энергия ${entry.energy}`"
-        ></button>
-      </div>
+      <EnergySleepScatter v-if="energySleepEntries.length" :points="energySleepPoints" />
       <div v-else class="empty-chart">Когда появятся сон и энергия за несколько дней, здесь будет видна связь.</div>
       <div class="chart-legend">
         <span><i class="legend-dot"></i>без движения</span>
