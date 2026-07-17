@@ -7,6 +7,7 @@ export type BaseCareerState =
 export type CareerState = BaseCareerState | string;
 export type ActivityId = "boxing" | "bachata" | "walk" | "workout" | "recovery";
 export type NutritionState = "supports_goal" | "neutral" | "blocks_goal";
+export type ActionDirectionId = "external" | "preparation" | "maintenance" | "recovery" | "drift";
 export type SpecialDayId = "sick" | "travel" | "overload" | "event" | "recovery" | "other";
 export type LifeEventType = "change" | "milestone" | "decision" | "event" | "insight" | "other";
 export type EveningFactorId =
@@ -46,6 +47,8 @@ export type DailyEntry = {
   nutritionState: NutritionState | null;
   nutritionNote: string;
   weightKg: number | null;
+  actionDirection: ActionDirectionId | null;
+  actionNote: string;
   lifeAreas: LifeAreaId[];
   importantFact: string;
   experimentCompleted: boolean | null;
@@ -120,6 +123,14 @@ export const nutritionOptions: Option<NutritionState>[] = [
   { id: "supports_goal", label: "Поддержало цель", icon: "✓" },
   { id: "neutral", label: "Нейтрально", icon: "·" },
   { id: "blocks_goal", label: "Мешало цели", icon: "!" },
+];
+
+export const actionDirectionOptions: Option<ActionDirectionId>[] = [
+  { id: "external", label: "Внешний шаг", icon: "↗" },
+  { id: "preparation", label: "Подготовка", icon: "◫" },
+  { id: "maintenance", label: "Поддержание", icon: "○" },
+  { id: "recovery", label: "Восстановление", icon: "◌" },
+  { id: "drift", label: "Уход в сторону", icon: "!" },
 ];
 
 export const specialDayOptions: Option<SpecialDayId>[] = [
@@ -220,6 +231,10 @@ function isNutritionState(value: unknown): value is NutritionState {
   return typeof value === "string" && nutritionOptions.some((option) => option.id === value);
 }
 
+function isActionDirection(value: unknown): value is ActionDirectionId {
+  return typeof value === "string" && actionDirectionOptions.some((option) => option.id === value);
+}
+
 export function emptyDailyEntry(date: string): DailyEntry {
   return {
     date,
@@ -237,6 +252,8 @@ export function emptyDailyEntry(date: string): DailyEntry {
     nutritionState: null,
     nutritionNote: "",
     weightKg: null,
+    actionDirection: null,
+    actionNote: "",
     lifeAreas: [],
     importantFact: "",
     experimentCompleted: null,
@@ -253,6 +270,8 @@ export function normalizeDailyEntry(entry: Partial<DailyEntry> & { date: string 
     activities: Array.isArray(entry.activities) ? entry.activities : [],
     nutritionState: isNutritionState(entry.nutritionState) ? entry.nutritionState : null,
     nutritionNote: typeof entry.nutritionNote === "string" ? entry.nutritionNote : "",
+    actionDirection: isActionDirection(entry.actionDirection) ? entry.actionDirection : null,
+    actionNote: typeof entry.actionNote === "string" ? entry.actionNote : "",
     lifeAreas: Array.isArray(entry.lifeAreas) ? entry.lifeAreas : [],
     stateContext: typeof entry.stateContext === "string" ? entry.stateContext : "",
     eveningFactors: Array.isArray(entry.eveningFactors) ? entry.eveningFactors : [],

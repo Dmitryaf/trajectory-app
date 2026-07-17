@@ -7,6 +7,7 @@ import { addDays, endOfMonth, endOfWeek, formatDate, formatMinutes, startOfMonth
 import { buildObservations, entriesForPeriod, entriesForWeek, summarize } from '../services/analytics';
 import { plainCopy } from '../services/plain';
 import {
+  actionDirectionOptions,
   activityOptions,
   careerOptions,
   emptyDailyEntry,
@@ -14,6 +15,7 @@ import {
   lifeAreaOptions,
   nutritionOptions,
   specialDayOptions,
+  type ActionDirectionId,
   type ActivityId,
   type CareerState,
   type DailyEntry,
@@ -206,6 +208,21 @@ function fillYesterday() {
           <div><h2>Карьера</h2><p>Самый заметный контакт с карьерой за день.</p></div>
         </div>
         <ChipGroup v-model="form.careerState as CareerState | null" :options="careerItems" allow-clear />
+      </article>
+
+      <article class="form-card form-card--direction">
+        <div class="form-card__heading">
+          <span class="section-icon section-icon--blue">⌁</span>
+          <div><h2>Направление действия</h2><p>Проверка: день двигал цель наружу или оставался подготовкой.</p></div>
+        </div>
+        <ChipGroup v-model="form.actionDirection as ActionDirectionId | null" :options="actionDirectionOptions" allow-clear />
+        <textarea
+          v-if="form.actionDirection"
+          v-model="form.actionNote"
+          rows="2"
+          maxlength="180"
+          placeholder="Например: написал человеку, изучал тему, поддерживал режим, день ушёл в новости"
+        ></textarea>
       </article>
 
       <article class="form-card">

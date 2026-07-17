@@ -1,5 +1,5 @@
-import type { DailyEntry, EveningFactorId, LifeAreaId, LifeEventRecord, Option, ResultRecord } from '../types';
-import { activityOptions, careerOptions, eveningFactorOptions, externalCareerStates, lifeAreaOptions, specialDayOptions } from '../types';
+import type { ActionDirectionId, DailyEntry, EveningFactorId, LifeAreaId, LifeEventRecord, Option, ResultRecord } from '../types';
+import { actionDirectionOptions, activityOptions, careerOptions, eveningFactorOptions, externalCareerStates, lifeAreaOptions, specialDayOptions } from '../types';
 import { dateRange, endOfMonth, endOfWeek, formatMinutes, startOfMonth, startOfWeek } from './dates';
 
 export type PeriodSummary = {
@@ -15,6 +15,10 @@ export type PeriodSummary = {
   nutritionSupportDays: number;
   nutritionBlockDays: number;
   averageWeightKg: number | null;
+  actionDirectionCounts: Record<ActionDirectionId, number>;
+  externalActionDays: number;
+  preparationDays: number;
+  driftDays: number;
   specialDays: number;
   areaCounts: Record<string, number>;
 };
@@ -49,8 +53,10 @@ function average(values: Array<number | null>): number | null {
 
 export function summarize(entries: DailyEntry[], externalCareerIds: string[] = externalCareerStates): PeriodSummary {
   const areaCounts = Object.fromEntries(lifeAreaOptions.map(({ id }) => [id, 0])) as Record<string, number>;
+  const actionDirectionCounts = Object.fromEntries(actionDirectionOptions.map(({ id }) => [id, 0])) as Record<ActionDirectionId, number>;
   for (const entry of entries) {
     for (const area of entry.lifeAreas) areaCounts[area] = (areaCounts[area] ?? 0) + 1;
+    if (entry.actionDirection) actionDirectionCounts[entry.actionDirection] += 1;
   }
 
   return {
@@ -66,6 +72,10 @@ export function summarize(entries: DailyEntry[], externalCareerIds: string[] = e
     nutritionSupportDays: entries.filter((entry) => entry.nutritionState === 'supports_goal').length,
     nutritionBlockDays: entries.filter((entry) => entry.nutritionState === 'blocks_goal').length,
     averageWeightKg: average(entries.map((entry) => entry.weightKg)),
+    actionDirectionCounts,
+    externalActionDays: actionDirectionCounts.external,
+    preparationDays: actionDirectionCounts.preparation,
+    driftDays: actionDirectionCounts.drift,
     specialDays: entries.filter((entry) => entry.specialDay !== null).length,
     areaCounts
   };
@@ -104,6 +114,9 @@ export function weekSummaryText(summary: PeriodSummary, activeAreas: LifeAreaId[
   ];
   if (summary.nutritionSupportDays || summary.nutritionBlockDays) {
     parts.push(`питание поддержало ${summary.nutritionSupportDays}, мешало ${summary.nutritionBlockDays}`);
+  }
+  if (summary.externalActionDays || summary.preparationDays || summary.driftDays) {
+    parts.push(`направление: внешние ${summary.externalActionDays}, подготовка ${summary.preparationDays}, в сторону ${summary.driftDays}`);
   }
   if (summary.averageSleep !== null) parts.push(`средний сон ${formatMinutes(Math.round(summary.averageSleep))}`);
   if (summary.averageTimeInBed !== null && summary.averageSleep !== null && summary.averageTimeInBed - summary.averageSleep >= 45) {
@@ -250,6 +263,31 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
     });
   }
 
+  if (summary.preparationDays >= 3 && summary.externalActionDays <= 1) {
+    cues.push({
+      id: 'direction-preparation',
+      title: 'Много подготовки, мало внешнего контакта',
+      text: `${summary.preparationDays} ${plural(summary.preparationDays, 'день', 'дня', 'дней')} отмечены как подготовка, внешних шагов — ${summary.externalActionDays}. Стоит проверить, не заменяет ли подготовка обратную связь от реальности.`,
+      tone: 'warning',
+    });
+  } else if (summary.externalActionDays >= 2) {
+    cues.push({
+      id: 'direction-external',
+      title: 'Были внешние шаги',
+      text: `${summary.externalActionDays} ${plural(summary.externalActionDays, 'день', 'дня', 'дней')} с действиями, которые выходили наружу. Это хороший слой для проверки целей фактами.`,
+      tone: 'good',
+    });
+  }
+
+  if (summary.driftDays >= 2) {
+    cues.push({
+      id: 'direction-drift',
+      title: 'Дни уходили в сторону',
+      text: `${summary.driftDays} ${plural(summary.driftDays, 'день', 'дня', 'дней')} отмечены как уход в сторону. В разборе лучше искать повторяющийся сценарий, а не обвинять себя.`,
+      tone: 'warning',
+    });
+  }
+
   if (results.length) {
     cues.push({
       id: 'results',
@@ -298,6 +336,7 @@ export function buildReviewQuestions(period: 'week' | 'month'): string[] {
   const label = period === 'week' ? 'неделе' : 'месяце';
   return [
     `Что в этой ${label} повторялось чаще всего и могло влиять на состояние?`,
+    'Что из сделанного создало обратную связь от реальности?',
     'Какой один фактор стоит уменьшить в следующем периоде?',
     'Какое одно действие или условие стоит сохранить, потому что оно помогало?',
   ];
@@ -323,6 +362,10 @@ export function specialDayLabel(value: string | null): string {
 
 export function eveningFactorLabel(value: string): string {
   return eveningFactorOptions.find((option) => option.id === value)?.label ?? value;
+}
+
+export function actionDirectionLabel(value: string | null): string {
+  return actionDirectionOptions.find((option) => option.id === value)?.label ?? 'Не отмечено';
 }
 
 function formatNumber(value: number): string {

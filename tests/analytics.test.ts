@@ -24,6 +24,9 @@ describe('analytics', () => {
     expect(summary.sportSessions).toBe(2);
     expect(summary.nutritionSupportDays).toBe(0);
     expect(summary.nutritionBlockDays).toBe(0);
+    expect(summary.externalActionDays).toBe(0);
+    expect(summary.preparationDays).toBe(0);
+    expect(summary.driftDays).toBe(0);
     expect(summary.specialDays).toBe(0);
     expect(summary.areaCounts.reading).toBe(2);
     expect(summary.areaCounts.family).toBe(1);
@@ -41,10 +44,25 @@ describe('analytics', () => {
     expect(summary.averageWeightKg).toBe(82.6);
   });
 
-  it('drops unsupported nutrition states from imported data', () => {
-    const normalized = normalizeDailyEntry({ date: '2026-07-13', nutritionState: 'unknown' as never });
+  it('drops unsupported imported enum values', () => {
+    const normalized = normalizeDailyEntry({ date: '2026-07-13', nutritionState: 'unknown' as never, actionDirection: 'noise' as never });
 
     expect(normalized.nutritionState).toBeNull();
+    expect(normalized.actionDirection).toBeNull();
+  });
+
+  it('tracks action direction without turning it into a score', () => {
+    const summary = summarize([
+      entry('2026-07-13', { actionDirection: 'external' }),
+      entry('2026-07-14', { actionDirection: 'preparation' }),
+      entry('2026-07-15', { actionDirection: 'preparation' }),
+      entry('2026-07-16', { actionDirection: 'drift' })
+    ]);
+
+    expect(summary.externalActionDays).toBe(1);
+    expect(summary.preparationDays).toBe(2);
+    expect(summary.driftDays).toBe(1);
+    expect(summary.actionDirectionCounts.maintenance).toBe(0);
   });
 
   it('selects entries only from the requested Monday-Sunday week', () => {
@@ -180,6 +198,18 @@ describe('analytics', () => {
     expect(cues.map((cue) => cue.id)).toEqual(expect.arrayContaining(['coverage', 'short-sleep', 'factor', 'career', 'context', 'results']));
     expect(cues.find((cue) => cue.id === 'coverage')?.tone).toBe('good');
     expect(cues.find((cue) => cue.id === 'factor')?.text).toContain('Новости');
+  });
+
+  it('flags preparation when it does not turn into external contact', () => {
+    const cues = buildReviewCues('week', [
+      entry('2026-07-13', { actionDirection: 'preparation' }),
+      entry('2026-07-14', { actionDirection: 'preparation' }),
+      entry('2026-07-15', { actionDirection: 'preparation' }),
+      entry('2026-07-16', { actionDirection: 'maintenance' })
+    ], [], []);
+
+    expect(cues.map((cue) => cue.id)).toContain('direction-preparation');
+    expect(cues.find((cue) => cue.id === 'direction-preparation')?.tone).toBe('warning');
   });
 
   it('keeps completed results visible when review cues are crowded', () => {

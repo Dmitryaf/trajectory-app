@@ -4,7 +4,7 @@ import EnergySleepScatter from '../components/charts/EnergySleepScatter.vue';
 import SleepBarChart from '../components/charts/SleepBarChart.vue';
 import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
-import { buildObservations, buildReviewCues, buildReviewQuestions, entriesForMonth, factorSummaries, hasMovement, resultsForPeriod, specialDayLabel, summarize } from '../services/analytics';
+import { actionDirectionLabel, buildObservations, buildReviewCues, buildReviewQuestions, entriesForMonth, factorSummaries, hasMovement, resultsForPeriod, specialDayLabel, summarize } from '../services/analytics';
 import { dateRange, endOfMonth, formatDate, formatMinutes, fromDateKey, startOfMonth, todayKey, toDateKey } from '../services/dates';
 import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../services/exportPackage';
 import { useAppStore } from '../stores/app';
@@ -41,6 +41,7 @@ const energySleepPoints = computed(() => energySleepEntries.value.map((entry) =>
   title: `${formatDate(entry.date)} · сон ${formatMinutes(entry.sleepMinutes)} · энергия ${entry.energy}${hasMovement(entry) ? ' · было движение' : ''}${entry.specialDay ? ` · ${specialDayLabel(entry.specialDay)}` : ''}`
 })));
 const stateNotes = computed(() => entries.value.filter((entry) => entry.stateContext.trim()).sort((a, b) => b.date.localeCompare(a.date)));
+const actionNotes = computed(() => entries.value.filter((entry) => entry.actionDirection !== null).sort((a, b) => b.date.localeCompare(a.date)));
 const specialDays = computed(() => entries.value.filter((entry) => entry.specialDay !== null).sort((a, b) => b.date.localeCompare(a.date)));
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
 const activeAreas = computed(() => lifeAreaItems.value.filter((option) => store.settings.activeLifeAreas.includes(option.id)));
@@ -60,10 +61,12 @@ const monthCalendarDays = computed(() => {
       hasShortSleep: entry?.sleepMinutes !== null && entry?.sleepMinutes !== undefined && entry.sleepMinutes < 420,
       hasMovement: Boolean(entry?.activities.some((activity) => activity !== 'recovery')),
       hasCareer: Boolean(entry?.careerState),
+      hasExternalAction: entry?.actionDirection === 'external',
+      hasDrift: entry?.actionDirection === 'drift',
       hasNutritionSupport: entry?.nutritionState === 'supports_goal',
       hasNutritionBlock: entry?.nutritionState === 'blocks_goal',
       title: entry
-        ? `${formatDate(date)} · сон ${formatMinutes(entry.sleepMinutes)} · энергия ${entry.energy ?? '—'}${entry.nutritionState ? ` · питание ${nutritionText(entry.nutritionState)}` : ''}${entry.weightKg ? ` · вес ${entry.weightKg} кг` : ''}`
+        ? `${formatDate(date)} · сон ${formatMinutes(entry.sleepMinutes)} · энергия ${entry.energy ?? '—'}${entry.actionDirection ? ` · ${actionDirectionLabel(entry.actionDirection)}` : ''}${entry.nutritionState ? ` · питание ${nutritionText(entry.nutritionState)}` : ''}${entry.weightKg ? ` · вес ${entry.weightKg} кг` : ''}`
         : `${formatDate(date)} · записи нет`
     };
   });
@@ -129,6 +132,7 @@ function showExportStatus(message: string) {
       <MetricCard label="Заполнено дней" :value="summary.entriesCount" accent="#5865db" />
       <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="summary.averageSleepEfficiency === null ? '' : `доля сна ${Math.round(summary.averageSleepEfficiency)}%`" accent="#7367f0" />
       <MetricCard label="Внешних шагов" :value="summary.externalSteps" accent="#4188e8" />
+      <MetricCard label="Направление" :value="`${summary.externalActionDays}/${summary.preparationDays}`" hint="наружу / подготовка" accent="#5264d8" />
       <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="summary.averageWeightKg === null ? 'поддержало / мешало' : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг`" accent="#d39b2f" />
       <MetricCard label="Особых дней" :value="summary.specialDays" :hint="`${results.length} результатов`" accent="#eb7458" />
     </div>
@@ -149,6 +153,8 @@ function showExportStatus(message: string) {
             <span v-if="day.entry?.energy" class="month-day__energy">{{ day.entry.energy }}/5</span>
             <div class="month-day__marks">
               <i v-if="day.hasCareer" class="legend-dot legend-dot--career"></i>
+              <i v-if="day.hasExternalAction" class="legend-dot legend-dot--direction"></i>
+              <i v-if="day.hasDrift" class="legend-dot legend-dot--drift"></i>
               <i v-if="day.hasMovement" class="legend-dot legend-dot--movement"></i>
               <i v-if="day.hasNutritionSupport" class="legend-dot legend-dot--nutrition"></i>
               <i v-if="day.hasNutritionBlock" class="legend-dot legend-dot--nutrition-block"></i>
@@ -161,6 +167,8 @@ function showExportStatus(message: string) {
         <span><i class="legend-dot legend-dot--energy-low"></i>низкая энергия</span>
         <span><i class="legend-dot legend-dot--energy-high"></i>высокая энергия</span>
         <span><i class="legend-dot legend-dot--career"></i>карьера</span>
+        <span><i class="legend-dot legend-dot--direction"></i>внешний шаг</span>
+        <span><i class="legend-dot legend-dot--drift"></i>в сторону</span>
         <span><i class="legend-dot legend-dot--movement"></i>движение</span>
         <span><i class="legend-dot legend-dot--nutrition"></i>питание поддержало</span>
         <span><i class="legend-dot legend-dot--nutrition-block"></i>питание мешало</span>
@@ -248,6 +256,16 @@ function showExportStatus(message: string) {
         <div v-else class="empty-state empty-state--compact"><p>Пока нет зафиксированных результатов.</p></div>
       </article>
     </div>
+
+    <article v-if="actionNotes.length" class="dashboard-card">
+      <div class="section-heading"><div><span class="eyebrow">Проверка направления</span><h2>Контакт с реальностью</h2></div><span class="count-badge">{{ actionNotes.length }}</span></div>
+      <div class="note-list note-list--columns">
+        <article v-for="entry in actionNotes" :key="entry.date" class="note-item">
+          <time>{{ formatDate(entry.date, { day: 'numeric', month: 'short' }) }}</time>
+          <p><strong>{{ actionDirectionLabel(entry.actionDirection) }}</strong><span v-if="entry.actionNote"><br />{{ entry.actionNote }}</span></p>
+        </article>
+      </div>
+    </article>
 
     <article v-if="lifeEvents.length" class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Длинная дуга</span><h2>События из архива</h2></div><span class="count-badge">{{ lifeEvents.length }}</span></div>

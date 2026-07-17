@@ -42,6 +42,7 @@ const monthRows = computed(() => monthsBetween(start.value, end.value).map((mont
 
 const maxEntries = computed(() => Math.max(1, ...monthRows.value.map((row) => row.summary.entriesCount)));
 const maxExternalSteps = computed(() => Math.max(1, ...monthRows.value.map((row) => row.summary.externalSteps)));
+const maxExternalActions = computed(() => Math.max(1, ...monthRows.value.map((row) => row.summary.externalActionDays)));
 const maxResults = computed(() => Math.max(1, ...monthRows.value.map((row) => row.resultsCount)));
 const maxSpecialDays = computed(() => Math.max(1, ...monthRows.value.map((row) => row.summary.specialDays)));
 const trendBands = computed(() => [
@@ -66,6 +67,22 @@ const trendBands = computed(() => [
       level: levelFromPercent(percentOf(row.summary.averageEnergy, 5)),
       title: `${formatDate(row.monthStart, { month: 'long', year: 'numeric' })}: энергия ${row.summary.averageEnergy === null ? '—' : row.summary.averageEnergy.toFixed(1).replace('.0', '')}/5`
     }))
+  },
+  {
+    id: 'direction',
+    label: 'Направление',
+    cells: monthRows.value.map((row) => {
+      const external = row.summary.externalActionDays;
+      const preparation = row.summary.preparationDays;
+      const drift = row.summary.driftDays;
+      return {
+        key: `${row.monthStart}-direction`,
+        label: row.label,
+        percent: percentOf(external + preparation + drift, Math.max(1, row.summary.entriesCount)),
+        level: drift > 0 && external === 0 ? 'low' : external > preparation ? 'high' : preparation > 0 ? 'mid' : 'empty',
+        title: `${formatDate(row.monthStart, { month: 'long', year: 'numeric' })}: наружу ${external}, подготовка ${preparation}, в сторону ${drift}`
+      };
+    })
   },
   {
     id: 'nutrition',
@@ -158,6 +175,7 @@ function showExportStatus(message: string) {
       <MetricCard label="Заполнено дней" :value="summary.entriesCount" accent="#5865db" />
       <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="summary.averageTimeInBed === null ? '' : `в кровати ${formatMinutes(Math.round(summary.averageTimeInBed))}`" accent="#7367f0" />
       <MetricCard label="Внешних шагов" :value="summary.externalSteps" accent="#4188e8" />
+      <MetricCard label="Направление" :value="`${summary.externalActionDays}/${summary.preparationDays}`" hint="наружу / подготовка" accent="#5264d8" />
       <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="summary.averageWeightKg === null ? 'поддержало / мешало' : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг`" accent="#d39b2f" />
       <MetricCard label="Результатов" :value="results.length" :hint="`${lifeEvents.length} событий архива`" accent="#f0ad42" />
     </div>
@@ -208,14 +226,16 @@ function showExportStatus(message: string) {
           <div class="long-chart__tracks">
             <span class="long-chart__bar long-chart__bar--entries" :style="{ width: `${(row.summary.entriesCount / maxEntries) * 100}%` }"></span>
             <span class="long-chart__bar long-chart__bar--career" :style="{ width: `${(row.summary.externalSteps / maxExternalSteps) * 100}%` }"></span>
+            <span class="long-chart__bar long-chart__bar--direction" :style="{ width: `${(row.summary.externalActionDays / maxExternalActions) * 100}%` }"></span>
             <span class="long-chart__bar long-chart__bar--results" :style="{ width: `${(row.resultsCount / maxResults) * 100}%` }"></span>
           </div>
-          <small>{{ row.summary.entriesCount }} дн. · {{ row.summary.externalSteps }} шаг. · {{ row.resultsCount }} рез.</small>
+          <small>{{ row.summary.entriesCount }} дн. · {{ row.summary.externalActionDays }} наружу · {{ row.resultsCount }} рез.</small>
         </div>
       </div>
       <div class="chart-legend">
         <span><i class="legend-dot legend-dot--entries"></i>записи</span>
-        <span><i class="legend-dot legend-dot--career"></i>внешние шаги</span>
+        <span><i class="legend-dot legend-dot--career"></i>карьера</span>
+        <span><i class="legend-dot legend-dot--direction"></i>наружу</span>
         <span><i class="legend-dot legend-dot--results"></i>результаты</span>
       </div>
     </article>
@@ -223,12 +243,13 @@ function showExportStatus(message: string) {
     <article class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Состояние</span><h2>Сон и энергия по месяцам</h2></div></div>
       <div class="trend-table">
-        <div class="trend-table__head"><span>месяц</span><span>сон</span><span>вес</span><span>энергия</span><span>питание</span><span>особые</span></div>
+        <div class="trend-table__head"><span>месяц</span><span>сон</span><span>вес</span><span>энергия</span><span>наружу</span><span>питание</span><span>особые</span></div>
         <div v-for="row in monthRows" :key="`${row.monthStart}-state`" class="trend-table__row">
           <strong>{{ row.label }}</strong>
           <span>{{ formatMinutes(row.summary.averageSleep === null ? null : Math.round(row.summary.averageSleep)) }}</span>
           <span>{{ row.summary.averageWeightKg === null ? '—' : `${row.summary.averageWeightKg.toFixed(1).replace('.0', '')} кг` }}</span>
           <span>{{ row.summary.averageEnergy === null ? '—' : `${row.summary.averageEnergy.toFixed(1).replace('.0', '')}/5` }}</span>
+          <span>{{ row.summary.externalActionDays }}/{{ row.summary.preparationDays }}</span>
           <span>{{ row.summary.nutritionSupportDays }}/{{ row.summary.nutritionBlockDays }}</span>
           <span>{{ row.summary.specialDays }}</span>
         </div>
