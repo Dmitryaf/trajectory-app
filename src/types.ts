@@ -33,6 +33,8 @@ export type LifeAreaId = BaseLifeAreaId | string;
 
 export type DailyEntry = {
   date: string;
+  bedtime: string;
+  wakeTime: string;
   sleepMinutes: number | null;
   timeInBedMinutes: number | null;
   sleepQuality: number | null;
@@ -47,9 +49,12 @@ export type DailyEntry = {
   activities: ActivityId[];
   nutritionState: NutritionState | null;
   nutritionNote: string;
+  nutritionCriterion: string;
   weightKg: number | null;
   actionDirection: ActionDirectionId | null;
   actionNote: string;
+  focusTitle: string;
+  externalEvidenceCriterion: string;
   lifeAreas: LifeAreaId[];
   importantFact: string;
   experimentCompleted: boolean | null;
@@ -75,6 +80,7 @@ export type LifeEventRecord = {
 
 export type WeeklyReview = {
   weekStart: string;
+  previousPlanOutcome: string;
   results: string[];
   support: string;
   obstacle: string;
@@ -82,11 +88,24 @@ export type WeeklyReview = {
   ifThenPlan: string;
 };
 
+export type MonthlyReview = {
+  monthStart: string;
+  mainPattern: string;
+  support: string;
+  obstacle: string;
+  courseChange: string;
+  nextFocus: string;
+  ifThenPlan: string;
+};
+
 export type Experiment = {
   active: boolean;
   title: string;
+  hypothesis: string;
+  targetMetric: string;
   startDate: string;
   endDate: string;
+  conclusion: string;
 };
 
 export type AppSettings = {
@@ -94,6 +113,9 @@ export type AppSettings = {
   activeLifeAreas: LifeAreaId[];
   customCareerOptions: Option<CareerState>[];
   customLifeAreaOptions: Option<LifeAreaId>[];
+  activeFocusTitle: string;
+  externalEvidenceCriterion: string;
+  nutritionGoalCriterion: string;
   experiment: Experiment;
 };
 
@@ -190,7 +212,10 @@ export const defaultSettings: AppSettings = {
   activeLifeAreas: ["family", "reading", "creativity", "spiritual", "rest"],
   customCareerOptions: [],
   customLifeAreaOptions: [],
-  experiment: { active: false, title: "", startDate: "", endDate: "" },
+  activeFocusTitle: "",
+  externalEvidenceCriterion: "",
+  nutritionGoalCriterion: "",
+  experiment: { active: false, title: "", hypothesis: "", targetMetric: "", startDate: "", endDate: "", conclusion: "" },
 };
 
 export const externalCareerStates: CareerState[] = ["external", "interview", "result"];
@@ -207,6 +232,9 @@ export function normalizeSettings(settings: Partial<AppSettings> | null | undefi
     activeLifeAreas: Array.isArray(source.activeLifeAreas) ? source.activeLifeAreas.filter((area): area is LifeAreaId => typeof area === "string") : defaultSettings.activeLifeAreas,
     customCareerOptions,
     customLifeAreaOptions,
+    activeFocusTitle: typeof source.activeFocusTitle === "string" ? source.activeFocusTitle : "",
+    externalEvidenceCriterion: typeof source.externalEvidenceCriterion === "string" ? source.externalEvidenceCriterion : "",
+    nutritionGoalCriterion: typeof source.nutritionGoalCriterion === "string" ? source.nutritionGoalCriterion : "",
     experiment: { ...defaultSettings.experiment, ...(source.experiment ?? {}) },
   };
 }
@@ -240,6 +268,8 @@ function isActionDirection(value: unknown): value is ActionDirectionId {
 export function emptyDailyEntry(date: string): DailyEntry {
   return {
     date,
+    bedtime: "",
+    wakeTime: "",
     sleepMinutes: null,
     timeInBedMinutes: null,
     sleepQuality: null,
@@ -254,9 +284,12 @@ export function emptyDailyEntry(date: string): DailyEntry {
     activities: [],
     nutritionState: null,
     nutritionNote: "",
+    nutritionCriterion: "",
     weightKg: null,
     actionDirection: null,
     actionNote: "",
+    focusTitle: "",
+    externalEvidenceCriterion: "",
     lifeAreas: [],
     importantFact: "",
     experimentCompleted: null,
@@ -272,6 +305,8 @@ export function normalizeDailyEntry(entry: Partial<DailyEntry> & { date: string 
   return {
     ...emptyDailyEntry(entry.date),
     ...entry,
+    bedtime: typeof entry.bedtime === "string" ? entry.bedtime : "",
+    wakeTime: typeof entry.wakeTime === "string" ? entry.wakeTime : "",
     careerState: careerStates[0] ?? null,
     careerStates,
     timeInBedMinutes: typeof entry.timeInBedMinutes === "number" ? entry.timeInBedMinutes : null,
@@ -279,8 +314,11 @@ export function normalizeDailyEntry(entry: Partial<DailyEntry> & { date: string 
     activities: Array.isArray(entry.activities) ? entry.activities : [],
     nutritionState: isNutritionState(entry.nutritionState) ? entry.nutritionState : null,
     nutritionNote: typeof entry.nutritionNote === "string" ? entry.nutritionNote : "",
+    nutritionCriterion: typeof entry.nutritionCriterion === "string" ? entry.nutritionCriterion : "",
     actionDirection: isActionDirection(entry.actionDirection) ? entry.actionDirection : null,
     actionNote: typeof entry.actionNote === "string" ? entry.actionNote : "",
+    focusTitle: typeof entry.focusTitle === "string" ? entry.focusTitle : "",
+    externalEvidenceCriterion: typeof entry.externalEvidenceCriterion === "string" ? entry.externalEvidenceCriterion : "",
     lifeAreas: Array.isArray(entry.lifeAreas) ? entry.lifeAreas : [],
     stateContext: typeof entry.stateContext === "string" ? entry.stateContext : "",
     eveningFactors: Array.isArray(entry.eveningFactors) ? entry.eveningFactors : [],
@@ -305,6 +343,7 @@ export function normalizeLifeEvent(event: Partial<LifeEventRecord> & { date: str
 export function emptyWeeklyReview(weekStart: string): WeeklyReview {
   return {
     weekStart,
+    previousPlanOutcome: "",
     results: ["", "", ""],
     support: "",
     obstacle: "",
@@ -317,10 +356,36 @@ export function normalizeWeeklyReview(review: Partial<WeeklyReview> & { weekStar
   return {
     ...emptyWeeklyReview(review.weekStart),
     ...review,
+    previousPlanOutcome: typeof review.previousPlanOutcome === "string" ? review.previousPlanOutcome : "",
     results: Array.isArray(review.results) ? review.results : ["", "", ""],
     support: typeof review.support === "string" ? review.support : "",
     obstacle: typeof review.obstacle === "string" ? review.obstacle : "",
     nextLever: typeof review.nextLever === "string" ? review.nextLever : "",
+    ifThenPlan: typeof review.ifThenPlan === "string" ? review.ifThenPlan : "",
+  };
+}
+
+export function emptyMonthlyReview(monthStart: string): MonthlyReview {
+  return {
+    monthStart,
+    mainPattern: "",
+    support: "",
+    obstacle: "",
+    courseChange: "",
+    nextFocus: "",
+    ifThenPlan: "",
+  };
+}
+
+export function normalizeMonthlyReview(review: Partial<MonthlyReview> & { monthStart: string }): MonthlyReview {
+  return {
+    ...emptyMonthlyReview(review.monthStart),
+    ...review,
+    mainPattern: typeof review.mainPattern === "string" ? review.mainPattern : "",
+    support: typeof review.support === "string" ? review.support : "",
+    obstacle: typeof review.obstacle === "string" ? review.obstacle : "",
+    courseChange: typeof review.courseChange === "string" ? review.courseChange : "",
+    nextFocus: typeof review.nextFocus === "string" ? review.nextFocus : "",
     ifThenPlan: typeof review.ifThenPlan === "string" ? review.ifThenPlan : "",
   };
 }

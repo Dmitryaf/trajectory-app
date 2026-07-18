@@ -1,18 +1,20 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import type { EChartsCoreOption } from 'echarts/core';
 import EChartPanel from '../components/charts/EChartPanel.vue';
 import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
 import { actionDirectionLabel, buildObservations, buildReviewCues, buildReviewQuestions, careerStatesForEntry, entriesForMonth, factorSummaries, hasMovement, resultsForPeriod, specialDayLabel, summarize } from '../services/analytics';
-import { dateRange, endOfMonth, formatDate, formatMinutes, fromDateKey, startOfMonth, todayKey, toDateKey } from '../services/dates';
+import { addDays, dateRange, endOfMonth, formatDate, formatMinutes, fromDateKey, startOfMonth, todayKey, toDateKey } from '../services/dates';
 import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../services/exportPackage';
 import { useAppStore } from '../stores/app';
-import { actionDirectionOptions, lifeAreaOptions } from '../types';
+import { plainCopy } from '../services/plain';
+import { actionDirectionOptions, emptyMonthlyReview, lifeAreaOptions, type MonthlyReview } from '../types';
 
 const store = useAppStore();
 const anchor = ref(todayKey());
 const exportStatus = ref('');
+const reviewSaved = ref(false);
 const start = computed(() => startOfMonth(anchor.value));
 const end = computed(() => endOfMonth(anchor.value));
 const entries = computed(() => entriesForMonth(store.dailyEntries, anchor.value));
@@ -24,8 +26,9 @@ const results = computed(() => resultsForPeriod(store.results, start.value, end.
 const lifeEvents = computed(() => store.lifeEvents.filter((event) => event.date >= start.value && event.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)));
 const reviewCues = computed(() => buildReviewCues('month', entries.value, results.value, lifeEvents.value, externalCareerIds.value));
 const reviewQuestions = buildReviewQuestions('month');
-const sleepEntries = computed(() => [...entries.value].filter((entry) => entry.sleepMinutes !== null).sort((a, b) => a.date.localeCompare(b.date)));
+const sleepEntries = computed(() => [...entries.value].filter((entry) => entry.specialDay === null && entry.sleepMinutes !== null).sort((a, b) => a.date.localeCompare(b.date)));
 const energySleepEntries = computed(() => entries.value.filter((entry) => entry.sleepMinutes !== null && entry.energy !== null).sort((a, b) => a.date.localeCompare(b.date)));
+const weightEntries = computed(() => entries.value.filter((entry) => entry.specialDay === null && entry.weightKg !== null).sort((a, b) => a.date.localeCompare(b.date)));
 const sleepEnergyOption = computed<EChartsCoreOption>(() => {
   const rows = sleepEntries.value;
   return {
@@ -70,6 +73,29 @@ const energySleepOption = computed<EChartsCoreOption>(() => ({
     { name: 'особый день', type: 'scatter', data: scatterRows('special'), symbolSize: 16 }
   ]
 }));
+const weightOption = computed<EChartsCoreOption>(() => {
+  const rows = weightEntries.value.map((entry) => {
+    const windowStart = addDays(entry.date, -6);
+    const windowValues = weightEntries.value.filter((item) => item.date >= windowStart && item.date <= entry.date).map((item) => item.weightKg as number);
+    return {
+      date: entry.date,
+      weight: entry.weightKg,
+      rolling: windowValues.length >= 2 ? Math.round((windowValues.reduce((sum, value) => sum + value, 0) / windowValues.length) * 10) / 10 : null
+    };
+  });
+  return {
+    color: ['#d39b2f', '#5264d8'],
+    tooltip: { trigger: 'axis' },
+    legend: { top: 0, right: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: '#657085', fontSize: 12 } },
+    grid: { left: 52, right: 24, top: 42, bottom: 34 },
+    xAxis: { type: 'category', data: rows.map((row) => formatDate(row.date, { day: 'numeric' })), axisTick: { show: false }, axisLine: { lineStyle: { color: '#dfe4ed' } }, axisLabel: { color: '#7d8798' } },
+    yAxis: { type: 'value', scale: true, axisLabel: { formatter: '{value}кг', color: '#7d8798' }, splitLine: { lineStyle: { color: '#edf1f6' } } },
+    series: [
+      { name: 'измерение', type: 'line', symbolSize: 7, data: rows.map((row) => row.weight), lineStyle: { width: 1, opacity: .4 } },
+      { name: 'среднее за 7 дней', type: 'line', symbolSize: 8, data: rows.map((row) => row.rolling), connectNulls: false, lineStyle: { width: 3 } }
+    ]
+  };
+});
 const actionDirectionOption = computed<EChartsCoreOption>(() => {
   const data = actionDirectionOptions
     .map((option) => ({ name: option.label, value: summary.value.actionDirectionCounts[option.id] }))
@@ -95,7 +121,6 @@ const actionNotes = computed(() => entries.value.filter((entry) => entry.actionD
 const specialDays = computed(() => entries.value.filter((entry) => entry.specialDay !== null).sort((a, b) => b.date.localeCompare(a.date)));
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
 const activeAreas = computed(() => lifeAreaItems.value.filter((option) => store.settings.activeLifeAreas.includes(option.id)));
-const maxAreaCount = computed(() => Math.max(1, ...activeAreas.value.map((area) => summary.value.areaCounts[area.id] ?? 0)));
 const entriesByDate = computed(() => new Map(entries.value.map((entry) => [entry.date, entry])));
 const monthCalendarDays = computed(() => {
   const leadingDays = (fromDateKey(start.value).getDay() || 7) - 1;
@@ -123,6 +148,21 @@ const monthCalendarDays = computed(() => {
   return [...blanks, ...monthDays];
 });
 const monthWeekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+const review = reactive<MonthlyReview>(emptyMonthlyReview(start.value));
+
+function loadReview() {
+  const existing = store.reviewByMonth(start.value);
+  Object.assign(review, emptyMonthlyReview(start.value), existing ? plainCopy(existing) : {});
+  reviewSaved.value = false;
+}
+
+watch(start, loadReview, { immediate: true });
+
+async function saveReview() {
+  await store.saveMonthlyReview(plainCopy(review));
+  reviewSaved.value = true;
+  window.setTimeout(() => (reviewSaved.value = false), 1800);
+}
 
 function energyLevel(value: number | null): 'empty' | 'low' | 'mid' | 'high' {
   if (value === null) return 'empty';
@@ -139,6 +179,26 @@ function nutritionText(value: string): string {
 
 function minutesToHours(value: number | null): number | null {
   return value === null ? null : Math.round((value / 60) * 10) / 10;
+}
+
+function factorSleepText(factor: (typeof factors.value)[number]): string {
+  if (factor.averageSleep === null) return '—';
+  const withFactor = `${formatMinutes(Math.round(factor.averageSleep))} (${factor.sleepSamples})`;
+  const withoutFactor = factor.averageSleepWithout === null ? '—' : `${formatMinutes(Math.round(factor.averageSleepWithout))} (${factor.sleepSamplesWithout})`;
+  return `${withFactor} / ${withoutFactor}`;
+}
+
+function factorEnergyText(factor: (typeof factors.value)[number]): string {
+  if (factor.averageEnergy === null) return '—';
+  const withFactor = `${factor.averageEnergy.toFixed(1).replace('.0', '')} (${factor.energySamples})`;
+  const withoutFactor = factor.averageEnergyWithout === null ? '—' : `${factor.averageEnergyWithout.toFixed(1).replace('.0', '')} (${factor.energySamplesWithout})`;
+  return `${withFactor} / ${withoutFactor}`;
+}
+
+function sleepRegularityText(): string {
+  const variation = Math.max(summary.value.bedtimeVariationMinutes ?? 0, summary.value.wakeTimeVariationMinutes ?? 0);
+  if (summary.value.sleepTimingSamples < 2) return `${summary.value.sleepSamples} ночей с длительностью`;
+  return `${summary.value.sleepTimingSamples} ночей со временем · разброс около ${variation} мин.`;
 }
 
 function scatterRows(kind: 'still' | 'movement' | 'special') {
@@ -193,6 +253,7 @@ function createPackage() {
     results: store.results,
     lifeEvents: store.lifeEvents,
     reviews: store.weeklyReviews,
+    monthlyReviews: store.monthlyReviews,
     settings: store.settings
   });
 }
@@ -223,11 +284,11 @@ function showExportStatus(message: string) {
     />
 
     <div class="metrics-grid">
-      <MetricCard label="Заполнено дней" :value="summary.entriesCount" accent="#5865db" />
-      <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="summary.averageSleepEfficiency === null ? '' : `доля сна ${Math.round(summary.averageSleepEfficiency)}%`" accent="#7367f0" />
+      <MetricCard label="Заполнено дней" :value="summary.entriesCount" :hint="`${summary.ordinaryEntriesCount} обычных`" accent="#5865db" />
+      <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="`${summary.sleepSamples} дн. без особых`" accent="#7367f0" />
       <MetricCard label="Внешних шагов" :value="summary.externalSteps" accent="#4188e8" />
-      <MetricCard label="Направление" :value="`${summary.externalActionDays}/${summary.preparationDays}`" hint="наружу / подготовка" accent="#5264d8" />
-      <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="summary.averageWeightKg === null ? 'поддержало / мешало' : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг`" accent="#d39b2f" />
+      <MetricCard label="Направление" :value="`${summary.externalActionDays}/${summary.preparationDays}`" :hint="`наружу / подготовка · ${summary.actionDirectionSamples} дн.`" accent="#5264d8" />
+      <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="summary.averageWeightKg === null ? `${summary.nutritionSamples} дн. с отметкой` : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг · ${summary.weightSamples} изм.`" accent="#d39b2f" />
       <MetricCard label="Особых дней" :value="summary.specialDays" :hint="`${results.length} результатов`" accent="#eb7458" />
     </div>
 
@@ -270,6 +331,17 @@ function showExportStatus(message: string) {
       </div>
     </article>
 
+    <article class="review-card">
+      <div class="section-heading"><div><span class="eyebrow">Сохранить вывод</span><h2>Итог месяца</h2></div><small>{{ formatDate(end, { day: 'numeric', month: 'long' }) }}</small></div>
+      <label class="field-label">Главный повторяющийся паттерн</label><textarea v-model="review.mainPattern" rows="2" placeholder="Что устойчиво повторялось в данных и контексте"></textarea>
+      <label class="field-label">Что поддерживало?</label><textarea v-model="review.support" rows="2" placeholder="Условия, решения или люди, которые помогали"></textarea>
+      <label class="field-label">Что мешало сильнее всего?</label><textarea v-model="review.obstacle" rows="2" placeholder="Один главный повторяющийся фактор"></textarea>
+      <label class="field-label">Что изменило курс?</label><textarea v-model="review.courseChange" rows="2" placeholder="Событие, решение или результат, после которого траектория изменилась"></textarea>
+      <label class="field-label">Фокус следующего месяца</label><textarea v-model="review.nextFocus" rows="2" placeholder="Одно направление и наблюдаемый результат"></textarea>
+      <label class="field-label">План если-то</label><textarea v-model="review.ifThenPlan" rows="2" placeholder="Если появится конкретный фактор, то я сделаю конкретное действие"></textarea>
+      <button class="primary-button" type="button" @click="saveReview">{{ reviewSaved ? 'Обзор сохранён' : 'Сохранить итог месяца' }}</button>
+    </article>
+
     <article class="dashboard-card">
       <div class="section-heading">
         <div><span class="eyebrow">Разбор без ИИ</span><h2>Месячный обзор</h2></div>
@@ -301,15 +373,21 @@ function showExportStatus(message: string) {
     </article>
 
     <article class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Сон</span><h2>Динамика сна</h2></div><small>0–12 часов</small></div>
+      <div class="section-heading"><div><span class="eyebrow">Сон обычных дней</span><h2>Динамика сна</h2></div><small>{{ sleepRegularityText() }}</small></div>
       <EChartPanel v-if="sleepEntries.length" :option="sleepEnergyOption" :height="320" aria-label="Динамика сна, времени в кровати и энергии" />
       <div v-else class="empty-chart">Добавь данные о сне — здесь появится динамика.</div>
+    </article>
+
+    <article v-if="weightEntries.length" class="dashboard-card">
+      <div class="section-heading"><div><span class="eyebrow">Вес</span><h2>Измерения и семидневный тренд</h2></div><small>особые дни исключены</small></div>
+      <EChartPanel :option="weightOption" :height="280" aria-label="Вес и среднее значение за семь дней" />
     </article>
 
     <article class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Связь показателей</span><h2>Сон, энергия и движение</h2></div><small>точки: дни</small></div>
       <EChartPanel v-if="energySleepEntries.length" :option="energySleepOption" :height="320" aria-label="Связь сна, энергии и движения" />
       <div v-else class="empty-chart">Когда появятся сон и энергия за несколько дней, здесь будет видна связь.</div>
+      <p v-if="energySleepEntries.length" class="data-note">Точки показывают совпадение показателей в один день. Они не доказывают, что движение вызвало энергию или наоборот.</p>
     </article>
 
     <article v-if="summary.externalActionDays || summary.preparationDays || summary.driftDays" class="dashboard-card">
@@ -320,14 +398,14 @@ function showExportStatus(message: string) {
     <article v-if="factors.length" class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Факторы состояния</span><h2>Что повторялось перед сном</h2></div><span class="count-badge">{{ factors.length }}</span></div>
       <div class="factor-summary-head">
-        <span>фактор</span><span>дни</span><span>сон</span><span>энергия</span>
+        <span>фактор</span><span>дни</span><span>сон: с / без (n)</span><span>энергия: с / без (n)</span>
       </div>
       <div class="factor-summary-list">
         <article v-for="factor in factors" :key="factor.id" class="factor-summary-item">
           <span class="factor-summary-item__name"><i>{{ factor.icon }}</i>{{ factor.label }}</span>
           <strong>{{ factor.count }}</strong>
-          <small>{{ formatMinutes(factor.averageSleep === null ? null : Math.round(factor.averageSleep)) }}</small>
-          <small>{{ factor.averageEnergy === null ? '—' : `${factor.averageEnergy.toFixed(1).replace('.0', '')}/5` }}</small>
+          <small>{{ factorSleepText(factor) }}</small>
+          <small>{{ factorEnergyText(factor) }}</small>
         </article>
       </div>
     </article>
@@ -338,8 +416,8 @@ function showExportStatus(message: string) {
         <div class="coverage-list">
           <div v-for="area in activeAreas" :key="area.id" class="coverage-row">
             <span class="coverage-row__label"><i>{{ area.icon }}</i>{{ area.label }}</span>
-            <div class="coverage-row__track"><span :style="{ width: `${((summary.areaCounts[area.id] ?? 0) / maxAreaCount) * 100}%` }"></span></div>
-            <strong>{{ summary.areaCounts[area.id] ?? 0 }}</strong>
+            <div class="coverage-row__track"><span :style="{ width: `${summary.entriesCount ? ((summary.areaCounts[area.id] ?? 0) / summary.entriesCount) * 100 : 0}%` }"></span></div>
+            <strong>{{ summary.areaCounts[area.id] ?? 0 }}/{{ summary.entriesCount }}</strong>
           </div>
         </div>
       </article>
@@ -356,7 +434,7 @@ function showExportStatus(message: string) {
       <div class="note-list note-list--columns">
         <article v-for="entry in actionNotes" :key="entry.date" class="note-item">
           <time>{{ formatDate(entry.date, { day: 'numeric', month: 'short' }) }}</time>
-          <p><strong>{{ actionDirectionLabel(entry.actionDirection) }}</strong><span v-if="entry.actionNote"><br />{{ entry.actionNote }}</span></p>
+          <p><strong>{{ actionDirectionLabel(entry.actionDirection) }}</strong><span v-if="entry.focusTitle"><br />Фокус: {{ entry.focusTitle }}</span><span v-if="entry.actionNote"><br />{{ entry.actionNote }}</span></p>
         </article>
       </div>
     </article>

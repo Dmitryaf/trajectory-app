@@ -1,9 +1,20 @@
 import type { ActionDirectionId, DailyEntry, EveningFactorId, LifeAreaId, LifeEventRecord, Option, ResultRecord } from '../types';
 import { actionDirectionOptions, activityOptions, careerOptions, eveningFactorOptions, externalCareerStates, lifeAreaOptions, specialDayOptions } from '../types';
-import { dateRange, endOfMonth, endOfWeek, formatMinutes, startOfMonth, startOfWeek } from './dates';
+import { addDays, dateRange, endOfMonth, endOfWeek, formatMinutes, startOfMonth, startOfWeek, todayKey } from './dates';
 
 export type PeriodSummary = {
   entriesCount: number;
+  ordinaryEntriesCount: number;
+  sleepSamples: number;
+  timeInBedSamples: number;
+  energySamples: number;
+  sleepQualitySamples: number;
+  weightSamples: number;
+  nutritionSamples: number;
+  actionDirectionSamples: number;
+  experimentMarkedDays: number;
+  experimentCompletedDays: number;
+  sleepTimingSamples: number;
   averageSleep: number | null;
   averageTimeInBed: number | null;
   averageSleepEfficiency: number | null;
@@ -11,7 +22,7 @@ export type PeriodSummary = {
   averageSleepQuality: number | null;
   careerDays: number;
   externalSteps: number;
-  sportSessions: number;
+  movementDays: number;
   nutritionSupportDays: number;
   nutritionBlockDays: number;
   averageWeightKg: number | null;
@@ -20,6 +31,8 @@ export type PeriodSummary = {
   preparationDays: number;
   driftDays: number;
   specialDays: number;
+  bedtimeVariationMinutes: number | null;
+  wakeTimeVariationMinutes: number | null;
   areaCounts: Record<string, number>;
 };
 
@@ -35,7 +48,13 @@ export type FactorSummary = {
   icon?: string;
   count: number;
   averageSleep: number | null;
+  averageSleepWithout: number | null;
+  sleepSamples: number;
+  sleepSamplesWithout: number;
   averageEnergy: number | null;
+  averageEnergyWithout: number | null;
+  energySamples: number;
+  energySamplesWithout: number;
 };
 
 export type ReviewCue = {
@@ -45,13 +64,41 @@ export type ReviewCue = {
   tone: 'good' | 'warning' | 'neutral';
 };
 
+export type DataCoverageLevel = 0 | 1 | 2;
+
+export type EventComparisonMetric = {
+  id: 'sleep' | 'energy' | 'weight' | 'external' | 'nutrition' | 'results';
+  label: string;
+  format: 'minutes' | 'number' | 'weight' | 'percent' | 'count';
+  before: number | null;
+  after: number | null;
+  beforeSamples: number | null;
+  afterSamples: number | null;
+};
+
+export type EventComparison = {
+  windowDays: number;
+  beforeStart: string;
+  beforeEnd: string;
+  afterStart: string;
+  afterEnd: string;
+  beforeEntries: number;
+  afterEntries: number;
+  metrics: EventComparisonMetric[];
+};
+
 function average(values: Array<number | null>): number | null {
   const valid = values.filter((value): value is number => value !== null);
   if (!valid.length) return null;
   return valid.reduce((sum, value) => sum + value, 0) / valid.length;
 }
 
+function sampleCount(values: Array<number | null>): number {
+  return values.filter((value) => value !== null).length;
+}
+
 export function summarize(entries: DailyEntry[], externalCareerIds: string[] = externalCareerStates): PeriodSummary {
+  const ordinaryEntries = entries.filter((entry) => entry.specialDay === null);
   const areaCounts = Object.fromEntries(lifeAreaOptions.map(({ id }) => [id, 0])) as Record<string, number>;
   const actionDirectionCounts = Object.fromEntries(actionDirectionOptions.map(({ id }) => [id, 0])) as Record<ActionDirectionId, number>;
   for (const entry of entries) {
@@ -61,22 +108,35 @@ export function summarize(entries: DailyEntry[], externalCareerIds: string[] = e
 
   return {
     entriesCount: entries.length,
-    averageSleep: average(entries.map((entry) => entry.sleepMinutes)),
-    averageTimeInBed: average(entries.map((entry) => entry.timeInBedMinutes)),
-    averageSleepEfficiency: average(entries.map((entry) => sleepEfficiency(entry))),
-    averageEnergy: average(entries.map((entry) => entry.energy)),
-    averageSleepQuality: average(entries.map((entry) => entry.sleepQuality)),
+    ordinaryEntriesCount: ordinaryEntries.length,
+    sleepSamples: sampleCount(ordinaryEntries.map((entry) => entry.sleepMinutes)),
+    timeInBedSamples: sampleCount(ordinaryEntries.map((entry) => entry.timeInBedMinutes)),
+    energySamples: sampleCount(ordinaryEntries.map((entry) => entry.energy)),
+    sleepQualitySamples: sampleCount(ordinaryEntries.map((entry) => entry.sleepQuality)),
+    weightSamples: sampleCount(ordinaryEntries.map((entry) => entry.weightKg)),
+    nutritionSamples: entries.filter((entry) => entry.nutritionState !== null).length,
+    actionDirectionSamples: entries.filter((entry) => entry.actionDirection !== null).length,
+    experimentMarkedDays: entries.filter((entry) => entry.experimentCompleted !== null).length,
+    experimentCompletedDays: entries.filter((entry) => entry.experimentCompleted === true).length,
+    sleepTimingSamples: ordinaryEntries.filter((entry) => clockMinutes(entry.bedtime, true) !== null && clockMinutes(entry.wakeTime, false) !== null).length,
+    averageSleep: average(ordinaryEntries.map((entry) => entry.sleepMinutes)),
+    averageTimeInBed: average(ordinaryEntries.map((entry) => entry.timeInBedMinutes)),
+    averageSleepEfficiency: average(ordinaryEntries.map((entry) => sleepEfficiency(entry))),
+    averageEnergy: average(ordinaryEntries.map((entry) => entry.energy)),
+    averageSleepQuality: average(ordinaryEntries.map((entry) => entry.sleepQuality)),
     careerDays: entries.filter((entry) => careerStatesForEntry(entry).length > 0).length,
     externalSteps: entries.reduce((sum, entry) => sum + careerStatesForEntry(entry).filter((state) => externalCareerIds.includes(state)).length, 0),
-    sportSessions: entries.reduce((sum, entry) => sum + entry.activities.filter((item) => item !== 'recovery').length, 0),
+    movementDays: entries.filter(hasMovement).length,
     nutritionSupportDays: entries.filter((entry) => entry.nutritionState === 'supports_goal').length,
     nutritionBlockDays: entries.filter((entry) => entry.nutritionState === 'blocks_goal').length,
-    averageWeightKg: average(entries.map((entry) => entry.weightKg)),
+    averageWeightKg: average(ordinaryEntries.map((entry) => entry.weightKg)),
     actionDirectionCounts,
     externalActionDays: actionDirectionCounts.external,
     preparationDays: actionDirectionCounts.preparation,
     driftDays: actionDirectionCounts.drift,
     specialDays: entries.filter((entry) => entry.specialDay !== null).length,
+    bedtimeVariationMinutes: clockVariation(ordinaryEntries.map((entry) => clockMinutes(entry.bedtime, true))),
+    wakeTimeVariationMinutes: clockVariation(ordinaryEntries.map((entry) => clockMinutes(entry.wakeTime, false))),
     areaCounts
   };
 }
@@ -101,6 +161,73 @@ export function resultsForPeriod(results: ResultRecord[], start: string, end: st
   return results.filter((result) => result.date >= start && result.date <= end).sort((a, b) => b.date.localeCompare(a.date));
 }
 
+export function dataCoverageLevel(entry: DailyEntry): DataCoverageLevel {
+  const hasState = entry.sleepMinutes !== null || entry.energy !== null || entry.sleepQuality !== null;
+  const hasAction = entry.actionDirection !== null
+    || careerStatesForEntry(entry).length > 0
+    || entry.activities.length > 0
+    || entry.lifeAreas.length > 0
+    || entry.importantFact.trim().length > 0;
+  const hasNutrition = entry.nutritionState !== null || entry.weightKg !== null;
+  const coreDomains = [hasState, hasAction, hasNutrition].filter(Boolean).length;
+  if (coreDomains >= 2) return 2;
+
+  const hasContext = entry.specialDay !== null
+    || entry.eveningFactors.length > 0
+    || entry.stateContext.trim().length > 0
+    || entry.eveningFactorNote.trim().length > 0;
+  return coreDomains === 1 || hasContext ? 1 : 0;
+}
+
+export function buildCoverageSeries(entries: DailyEntry[], start: string, end: string): Array<[string, DataCoverageLevel]> {
+  const entriesByDate = new Map(entries.map((entry) => [entry.date, entry]));
+  return dateRange(start, end).map((date) => {
+    const entry = entriesByDate.get(date);
+    return [date, entry ? dataCoverageLevel(entry) : 0];
+  });
+}
+
+export function buildEventComparison(
+  eventDate: string,
+  entries: DailyEntry[],
+  results: ResultRecord[] = [],
+  externalCareerIds: string[] = externalCareerStates,
+  requestedWindowDays = 14,
+  observationEnd = todayKey(),
+): EventComparison | null {
+  if (observationEnd <= eventDate) return null;
+  const availableAfterDays = dateRange(addDays(eventDate, 1), observationEnd).length;
+  const windowDays = Math.min(Math.max(1, requestedWindowDays), availableAfterDays);
+  const beforeStart = addDays(eventDate, -windowDays);
+  const beforeEnd = addDays(eventDate, -1);
+  const afterStart = addDays(eventDate, 1);
+  const afterEnd = addDays(eventDate, windowDays);
+  const before = entriesForPeriod(entries, beforeStart, beforeEnd);
+  const after = entriesForPeriod(entries, afterStart, afterEnd);
+  const beforeSummary = summarize(before, externalCareerIds);
+  const afterSummary = summarize(after, externalCareerIds);
+  const beforeResults = resultsForPeriod(results, beforeStart, beforeEnd).length;
+  const afterResults = resultsForPeriod(results, afterStart, afterEnd).length;
+
+  return {
+    windowDays,
+    beforeStart,
+    beforeEnd,
+    afterStart,
+    afterEnd,
+    beforeEntries: beforeSummary.entriesCount,
+    afterEntries: afterSummary.entriesCount,
+    metrics: [
+      comparisonMetric('sleep', 'Сон', 'minutes', beforeSummary.averageSleep, afterSummary.averageSleep, beforeSummary.sleepSamples, afterSummary.sleepSamples),
+      comparisonMetric('energy', 'Энергия', 'number', beforeSummary.averageEnergy, afterSummary.averageEnergy, beforeSummary.energySamples, afterSummary.energySamples),
+      comparisonMetric('weight', 'Вес', 'weight', beforeSummary.averageWeightKg, afterSummary.averageWeightKg, beforeSummary.weightSamples, afterSummary.weightSamples),
+      comparisonMetric('external', 'Внешние действия', 'percent', ratioPercent(beforeSummary.externalActionDays, beforeSummary.actionDirectionSamples), ratioPercent(afterSummary.externalActionDays, afterSummary.actionDirectionSamples), beforeSummary.actionDirectionSamples, afterSummary.actionDirectionSamples),
+      comparisonMetric('nutrition', 'Питание поддержало цель', 'percent', ratioPercent(beforeSummary.nutritionSupportDays, beforeSummary.nutritionSamples), ratioPercent(afterSummary.nutritionSupportDays, afterSummary.nutritionSamples), beforeSummary.nutritionSamples, afterSummary.nutritionSamples),
+      comparisonMetric('results', 'Результаты', 'count', beforeResults, afterResults, null, null),
+    ],
+  };
+}
+
 export function weekSummaryText(summary: PeriodSummary, activeAreas: LifeAreaId[], areaOptions: Option[] = lifeAreaOptions): string {
   if (!summary.entriesCount) return 'Пока нет записей за эту неделю. Здесь появится краткая сводка фактов.';
 
@@ -110,7 +237,7 @@ export function weekSummaryText(summary: PeriodSummary, activeAreas: LifeAreaId[
   const parts = [
     `${summary.careerDays} карьерных ${plural(summary.careerDays, 'день', 'дня', 'дней')}`,
     `${summary.externalSteps} внешних ${plural(summary.externalSteps, 'шаг', 'шага', 'шагов')}`,
-    `${summary.sportSessions} ${plural(summary.sportSessions, 'тренировка', 'тренировки', 'тренировок')}`
+    `${summary.movementDays} ${plural(summary.movementDays, 'день с движением', 'дня с движением', 'дней с движением')}`
   ];
   if (summary.nutritionSupportDays || summary.nutritionBlockDays) {
     parts.push(`питание поддержало ${summary.nutritionSupportDays}, мешало ${summary.nutritionBlockDays}`);
@@ -145,7 +272,8 @@ export function hasMovement(entry: DailyEntry): boolean {
 
 export function buildObservations(entries: DailyEntry[]): Observation[] {
   const observations: Observation[] = [];
-  const energyEntries = entries.filter((entry) => entry.energy !== null);
+  const ordinaryEntries = entries.filter((entry) => entry.specialDay === null);
+  const energyEntries = ordinaryEntries.filter((entry) => entry.energy !== null);
   const movementEntries = energyEntries.filter(hasMovement);
   const stillEntries = energyEntries.filter((entry) => !hasMovement(entry));
   const restedEntries = energyEntries.filter((entry) => (entry.sleepMinutes ?? 0) >= 420);
@@ -184,14 +312,11 @@ export function buildObservations(entries: DailyEntry[]): Observation[] {
 
   const leadingFactor = factorSummaries(entries)[0];
   if (leadingFactor && leadingFactor.count >= 2) {
-    const details = [
-      leadingFactor.averageSleep !== null ? `сон ${formatMinutes(Math.round(leadingFactor.averageSleep))}` : '',
-      leadingFactor.averageEnergy !== null ? `энергия ${formatNumber(leadingFactor.averageEnergy)}` : ''
-    ].filter(Boolean).join(', ');
+    const details = factorComparisonText(leadingFactor);
     observations.push({
       id: 'evening-factor',
       title: 'Повторяющийся фактор',
-      text: `${leadingFactor.label.toLowerCase()} встречался ${leadingFactor.count} ${plural(leadingFactor.count, 'раз', 'раза', 'раз')}${details ? `: ${details}` : ''}.`,
+      text: `${leadingFactor.label} отмечался ${leadingFactor.count} ${plural(leadingFactor.count, 'раз', 'раза', 'раз')}.${details ? ` ${details}` : ' Для сравнения пока мало обычных дней.'}`,
     });
   }
 
@@ -199,16 +324,24 @@ export function buildObservations(entries: DailyEntry[]): Observation[] {
 }
 
 export function factorSummaries(entries: DailyEntry[]): FactorSummary[] {
+  const ordinaryEntries = entries.filter((entry) => entry.specialDay === null);
   return eveningFactorOptions
     .map((option) => {
-      const matching = entries.filter((entry) => entry.eveningFactors.includes(option.id));
+      const matching = ordinaryEntries.filter((entry) => entry.eveningFactors.includes(option.id));
+      const other = ordinaryEntries.filter((entry) => !entry.eveningFactors.includes(option.id));
       return {
         id: option.id,
         label: option.label,
         icon: option.icon,
         count: matching.length,
         averageSleep: average(matching.map((entry) => entry.sleepMinutes)),
+        averageSleepWithout: average(other.map((entry) => entry.sleepMinutes)),
+        sleepSamples: sampleCount(matching.map((entry) => entry.sleepMinutes)),
+        sleepSamplesWithout: sampleCount(other.map((entry) => entry.sleepMinutes)),
         averageEnergy: average(matching.map((entry) => entry.energy)),
+        averageEnergyWithout: average(other.map((entry) => entry.energy)),
+        energySamples: sampleCount(matching.map((entry) => entry.energy)),
+        energySamplesWithout: sampleCount(other.map((entry) => entry.energy)),
       };
     })
     .filter((summary) => summary.count > 0)
@@ -219,19 +352,19 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
   const summary = summarize(entries, externalCareerIds);
   const factors = factorSummaries(entries);
   const cues: ReviewCue[] = [];
-  const enoughEntries = period === 'week' ? summary.entriesCount >= 4 : summary.entriesCount >= 12;
+  const enoughEntries = period === 'week' ? summary.ordinaryEntriesCount >= 4 : summary.ordinaryEntriesCount >= 12;
   const minTarget = period === 'week' ? '4 дня' : '12 дней';
 
   cues.push({
     id: 'coverage',
     title: enoughEntries ? 'Данных достаточно для обзора' : 'Данных пока мало',
     text: enoughEntries
-      ? `${summary.entriesCount} ${plural(summary.entriesCount, 'заполненный день', 'заполненных дня', 'заполненных дней')} уже дают рабочую картину периода.`
-      : `Для уверенного обзора лучше иметь хотя бы ${minTarget}. Сейчас есть ${summary.entriesCount}.`,
+      ? `${summary.ordinaryEntriesCount} ${plural(summary.ordinaryEntriesCount, 'обычный заполненный день', 'обычных заполненных дня', 'обычных заполненных дней')} уже дают рабочую картину периода.`
+      : `Для рабочего обзора лучше иметь хотя бы ${minTarget} без отметки «особый день». Сейчас есть ${summary.ordinaryEntriesCount}.`,
     tone: enoughEntries ? 'good' : 'warning',
   });
 
-  const shortSleepDays = entries.filter((entry) => entry.sleepMinutes !== null && entry.sleepMinutes < 420).length;
+  const shortSleepDays = entries.filter((entry) => entry.specialDay === null && entry.sleepMinutes !== null && entry.sleepMinutes < 420).length;
   if (shortSleepDays >= 2) {
     cues.push({
       id: 'short-sleep',
@@ -248,12 +381,23 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
     });
   }
 
+  const timingVariation = Math.max(summary.bedtimeVariationMinutes ?? 0, summary.wakeTimeVariationMinutes ?? 0);
+  if (summary.sleepTimingSamples >= 4 && timingVariation >= 90) {
+    cues.push({
+      id: 'sleep-regularity',
+      title: 'Время сна заметно менялось',
+      text: `Разброс времени отхода ко сну или подъёма около ${Math.round(timingVariation)} мин. Это отдельный контекст помимо длительности сна.`,
+      tone: 'neutral',
+    });
+  }
+
   const leadingFactor = factors[0];
   if (leadingFactor && leadingFactor.count >= 2) {
+    const comparison = factorComparisonText(leadingFactor);
     cues.push({
       id: 'factor',
       title: 'Повторяющийся фактор',
-      text: `${leadingFactor.label} встретился ${leadingFactor.count} ${plural(leadingFactor.count, 'раз', 'раза', 'раз')}. На следующий период лучше менять один такой фактор, а не всю жизнь сразу.`,
+      text: `${leadingFactor.label} отмечался ${leadingFactor.count} ${plural(leadingFactor.count, 'раз', 'раза', 'раз')}.${comparison ? ` ${comparison}` : ' Сравнительных данных пока мало.'}`,
       tone: 'warning',
     });
   }
@@ -312,6 +456,15 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
     });
   }
 
+  if (summary.experimentMarkedDays >= 2) {
+    cues.push({
+      id: 'experiment',
+      title: 'Есть данные эксперимента',
+      text: `Условие выполнено в ${summary.experimentCompletedDays} из ${summary.experimentMarkedDays} отмеченных дней. Сначала оцени соблюдение, затем сравни выбранный показатель до и во время эксперимента.`,
+      tone: 'neutral',
+    });
+  }
+
   if (summary.specialDays || lifeEvents.length) {
     cues.push({
       id: 'context',
@@ -321,12 +474,133 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
     });
   }
 
-  return cues.slice(0, 6);
+  return limitCues(cues, ['coverage', 'results', 'context']);
+}
+
+export function buildRangeReviewCues(rangeMonths: number, entries: DailyEntry[], results: ResultRecord[], lifeEvents: LifeEventRecord[], externalCareerIds: string[] = externalCareerStates): ReviewCue[] {
+  const summary = summarize(entries, externalCareerIds);
+  const cues: ReviewCue[] = [];
+  const monthsWithData = new Set(entries.map((entry) => entry.date.slice(0, 7))).size;
+  const enoughEntries = summary.ordinaryEntriesCount >= rangeMonths * 8 && monthsWithData >= Math.max(2, rangeMonths - 1);
+
+  cues.push({
+    id: 'coverage',
+    title: enoughEntries ? 'Период покрыт достаточно ровно' : 'Покрытие периода неровное',
+    text: `${summary.entriesCount} заполненных дней в ${monthsWithData} из ${rangeMonths} мес. Длинные выводы надёжнее, когда данные распределены по всему периоду.`,
+    tone: enoughEntries ? 'good' : 'warning',
+  });
+
+  const factor = factorSummaries(entries).find((item) => item.count >= Math.max(3, rangeMonths));
+  if (factor) {
+    const comparison = factorComparisonText(factor);
+    cues.push({
+      id: 'factor',
+      title: 'Устойчивый вечерний фактор',
+      text: `${factor.label} отмечался ${factor.count} ${plural(factor.count, 'раз', 'раза', 'раз')}.${comparison ? ` ${comparison}` : ' Сравнительных данных пока мало.'}`,
+      tone: 'neutral',
+    });
+  }
+
+  if (summary.actionDirectionSamples >= Math.max(6, rangeMonths * 2)) {
+    const externalRate = ratioPercent(summary.externalActionDays, summary.actionDirectionSamples) ?? 0;
+    const preparationRate = ratioPercent(summary.preparationDays, summary.actionDirectionSamples) ?? 0;
+    const driftRate = ratioPercent(summary.driftDays, summary.actionDirectionSamples) ?? 0;
+    if (preparationRate >= 60 && externalRate <= 20) {
+      cues.push({ id: 'direction-preparation', title: 'Подготовка редко переходила наружу', text: `Подготовка — ${preparationRate}% отмеченных дней направления, внешние шаги — ${externalRate}%. Стоит проверить критерий реального контакта с целью.`, tone: 'warning' });
+    } else if (externalRate >= 35) {
+      cues.push({ id: 'direction-external', title: 'Внешний контакт сохранялся', text: `Внешние шаги появлялись в ${externalRate}% дней с отмеченным направлением. Сверь это с реальными результатами периода.`, tone: 'good' });
+    }
+    if (driftRate >= 30) {
+      cues.push({ id: 'direction-drift', title: 'Уход в сторону повторялся', text: `${driftRate}% дней с отмеченным направлением ушли в сторону. Ищи повторяющееся условие, а не одну причину всего периода.`, tone: 'warning' });
+    }
+  }
+
+  if (results.length) {
+    cues.push({ id: 'results', title: 'Есть завершённые результаты', text: `${results.length} ${plural(results.length, 'результат', 'результата', 'результатов')} за период. Сопоставь их с внешними действиями, а не только с занятостью.`, tone: 'good' });
+  }
+
+  if (summary.specialDays || lifeEvents.length) {
+    cues.push({ id: 'context', title: 'Траектория менялась вместе с контекстом', text: `${summary.specialDays} особых ${plural(summary.specialDays, 'день', 'дня', 'дней')} и ${lifeEvents.length} ${plural(lifeEvents.length, 'событие архива', 'события архива', 'событий архива')}. Они исключены из базовых средних состояния.`, tone: 'neutral' });
+  }
+
+  return limitCues(cues, ['coverage', 'results', 'context']);
 }
 
 function sleepEfficiency(entry: DailyEntry): number | null {
   if (entry.sleepMinutes === null || entry.timeInBedMinutes === null || entry.timeInBedMinutes <= 0) return null;
   return Math.min(100, (entry.sleepMinutes / entry.timeInBedMinutes) * 100);
+}
+
+export function ratioPercent(value: number, total: number): number | null {
+  return total > 0 ? Math.round((value / total) * 100) : null;
+}
+
+function comparisonMetric(
+  id: EventComparisonMetric['id'],
+  label: string,
+  format: EventComparisonMetric['format'],
+  before: number | null,
+  after: number | null,
+  beforeSamples: number | null,
+  afterSamples: number | null,
+): EventComparisonMetric {
+  return { id, label, format, before, after, beforeSamples, afterSamples };
+}
+
+function clockMinutes(value: string, shiftMorning: boolean): number | null {
+  if (!/^\d{2}:\d{2}$/.test(value)) return null;
+  const [hours, minutes] = value.split(':').map(Number);
+  if (hours > 23 || minutes > 59) return null;
+  const total = hours * 60 + minutes;
+  return shiftMorning && total < 12 * 60 ? total + 24 * 60 : total;
+}
+
+function clockVariation(values: Array<number | null>): number | null {
+  const valid = values.filter((value): value is number => value !== null);
+  if (valid.length < 2) return null;
+  const mean = valid.reduce((sum, value) => sum + value, 0) / valid.length;
+  const variance = valid.reduce((sum, value) => sum + (value - mean) ** 2, 0) / valid.length;
+  return Math.round(Math.sqrt(variance));
+}
+
+function signedMinutes(value: number): string {
+  if (value === 0) return 'без разницы';
+  return `${value > 0 ? '+' : '−'}${formatMinutes(Math.abs(value))}`;
+}
+
+function signedNumber(value: number): string {
+  if (Math.abs(value) < 0.05) return 'без разницы';
+  return `${value > 0 ? '+' : '−'}${formatNumber(Math.abs(value))}`;
+}
+
+function factorComparisonText(factor: FactorSummary): string {
+  const parts: string[] = [];
+  if (factor.sleepSamples >= 2 && factor.sleepSamplesWithout >= 2 && factor.averageSleep !== null && factor.averageSleepWithout !== null) {
+    const difference = Math.round(factor.averageSleep - factor.averageSleepWithout);
+    parts.push(`Сон: ${formatMinutes(Math.round(factor.averageSleep))} против ${formatMinutes(Math.round(factor.averageSleepWithout))} без фактора (${signedMinutes(difference)})`);
+  }
+  if (factor.energySamples >= 2 && factor.energySamplesWithout >= 2 && factor.averageEnergy !== null && factor.averageEnergyWithout !== null) {
+    const difference = factor.averageEnergy - factor.averageEnergyWithout;
+    parts.push(`энергия: ${formatNumber(factor.averageEnergy)} против ${formatNumber(factor.averageEnergyWithout)} (${signedNumber(difference)})`);
+  }
+  return parts.length ? `${parts.join('; ')}. Это связь, а не доказанная причина.` : '';
+}
+
+function limitCues(cues: ReviewCue[], requiredIds: string[]): ReviewCue[] {
+  const selected = cues.slice(0, 6);
+  for (const id of requiredIds) {
+    const required = cues.find((cue) => cue.id === id);
+    if (!required || selected.some((cue) => cue.id === id)) continue;
+    let replaceIndex = -1;
+    for (let index = selected.length - 1; index >= 0; index -= 1) {
+      if (!requiredIds.includes(selected[index].id)) {
+        replaceIndex = index;
+        break;
+      }
+    }
+    if (replaceIndex >= 0) selected[replaceIndex] = required;
+  }
+  return selected.sort((a, b) => cues.indexOf(a) - cues.indexOf(b));
 }
 
 function sleepContextText(summary: PeriodSummary): string {

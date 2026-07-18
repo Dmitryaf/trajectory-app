@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { init, use } from 'echarts/core';
-import { BarChart, LineChart, PieChart, ScatterChart } from 'echarts/charts';
-import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components';
+import { BarChart, HeatmapChart, LineChart, PieChart, ScatterChart } from 'echarts/charts';
+import { CalendarComponent, GridComponent, LegendComponent, MarkPointComponent, TooltipComponent, VisualMapComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import type { ECharts, EChartsCoreOption } from 'echarts/core';
 
-use([BarChart, LineChart, PieChart, ScatterChart, GridComponent, LegendComponent, TooltipComponent, CanvasRenderer]);
+use([BarChart, HeatmapChart, LineChart, PieChart, ScatterChart, CalendarComponent, GridComponent, LegendComponent, MarkPointComponent, TooltipComponent, VisualMapComponent, CanvasRenderer]);
 
 const props = withDefaults(defineProps<{
   option: EChartsCoreOption;

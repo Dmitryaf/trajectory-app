@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
+import type { EChartsCoreOption } from 'echarts/core';
+import EChartPanel from '../components/charts/EChartPanel.vue';
 import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
 import { actionDirectionLabel, buildReviewCues, buildReviewQuestions, careerStatesForEntry, entriesForWeek, eveningFactorLabel, hasArea, resultsForPeriod, specialDayLabel, summarize, weekSummaryText } from '../services/analytics';
@@ -25,6 +27,7 @@ const results = computed(() => resultsForPeriod(store.results, start.value, end.
 const lifeEvents = computed(() => store.lifeEvents.filter((event) => event.date >= start.value && event.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)));
 const reviewCues = computed(() => buildReviewCues('week', entries.value, results.value, lifeEvents.value, externalCareerIds.value));
 const reviewQuestions = buildReviewQuestions('week');
+const previousReview = computed(() => store.reviewByWeek(addDays(start.value, -7)));
 const rows = computed(() => [
   { id: 'career', label: 'Карьера', icon: '↗' },
   { id: 'sport', label: 'Спорт', icon: '△' },
@@ -37,35 +40,79 @@ const actionNotes = computed(() => entries.value.filter((entry) => entry.actionD
 const specialDays = computed(() => entries.value.filter((entry) => entry.specialDay !== null).sort((a, b) => a.date.localeCompare(b.date)));
 const rhythmDays = computed(() => days.value.map((day) => {
   const entry = entriesByDate.value.get(day);
-  const sleepPercent = entry?.sleepMinutes === null || entry?.sleepMinutes === undefined ? null : clampPercent((entry.sleepMinutes / 720) * 100);
-  const energyPercent = entry?.energy === null || entry?.energy === undefined ? null : clampPercent(((entry.energy - 1) / 4) * 100);
   return {
     day,
     entry,
-    sleepPercent,
-    energyPercent,
     hasCareer: entry ? careerStatesForEntry(entry).length > 0 : false,
     hasExternalAction: entry?.actionDirection === 'external',
     hasDrift: entry?.actionDirection === 'drift',
     hasMovement: Boolean(entry?.activities.some((activity) => activity !== 'recovery')),
     hasNutritionSupport: entry?.nutritionState === 'supports_goal',
-    hasNutritionBlock: entry?.nutritionState === 'blocks_goal',
-    title: entry
-      ? `${formatDate(day)} · сон ${formatMinutes(entry.sleepMinutes)} · энергия ${entry.energy ?? '—'}${entry.actionDirection ? ` · ${actionDirectionLabel(entry.actionDirection)}` : ''}${entry.nutritionState ? ` · питание ${nutritionText(entry.nutritionState)}` : ''}`
-      : `${formatDate(day)} · записи нет`
+    hasNutritionBlock: entry?.nutritionState === 'blocks_goal'
   };
 }));
+const rhythmOption = computed<EChartsCoreOption>(() => {
+  const labels = rhythmDays.value.map((item) => formatDate(item.day, { weekday: 'short', day: '2-digit' }));
+  const actionRows = ['Карьера', 'Наружу', 'В сторону', 'Движение', 'Питание', 'Особый день'];
+  const actionSeries = [
+    { name: 'Карьера', color: '#4188e8', active: (item: (typeof rhythmDays.value)[number]) => item.hasCareer },
+    { name: 'Наружу', color: '#5264d8', active: (item: (typeof rhythmDays.value)[number]) => item.hasExternalAction },
+    { name: 'В сторону', color: '#b85c4c', active: (item: (typeof rhythmDays.value)[number]) => item.hasDrift },
+    { name: 'Движение', color: '#38b989', active: (item: (typeof rhythmDays.value)[number]) => item.hasMovement },
+    { name: 'Питание', color: '#d39b2f', active: (item: (typeof rhythmDays.value)[number]) => item.hasNutritionSupport || item.hasNutritionBlock },
+    { name: 'Особый день', color: '#eb7458', active: (item: (typeof rhythmDays.value)[number]) => Boolean(item.entry?.specialDay) },
+  ];
+
+  return {
+    color: ['#7367f0', '#11182b'],
+    tooltip: { trigger: 'item' },
+    legend: { data: ['Сон', 'Энергия'], top: 0, right: 0, itemWidth: 12, itemHeight: 10, textStyle: { color: '#657085', fontSize: 12 } },
+    grid: [
+      { left: 50, right: 44, top: 42, height: 178 },
+      { left: 82, right: 44, top: 244, height: 94 },
+    ],
+    xAxis: [
+      { type: 'category', gridIndex: 0, data: labels, axisLabel: { show: false }, axisTick: { show: false }, axisLine: { lineStyle: { color: '#dfe4ed' } } },
+      { type: 'category', gridIndex: 1, data: labels, axisLabel: { color: '#7d8798', fontSize: 11 }, axisTick: { show: false }, axisLine: { lineStyle: { color: '#dfe4ed' } } },
+    ],
+    yAxis: [
+      { type: 'value', gridIndex: 0, min: 0, max: 12, interval: 3, axisLabel: { formatter: '{value}ч', color: '#7d8798' }, splitLine: { lineStyle: { color: '#edf1f6' } } },
+      { type: 'value', gridIndex: 0, min: 1, max: 5, interval: 1, axisLabel: { color: '#7d8798' }, splitLine: { show: false } },
+      { type: 'category', gridIndex: 1, data: actionRows, axisLabel: { color: '#657085', fontSize: 10 }, axisTick: { show: false }, axisLine: { show: false } },
+    ],
+    series: [
+      {
+        name: 'Сон',
+        type: 'bar',
+        xAxisIndex: 0,
+        yAxisIndex: 0,
+        barMaxWidth: 34,
+        data: rhythmDays.value.map((item) => item.entry?.sleepMinutes === null || item.entry?.sleepMinutes === undefined
+          ? null
+          : { value: Math.round((item.entry.sleepMinutes / 60) * 10) / 10, itemStyle: { color: item.entry.specialDay ? '#eb7458' : '#7367f0', borderRadius: [6, 6, 2, 2] } }),
+      },
+      {
+        name: 'Энергия',
+        type: 'line',
+        xAxisIndex: 0,
+        yAxisIndex: 1,
+        symbolSize: 9,
+        lineStyle: { width: 3 },
+        data: rhythmDays.value.map((item) => item.entry?.energy ?? null),
+      },
+      ...actionSeries.map((series) => ({
+        name: series.name,
+        type: 'scatter' as const,
+        xAxisIndex: 1,
+        yAxisIndex: 2,
+        symbolSize: 10,
+        itemStyle: { color: series.color },
+        data: rhythmDays.value.flatMap((item, index) => series.active(item) ? [[labels[index], series.name]] : []),
+      })),
+    ],
+  };
+});
 const review = reactive<WeeklyReview>(emptyWeeklyReview(start.value));
-
-function clampPercent(value: number): number {
-  return Math.min(100, Math.max(0, Math.round(value)));
-}
-
-function nutritionText(value: string): string {
-  if (value === 'supports_goal') return 'поддержало цель';
-  if (value === 'blocks_goal') return 'мешало цели';
-  return 'нейтрально';
-}
 
 function loadReview() {
   const existing = store.reviewByWeek(start.value);
@@ -86,6 +133,7 @@ function createPackage() {
     results: store.results,
     lifeEvents: store.lifeEvents,
     reviews: store.weeklyReviews,
+    monthlyReviews: store.monthlyReviews,
     settings: store.settings
   });
 }
@@ -116,11 +164,11 @@ function showExportStatus(message: string) {
     />
 
     <div class="metrics-grid">
-      <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="summary.averageTimeInBed === null ? '' : `в кровати ${formatMinutes(Math.round(summary.averageTimeInBed))}`" accent="#7367f0" />
+      <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="`${summary.sleepSamples} дн. без особых`" accent="#7367f0" />
       <MetricCard label="Карьерных дней" :value="summary.careerDays" :hint="`${summary.externalSteps} внешних шагов`" accent="#4188e8" />
-      <MetricCard label="Направление" :value="`${summary.externalActionDays}/${summary.preparationDays}`" hint="наружу / подготовка" accent="#5264d8" />
-      <MetricCard label="Тренировок" :value="summary.sportSessions" accent="#38b989" />
-      <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" hint="поддержало / мешало" accent="#d39b2f" />
+      <MetricCard label="Направление" :value="`${summary.externalActionDays}/${summary.preparationDays}`" :hint="`наружу / подготовка · ${summary.actionDirectionSamples} дн.`" accent="#5264d8" />
+      <MetricCard label="Дней с движением" :value="summary.movementDays" accent="#38b989" />
+      <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="`поддержало / мешало · ${summary.nutritionSamples} дн.`" accent="#d39b2f" />
       <MetricCard label="Результатов" :value="results.length" accent="#f0ad42" />
     </div>
 
@@ -128,41 +176,8 @@ function showExportStatus(message: string) {
 
     <article class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Ритм недели</span><h2>Сон, энергия и действия</h2></div></div>
-      <div class="rhythm-chart">
-        <article
-          v-for="item in rhythmDays"
-          :key="item.day"
-          class="rhythm-day"
-          :class="{ 'rhythm-day--empty': !item.entry, 'rhythm-day--special': item.entry?.specialDay }"
-          :title="item.title"
-        >
-          <div class="rhythm-day__plot">
-            <span v-if="item.sleepPercent !== null" class="rhythm-day__bar" :style="{ height: `${item.sleepPercent}%` }"></span>
-            <span v-if="item.energyPercent !== null" class="rhythm-day__dot" :style="{ bottom: `${item.energyPercent}%` }"></span>
-          </div>
-          <div class="rhythm-day__marks">
-            <span v-if="item.hasCareer" class="legend-dot legend-dot--career"></span>
-            <span v-if="item.hasExternalAction" class="legend-dot legend-dot--direction"></span>
-            <span v-if="item.hasDrift" class="legend-dot legend-dot--drift"></span>
-            <span v-if="item.hasMovement" class="legend-dot legend-dot--movement"></span>
-            <span v-if="item.hasNutritionSupport" class="legend-dot legend-dot--nutrition"></span>
-            <span v-if="item.hasNutritionBlock" class="legend-dot legend-dot--nutrition-block"></span>
-            <span v-if="item.entry?.specialDay" class="legend-dot legend-dot--special"></span>
-          </div>
-          <strong>{{ formatDate(item.day, { weekday: 'short' }) }}</strong>
-          <small>{{ formatDate(item.day, { day: '2-digit' }) }}</small>
-        </article>
-      </div>
-      <div class="chart-legend">
-        <span><i class="legend-dot legend-dot--sleep"></i>сон</span>
-        <span><i class="legend-dot"></i>энергия</span>
-        <span><i class="legend-dot legend-dot--career"></i>карьера</span>
-        <span><i class="legend-dot legend-dot--direction"></i>внешний шаг</span>
-        <span><i class="legend-dot legend-dot--drift"></i>в сторону</span>
-        <span><i class="legend-dot legend-dot--movement"></i>движение</span>
-        <span><i class="legend-dot legend-dot--nutrition"></i>питание</span>
-        <span><i class="legend-dot legend-dot--special"></i>особый день</span>
-      </div>
+      <EChartPanel :option="rhythmOption" :height="380" aria-label="Ритм сна, энергии и действий за неделю" />
+      <p class="data-note">Столбцы — сон, линия — энергия. Нижние отметки показывают только факт появления действия или контекста в этот день.</p>
     </article>
 
     <article class="dashboard-card">
@@ -190,7 +205,7 @@ function showExportStatus(message: string) {
       <div class="note-list">
         <article v-for="entry in actionNotes" :key="entry.date" class="note-item">
           <time>{{ formatDate(entry.date, { weekday: 'short', day: 'numeric' }) }}</time>
-          <p><strong>{{ actionDirectionLabel(entry.actionDirection) }}</strong><span v-if="entry.actionNote"><br />{{ entry.actionNote }}</span></p>
+          <p><strong>{{ actionDirectionLabel(entry.actionDirection) }}</strong><span v-if="entry.focusTitle"><br />Фокус: {{ entry.focusTitle }}</span><span v-if="entry.actionNote"><br />{{ entry.actionNote }}</span></p>
         </article>
       </div>
     </article>
@@ -261,6 +276,14 @@ function showExportStatus(message: string) {
         <div><span class="eyebrow">До 10 минут</span><h2>Короткий обзор</h2></div>
         <span class="period-pill">До {{ formatDate(end, { day: 'numeric', month: 'long', year: 'numeric' }) }}</span>
       </div>
+      <template v-if="previousReview?.nextLever || previousReview?.ifThenPlan">
+        <div class="previous-plan">
+          <span class="eyebrow">Проверка прошлого решения</span>
+          <p v-if="previousReview.nextLever"><strong>Рычаг:</strong> {{ previousReview.nextLever }}</p>
+          <p v-if="previousReview.ifThenPlan"><strong>План:</strong> {{ previousReview.ifThenPlan }}</p>
+        </div>
+        <label class="field-label">Что получилось на практике?</label><textarea v-model="review.previousPlanOutcome" rows="2" placeholder="Сработало, не сработало или данных пока недостаточно — и почему"></textarea>
+      </template>
       <label class="field-label">Три опорных факта недели</label>
       <input v-for="(_, index) in review.results" :key="index" v-model="review.results[index]" type="text" :placeholder="`${index + 1}. Результат или значимый факт`" />
       <label class="field-label">Что помогало?</label><textarea v-model="review.support" rows="2" placeholder="Люди, режим, место, привычка или решение"></textarea>

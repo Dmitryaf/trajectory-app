@@ -1,15 +1,16 @@
 import { defineStore } from 'pinia';
 import { db } from '../db';
 import { plainCopy } from '../services/plain';
-import { defaultSettings, normalizeDailyEntry, normalizeLifeEvent, normalizeSettings, normalizeWeeklyReview, type AppSettings, type DailyEntry, type LifeEventRecord, type ResultRecord, type WeeklyReview } from '../types';
+import { defaultSettings, normalizeDailyEntry, normalizeLifeEvent, normalizeMonthlyReview, normalizeSettings, normalizeWeeklyReview, type AppSettings, type DailyEntry, type LifeEventRecord, type MonthlyReview, type ResultRecord, type WeeklyReview } from '../types';
 
 type ExportPayload = {
-  version: 1 | 2;
+  version: 1 | 2 | 3;
   exportedAt: string;
   dailyEntries: DailyEntry[];
   results: ResultRecord[];
   lifeEvents?: LifeEventRecord[];
   weeklyReviews: WeeklyReview[];
+  monthlyReviews?: MonthlyReview[];
   settings: AppSettings;
 };
 
@@ -21,27 +22,31 @@ export const useAppStore = defineStore('app', {
     results: [] as ResultRecord[],
     lifeEvents: [] as LifeEventRecord[],
     weeklyReviews: [] as WeeklyReview[],
+    monthlyReviews: [] as MonthlyReview[],
     settings: structuredClone(defaultSettings) as AppSettings
   }),
   getters: {
     entryByDate: (state) => (date: string) => state.dailyEntries.find((entry) => entry.date === date),
-    reviewByWeek: (state) => (weekStart: string) => state.weeklyReviews.find((review) => review.weekStart === weekStart)
+    reviewByWeek: (state) => (weekStart: string) => state.weeklyReviews.find((review) => review.weekStart === weekStart),
+    reviewByMonth: (state) => (monthStart: string) => state.monthlyReviews.find((review) => review.monthStart === monthStart)
   },
   actions: {
     async load() {
       this.loadError = '';
       try {
-        const [dailyEntries, results, lifeEvents, weeklyReviews, settings] = await Promise.all([
+        const [dailyEntries, results, lifeEvents, weeklyReviews, monthlyReviews, settings] = await Promise.all([
           db.dailyEntries.toArray(),
           db.results.toArray(),
           db.lifeEvents.toArray(),
           db.weeklyReviews.toArray(),
+          db.monthlyReviews.toArray(),
           db.settings.get('main')
         ]);
         this.dailyEntries = dailyEntries.map((entry) => normalizeDailyEntry(entry));
         this.results = results.sort((a, b) => b.date.localeCompare(a.date));
         this.lifeEvents = lifeEvents.map((event) => normalizeLifeEvent(event)).sort((a, b) => b.date.localeCompare(a.date));
         this.weeklyReviews = weeklyReviews.map((review) => normalizeWeeklyReview(review));
+        this.monthlyReviews = monthlyReviews.map((review) => normalizeMonthlyReview(review));
         const activeSettings = normalizeSettings(settings);
         this.settings = activeSettings;
         await db.settings.put(plainCopy(activeSettings));
@@ -101,43 +106,53 @@ export const useAppStore = defineStore('app', {
       if (index >= 0) this.weeklyReviews[index] = plainReview;
       else this.weeklyReviews.push(plainReview);
     },
+    async saveMonthlyReview(review: MonthlyReview) {
+      const plainReview = plainCopy(normalizeMonthlyReview(review));
+      await db.monthlyReviews.put(plainReview);
+      const index = this.monthlyReviews.findIndex((item) => item.monthStart === review.monthStart);
+      if (index >= 0) this.monthlyReviews[index] = plainReview;
+      else this.monthlyReviews.push(plainReview);
+    },
     async saveSettings(settings: AppSettings) {
       await db.settings.put(plainCopy(settings));
       this.settings = plainCopy(settings);
     },
     exportData(): ExportPayload {
       return {
-        version: 2,
+        version: 3,
         exportedAt: new Date().toISOString(),
         dailyEntries: this.dailyEntries,
         results: this.results,
         lifeEvents: this.lifeEvents,
         weeklyReviews: this.weeklyReviews,
+        monthlyReviews: this.monthlyReviews,
         settings: this.settings
       };
     },
     async importData(payload: ExportPayload) {
-      if (![1, 2].includes(payload.version) || !Array.isArray(payload.dailyEntries) || !Array.isArray(payload.results)) {
+      if (![1, 2, 3].includes(payload.version) || !Array.isArray(payload.dailyEntries) || !Array.isArray(payload.results)) {
         throw new Error('Неподдерживаемый формат резервной копии');
       }
-      await db.transaction('rw', [db.dailyEntries, db.results, db.lifeEvents, db.weeklyReviews, db.settings], async () => {
-        await Promise.all([db.dailyEntries.clear(), db.results.clear(), db.lifeEvents.clear(), db.weeklyReviews.clear(), db.settings.clear()]);
+      await db.transaction('rw', [db.dailyEntries, db.results, db.lifeEvents, db.weeklyReviews, db.monthlyReviews, db.settings], async () => {
+        await Promise.all([db.dailyEntries.clear(), db.results.clear(), db.lifeEvents.clear(), db.weeklyReviews.clear(), db.monthlyReviews.clear(), db.settings.clear()]);
         await db.dailyEntries.bulkPut(payload.dailyEntries.map((entry) => normalizeDailyEntry(entry)));
         await db.results.bulkPut(payload.results);
         await db.lifeEvents.bulkPut((payload.lifeEvents ?? []).map((event) => normalizeLifeEvent(event)));
         await db.weeklyReviews.bulkPut((payload.weeklyReviews ?? []).map((review) => normalizeWeeklyReview(review)));
+        await db.monthlyReviews.bulkPut((payload.monthlyReviews ?? []).map((review) => normalizeMonthlyReview(review)));
         await db.settings.put(plainCopy(normalizeSettings(payload.settings ?? defaultSettings)));
       });
       await this.load();
     },
     async clearAll() {
-      await db.transaction('rw', [db.dailyEntries, db.results, db.lifeEvents, db.weeklyReviews, db.settings], async () => {
-        await Promise.all([db.dailyEntries.clear(), db.results.clear(), db.lifeEvents.clear(), db.weeklyReviews.clear(), db.settings.clear()]);
+      await db.transaction('rw', [db.dailyEntries, db.results, db.lifeEvents, db.weeklyReviews, db.monthlyReviews, db.settings], async () => {
+        await Promise.all([db.dailyEntries.clear(), db.results.clear(), db.lifeEvents.clear(), db.weeklyReviews.clear(), db.monthlyReviews.clear(), db.settings.clear()]);
       });
       this.dailyEntries = [];
       this.results = [];
       this.lifeEvents = [];
       this.weeklyReviews = [];
+      this.monthlyReviews = [];
       this.settings = structuredClone(defaultSettings);
       await db.settings.put(plainCopy(this.settings));
     }

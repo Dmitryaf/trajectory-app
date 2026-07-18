@@ -94,6 +94,7 @@ function createAiPayload(period: Exclude<AiReportPeriod, 'range'>) {
     results: store.results,
     lifeEvents: store.lifeEvents,
     reviews: store.weeklyReviews,
+    monthlyReviews: store.monthlyReviews,
     settings: store.settings
   });
 }
@@ -140,10 +141,17 @@ async function clearAll() {
           </div>
         </div>
       </div>
+      <button class="primary-button" type="button" @click="save">{{ status || 'Сохранить области' }}</button>
     </article>
 
     <article class="settings-card">
       <div class="form-card__heading"><span class="section-icon section-icon--blue">↗</span><div><h2>Карьера</h2><p>Добавь пункт, который важно видеть в ежедневной записи: например «Отклики».</p></div></div>
+      <div class="settings-field-stack">
+        <label class="field-label" for="active-focus">Текущий фокус</label>
+        <input id="active-focus" v-model="settings.activeFocusTitle" type="text" maxlength="100" placeholder="Например: найти работу frontend-разработчиком" />
+        <label class="field-label" for="external-evidence">Что считается контактом с реальностью</label>
+        <textarea id="external-evidence" v-model="settings.externalEvidenceCriterion" rows="2" maxlength="220" placeholder="Например: отклик, сообщение человеку, собеседование или публикация проекта"></textarea>
+      </div>
       <div class="option-preview">
         <span v-for="option in allCareerOptions" :key="option.id" class="option-pill">
           <i v-if="option.icon">{{ option.icon }}</i>{{ option.label }}
@@ -163,6 +171,14 @@ async function clearAll() {
           </div>
         </div>
       </div>
+      <button class="primary-button" type="button" @click="save">{{ status || 'Сохранить карьерный фокус' }}</button>
+    </article>
+
+    <article class="settings-card">
+      <div class="form-card__heading"><span class="section-icon section-icon--green">◐</span><div><h2>Критерий питания</h2><p>Определи наблюдаемые признаки заранее, чтобы ежедневная отметка не зависела только от настроения.</p></div></div>
+      <label class="field-label" for="nutrition-criterion">Что означает «поддержало цель»</label>
+      <textarea id="nutrition-criterion" v-model="settings.nutritionGoalCriterion" rows="3" maxlength="280" placeholder="Например: ел по плану, был нормальный ужин, не было незапланированных вечерних перекусов"></textarea>
+      <button class="primary-button" type="button" @click="save">{{ status || 'Сохранить настройки' }}</button>
     </article>
 
     <article class="settings-card">
@@ -170,10 +186,16 @@ async function clearAll() {
       <label class="toggle-row"><span><strong>Включить эксперимент</strong><small>В ежедневной записи появится один дополнительный вопрос.</small></span><input v-model="settings.experiment.active" type="checkbox" /></label>
       <label class="field-label" for="experiment-title">Условие эксперимента</label>
       <input id="experiment-title" v-model="settings.experiment.title" type="text" maxlength="140" placeholder="Не читать новости после 22:00" />
+      <label class="field-label" for="experiment-hypothesis">Гипотеза</label>
+      <textarea id="experiment-hypothesis" v-model="settings.experiment.hypothesis" rows="2" maxlength="220" placeholder="Если не читать новости поздно вечером, засыпать будет легче, а энергия утром станет выше"></textarea>
+      <label class="field-label" for="experiment-metric">Что проверяем</label>
+      <input id="experiment-metric" v-model="settings.experiment.targetMetric" type="text" maxlength="120" placeholder="Энергия и качество сна" />
       <div class="form-row">
         <label class="form-control"><span class="field-label">Начало</span><input v-model="settings.experiment.startDate" type="date" /></label>
         <label class="form-control"><span class="field-label">Окончание</span><input v-model="settings.experiment.endDate" type="date" /></label>
       </div>
+      <label class="field-label" for="experiment-conclusion">Итог после завершения</label>
+      <textarea id="experiment-conclusion" v-model="settings.experiment.conclusion" rows="2" maxlength="240" placeholder="Помогло, не помогло или данных пока недостаточно"></textarea>
       <button class="primary-button" type="button" @click="save">{{ status || 'Сохранить настройки' }}</button>
     </article>
 

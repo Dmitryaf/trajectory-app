@@ -3,7 +3,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import ChipGroup from '../components/ChipGroup.vue';
 import ScalePicker from '../components/ScalePicker.vue';
 import { useAppStore } from '../stores/app';
-import { addDays, endOfMonth, endOfWeek, formatDate, formatMinutes, startOfMonth, todayKey } from '../services/dates';
+import { addDays, endOfMonth, endOfWeek, formatDate, formatMinutes, startOfMonth, startOfWeek, todayKey } from '../services/dates';
 import { buildObservations, entriesForPeriod, entriesForWeek, summarize } from '../services/analytics';
 import { plainCopy } from '../services/plain';
 import {
@@ -29,6 +29,7 @@ const sleepHours = ref<number | null>(null);
 const timeInBedHours = ref<number | null>(null);
 const weightKg = ref<number | null>(null);
 const saved = ref(false);
+const validationMessage = ref('');
 const originalEntrySnapshot = ref('');
 const form = reactive<DailyEntry>(emptyDailyEntry(selectedDate.value));
 
@@ -62,10 +63,10 @@ const saveButtonText = computed(() => {
 });
 const saveButtonDisabled = computed(() => hasSavedEntry.value && !isDirty.value && !saved.value);
 const reviewReminders = computed(() => [
-  isWeekReviewWindow.value && currentWeekSummary.value.entriesCount >= 3
+  isWeekReviewWindow.value && currentWeekSummary.value.entriesCount >= 3 && !store.reviewByWeek(startOfWeek(todayKey()))
     ? { id: 'week', title: 'Неделя готова к разбору', text: `${currentWeekSummary.value.entriesCount} записанных дней уже достаточно для короткого обзора.`, to: '/week', label: 'Открыть неделю' }
     : null,
-  isMonthReviewWindow.value && currentMonthSummary.value.entriesCount >= 8
+  isMonthReviewWindow.value && currentMonthSummary.value.entriesCount >= 8 && !store.reviewByMonth(startOfMonth(todayKey()))
     ? { id: 'month', title: 'Месяц готов к разбору', text: `${currentMonthSummary.value.entriesCount} записанных дней дают материал для месячного обзора.`, to: '/month', label: 'Открыть месяц' }
     : null,
 ].filter((item): item is { id: string; title: string; text: string; to: string; label: string } => item !== null));
@@ -87,6 +88,7 @@ function normalizeWeight(value: number | null) {
 }
 
 function loadEntry(date: string) {
+  validationMessage.value = '';
   const existing = store.entryByDate(date);
   Object.assign(form, existing ? plainCopy(existing) : emptyDailyEntry(date));
   sleepHours.value = form.sleepMinutes === null ? null : form.sleepMinutes / 60;
@@ -97,12 +99,33 @@ function loadEntry(date: string) {
 }
 
 watch(selectedDate, loadEntry, { immediate: true });
+watch(() => [form.bedtime, form.wakeTime], ([bedtime, wakeTime]) => {
+  const duration = timeBetween(String(bedtime), String(wakeTime));
+  if (duration !== null) timeInBedHours.value = duration / 60;
+});
+
+function timeBetween(start: string, end: string): number | null {
+  if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end)) return null;
+  const [startHours, startMinutes] = start.split(':').map(Number);
+  const [endHours, endMinutes] = end.split(':').map(Number);
+  let duration = endHours * 60 + endMinutes - (startHours * 60 + startMinutes);
+  if (duration <= 0) duration += 24 * 60;
+  return duration <= 18 * 60 ? duration : null;
+}
 
 async function save() {
+  validationMessage.value = '';
+  if (sleepHours.value !== null && timeInBedHours.value !== null && sleepHours.value > timeInBedHours.value) {
+    validationMessage.value = 'Время сна не может быть больше времени в кровати.';
+    return;
+  }
   const entry = plainCopy(form);
   entry.sleepMinutes = sleepHours.value === null ? null : Math.round(sleepHours.value * 60);
   entry.timeInBedMinutes = timeInBedHours.value === null ? null : Math.round(timeInBedHours.value * 60);
   entry.weightKg = normalizeWeight(weightKg.value);
+  if (!hasSavedEntry.value && !entry.focusTitle.trim()) entry.focusTitle = store.settings.activeFocusTitle.trim();
+  if (!hasSavedEntry.value && !entry.externalEvidenceCriterion.trim()) entry.externalEvidenceCriterion = store.settings.externalEvidenceCriterion.trim();
+  if (!hasSavedEntry.value && !entry.nutritionCriterion.trim()) entry.nutritionCriterion = store.settings.nutritionGoalCriterion.trim();
   await store.saveEntry(entry);
   Object.assign(form, entry);
   originalEntrySnapshot.value = snapshotEntry(form);
@@ -159,11 +182,19 @@ function fillYesterday() {
       <article class="form-card form-card--sleep">
         <div class="form-card__heading">
           <span class="section-icon section-icon--purple">◒</span>
-          <div><h2>Сон и состояние</h2><p>Сон, энергия и факторы без оценки себя.</p></div>
+          <div><h2>Сон и состояние</h2><p>Ночь перед выбранной датой и состояние следующего дня.</p></div>
         </div>
         <div class="sleep-field-grid">
           <div>
-            <label class="field-label" for="sleep-hours">Сон</label>
+            <label class="field-label" for="bedtime">Лёг спать</label>
+            <input id="bedtime" v-model="form.bedtime" type="time" />
+          </div>
+          <div>
+            <label class="field-label" for="wake-time">Встал</label>
+            <input id="wake-time" v-model="form.wakeTime" type="time" />
+          </div>
+          <div>
+            <label class="field-label" for="sleep-hours">Примерно спал</label>
             <div class="number-field">
               <input id="sleep-hours" v-model.number="sleepHours" type="number" min="0" max="16" step="0.25" inputmode="decimal" placeholder="7.5" />
               <span>часов</span>
@@ -179,8 +210,9 @@ function fillYesterday() {
         </div>
         <div class="form-row">
           <div class="form-control"><label class="field-label">Качество сна</label><ScalePicker v-model="form.sleepQuality" low-label="плохо" high-label="хорошо" /></div>
-          <div class="form-control"><label class="field-label">Энергия</label><ScalePicker v-model="form.energy" low-label="нет сил" high-label="много сил" /></div>
+          <div class="form-control"><label class="field-label">Энергия за день</label><ScalePicker v-model="form.energy" low-label="нет сил" high-label="много сил" /></div>
         </div>
+        <p v-if="validationMessage" class="field-error" role="alert">{{ validationMessage }}</p>
         <label class="field-label" for="state-context">Что мешало или влияло</label>
         <textarea
           id="state-context"
@@ -190,7 +222,7 @@ function fillYesterday() {
           placeholder="Например: поздний кофе, тревога, шум, перегруз, просыпался ночью"
         ></textarea>
         <div class="factor-block">
-          <label class="field-label">Вечерние факторы</label>
+          <label class="field-label">Факторы перед этим сном</label>
           <ChipGroup v-model="form.eveningFactors" :options="eveningFactorOptions" multiple />
           <textarea
             v-if="form.eveningFactors.length"
@@ -213,8 +245,9 @@ function fillYesterday() {
       <article class="form-card form-card--direction">
         <div class="form-card__heading">
           <span class="section-icon section-icon--blue">⌁</span>
-          <div><h2>Направление действия</h2><p>Проверка: день двигал цель наружу или оставался подготовкой.</p></div>
+          <div><h2>Направление действия</h2><p>{{ form.focusTitle || store.settings.activeFocusTitle ? `Фокус: ${form.focusTitle || store.settings.activeFocusTitle}` : 'Проверка: день двигал цель наружу или оставался подготовкой.' }}</p></div>
         </div>
+        <p v-if="form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion" class="form-context">Внешний шаг: {{ form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion }}</p>
         <ChipGroup v-model="form.actionDirection as ActionDirectionId | null" :options="actionDirectionOptions" allow-clear />
         <textarea
           v-if="form.actionDirection"
@@ -236,7 +269,7 @@ function fillYesterday() {
       <article class="form-card form-card--nutrition">
         <div class="form-card__heading">
           <span class="section-icon section-icon--green">◐</span>
-          <div><h2>Питание</h2><p>Отметь, поддерживало ли оно цель по весу.</p></div>
+          <div><h2>Питание</h2><p>{{ form.nutritionCriterion || store.settings.nutritionGoalCriterion || 'Отметь, поддерживало ли оно цель по весу.' }}</p></div>
         </div>
         <ChipGroup v-model="form.nutritionState as NutritionState | null" :options="nutritionOptions" allow-clear />
         <div class="sleep-field-grid">
@@ -276,6 +309,8 @@ function fillYesterday() {
           <span class="section-icon section-icon--orange">⌁</span>
           <div><h2>Текущий эксперимент</h2><p>{{ store.settings.experiment.title }}</p></div>
         </div>
+        <p v-if="store.settings.experiment.hypothesis" class="form-context">Гипотеза: {{ store.settings.experiment.hypothesis }}</p>
+        <p v-if="store.settings.experiment.targetMetric" class="form-context">Проверяем: {{ store.settings.experiment.targetMetric }}</p>
         <div class="binary-choice">
           <button type="button" :class="{ selected: form.experimentCompleted === true }" @click="form.experimentCompleted = true">Да</button>
           <button type="button" :class="{ selected: form.experimentCompleted === false }" @click="form.experimentCompleted = false">Нет</button>
