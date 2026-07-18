@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import EnergySleepScatter from '../components/charts/EnergySleepScatter.vue';
-import SleepBarChart from '../components/charts/SleepBarChart.vue';
+import type { EChartsCoreOption } from 'echarts/core';
+import EChartPanel from '../components/charts/EChartPanel.vue';
 import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
 import { actionDirectionLabel, buildObservations, buildReviewCues, buildReviewQuestions, careerStatesForEntry, entriesForMonth, factorSummaries, hasMovement, resultsForPeriod, specialDayLabel, summarize } from '../services/analytics';
 import { dateRange, endOfMonth, formatDate, formatMinutes, fromDateKey, startOfMonth, todayKey, toDateKey } from '../services/dates';
 import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../services/exportPackage';
 import { useAppStore } from '../stores/app';
-import { lifeAreaOptions } from '../types';
+import { actionDirectionOptions, lifeAreaOptions } from '../types';
 
 const store = useAppStore();
 const anchor = ref(todayKey());
@@ -26,20 +26,70 @@ const reviewCues = computed(() => buildReviewCues('month', entries.value, result
 const reviewQuestions = buildReviewQuestions('month');
 const sleepEntries = computed(() => [...entries.value].filter((entry) => entry.sleepMinutes !== null).sort((a, b) => a.date.localeCompare(b.date)));
 const energySleepEntries = computed(() => entries.value.filter((entry) => entry.sleepMinutes !== null && entry.energy !== null).sort((a, b) => a.date.localeCompare(b.date)));
-const sleepChartData = computed(() => sleepEntries.value.map((entry) => ({
-  key: entry.date,
-  label: formatDate(entry.date, { day: 'numeric' }),
-  value: entry.sleepMinutes,
-  title: `${formatDate(entry.date)}: ${formatMinutes(entry.sleepMinutes)}`
-})));
-const energySleepPoints = computed(() => energySleepEntries.value.map((entry) => ({
-  key: entry.date,
-  sleepMinutes: entry.sleepMinutes ?? 0,
-  energy: entry.energy ?? 1,
-  hasMovement: hasMovement(entry),
-  isSpecial: Boolean(entry.specialDay),
-  title: `${formatDate(entry.date)} · сон ${formatMinutes(entry.sleepMinutes)} · энергия ${entry.energy}${hasMovement(entry) ? ' · было движение' : ''}${entry.specialDay ? ` · ${specialDayLabel(entry.specialDay)}` : ''}`
-})));
+const sleepEnergyOption = computed<EChartsCoreOption>(() => {
+  const rows = sleepEntries.value;
+  return {
+    color: ['#7367f0', '#b8c1d8', '#4bcda0'],
+    tooltip: {
+      trigger: 'axis',
+      formatter: (params: unknown) => formatSleepTooltip(params)
+    },
+    legend: { top: 0, right: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: '#657085', fontSize: 12 } },
+    grid: { left: 46, right: 42, top: 42, bottom: 34 },
+    xAxis: {
+      type: 'category',
+      data: rows.map((entry) => formatDate(entry.date, { day: 'numeric' })),
+      axisTick: { show: false },
+      axisLine: { lineStyle: { color: '#dfe4ed' } },
+      axisLabel: { color: '#7d8798' }
+    },
+    yAxis: [
+      { type: 'value', min: 0, max: 12, interval: 3, axisLabel: { formatter: '{value}ч', color: '#7d8798' }, splitLine: { lineStyle: { color: '#edf1f6' } } },
+      { type: 'value', min: 1, max: 5, interval: 1, axisLabel: { color: '#7d8798' }, splitLine: { show: false } }
+    ],
+    series: [
+      { name: 'Сон', type: 'bar', data: rows.map((entry) => minutesToHours(entry.sleepMinutes)), barMaxWidth: 16, itemStyle: { borderRadius: [7, 7, 2, 2] } },
+      { name: 'В кровати', type: 'bar', data: rows.map((entry) => minutesToHours(entry.timeInBedMinutes)), barMaxWidth: 16, itemStyle: { borderRadius: [7, 7, 2, 2] } },
+      { name: 'Энергия', type: 'line', yAxisIndex: 1, data: rows.map((entry) => entry.energy), smooth: true, symbolSize: 8, connectNulls: false, lineStyle: { width: 3 } }
+    ]
+  };
+});
+const energySleepOption = computed<EChartsCoreOption>(() => ({
+  color: ['#7f8ba1', '#4bcda0', '#eb7458'],
+  tooltip: {
+    trigger: 'item',
+    formatter: (params: unknown) => formatScatterTooltip(params)
+  },
+  legend: { top: 0, right: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: '#657085', fontSize: 12 } },
+  grid: { left: 46, right: 28, top: 42, bottom: 40 },
+  xAxis: { type: 'value', min: 0, max: 12, interval: 2, name: 'сон', nameLocation: 'end', axisLabel: { formatter: '{value}ч', color: '#7d8798' }, splitLine: { lineStyle: { color: '#edf1f6' } } },
+  yAxis: { type: 'value', min: 1, max: 5, interval: 1, name: 'энергия', axisLabel: { color: '#7d8798' }, splitLine: { lineStyle: { color: '#edf1f6' } } },
+  series: [
+    { name: 'без движения', type: 'scatter', data: scatterRows('still'), symbolSize: 12 },
+    { name: 'с движением', type: 'scatter', data: scatterRows('movement'), symbolSize: 14 },
+    { name: 'особый день', type: 'scatter', data: scatterRows('special'), symbolSize: 16 }
+  ]
+}));
+const actionDirectionOption = computed<EChartsCoreOption>(() => {
+  const data = actionDirectionOptions
+    .map((option) => ({ name: option.label, value: summary.value.actionDirectionCounts[option.id] }))
+    .filter((item) => item.value > 0);
+  return {
+    color: ['#5264d8', '#7eb4ef', '#4bcda0', '#b8c1d8', '#b85c4c'],
+    tooltip: { trigger: 'item', formatter: '{b}: {c} дн.' },
+    legend: { orient: 'vertical', right: 8, top: 'middle', textStyle: { color: '#657085', fontSize: 12 } },
+    series: [{
+      name: 'Направление',
+      type: 'pie',
+      radius: ['48%', '72%'],
+      center: ['38%', '50%'],
+      data,
+      avoidLabelOverlap: true,
+      label: { formatter: '{b}\n{c}', color: '#344055', fontWeight: 700 },
+      itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 3 }
+    }]
+  };
+});
 const stateNotes = computed(() => entries.value.filter((entry) => entry.stateContext.trim()).sort((a, b) => b.date.localeCompare(a.date)));
 const actionNotes = computed(() => entries.value.filter((entry) => entry.actionDirection !== null).sort((a, b) => b.date.localeCompare(a.date)));
 const specialDays = computed(() => entries.value.filter((entry) => entry.specialDay !== null).sort((a, b) => b.date.localeCompare(a.date)));
@@ -85,6 +135,50 @@ function nutritionText(value: string): string {
   if (value === 'supports_goal') return 'поддержало цель';
   if (value === 'blocks_goal') return 'мешало цели';
   return 'нейтрально';
+}
+
+function minutesToHours(value: number | null): number | null {
+  return value === null ? null : Math.round((value / 60) * 10) / 10;
+}
+
+function scatterRows(kind: 'still' | 'movement' | 'special') {
+  return energySleepEntries.value
+    .filter((entry) => {
+      if (kind === 'special') return Boolean(entry.specialDay);
+      if (kind === 'movement') return !entry.specialDay && hasMovement(entry);
+      return !entry.specialDay && !hasMovement(entry);
+    })
+    .map((entry) => ({
+      value: [minutesToHours(entry.sleepMinutes) ?? 0, entry.energy],
+      date: entry.date,
+      sleepMinutes: entry.sleepMinutes,
+      energy: entry.energy,
+      movement: hasMovement(entry),
+      specialDay: entry.specialDay
+    }));
+}
+
+function formatSleepTooltip(params: unknown): string {
+  const items = Array.isArray(params) ? params : [];
+  const first = items[0] as { axisValue?: string } | undefined;
+  const lines = items.map((item) => {
+    const typed = item as { marker?: string; seriesName?: string; data?: number | null };
+    const value = typed.seriesName === 'Энергия' ? `${typed.data ?? '—'}/5` : typed.data === null ? '—' : `${typed.data} ч`;
+    return `${typed.marker ?? ''}${typed.seriesName}: ${value}`;
+  });
+  return [`День ${first?.axisValue ?? ''}`, ...lines].join('<br />');
+}
+
+function formatScatterTooltip(params: unknown): string {
+  const data = (params as { data?: { date?: string; sleepMinutes?: number | null; energy?: number | null; movement?: boolean; specialDay?: string | null } }).data;
+  if (!data) return '';
+  return [
+    data.date ? formatDate(data.date) : '',
+    `сон: ${formatMinutes(data.sleepMinutes ?? null)}`,
+    `энергия: ${data.energy ?? '—'}/5`,
+    data.movement ? 'было движение' : 'без движения',
+    data.specialDay ? specialDayLabel(data.specialDay) : ''
+  ].filter(Boolean).join('<br />');
 }
 
 function shiftMonth(offset: number) {
@@ -208,19 +302,19 @@ function showExportStatus(message: string) {
 
     <article class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Сон</span><h2>Динамика сна</h2></div><small>0–12 часов</small></div>
-      <SleepBarChart v-if="sleepEntries.length" :data="sleepChartData" />
+      <EChartPanel v-if="sleepEntries.length" :option="sleepEnergyOption" :height="320" aria-label="Динамика сна, времени в кровати и энергии" />
       <div v-else class="empty-chart">Добавь данные о сне — здесь появится динамика.</div>
     </article>
 
     <article class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Связь показателей</span><h2>Сон, энергия и движение</h2></div><small>точки: дни</small></div>
-      <EnergySleepScatter v-if="energySleepEntries.length" :points="energySleepPoints" />
+      <EChartPanel v-if="energySleepEntries.length" :option="energySleepOption" :height="320" aria-label="Связь сна, энергии и движения" />
       <div v-else class="empty-chart">Когда появятся сон и энергия за несколько дней, здесь будет видна связь.</div>
-      <div class="chart-legend">
-        <span><i class="legend-dot"></i>без движения</span>
-        <span><i class="legend-dot legend-dot--movement"></i>с движением</span>
-        <span><i class="legend-dot legend-dot--special"></i>особый день</span>
-      </div>
+    </article>
+
+    <article v-if="summary.externalActionDays || summary.preparationDays || summary.driftDays" class="dashboard-card">
+      <div class="section-heading"><div><span class="eyebrow">Контакт с реальностью</span><h2>Направление действий</h2></div><small>дни месяца</small></div>
+      <EChartPanel :option="actionDirectionOption" :height="280" aria-label="Распределение направления действий за месяц" />
     </article>
 
     <article v-if="factors.length" class="dashboard-card">

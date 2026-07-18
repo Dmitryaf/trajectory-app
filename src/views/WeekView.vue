@@ -266,6 +266,7 @@ function showExportStatus(message: string) {
       <label class="field-label">Что помогало?</label><textarea v-model="review.support" rows="2" placeholder="Люди, режим, место, привычка или решение"></textarea>
       <label class="field-label">Что мешало сильнее всего?</label><textarea v-model="review.obstacle" rows="2" placeholder="Один главный фактор"></textarea>
       <label class="field-label">Один рычаг на следующую неделю</label><textarea v-model="review.nextLever" rows="2" placeholder="Одно конкретное изменение"></textarea>
+      <label class="field-label">План если-то</label><textarea v-model="review.ifThenPlan" rows="2" placeholder="Если появится главный фактор, то я сделаю конкретное действие"></textarea>
       <button class="primary-button" type="button" @click="saveReview">{{ saved ? 'Сохранено ✓' : 'Сохранить обзор' }}</button>
     </article>
   </section>

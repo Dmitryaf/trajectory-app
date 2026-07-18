@@ -247,17 +247,7 @@ textarea { resize: vertical; min-height: 64px; }
 .review-card input, .review-card textarea { margin-bottom: 9px; }
 .review-card .primary-button { margin-top: 8px; }
 
-.svg-chart-scroll { overflow-x: auto; padding: 2px 0 4px; }
-.svg-chart { display: block; width: 100%; min-height: 240px; border: 1px solid #e3e8f1; border-radius: 18px; background: linear-gradient(180deg, #fff, #f8fafc); box-shadow: inset 0 1px 0 rgba(255,255,255,.9); }
-.svg-chart__grid line { stroke: #e5eaf2; stroke-width: 1; }
-.svg-chart--scatter .svg-chart__grid line:nth-child(even) { opacity: .55; }
-.svg-chart__grid text, .svg-chart__x-label, .svg-chart__axis-title { fill: #7b8597; font-size: 11px; font-weight: 750; }
-.svg-chart__axis-title { text-transform: uppercase; letter-spacing: .08em; }
-.svg-chart__bar { fill: url(#sleepBarGradient); filter: drop-shadow(0 8px 10px rgba(91, 85, 200, .15)); }
-.svg-chart__empty-dot { fill: #cfd6e3; }
-.svg-chart__point { fill: #7f8ba1; stroke: #fff; stroke-width: 3px; filter: drop-shadow(0 5px 10px rgba(35, 45, 66, .22)); }
-.svg-chart__point--movement { fill: var(--accent); }
-.svg-chart__point--special { fill: var(--orange); stroke-width: 3.5px; }
+.echart-panel { width: 100%; min-height: 240px; border: 1px solid #e3e8f1; border-radius: 18px; background: linear-gradient(180deg, #fff, #f8fafc); box-shadow: inset 0 1px 0 rgba(255,255,255,.9); overflow: hidden; }
 .empty-chart { height: 170px; display: grid; place-items: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 15px; }
 .chart-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; color: #687287; font-size: 12px; }
 .chart-legend span { display: inline-flex; align-items: center; gap: 6px; }

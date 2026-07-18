@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildObservations, buildReviewCues, entriesForPeriod, entriesForWeek, factorSummaries, summarize, weekSummaryText } from '../src/services/analytics';
 import { buildAiReportPayload, buildAiReportRangePayload } from '../src/services/aiReport';
 import { addMonths, monthsBetween } from '../src/services/dates';
-import { defaultSettings, emptyDailyEntry, normalizeDailyEntry, type DailyEntry } from '../src/types';
+import { defaultSettings, emptyDailyEntry, normalizeDailyEntry, normalizeWeeklyReview, type DailyEntry } from '../src/types';
 
 function entry(date: string, patch: Partial<DailyEntry>): DailyEntry {
   return { ...emptyDailyEntry(date), ...patch };
@@ -236,5 +236,17 @@ describe('analytics', () => {
 
     expect(cues).toHaveLength(6);
     expect(cues.map((cue) => cue.id)).toContain('results');
+  });
+
+  it('normalizes weekly review if-then plans for older backups', () => {
+    const review = normalizeWeeklyReview({
+      weekStart: '2026-07-13',
+      results: ['результат'],
+      support: 'режим',
+      obstacle: 'новости',
+      nextLever: 'закрывать новости'
+    });
+
+    expect(review.ifThenPlan).toBe('');
   });
 });

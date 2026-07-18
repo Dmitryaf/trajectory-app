@@ -3,13 +3,6 @@ import { createPinia } from 'pinia';
 import { createRouter, createWebHistory } from 'vue-router';
 import { registerSW } from 'virtual:pwa-register';
 import App from './App.vue';
-import TodayView from './views/TodayView.vue';
-import ResultsView from './views/ResultsView.vue';
-import EventsView from './views/EventsView.vue';
-import WeekView from './views/WeekView.vue';
-import MonthView from './views/MonthView.vue';
-import TrendsView from './views/TrendsView.vue';
-import SettingsView from './views/SettingsView.vue';
 import './style.css';
 
 registerSW({ immediate: true });
@@ -17,13 +10,13 @@ registerSW({ immediate: true });
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', component: TodayView, meta: { title: 'Сегодня' } },
-    { path: '/results', component: ResultsView, meta: { title: 'Результаты' } },
-    { path: '/events', component: EventsView, meta: { title: 'Архив' } },
-    { path: '/week', component: WeekView, meta: { title: 'Неделя' } },
-    { path: '/month', component: MonthView, meta: { title: 'Месяц' } },
-    { path: '/trends', component: TrendsView, meta: { title: 'Тренды' } },
-    { path: '/settings', component: SettingsView, meta: { title: 'Настройки' } }
+    { path: '/', component: () => import('./views/TodayView.vue'), meta: { title: 'Сегодня' } },
+    { path: '/results', component: () => import('./views/ResultsView.vue'), meta: { title: 'Результаты' } },
+    { path: '/events', component: () => import('./views/EventsView.vue'), meta: { title: 'Архив' } },
+    { path: '/week', component: () => import('./views/WeekView.vue'), meta: { title: 'Неделя' } },
+    { path: '/month', component: () => import('./views/MonthView.vue'), meta: { title: 'Месяц' } },
+    { path: '/trends', component: () => import('./views/TrendsView.vue'), meta: { title: 'Тренды' } },
+    { path: '/settings', component: () => import('./views/SettingsView.vue'), meta: { title: 'Настройки' } }
   ]
 });
 

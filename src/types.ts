@@ -79,6 +79,7 @@ export type WeeklyReview = {
   support: string;
   obstacle: string;
   nextLever: string;
+  ifThenPlan: string;
 };
 
 export type Experiment = {
@@ -308,6 +309,7 @@ export function emptyWeeklyReview(weekStart: string): WeeklyReview {
     support: "",
     obstacle: "",
     nextLever: "",
+    ifThenPlan: "",
   };
 }
 
@@ -319,5 +321,6 @@ export function normalizeWeeklyReview(review: Partial<WeeklyReview> & { weekStar
     support: typeof review.support === "string" ? review.support : "",
     obstacle: typeof review.obstacle === "string" ? review.obstacle : "",
     nextLever: typeof review.nextLever === "string" ? review.nextLever : "",
+    ifThenPlan: typeof review.ifThenPlan === "string" ? review.ifThenPlan : "",
   };
 }

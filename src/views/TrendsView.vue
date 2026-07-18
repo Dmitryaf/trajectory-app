@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import type { EChartsCoreOption } from 'echarts/core';
+import EChartPanel from '../components/charts/EChartPanel.vue';
 import MetricCard from '../components/MetricCard.vue';
 import { buildReviewCues, entriesForPeriod, factorSummaries, resultsForPeriod, summarize } from '../services/analytics';
 import { addMonths, endOfMonth, formatDate, formatMinutes, monthsBetween, startOfMonth, todayKey } from '../services/dates';
@@ -40,99 +42,55 @@ const monthRows = computed(() => monthsBetween(start.value, end.value).map((mont
   };
 }));
 
-const maxEntries = computed(() => Math.max(1, ...monthRows.value.map((row) => row.summary.entriesCount)));
-const maxExternalSteps = computed(() => Math.max(1, ...monthRows.value.map((row) => row.summary.externalSteps)));
-const maxExternalActions = computed(() => Math.max(1, ...monthRows.value.map((row) => row.summary.externalActionDays)));
-const maxResults = computed(() => Math.max(1, ...monthRows.value.map((row) => row.resultsCount)));
-const maxSpecialDays = computed(() => Math.max(1, ...monthRows.value.map((row) => row.summary.specialDays)));
-const trendBands = computed(() => [
-  {
-    id: 'sleep',
-    label: 'Сон',
-    cells: monthRows.value.map((row) => ({
-      key: `${row.monthStart}-sleep`,
-      label: row.label,
-      percent: percentOf(row.summary.averageSleep, 540),
-      level: levelFromPercent(percentOf(row.summary.averageSleep, 540)),
-      title: `${formatDate(row.monthStart, { month: 'long', year: 'numeric' })}: сон ${formatMinutes(row.summary.averageSleep === null ? null : Math.round(row.summary.averageSleep))}`
-    }))
+const trendOverviewOption = computed<EChartsCoreOption>(() => ({
+  color: ['#7367f0', '#4bcda0', '#d39b2f'],
+  tooltip: { trigger: 'axis' },
+  legend: { top: 0, right: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: '#657085', fontSize: 12 } },
+  grid: { left: 44, right: 48, top: 44, bottom: 34 },
+  xAxis: {
+    type: 'category',
+    data: monthRows.value.map((row) => row.label),
+    axisTick: { show: false },
+    axisLine: { lineStyle: { color: '#dfe4ed' } },
+    axisLabel: { color: '#7d8798' }
   },
-  {
-    id: 'energy',
-    label: 'Энергия',
-    cells: monthRows.value.map((row) => ({
-      key: `${row.monthStart}-energy`,
-      label: row.label,
-      percent: percentOf(row.summary.averageEnergy, 5),
-      level: levelFromPercent(percentOf(row.summary.averageEnergy, 5)),
-      title: `${formatDate(row.monthStart, { month: 'long', year: 'numeric' })}: энергия ${row.summary.averageEnergy === null ? '—' : row.summary.averageEnergy.toFixed(1).replace('.0', '')}/5`
-    }))
+  yAxis: [
+    { type: 'value', min: 0, max: 12, axisLabel: { formatter: '{value}', color: '#7d8798' }, splitLine: { lineStyle: { color: '#edf1f6' } } },
+    { type: 'value', axisLabel: { formatter: '{value}кг', color: '#7d8798' }, splitLine: { show: false } }
+  ],
+  series: [
+    { name: 'сон, ч', type: 'line', smooth: true, symbolSize: 8, data: monthRows.value.map((row) => minutesToHours(row.summary.averageSleep)), lineStyle: { width: 3 } },
+    { name: 'энергия', type: 'line', smooth: true, symbolSize: 8, data: monthRows.value.map((row) => roundValue(row.summary.averageEnergy)), lineStyle: { width: 3 } },
+    { name: 'вес', type: 'line', yAxisIndex: 1, smooth: true, symbolSize: 8, data: monthRows.value.map((row) => roundValue(row.summary.averageWeightKg)), connectNulls: false, lineStyle: { width: 3 } }
+  ]
+}));
+const progressOption = computed<EChartsCoreOption>(() => ({
+  color: ['#5264d8', '#7eb4ef', '#b85c4c', '#f0ad42'],
+  tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+  legend: { top: 0, right: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: '#657085', fontSize: 12 } },
+  grid: { left: 36, right: 24, top: 44, bottom: 34 },
+  xAxis: {
+    type: 'category',
+    data: monthRows.value.map((row) => row.label),
+    axisTick: { show: false },
+    axisLine: { lineStyle: { color: '#dfe4ed' } },
+    axisLabel: { color: '#7d8798' }
   },
-  {
-    id: 'direction',
-    label: 'Направление',
-    cells: monthRows.value.map((row) => {
-      const external = row.summary.externalActionDays;
-      const preparation = row.summary.preparationDays;
-      const drift = row.summary.driftDays;
-      return {
-        key: `${row.monthStart}-direction`,
-        label: row.label,
-        percent: percentOf(external + preparation + drift, Math.max(1, row.summary.entriesCount)),
-        level: drift > 0 && external === 0 ? 'low' : external > preparation ? 'high' : preparation > 0 ? 'mid' : 'empty',
-        title: `${formatDate(row.monthStart, { month: 'long', year: 'numeric' })}: наружу ${external}, подготовка ${preparation}, в сторону ${drift}`
-      };
-    })
-  },
-  {
-    id: 'nutrition',
-    label: 'Питание',
-    cells: monthRows.value.map((row) => {
-      const support = row.summary.nutritionSupportDays;
-      const block = row.summary.nutritionBlockDays;
-      return {
-        key: `${row.monthStart}-nutrition`,
-        label: row.label,
-        percent: percentOf(support + block, Math.max(1, row.summary.entriesCount)),
-        level: block > support ? 'low' : support > 0 ? 'high' : 'empty',
-        title: `${formatDate(row.monthStart, { month: 'long', year: 'numeric' })}: питание ${support}/${block}, вес ${row.summary.averageWeightKg === null ? '—' : `${row.summary.averageWeightKg.toFixed(1).replace('.0', '')} кг`}`
-      };
-    })
-  },
-  {
-    id: 'external',
-    label: 'Внешние шаги',
-    cells: monthRows.value.map((row) => ({
-      key: `${row.monthStart}-external`,
-      label: row.label,
-      percent: percentOf(row.summary.externalSteps, maxExternalSteps.value),
-      level: levelFromPercent(percentOf(row.summary.externalSteps, maxExternalSteps.value)),
-      title: `${formatDate(row.monthStart, { month: 'long', year: 'numeric' })}: ${row.summary.externalSteps} внешних шагов`
-    }))
-  },
-  {
-    id: 'context',
-    label: 'Особые дни',
-    cells: monthRows.value.map((row) => ({
-      key: `${row.monthStart}-context`,
-      label: row.label,
-      percent: percentOf(row.summary.specialDays, maxSpecialDays.value),
-      level: row.summary.specialDays > 0 ? 'context' : 'empty',
-      title: `${formatDate(row.monthStart, { month: 'long', year: 'numeric' })}: ${row.summary.specialDays} особых дней`
-    }))
-  }
-]);
+  yAxis: { type: 'value', minInterval: 1, axisLabel: { color: '#7d8798' }, splitLine: { lineStyle: { color: '#edf1f6' } } },
+  series: [
+    { name: 'наружу', type: 'bar', stack: 'direction', data: monthRows.value.map((row) => row.summary.externalActionDays), itemStyle: { borderRadius: [5, 5, 0, 0] } },
+    { name: 'подготовка', type: 'bar', stack: 'direction', data: monthRows.value.map((row) => row.summary.preparationDays) },
+    { name: 'в сторону', type: 'bar', stack: 'direction', data: monthRows.value.map((row) => row.summary.driftDays) },
+    { name: 'результаты', type: 'line', data: monthRows.value.map((row) => row.resultsCount), symbolSize: 8, lineStyle: { width: 3 } }
+  ]
+}));
 
-function percentOf(value: number | null, max: number): number {
-  if (value === null || max <= 0) return 0;
-  return Math.min(100, Math.max(0, Math.round((value / max) * 100)));
+function minutesToHours(value: number | null): number | null {
+  return value === null ? null : Math.round((value / 60) * 10) / 10;
 }
 
-function levelFromPercent(percent: number): 'empty' | 'low' | 'mid' | 'high' {
-  if (percent <= 0) return 'empty';
-  if (percent < 45) return 'low';
-  if (percent < 75) return 'mid';
-  return 'high';
+function roundValue(value: number | null): number | null {
+  return value === null ? null : Math.round(value * 10) / 10;
 }
 
 function createPackage() {
@@ -181,24 +139,8 @@ function showExportStatus(message: string) {
     </div>
 
     <article class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Ленты периода</span><h2>Как менялась траектория</h2></div></div>
-      <div class="trend-ribbons">
-        <div v-for="band in trendBands" :key="band.id" class="trend-ribbon">
-          <strong>{{ band.label }}</strong>
-          <div class="trend-ribbon__cells">
-            <span
-              v-for="cell in band.cells"
-              :key="cell.key"
-              class="trend-ribbon__cell"
-              :class="`trend-ribbon__cell--${cell.level}`"
-              :title="cell.title"
-            >
-              <i :style="{ height: `${cell.percent}%` }"></i>
-              <small>{{ cell.label }}</small>
-            </span>
-          </div>
-        </div>
-      </div>
+      <div class="section-heading"><div><span class="eyebrow">Динамика периода</span><h2>Сон, энергия и вес</h2></div></div>
+      <EChartPanel :option="trendOverviewOption" :height="320" aria-label="Динамика сна, энергии и веса по месяцам" />
     </article>
 
     <article class="dashboard-card">
@@ -219,25 +161,8 @@ function showExportStatus(message: string) {
     </article>
 
     <article class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">По месяцам</span><h2>Покрытие и действия</h2></div></div>
-      <div class="long-chart">
-        <div v-for="row in monthRows" :key="row.monthStart" class="long-chart__row">
-          <time>{{ row.label }}</time>
-          <div class="long-chart__tracks">
-            <span class="long-chart__bar long-chart__bar--entries" :style="{ width: `${(row.summary.entriesCount / maxEntries) * 100}%` }"></span>
-            <span class="long-chart__bar long-chart__bar--career" :style="{ width: `${(row.summary.externalSteps / maxExternalSteps) * 100}%` }"></span>
-            <span class="long-chart__bar long-chart__bar--direction" :style="{ width: `${(row.summary.externalActionDays / maxExternalActions) * 100}%` }"></span>
-            <span class="long-chart__bar long-chart__bar--results" :style="{ width: `${(row.resultsCount / maxResults) * 100}%` }"></span>
-          </div>
-          <small>{{ row.summary.entriesCount }} дн. · {{ row.summary.externalActionDays }} наружу · {{ row.resultsCount }} рез.</small>
-        </div>
-      </div>
-      <div class="chart-legend">
-        <span><i class="legend-dot legend-dot--entries"></i>записи</span>
-        <span><i class="legend-dot legend-dot--career"></i>карьера</span>
-        <span><i class="legend-dot legend-dot--direction"></i>наружу</span>
-        <span><i class="legend-dot legend-dot--results"></i>результаты</span>
-      </div>
+      <div class="section-heading"><div><span class="eyebrow">Контакт с реальностью</span><h2>Действия и результаты</h2></div></div>
+      <EChartPanel :option="progressOption" :height="320" aria-label="Динамика внешних действий, подготовки, ухода в сторону и результатов" />
     </article>
 
     <article class="dashboard-card">
