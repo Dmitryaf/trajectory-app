@@ -5,6 +5,9 @@ import { addDays, dateRange, endOfMonth, endOfWeek, formatMinutes, startOfMonth,
 export type PeriodSummary = {
   entriesCount: number;
   ordinaryEntriesCount: number;
+  coveredEntriesCount: number;
+  ordinaryCoveredEntriesCount: number;
+  ordinaryCoreEntriesCount: number;
   sleepSamples: number;
   timeInBedSamples: number;
   energySamples: number;
@@ -23,6 +26,7 @@ export type PeriodSummary = {
   careerDays: number;
   externalSteps: number;
   movementDays: number;
+  movementSamples: number;
   nutritionSupportDays: number;
   nutritionBlockDays: number;
   averageWeightKg: number | null;
@@ -34,6 +38,7 @@ export type PeriodSummary = {
   bedtimeVariationMinutes: number | null;
   wakeTimeVariationMinutes: number | null;
   areaCounts: Record<string, number>;
+  lifeAreaSamples: number;
 };
 
 export type Observation = {
@@ -99,6 +104,8 @@ function sampleCount(values: Array<number | null>): number {
 
 export function summarize(entries: DailyEntry[], externalCareerIds: string[] = externalCareerStates): PeriodSummary {
   const ordinaryEntries = entries.filter((entry) => entry.specialDay === null);
+  const coveredEntries = entries.filter((entry) => dataCoverageLevel(entry) > 0);
+  const ordinaryCoveredEntries = ordinaryEntries.filter((entry) => dataCoverageLevel(entry) > 0);
   const areaCounts = Object.fromEntries(lifeAreaOptions.map(({ id }) => [id, 0])) as Record<string, number>;
   const actionDirectionCounts = Object.fromEntries(actionDirectionOptions.map(({ id }) => [id, 0])) as Record<ActionDirectionId, number>;
   for (const entry of entries) {
@@ -109,6 +116,9 @@ export function summarize(entries: DailyEntry[], externalCareerIds: string[] = e
   return {
     entriesCount: entries.length,
     ordinaryEntriesCount: ordinaryEntries.length,
+    coveredEntriesCount: coveredEntries.length,
+    ordinaryCoveredEntriesCount: ordinaryCoveredEntries.length,
+    ordinaryCoreEntriesCount: ordinaryEntries.filter((entry) => dataCoverageLevel(entry) === 2).length,
     sleepSamples: sampleCount(ordinaryEntries.map((entry) => entry.sleepMinutes)),
     timeInBedSamples: sampleCount(ordinaryEntries.map((entry) => entry.timeInBedMinutes)),
     energySamples: sampleCount(ordinaryEntries.map((entry) => entry.energy)),
@@ -125,8 +135,9 @@ export function summarize(entries: DailyEntry[], externalCareerIds: string[] = e
     averageEnergy: average(ordinaryEntries.map((entry) => entry.energy)),
     averageSleepQuality: average(ordinaryEntries.map((entry) => entry.sleepQuality)),
     careerDays: entries.filter((entry) => careerStatesForEntry(entry).length > 0).length,
-    externalSteps: entries.reduce((sum, entry) => sum + careerStatesForEntry(entry).filter((state) => externalCareerIds.includes(state)).length, 0),
+    externalSteps: entries.filter((entry) => careerStatesForEntry(entry).some((state) => externalCareerIds.includes(state))).length,
     movementDays: entries.filter(hasMovement).length,
+    movementSamples: entries.filter((entry) => entry.activitiesRecorded).length,
     nutritionSupportDays: entries.filter((entry) => entry.nutritionState === 'supports_goal').length,
     nutritionBlockDays: entries.filter((entry) => entry.nutritionState === 'blocks_goal').length,
     averageWeightKg: average(ordinaryEntries.map((entry) => entry.weightKg)),
@@ -137,7 +148,8 @@ export function summarize(entries: DailyEntry[], externalCareerIds: string[] = e
     specialDays: entries.filter((entry) => entry.specialDay !== null).length,
     bedtimeVariationMinutes: clockVariation(ordinaryEntries.map((entry) => clockMinutes(entry.bedtime, true))),
     wakeTimeVariationMinutes: clockVariation(ordinaryEntries.map((entry) => clockMinutes(entry.wakeTime, false))),
-    areaCounts
+    areaCounts,
+    lifeAreaSamples: entries.filter((entry) => entry.lifeAreasRecorded).length,
   };
 }
 
@@ -162,11 +174,16 @@ export function resultsForPeriod(results: ResultRecord[], start: string, end: st
 }
 
 export function dataCoverageLevel(entry: DailyEntry): DataCoverageLevel {
-  const hasState = entry.sleepMinutes !== null || entry.energy !== null || entry.sleepQuality !== null;
+  const hasState = entry.sleepMinutes !== null
+    || entry.timeInBedMinutes !== null
+    || entry.energy !== null
+    || entry.sleepQuality !== null
+    || entry.bedtime.length > 0
+    || entry.wakeTime.length > 0;
   const hasAction = entry.actionDirection !== null
     || careerStatesForEntry(entry).length > 0
-    || entry.activities.length > 0
-    || entry.lifeAreas.length > 0
+    || entry.activitiesRecorded
+    || entry.lifeAreasRecorded
     || entry.importantFact.trim().length > 0;
   const hasNutrition = entry.nutritionState !== null || entry.weightKg !== null;
   const coreDomains = [hasState, hasAction, hasNutrition].filter(Boolean).length;
@@ -215,8 +232,8 @@ export function buildEventComparison(
     beforeEnd,
     afterStart,
     afterEnd,
-    beforeEntries: beforeSummary.entriesCount,
-    afterEntries: afterSummary.entriesCount,
+    beforeEntries: beforeSummary.coveredEntriesCount,
+    afterEntries: afterSummary.coveredEntriesCount,
     metrics: [
       comparisonMetric('sleep', 'Сон', 'minutes', beforeSummary.averageSleep, afterSummary.averageSleep, beforeSummary.sleepSamples, afterSummary.sleepSamples),
       comparisonMetric('energy', 'Энергия', 'number', beforeSummary.averageEnergy, afterSummary.averageEnergy, beforeSummary.energySamples, afterSummary.energySamples),
@@ -229,14 +246,16 @@ export function buildEventComparison(
 }
 
 export function weekSummaryText(summary: PeriodSummary, activeAreas: LifeAreaId[], areaOptions: Option[] = lifeAreaOptions): string {
-  if (!summary.entriesCount) return 'Пока нет записей за эту неделю. Здесь появится краткая сводка фактов.';
+  if (!summary.coveredEntriesCount) return 'Пока нет содержательных записей за эту неделю. Здесь появится краткая сводка фактов.';
 
   const labels = new Map(areaOptions.map((item) => [item.id, item.label]));
   const present = activeAreas.filter((area) => summary.areaCounts[area] > 0).map((area) => (labels.get(area) ?? area).toLowerCase());
-  const absent = activeAreas.filter((area) => (summary.areaCounts[area] ?? 0) === 0).map((area) => (labels.get(area) ?? area).toLowerCase());
+  const absent = summary.lifeAreaSamples > 0
+    ? activeAreas.filter((area) => (summary.areaCounts[area] ?? 0) === 0).map((area) => (labels.get(area) ?? area).toLowerCase())
+    : [];
   const parts = [
     `${summary.careerDays} карьерных ${plural(summary.careerDays, 'день', 'дня', 'дней')}`,
-    `${summary.externalSteps} внешних ${plural(summary.externalSteps, 'шаг', 'шага', 'шагов')}`,
+    `${summary.externalSteps} ${plural(summary.externalSteps, 'день', 'дня', 'дней')} с внешним карьерным контактом`,
     `${summary.movementDays} ${plural(summary.movementDays, 'день с движением', 'дня с движением', 'дней с движением')}`
   ];
   if (summary.nutritionSupportDays || summary.nutritionBlockDays) {
@@ -251,7 +270,7 @@ export function weekSummaryText(summary: PeriodSummary, activeAreas: LifeAreaId[
   }
   let text = `За неделю: ${parts.join(', ')}.`;
   if (present.length) text += ` Присутствовали: ${present.join(', ')}.`;
-  if (absent.length) text += ` Не появлялись: ${absent.join(', ')}.`;
+  if (absent.length) text += ` Не отмечались: ${absent.join(', ')}.`;
   return text;
 }
 
@@ -274,15 +293,16 @@ export function buildObservations(entries: DailyEntry[]): Observation[] {
   const observations: Observation[] = [];
   const ordinaryEntries = entries.filter((entry) => entry.specialDay === null);
   const energyEntries = ordinaryEntries.filter((entry) => entry.energy !== null);
-  const movementEntries = energyEntries.filter(hasMovement);
-  const stillEntries = energyEntries.filter((entry) => !hasMovement(entry));
+  const movementMarkedEntries = energyEntries.filter((entry) => entry.activitiesRecorded);
+  const movementEntries = movementMarkedEntries.filter(hasMovement);
+  const stillEntries = movementMarkedEntries.filter((entry) => !hasMovement(entry));
   const restedEntries = energyEntries.filter((entry) => (entry.sleepMinutes ?? 0) >= 420);
   const shortSleepEntries = energyEntries.filter((entry) => entry.sleepMinutes !== null && entry.sleepMinutes < 420);
   const specialEntries = entries.filter((entry) => entry.specialDay !== null);
 
   const movementEnergy = average(movementEntries.map((entry) => entry.energy));
   const stillEnergy = average(stillEntries.map((entry) => entry.energy));
-  if (movementEntries.length >= 2 && stillEntries.length >= 2 && movementEnergy !== null && stillEnergy !== null && Math.abs(movementEnergy - stillEnergy) >= 0.5) {
+  if (movementEntries.length >= 4 && stillEntries.length >= 4 && movementEnergy !== null && stillEnergy !== null && Math.abs(movementEnergy - stillEnergy) >= 0.5) {
     const direction = movementEnergy > stillEnergy ? 'выше' : 'ниже';
     observations.push({
       id: 'movement-energy',
@@ -293,7 +313,7 @@ export function buildObservations(entries: DailyEntry[]): Observation[] {
 
   const restedEnergy = average(restedEntries.map((entry) => entry.energy));
   const shortSleepEnergy = average(shortSleepEntries.map((entry) => entry.energy));
-  if (restedEntries.length >= 2 && shortSleepEntries.length >= 2 && restedEnergy !== null && shortSleepEnergy !== null && Math.abs(restedEnergy - shortSleepEnergy) >= 0.5) {
+  if (restedEntries.length >= 4 && shortSleepEntries.length >= 4 && restedEnergy !== null && shortSleepEnergy !== null && Math.abs(restedEnergy - shortSleepEnergy) >= 0.5) {
     const direction = restedEnergy > shortSleepEnergy ? 'выше' : 'ниже';
     observations.push({
       id: 'sleep-energy',
@@ -328,7 +348,7 @@ export function factorSummaries(entries: DailyEntry[]): FactorSummary[] {
   return eveningFactorOptions
     .map((option) => {
       const matching = ordinaryEntries.filter((entry) => entry.eveningFactors.includes(option.id));
-      const other = ordinaryEntries.filter((entry) => !entry.eveningFactors.includes(option.id));
+      const other = ordinaryEntries.filter((entry) => entry.eveningFactorsRecorded && !entry.eveningFactors.includes(option.id));
       return {
         id: option.id,
         label: option.label,
@@ -352,15 +372,17 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
   const summary = summarize(entries, externalCareerIds);
   const factors = factorSummaries(entries);
   const cues: ReviewCue[] = [];
-  const enoughEntries = period === 'week' ? summary.ordinaryEntriesCount >= 4 : summary.ordinaryEntriesCount >= 12;
-  const minTarget = period === 'week' ? '4 дня' : '12 дней';
+  const enoughEntries = period === 'week'
+    ? summary.ordinaryCoveredEntriesCount >= 4 && summary.ordinaryCoreEntriesCount >= 2
+    : summary.ordinaryCoveredEntriesCount >= 12 && summary.ordinaryCoreEntriesCount >= 6;
+  const minTarget = period === 'week' ? '4 содержательных дня, из них 2 с основными данными' : '12 содержательных дней, из них 6 с основными данными';
 
   cues.push({
     id: 'coverage',
     title: enoughEntries ? 'Данных достаточно для обзора' : 'Данных пока мало',
     text: enoughEntries
-      ? `${summary.ordinaryEntriesCount} ${plural(summary.ordinaryEntriesCount, 'обычный заполненный день', 'обычных заполненных дня', 'обычных заполненных дней')} уже дают рабочую картину периода.`
-      : `Для рабочего обзора лучше иметь хотя бы ${minTarget} без отметки «особый день». Сейчас есть ${summary.ordinaryEntriesCount}.`,
+      ? `${summary.ordinaryCoveredEntriesCount} содержательных дней, из них ${summary.ordinaryCoreEntriesCount} с основными данными, уже дают рабочую картину периода.`
+      : `Для рабочего обзора лучше иметь хотя бы ${minTarget} без отметки «особый день». Сейчас: ${summary.ordinaryCoveredEntriesCount} и ${summary.ordinaryCoreEntriesCount}.`,
     tone: enoughEntries ? 'good' : 'warning',
   });
 
@@ -405,8 +427,8 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
   if (summary.externalSteps > 0 || summary.careerDays > 0) {
     cues.push({
       id: 'career',
-      title: summary.externalSteps > 0 ? 'Были внешние карьерные шаги' : 'Карьера появлялась',
-      text: `${summary.careerDays} карьерных ${plural(summary.careerDays, 'день', 'дня', 'дней')}, ${summary.externalSteps} внешних ${plural(summary.externalSteps, 'шаг', 'шага', 'шагов')}. Так проще сверить ощущение с фактами.`,
+      title: summary.externalSteps > 0 ? 'Были дни с внешним карьерным контактом' : 'Карьера появлялась',
+      text: `${summary.careerDays} карьерных ${plural(summary.careerDays, 'день', 'дня', 'дней')}, из них ${summary.externalSteps} с внешним контактом. Так проще сверить ощущение с фактами.`,
       tone: summary.externalSteps > 0 ? 'good' : 'neutral',
     });
   }
@@ -480,13 +502,16 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
 export function buildRangeReviewCues(rangeMonths: number, entries: DailyEntry[], results: ResultRecord[], lifeEvents: LifeEventRecord[], externalCareerIds: string[] = externalCareerStates): ReviewCue[] {
   const summary = summarize(entries, externalCareerIds);
   const cues: ReviewCue[] = [];
-  const monthsWithData = new Set(entries.map((entry) => entry.date.slice(0, 7))).size;
-  const enoughEntries = summary.ordinaryEntriesCount >= rangeMonths * 8 && monthsWithData >= Math.max(2, rangeMonths - 1);
+  const coveredEntries = entries.filter((entry) => dataCoverageLevel(entry) > 0);
+  const monthsWithData = new Set(coveredEntries.map((entry) => entry.date.slice(0, 7))).size;
+  const enoughEntries = summary.ordinaryCoveredEntriesCount >= rangeMonths * 8
+    && summary.ordinaryCoreEntriesCount >= rangeMonths * 4
+    && monthsWithData >= Math.max(2, rangeMonths - 1);
 
   cues.push({
     id: 'coverage',
     title: enoughEntries ? 'Период покрыт достаточно ровно' : 'Покрытие периода неровное',
-    text: `${summary.entriesCount} заполненных дней в ${monthsWithData} из ${rangeMonths} мес. Длинные выводы надёжнее, когда данные распределены по всему периоду.`,
+    text: `${summary.coveredEntriesCount} содержательных дней, из них ${summary.ordinaryCoreEntriesCount} с основными данными, в ${monthsWithData} из ${rangeMonths} мес.`,
     tone: enoughEntries ? 'good' : 'warning',
   });
 
@@ -575,11 +600,11 @@ function signedNumber(value: number): string {
 
 function factorComparisonText(factor: FactorSummary): string {
   const parts: string[] = [];
-  if (factor.sleepSamples >= 2 && factor.sleepSamplesWithout >= 2 && factor.averageSleep !== null && factor.averageSleepWithout !== null) {
+  if (factor.sleepSamples >= 4 && factor.sleepSamplesWithout >= 4 && factor.averageSleep !== null && factor.averageSleepWithout !== null) {
     const difference = Math.round(factor.averageSleep - factor.averageSleepWithout);
     parts.push(`Сон: ${formatMinutes(Math.round(factor.averageSleep))} против ${formatMinutes(Math.round(factor.averageSleepWithout))} без фактора (${signedMinutes(difference)})`);
   }
-  if (factor.energySamples >= 2 && factor.energySamplesWithout >= 2 && factor.averageEnergy !== null && factor.averageEnergyWithout !== null) {
+  if (factor.energySamples >= 4 && factor.energySamplesWithout >= 4 && factor.averageEnergy !== null && factor.averageEnergyWithout !== null) {
     const difference = factor.averageEnergy - factor.averageEnergyWithout;
     parts.push(`энергия: ${formatNumber(factor.averageEnergy)} против ${formatNumber(factor.averageEnergyWithout)} (${signedNumber(difference)})`);
   }

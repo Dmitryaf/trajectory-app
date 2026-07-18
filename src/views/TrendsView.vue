@@ -4,7 +4,7 @@ import type { EChartsCoreOption } from 'echarts/core';
 import EChartPanel from '../components/charts/EChartPanel.vue';
 import MetricCard from '../components/MetricCard.vue';
 import { buildCoverageSeries, buildEventComparison, buildRangeReviewCues, entriesForPeriod, factorSummaries, ratioPercent, resultsForPeriod, summarize, type EventComparisonMetric } from '../services/analytics';
-import { addMonths, dateRange, endOfMonth, formatDate, formatMinutes, monthsBetween, startOfMonth, todayKey } from '../services/dates';
+import { addMonths, dateRange, endOfMonth, endOfWeek, formatDate, formatMinutes, monthsBetween, startOfMonth, toDateKey, todayKey } from '../services/dates';
 import { buildRangePackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../services/exportPackage';
 import { useAppStore } from '../stores/app';
 
@@ -14,6 +14,7 @@ const store = useAppStore();
 const range = ref<RangeMonths>(3);
 const exportStatus = ref('');
 const selectedEventKey = ref('');
+const eventPicker = ref<HTMLDetailsElement>();
 const rangeOptions: Array<{ value: RangeMonths; label: string }> = [
   { value: 3, label: '3 месяца' },
   { value: 6, label: '6 месяцев' },
@@ -29,7 +30,6 @@ const lifeEvents = computed(() => store.lifeEvents.filter((event) => event.date 
 const summary = computed(() => summarize(entries.value, externalCareerIds.value));
 const factors = computed(() => factorSummaries(entries.value).slice(0, 5));
 const cues = computed(() => buildRangeReviewCues(range.value, entries.value, results.value, lifeEvents.value, externalCareerIds.value));
-const monthlyReviews = computed(() => store.monthlyReviews.filter((review) => review.monthStart >= start.value && review.monthStart <= end.value).sort((a, b) => b.monthStart.localeCompare(a.monthStart)));
 
 function eventKey(event: (typeof store.lifeEvents)[number]): string {
   return `${event.date}|${event.createdAt}`;
@@ -63,12 +63,12 @@ const monthRows = computed(() => monthsBetween(start.value, end.value).map((mont
   };
 }));
 
-const eventMarkers = computed(() => monthRows.value.flatMap((row) => {
+const eventLines = computed(() => monthRows.value.flatMap((row) => {
   const events = lifeEvents.value.filter((event) => event.date.startsWith(row.monthStart.slice(0, 7)));
   return events.length ? [{
     name: events.map((event) => `${formatDate(event.date, { day: 'numeric', month: 'short' })}: ${event.title}`).join('\n'),
     value: events.length,
-    coord: [row.label, 5],
+    xAxis: row.label,
   }] : [];
 }));
 
@@ -89,7 +89,21 @@ const trendOverviewOption = computed<EChartsCoreOption>(() => ({
     { type: 'value', min: 1, max: 5, interval: 1, axisLabel: { color: '#7d8798' }, splitLine: { show: false } }
   ],
   series: [
-    { name: 'сон, ч', type: 'line', symbolSize: 8, data: monthRows.value.map((row) => minutesToHours(row.summary.averageSleep)), connectNulls: false, lineStyle: { width: 3 } },
+    {
+      name: 'сон, ч',
+      type: 'line',
+      symbolSize: 8,
+      data: monthRows.value.map((row) => minutesToHours(row.summary.averageSleep)),
+      connectNulls: false,
+      lineStyle: { width: 3 },
+      markLine: {
+        symbol: ['none', 'none'],
+        lineStyle: { color: '#eb7458', type: 'dashed', width: 1.5 },
+        label: { color: '#a94f3e', fontWeight: 750, formatter: (params: { value?: number }) => String(params.value ?? '') },
+        tooltip: { formatter: (params: { data?: { name?: string } }) => params.data?.name ?? 'Событие архива' },
+        data: eventLines.value,
+      },
+    },
     {
       name: 'энергия',
       type: 'line',
@@ -98,14 +112,6 @@ const trendOverviewOption = computed<EChartsCoreOption>(() => ({
       data: monthRows.value.map((row) => roundValue(row.summary.averageEnergy)),
       connectNulls: false,
       lineStyle: { width: 3 },
-      markPoint: {
-        symbol: 'pin',
-        symbolSize: 42,
-        itemStyle: { color: '#eb7458' },
-        label: { color: '#fff', fontWeight: 750 },
-        tooltip: { formatter: (params: { data?: { name?: string } }) => params.data?.name ?? 'Событие архива' },
-        data: eventMarkers.value,
-      },
     }
   ]
 }));
@@ -149,25 +155,30 @@ const coverageOption = computed<EChartsCoreOption>(() => ({
   series: [{ type: 'heatmap', coordinateSystem: 'calendar', data: coverageSeries.value }],
 }));
 
+function savedDate(updatedAt: string, fallback: string): string {
+  if (!updatedAt) return fallback;
+  const date = new Date(updatedAt);
+  return Number.isNaN(date.getTime()) ? fallback : toDateKey(date);
+}
+
 const decisionTimeline = computed(() => [
   ...lifeEvents.value.map((event) => ({ date: event.date, type: 'Событие', tone: 'event', title: event.title, detail: event.note })),
   ...results.value.map((result) => ({ date: result.date, type: 'Результат', tone: 'result', title: result.title, detail: '' })),
-  ...store.weeklyReviews
-    .filter((review) => review.weekStart >= start.value && review.weekStart <= end.value)
-    .flatMap((review) => {
-      const items = [];
-      if (review.nextLever || review.ifThenPlan) items.push({ date: review.weekStart, type: 'Решение недели', tone: 'decision', title: review.nextLever || 'План недели', detail: review.ifThenPlan });
-      if (review.previousPlanOutcome) items.push({ date: review.weekStart, type: 'Проверка решения', tone: 'outcome', title: review.previousPlanOutcome, detail: '' });
-      return items;
-    }),
-  ...monthlyReviews.value.map((review) => ({
-    date: review.monthStart,
+  ...store.weeklyReviews.flatMap((review) => {
+    const date = savedDate(review.updatedAt, endOfWeek(review.weekStart));
+    const items = [];
+    if (review.nextLever || review.ifThenPlan) items.push({ date, type: 'Решение недели', tone: 'decision', title: review.nextLever || 'План недели', detail: review.ifThenPlan });
+    if (review.previousPlanOutcome) items.push({ date, type: 'Проверка решения', tone: 'outcome', title: review.previousPlanOutcome, detail: '' });
+    return items;
+  }),
+  ...store.monthlyReviews.map((review) => ({
+    date: savedDate(review.updatedAt, endOfMonth(review.monthStart)),
     type: 'Решение месяца',
     tone: 'decision',
     title: review.nextFocus || review.courseChange || review.mainPattern || 'Обзор месяца',
     detail: review.ifThenPlan,
   })),
-].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30));
+].filter((item) => item.date >= start.value && item.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30));
 const weightOption = computed<EChartsCoreOption>(() => ({
   color: ['#d39b2f'],
   tooltip: { trigger: 'axis' },
@@ -203,7 +214,7 @@ const progressOption = computed<EChartsCoreOption>(() => ({
 }));
 
 function coverageText(row: (typeof monthRows.value)[number]): string {
-  return `${row.summary.entriesCount}/${row.expectedDays}`;
+  return `${row.summary.coveredEntriesCount}/${row.expectedDays}`;
 }
 
 function directionText(row: (typeof monthRows.value)[number]): string {
@@ -235,8 +246,32 @@ function formatComparisonValue(value: number | null, format: EventComparisonMetr
   return String(Math.round(value));
 }
 
-function sampleLabel(samples: number | null): string {
-  return samples === null ? '' : `n=${samples}`;
+function observationLabel(samples: number | null): string {
+  if (samples === null) return '';
+  if (samples === 0) return 'нет наблюдений';
+  const lastTwo = samples % 100;
+  const last = samples % 10;
+  const noun = lastTwo >= 11 && lastTwo <= 14 ? 'наблюдений' : last === 1 ? 'наблюдение' : last >= 2 && last <= 4 ? 'наблюдения' : 'наблюдений';
+  return `${samples} ${noun}`;
+}
+
+function factorSleepText(factor: (typeof factors.value)[number]): string {
+  if (factor.averageSleep === null) return '—';
+  const withFactor = `${formatMinutes(Math.round(factor.averageSleep))} · ${factor.sleepSamples} дн.`;
+  const withoutFactor = factor.averageSleepWithout === null ? '—' : `${formatMinutes(Math.round(factor.averageSleepWithout))} · ${factor.sleepSamplesWithout} дн.`;
+  return `${withFactor} / ${withoutFactor}`;
+}
+
+function factorEnergyText(factor: (typeof factors.value)[number]): string {
+  if (factor.averageEnergy === null) return '—';
+  const withFactor = `${factor.averageEnergy.toFixed(1).replace('.0', '')} · ${factor.energySamples} дн.`;
+  const withoutFactor = factor.averageEnergyWithout === null ? '—' : `${factor.averageEnergyWithout.toFixed(1).replace('.0', '')} · ${factor.energySamplesWithout} дн.`;
+  return `${withFactor} / ${withoutFactor}`;
+}
+
+function selectEvent(event: (typeof store.lifeEvents)[number]) {
+  selectedEventKey.value = eventKey(event);
+  eventPicker.value?.removeAttribute('open');
 }
 
 function createPackage() {
@@ -277,9 +312,9 @@ function showExportStatus(message: string) {
     </div>
 
     <div class="metrics-grid">
-      <MetricCard label="Заполнено дней" :value="summary.entriesCount" :hint="`${summary.ordinaryEntriesCount} обычных`" accent="#5865db" />
+      <MetricCard label="Содержательных дней" :value="summary.coveredEntriesCount" :hint="`${summary.ordinaryCoreEntriesCount} с основными данными`" accent="#5865db" />
       <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="`${summary.sleepSamples} дн. без особых`" accent="#7367f0" />
-      <MetricCard label="Внешних шагов" :value="summary.externalSteps" accent="#4188e8" />
+      <MetricCard label="Карьерный контакт" :value="summary.externalSteps" hint="дней с внешней отметкой" accent="#4188e8" />
       <MetricCard label="Направление" :value="`${summary.externalActionDays}/${summary.preparationDays}`" :hint="`наружу / подготовка · ${summary.actionDirectionSamples} дн.`" accent="#5264d8" />
       <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="summary.averageWeightKg === null ? `${summary.nutritionSamples} дн. с отметкой` : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг · ${summary.weightSamples} изм.`" accent="#d39b2f" />
       <MetricCard label="Результатов" :value="results.length" :hint="`${lifeEvents.length} событий архива`" accent="#f0ad42" />
@@ -294,15 +329,38 @@ function showExportStatus(message: string) {
     <article class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Динамика периода</span><h2>Сон и энергия</h2></div><small>* неполный текущий месяц</small></div>
       <EChartPanel :option="trendOverviewOption" :height="320" aria-label="Динамика сна и энергии по месяцам" />
-      <p v-if="lifeEvents.length" class="data-note">Оранжевые маркеры показывают месяцы с событиями из Архива. Наведи на маркер, чтобы увидеть события.</p>
+      <p v-if="lifeEvents.length" class="data-note">Оранжевые пунктирные линии показывают месяцы с событиями из Архива. Число у линии — количество событий; наведи на неё, чтобы увидеть список.</p>
     </article>
 
     <article v-if="lifeEvents.length" class="dashboard-card">
       <div class="section-heading">
         <div><span class="eyebrow">До и после</span><h2>Что менялось рядом с событием</h2></div>
-        <select v-model="selectedEventKey" class="event-select" aria-label="Событие для сравнения">
-          <option v-for="event in lifeEvents" :key="eventKey(event)" :value="eventKey(event)">{{ formatDate(event.date, { day: 'numeric', month: 'short' }) }} · {{ event.title }}</option>
-        </select>
+        <details ref="eventPicker" class="event-picker">
+          <summary aria-label="Выбрать событие для сравнения">
+            <span class="event-picker__icon">◆</span>
+            <span class="event-picker__current">
+              <small>Событие для сравнения</small>
+              <strong v-if="selectedEvent">{{ formatDate(selectedEvent.date, { day: 'numeric', month: 'short', year: 'numeric' }) }} · {{ selectedEvent.title }}</strong>
+            </span>
+            <span class="event-picker__chevron">⌄</span>
+          </summary>
+          <div class="event-picker__menu" role="listbox" aria-label="События Архива">
+            <button
+              v-for="event in lifeEvents"
+              :key="eventKey(event)"
+              class="event-picker__option"
+              :class="{ active: eventKey(event) === selectedEventKey }"
+              type="button"
+              role="option"
+              :aria-selected="eventKey(event) === selectedEventKey"
+              @click="selectEvent(event)"
+            >
+              <time>{{ formatDate(event.date, { day: 'numeric', month: 'short' }) }}</time>
+              <span><strong>{{ event.title }}</strong><small v-if="event.note">{{ event.note }}</small></span>
+              <i>{{ eventKey(event) === selectedEventKey ? '✓' : '' }}</i>
+            </button>
+          </div>
+        </details>
       </div>
       <template v-if="eventComparison">
         <div class="comparison-periods">
@@ -313,11 +371,11 @@ function showExportStatus(message: string) {
           <div class="comparison-table__head"><span>Показатель</span><span>До</span><span>После</span></div>
           <div v-for="metric in eventComparison.metrics" :key="metric.id" class="comparison-table__row">
             <strong>{{ metric.label }}</strong>
-            <span>{{ formatComparisonValue(metric.before, metric.format) }} <small>{{ sampleLabel(metric.beforeSamples) }}</small></span>
-            <span>{{ formatComparisonValue(metric.after, metric.format) }} <small>{{ sampleLabel(metric.afterSamples) }}</small></span>
+            <span>{{ formatComparisonValue(metric.before, metric.format) }} <small>{{ observationLabel(metric.beforeSamples) }}</small></span>
+            <span>{{ formatComparisonValue(metric.after, metric.format) }} <small>{{ observationLabel(metric.afterSamples) }}</small></span>
           </div>
         </div>
-        <p class="data-note">Сравниваются равные календарные окна, день события исключён. Особые дни не входят в средние состояния. Разница показывает совпадение во времени, а не причинный эффект.</p>
+        <p class="data-note">Под значением указано число дневных наблюдений, вошедших в расчёт. Сравниваются равные календарные окна, день события исключён. Разница показывает совпадение во времени, а не причинный эффект.</p>
       </template>
       <p v-else class="empty-copy">После события пока не прошло ни одного полного дня для сравнения.</p>
     </article>
@@ -352,7 +410,7 @@ function showExportStatus(message: string) {
     <article class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Состояние</span><h2>Сон и энергия по месяцам</h2></div></div>
       <div class="trend-table">
-        <div class="trend-table__head"><span>месяц</span><span>заполнено</span><span>сон (n)</span><span>вес (n)</span><span>энергия (n)</span><span>наружу / подг.</span><span>питание + / −</span><span>особые</span></div>
+        <div class="trend-table__head"><span>месяц</span><span>заполнено</span><span>сон (дни)</span><span>вес (изм.)</span><span>энергия (дни)</span><span>наружу / подг.</span><span>питание + / −</span><span>особые</span></div>
         <div v-for="row in monthRows" :key="`${row.monthStart}-state`" class="trend-table__row">
           <strong>{{ row.label }}</strong>
           <span>{{ coverageText(row) }}</span>
@@ -372,8 +430,8 @@ function showExportStatus(message: string) {
         <article v-for="factor in factors" :key="factor.id" class="factor-summary-item">
           <span class="factor-summary-item__name"><i>{{ factor.icon }}</i>{{ factor.label }}</span>
           <strong>{{ factor.count }}</strong>
-          <small>{{ factor.averageSleep === null ? '—' : `${formatMinutes(Math.round(factor.averageSleep))} / ${formatMinutes(factor.averageSleepWithout === null ? null : Math.round(factor.averageSleepWithout))}` }}</small>
-          <small>{{ factor.averageEnergy === null ? '—' : `${factor.averageEnergy.toFixed(1).replace('.0', '')} / ${factor.averageEnergyWithout?.toFixed(1).replace('.0', '') ?? '—'}` }}</small>
+          <small>{{ factorSleepText(factor) }}</small>
+          <small>{{ factorEnergyText(factor) }}</small>
         </article>
       </div>
       <p class="data-note">Формат: значение в дни с фактором / в обычные дни без него. Особые дни исключены; это связь, а не доказанная причина.</p>

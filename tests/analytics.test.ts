@@ -5,7 +5,13 @@ import { addMonths, monthsBetween } from '../src/services/dates';
 import { defaultSettings, emptyDailyEntry, normalizeDailyEntry, normalizeMonthlyReview, normalizeWeeklyReview, type DailyEntry } from '../src/types';
 
 function entry(date: string, patch: Partial<DailyEntry>): DailyEntry {
-  return { ...emptyDailyEntry(date), ...patch };
+  return {
+    ...emptyDailyEntry(date),
+    ...patch,
+    activitiesRecorded: patch.activitiesRecorded ?? Object.prototype.hasOwnProperty.call(patch, 'activities'),
+    eveningFactorsRecorded: patch.eveningFactorsRecorded ?? Object.prototype.hasOwnProperty.call(patch, 'eveningFactors'),
+    lifeAreasRecorded: patch.lifeAreasRecorded ?? Object.prototype.hasOwnProperty.call(patch, 'lifeAreas'),
+  };
 }
 
 describe('analytics', () => {
@@ -44,14 +50,14 @@ describe('analytics', () => {
     expect(summary.averageWeightKg).toBe(82.6);
   });
 
-  it('counts multiple career actions from one day', () => {
+  it('counts days with external career contact rather than categories', () => {
     const summary = summarize([
       entry('2026-07-13', { careerStates: ['preparation', 'external', 'interview'] }),
       entry('2026-07-14', { careerStates: ['result'] })
     ]);
 
     expect(summary.careerDays).toBe(2);
-    expect(summary.externalSteps).toBe(3);
+    expect(summary.externalSteps).toBe(2);
   });
 
   it('drops unsupported imported enum values', () => {
@@ -119,7 +125,7 @@ describe('analytics', () => {
     const text = weekSummaryText(summary, ['family', 'reading']);
     expect(text).toContain('1 карьерных день');
     expect(text).toContain('Присутствовали: семья');
-    expect(text).toContain('Не появлялись: чтение');
+    expect(text).toContain('Не отмечались: чтение');
     expect(text).not.toContain('%');
   });
 
@@ -137,11 +143,15 @@ describe('analytics', () => {
     const observations = buildObservations([
       entry('2026-07-13', { sleepMinutes: 480, energy: 5, activities: ['walk'] }),
       entry('2026-07-14', { sleepMinutes: 450, energy: 4, activities: ['boxing'] }),
-      entry('2026-07-15', { sleepMinutes: 360, energy: 2, activities: [] }),
-      entry('2026-07-16', { sleepMinutes: 390, energy: 3, activities: [] }),
-      entry('2026-07-17', { specialDay: 'travel' }),
-      entry('2026-07-18', { eveningFactors: ['news'] }),
-      entry('2026-07-19', { eveningFactors: ['news'] })
+      entry('2026-07-15', { sleepMinutes: 470, energy: 5, activities: ['walk'] }),
+      entry('2026-07-16', { sleepMinutes: 440, energy: 4, activities: ['bachata'] }),
+      entry('2026-07-17', { sleepMinutes: 360, energy: 2, activities: [] }),
+      entry('2026-07-18', { sleepMinutes: 390, energy: 3, activities: [] }),
+      entry('2026-07-19', { sleepMinutes: 350, energy: 2, activities: [] }),
+      entry('2026-07-20', { sleepMinutes: 380, energy: 2, activities: [] }),
+      entry('2026-07-21', { specialDay: 'travel' }),
+      entry('2026-07-22', { eveningFactors: ['news'] }),
+      entry('2026-07-23', { eveningFactors: ['news'] })
     ]);
 
     expect(observations.map((item) => item.id)).toContain('movement-energy');
@@ -210,7 +220,7 @@ describe('analytics', () => {
   it('builds local review cues from factual period data', () => {
     const cues = buildReviewCues('week', [
       entry('2026-07-13', { sleepMinutes: 360, eveningFactors: ['news'], careerState: 'external' }),
-      entry('2026-07-14', { sleepMinutes: 390, eveningFactors: ['news'] }),
+      entry('2026-07-14', { sleepMinutes: 390, eveningFactors: ['news'], actionDirection: 'preparation' }),
       entry('2026-07-15', { sleepMinutes: 480 }),
       entry('2026-07-16', { sleepMinutes: 450 })
     ], [
@@ -263,6 +273,7 @@ describe('analytics', () => {
 
     expect(review.ifThenPlan).toBe('');
     expect(review.previousPlanOutcome).toBe('');
+    expect(review.updatedAt).toBe('');
   });
 
   it('keeps special days out of baseline state averages', () => {
@@ -293,8 +304,8 @@ describe('analytics', () => {
     const factors = factorSummaries([
       entry('2026-07-13', { sleepMinutes: 360, energy: 2, eveningFactors: ['news'] }),
       entry('2026-07-14', { sleepMinutes: 420, energy: 3, eveningFactors: ['news'] }),
-      entry('2026-07-15', { sleepMinutes: 480, energy: 4 }),
-      entry('2026-07-16', { sleepMinutes: 540, energy: 5 }),
+      entry('2026-07-15', { sleepMinutes: 480, energy: 4, eveningFactors: [] }),
+      entry('2026-07-16', { sleepMinutes: 540, energy: 5, eveningFactors: [] }),
       entry('2026-07-17', { sleepMinutes: 120, energy: 1, eveningFactors: ['news'], specialDay: 'sick' })
     ]);
 
@@ -319,6 +330,7 @@ describe('analytics', () => {
     expect(review.mainPattern).toBe('Сон менялся');
     expect(review.ifThenPlan).toBe('');
     expect(review.nextFocus).toBe('');
+    expect(review.updatedAt).toBe('');
   });
 
   it('separates missing, partial and core daily data without a score', () => {
@@ -332,6 +344,22 @@ describe('analytics', () => {
       ['2026-07-14', 2],
       ['2026-07-15', 0],
     ]);
+  });
+
+  it('does not treat skipped multi-select blocks as explicit zeroes', () => {
+    const skipped = entry('2026-07-13', {});
+    const explicitNone = entry('2026-07-14', { activities: [], eveningFactors: [], lifeAreas: [] });
+    const summary = summarize([skipped, explicitNone]);
+
+    expect(summary.movementSamples).toBe(1);
+    expect(summary.lifeAreaSamples).toBe(1);
+    expect(factorSummaries([skipped, explicitNone])).toEqual([]);
+  });
+
+  it('does not call empty saved shells sufficient review data', () => {
+    const cues = buildReviewCues('week', Array.from({ length: 7 }, (_, index) => entry(`2026-07-${String(13 + index).padStart(2, '0')}`, {})), [], []);
+
+    expect(cues.find((cue) => cue.id === 'coverage')?.tone).toBe('warning');
   });
 
   it('compares equal windows around an event and excludes special days from state averages', () => {

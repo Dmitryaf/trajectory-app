@@ -26,11 +26,19 @@ const results = computed(() => resultsForPeriod(store.results, start.value, end.
 const lifeEvents = computed(() => store.lifeEvents.filter((event) => event.date >= start.value && event.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)));
 const reviewCues = computed(() => buildReviewCues('month', entries.value, results.value, lifeEvents.value, externalCareerIds.value));
 const reviewQuestions = buildReviewQuestions('month');
+const monthDates = computed(() => dateRange(start.value, end.value));
+const entriesByDate = computed(() => new Map(entries.value.map((entry) => [entry.date, entry])));
 const sleepEntries = computed(() => [...entries.value].filter((entry) => entry.specialDay === null && entry.sleepMinutes !== null).sort((a, b) => a.date.localeCompare(b.date)));
 const energySleepEntries = computed(() => entries.value.filter((entry) => entry.sleepMinutes !== null && entry.energy !== null).sort((a, b) => a.date.localeCompare(b.date)));
 const weightEntries = computed(() => entries.value.filter((entry) => entry.specialDay === null && entry.weightKg !== null).sort((a, b) => a.date.localeCompare(b.date)));
+const weightHistoryEntries = computed(() => store.dailyEntries
+  .filter((entry) => entry.date >= addDays(start.value, -6) && entry.date <= end.value && entry.specialDay === null && entry.weightKg !== null)
+  .sort((a, b) => a.date.localeCompare(b.date)));
 const sleepEnergyOption = computed<EChartsCoreOption>(() => {
-  const rows = sleepEntries.value;
+  const rows = monthDates.value.map((date) => {
+    const entry = entriesByDate.value.get(date);
+    return { date, entry: entry?.specialDay === null ? entry : undefined };
+  });
   return {
     color: ['#7367f0', '#b8c1d8', '#4bcda0'],
     tooltip: {
@@ -41,7 +49,7 @@ const sleepEnergyOption = computed<EChartsCoreOption>(() => {
     grid: { left: 46, right: 42, top: 42, bottom: 34 },
     xAxis: {
       type: 'category',
-      data: rows.map((entry) => formatDate(entry.date, { day: 'numeric' })),
+      data: rows.map((row) => formatDate(row.date, { day: 'numeric' })),
       axisTick: { show: false },
       axisLine: { lineStyle: { color: '#dfe4ed' } },
       axisLabel: { color: '#7d8798' }
@@ -51,9 +59,9 @@ const sleepEnergyOption = computed<EChartsCoreOption>(() => {
       { type: 'value', min: 1, max: 5, interval: 1, axisLabel: { color: '#7d8798' }, splitLine: { show: false } }
     ],
     series: [
-      { name: 'Сон', type: 'bar', data: rows.map((entry) => minutesToHours(entry.sleepMinutes)), barMaxWidth: 16, itemStyle: { borderRadius: [7, 7, 2, 2] } },
-      { name: 'В кровати', type: 'bar', data: rows.map((entry) => minutesToHours(entry.timeInBedMinutes)), barMaxWidth: 16, itemStyle: { borderRadius: [7, 7, 2, 2] } },
-      { name: 'Энергия', type: 'line', yAxisIndex: 1, data: rows.map((entry) => entry.energy), smooth: true, symbolSize: 8, connectNulls: false, lineStyle: { width: 3 } }
+      { name: 'Сон', type: 'bar', data: rows.map((row) => minutesToHours(row.entry?.sleepMinutes ?? null)), barMaxWidth: 16, itemStyle: { borderRadius: [7, 7, 2, 2] } },
+      { name: 'В кровати', type: 'bar', data: rows.map((row) => minutesToHours(row.entry?.timeInBedMinutes ?? null)), barMaxWidth: 16, itemStyle: { borderRadius: [7, 7, 2, 2] } },
+      { name: 'Энергия', type: 'line', yAxisIndex: 1, data: rows.map((row) => row.entry?.energy ?? null), smooth: false, symbolSize: 8, connectNulls: false, lineStyle: { width: 3 } }
     ]
   };
 });
@@ -74,12 +82,14 @@ const energySleepOption = computed<EChartsCoreOption>(() => ({
   ]
 }));
 const weightOption = computed<EChartsCoreOption>(() => {
-  const rows = weightEntries.value.map((entry) => {
-    const windowStart = addDays(entry.date, -6);
-    const windowValues = weightEntries.value.filter((item) => item.date >= windowStart && item.date <= entry.date).map((item) => item.weightKg as number);
+  const rows = monthDates.value.map((date) => {
+    const entry = entriesByDate.value.get(date);
+    const weight = entry?.specialDay === null ? entry.weightKg : null;
+    const windowStart = addDays(date, -6);
+    const windowValues = weightHistoryEntries.value.filter((item) => item.date >= windowStart && item.date <= date).map((item) => item.weightKg as number);
     return {
-      date: entry.date,
-      weight: entry.weightKg,
+      date,
+      weight,
       rolling: windowValues.length >= 2 ? Math.round((windowValues.reduce((sum, value) => sum + value, 0) / windowValues.length) * 10) / 10 : null
     };
   });
@@ -121,7 +131,6 @@ const actionNotes = computed(() => entries.value.filter((entry) => entry.actionD
 const specialDays = computed(() => entries.value.filter((entry) => entry.specialDay !== null).sort((a, b) => b.date.localeCompare(a.date)));
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
 const activeAreas = computed(() => lifeAreaItems.value.filter((option) => store.settings.activeLifeAreas.includes(option.id)));
-const entriesByDate = computed(() => new Map(entries.value.map((entry) => [entry.date, entry])));
 const monthCalendarDays = computed(() => {
   const leadingDays = (fromDateKey(start.value).getDay() || 7) - 1;
   const blanks = Array.from({ length: leadingDays }, (_, index) => ({ id: `blank-${index}`, date: '', blank: true as const }));
@@ -183,15 +192,15 @@ function minutesToHours(value: number | null): number | null {
 
 function factorSleepText(factor: (typeof factors.value)[number]): string {
   if (factor.averageSleep === null) return '—';
-  const withFactor = `${formatMinutes(Math.round(factor.averageSleep))} (${factor.sleepSamples})`;
-  const withoutFactor = factor.averageSleepWithout === null ? '—' : `${formatMinutes(Math.round(factor.averageSleepWithout))} (${factor.sleepSamplesWithout})`;
+  const withFactor = `${formatMinutes(Math.round(factor.averageSleep))} · ${factor.sleepSamples} дн.`;
+  const withoutFactor = factor.averageSleepWithout === null ? '—' : `${formatMinutes(Math.round(factor.averageSleepWithout))} · ${factor.sleepSamplesWithout} дн.`;
   return `${withFactor} / ${withoutFactor}`;
 }
 
 function factorEnergyText(factor: (typeof factors.value)[number]): string {
   if (factor.averageEnergy === null) return '—';
-  const withFactor = `${factor.averageEnergy.toFixed(1).replace('.0', '')} (${factor.energySamples})`;
-  const withoutFactor = factor.averageEnergyWithout === null ? '—' : `${factor.averageEnergyWithout.toFixed(1).replace('.0', '')} (${factor.energySamplesWithout})`;
+  const withFactor = `${factor.averageEnergy.toFixed(1).replace('.0', '')} · ${factor.energySamples} дн.`;
+  const withoutFactor = factor.averageEnergyWithout === null ? '—' : `${factor.averageEnergyWithout.toFixed(1).replace('.0', '')} · ${factor.energySamplesWithout} дн.`;
   return `${withFactor} / ${withoutFactor}`;
 }
 
@@ -284,9 +293,9 @@ function showExportStatus(message: string) {
     />
 
     <div class="metrics-grid">
-      <MetricCard label="Заполнено дней" :value="summary.entriesCount" :hint="`${summary.ordinaryEntriesCount} обычных`" accent="#5865db" />
+      <MetricCard label="Содержательных дней" :value="summary.coveredEntriesCount" :hint="`${summary.ordinaryCoreEntriesCount} с основными данными`" accent="#5865db" />
       <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="`${summary.sleepSamples} дн. без особых`" accent="#7367f0" />
-      <MetricCard label="Внешних шагов" :value="summary.externalSteps" accent="#4188e8" />
+      <MetricCard label="Карьерный контакт" :value="summary.externalSteps" hint="дней с внешней отметкой" accent="#4188e8" />
       <MetricCard label="Направление" :value="`${summary.externalActionDays}/${summary.preparationDays}`" :hint="`наружу / подготовка · ${summary.actionDirectionSamples} дн.`" accent="#5264d8" />
       <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="summary.averageWeightKg === null ? `${summary.nutritionSamples} дн. с отметкой` : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг · ${summary.weightSamples} изм.`" accent="#d39b2f" />
       <MetricCard label="Особых дней" :value="summary.specialDays" :hint="`${results.length} результатов`" accent="#eb7458" />
@@ -398,7 +407,7 @@ function showExportStatus(message: string) {
     <article v-if="factors.length" class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Факторы состояния</span><h2>Что повторялось перед сном</h2></div><span class="count-badge">{{ factors.length }}</span></div>
       <div class="factor-summary-head">
-        <span>фактор</span><span>дни</span><span>сон: с / без (n)</span><span>энергия: с / без (n)</span>
+        <span>фактор</span><span>дни</span><span>сон: с / без</span><span>энергия: с / без</span>
       </div>
       <div class="factor-summary-list">
         <article v-for="factor in factors" :key="factor.id" class="factor-summary-item">
@@ -416,8 +425,8 @@ function showExportStatus(message: string) {
         <div class="coverage-list">
           <div v-for="area in activeAreas" :key="area.id" class="coverage-row">
             <span class="coverage-row__label"><i>{{ area.icon }}</i>{{ area.label }}</span>
-            <div class="coverage-row__track"><span :style="{ width: `${summary.entriesCount ? ((summary.areaCounts[area.id] ?? 0) / summary.entriesCount) * 100 : 0}%` }"></span></div>
-            <strong>{{ summary.areaCounts[area.id] ?? 0 }}/{{ summary.entriesCount }}</strong>
+            <div class="coverage-row__track"><span :style="{ width: `${summary.lifeAreaSamples ? ((summary.areaCounts[area.id] ?? 0) / summary.lifeAreaSamples) * 100 : 0}%` }"></span></div>
+            <strong>{{ summary.areaCounts[area.id] ?? 0 }}/{{ summary.lifeAreaSamples }}</strong>
           </div>
         </div>
       </article>

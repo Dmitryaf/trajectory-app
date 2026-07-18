@@ -41,12 +41,14 @@ export type DailyEntry = {
   energy: number | null;
   stateContext: string;
   eveningFactors: EveningFactorId[];
+  eveningFactorsRecorded: boolean;
   eveningFactorNote: string;
   specialDay: SpecialDayId | null;
   specialDayNote: string;
   careerState: CareerState | null;
   careerStates: CareerState[];
   activities: ActivityId[];
+  activitiesRecorded: boolean;
   nutritionState: NutritionState | null;
   nutritionNote: string;
   nutritionCriterion: string;
@@ -56,6 +58,7 @@ export type DailyEntry = {
   focusTitle: string;
   externalEvidenceCriterion: string;
   lifeAreas: LifeAreaId[];
+  lifeAreasRecorded: boolean;
   importantFact: string;
   experimentCompleted: boolean | null;
   updatedAt: string;
@@ -80,6 +83,7 @@ export type LifeEventRecord = {
 
 export type WeeklyReview = {
   weekStart: string;
+  updatedAt: string;
   previousPlanOutcome: string;
   results: string[];
   support: string;
@@ -90,6 +94,7 @@ export type WeeklyReview = {
 
 export type MonthlyReview = {
   monthStart: string;
+  updatedAt: string;
   mainPattern: string;
   support: string;
   obstacle: string;
@@ -276,12 +281,14 @@ export function emptyDailyEntry(date: string): DailyEntry {
     energy: null,
     stateContext: "",
     eveningFactors: [],
+    eveningFactorsRecorded: false,
     eveningFactorNote: "",
     specialDay: null,
     specialDayNote: "",
     careerState: null,
     careerStates: [],
     activities: [],
+    activitiesRecorded: false,
     nutritionState: null,
     nutritionNote: "",
     nutritionCriterion: "",
@@ -291,6 +298,7 @@ export function emptyDailyEntry(date: string): DailyEntry {
     focusTitle: "",
     externalEvidenceCriterion: "",
     lifeAreas: [],
+    lifeAreasRecorded: false,
     importantFact: "",
     experimentCompleted: null,
     updatedAt: new Date().toISOString(),
@@ -312,6 +320,7 @@ export function normalizeDailyEntry(entry: Partial<DailyEntry> & { date: string 
     timeInBedMinutes: typeof entry.timeInBedMinutes === "number" ? entry.timeInBedMinutes : null,
     weightKg: typeof entry.weightKg === "number" ? entry.weightKg : null,
     activities: Array.isArray(entry.activities) ? entry.activities : [],
+    activitiesRecorded: typeof entry.activitiesRecorded === "boolean" ? entry.activitiesRecorded : Array.isArray(entry.activities) && entry.activities.length > 0,
     nutritionState: isNutritionState(entry.nutritionState) ? entry.nutritionState : null,
     nutritionNote: typeof entry.nutritionNote === "string" ? entry.nutritionNote : "",
     nutritionCriterion: typeof entry.nutritionCriterion === "string" ? entry.nutritionCriterion : "",
@@ -320,8 +329,10 @@ export function normalizeDailyEntry(entry: Partial<DailyEntry> & { date: string 
     focusTitle: typeof entry.focusTitle === "string" ? entry.focusTitle : "",
     externalEvidenceCriterion: typeof entry.externalEvidenceCriterion === "string" ? entry.externalEvidenceCriterion : "",
     lifeAreas: Array.isArray(entry.lifeAreas) ? entry.lifeAreas : [],
+    lifeAreasRecorded: typeof entry.lifeAreasRecorded === "boolean" ? entry.lifeAreasRecorded : Array.isArray(entry.lifeAreas) && entry.lifeAreas.length > 0,
     stateContext: typeof entry.stateContext === "string" ? entry.stateContext : "",
     eveningFactors: Array.isArray(entry.eveningFactors) ? entry.eveningFactors : [],
+    eveningFactorsRecorded: typeof entry.eveningFactorsRecorded === "boolean" ? entry.eveningFactorsRecorded : Array.isArray(entry.eveningFactors) && entry.eveningFactors.length > 0,
     eveningFactorNote: typeof entry.eveningFactorNote === "string" ? entry.eveningFactorNote : "",
     specialDay: typeof entry.specialDay === "string" ? entry.specialDay : null,
     specialDayNote: typeof entry.specialDayNote === "string" ? entry.specialDayNote : "",
@@ -343,6 +354,7 @@ export function normalizeLifeEvent(event: Partial<LifeEventRecord> & { date: str
 export function emptyWeeklyReview(weekStart: string): WeeklyReview {
   return {
     weekStart,
+    updatedAt: "",
     previousPlanOutcome: "",
     results: ["", "", ""],
     support: "",
@@ -357,6 +369,7 @@ export function normalizeWeeklyReview(review: Partial<WeeklyReview> & { weekStar
     ...emptyWeeklyReview(review.weekStart),
     ...review,
     previousPlanOutcome: typeof review.previousPlanOutcome === "string" ? review.previousPlanOutcome : "",
+    updatedAt: typeof review.updatedAt === "string" ? review.updatedAt : "",
     results: Array.isArray(review.results) ? review.results : ["", "", ""],
     support: typeof review.support === "string" ? review.support : "",
     obstacle: typeof review.obstacle === "string" ? review.obstacle : "",
@@ -368,6 +381,7 @@ export function normalizeWeeklyReview(review: Partial<WeeklyReview> & { weekStar
 export function emptyMonthlyReview(monthStart: string): MonthlyReview {
   return {
     monthStart,
+    updatedAt: "",
     mainPattern: "",
     support: "",
     obstacle: "",
@@ -382,6 +396,7 @@ export function normalizeMonthlyReview(review: Partial<MonthlyReview> & { monthS
     ...emptyMonthlyReview(review.monthStart),
     ...review,
     mainPattern: typeof review.mainPattern === "string" ? review.mainPattern : "",
+    updatedAt: typeof review.updatedAt === "string" ? review.updatedAt : "",
     support: typeof review.support === "string" ? review.support : "",
     obstacle: typeof review.obstacle === "string" ? review.obstacle : "",
     courseChange: typeof review.courseChange === "string" ? review.courseChange : "",

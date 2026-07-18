@@ -48,6 +48,7 @@ const rhythmDays = computed(() => days.value.map((day) => {
     hasDrift: entry?.actionDirection === 'drift',
     hasMovement: Boolean(entry?.activities.some((activity) => activity !== 'recovery')),
     hasNutritionSupport: entry?.nutritionState === 'supports_goal',
+    hasNutritionNeutral: entry?.nutritionState === 'neutral',
     hasNutritionBlock: entry?.nutritionState === 'blocks_goal'
   };
 }));
@@ -55,12 +56,14 @@ const rhythmOption = computed<EChartsCoreOption>(() => {
   const labels = rhythmDays.value.map((item) => formatDate(item.day, { weekday: 'short', day: '2-digit' }));
   const actionRows = ['Карьера', 'Наружу', 'В сторону', 'Движение', 'Питание', 'Особый день'];
   const actionSeries = [
-    { name: 'Карьера', color: '#4188e8', active: (item: (typeof rhythmDays.value)[number]) => item.hasCareer },
-    { name: 'Наружу', color: '#5264d8', active: (item: (typeof rhythmDays.value)[number]) => item.hasExternalAction },
-    { name: 'В сторону', color: '#b85c4c', active: (item: (typeof rhythmDays.value)[number]) => item.hasDrift },
-    { name: 'Движение', color: '#38b989', active: (item: (typeof rhythmDays.value)[number]) => item.hasMovement },
-    { name: 'Питание', color: '#d39b2f', active: (item: (typeof rhythmDays.value)[number]) => item.hasNutritionSupport || item.hasNutritionBlock },
-    { name: 'Особый день', color: '#eb7458', active: (item: (typeof rhythmDays.value)[number]) => Boolean(item.entry?.specialDay) },
+    { name: 'Карьера', row: 'Карьера', color: '#4188e8', active: (item: (typeof rhythmDays.value)[number]) => item.hasCareer },
+    { name: 'Наружу', row: 'Наружу', color: '#5264d8', active: (item: (typeof rhythmDays.value)[number]) => item.hasExternalAction },
+    { name: 'В сторону', row: 'В сторону', color: '#b85c4c', active: (item: (typeof rhythmDays.value)[number]) => item.hasDrift },
+    { name: 'Движение', row: 'Движение', color: '#38b989', active: (item: (typeof rhythmDays.value)[number]) => item.hasMovement },
+    { name: 'Питание поддержало', row: 'Питание', color: '#38b989', active: (item: (typeof rhythmDays.value)[number]) => item.hasNutritionSupport },
+    { name: 'Питание нейтрально', row: 'Питание', color: '#d39b2f', active: (item: (typeof rhythmDays.value)[number]) => item.hasNutritionNeutral },
+    { name: 'Питание мешало', row: 'Питание', color: '#b85c4c', active: (item: (typeof rhythmDays.value)[number]) => item.hasNutritionBlock },
+    { name: 'Особый день', row: 'Особый день', color: '#eb7458', active: (item: (typeof rhythmDays.value)[number]) => Boolean(item.entry?.specialDay) },
   ];
 
   return {
@@ -107,7 +110,7 @@ const rhythmOption = computed<EChartsCoreOption>(() => {
         yAxisIndex: 2,
         symbolSize: 10,
         itemStyle: { color: series.color },
-        data: rhythmDays.value.flatMap((item, index) => series.active(item) ? [[labels[index], series.name]] : []),
+        data: rhythmDays.value.flatMap((item, index) => series.active(item) ? [[labels[index], series.row]] : []),
       })),
     ],
   };
@@ -165,9 +168,9 @@ function showExportStatus(message: string) {
 
     <div class="metrics-grid">
       <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="`${summary.sleepSamples} дн. без особых`" accent="#7367f0" />
-      <MetricCard label="Карьерных дней" :value="summary.careerDays" :hint="`${summary.externalSteps} внешних шагов`" accent="#4188e8" />
+      <MetricCard label="Карьерных дней" :value="summary.careerDays" :hint="`${summary.externalSteps} с внешним контактом`" accent="#4188e8" />
       <MetricCard label="Направление" :value="`${summary.externalActionDays}/${summary.preparationDays}`" :hint="`наружу / подготовка · ${summary.actionDirectionSamples} дн.`" accent="#5264d8" />
-      <MetricCard label="Дней с движением" :value="summary.movementDays" accent="#38b989" />
+      <MetricCard label="Дней с движением" :value="summary.movementDays" :hint="`${summary.movementSamples} дн. с отметкой`" accent="#38b989" />
       <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="`поддержало / мешало · ${summary.nutritionSamples} дн.`" accent="#d39b2f" />
       <MetricCard label="Результатов" :value="results.length" accent="#f0ad42" />
     </div>
@@ -177,7 +180,7 @@ function showExportStatus(message: string) {
     <article class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Ритм недели</span><h2>Сон, энергия и действия</h2></div></div>
       <EChartPanel :option="rhythmOption" :height="380" aria-label="Ритм сна, энергии и действий за неделю" />
-      <p class="data-note">Столбцы — сон, линия — энергия. Нижние отметки показывают только факт появления действия или контекста в этот день.</p>
+      <p class="data-note">Столбцы показывают сон, линия — энергию. Оранжевый столбец означает особый день. В строке питания: зелёный — поддержало цель, жёлтый — нейтрально, красный — мешало.</p>
     </article>
 
     <article class="dashboard-card">

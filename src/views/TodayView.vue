@@ -63,11 +63,11 @@ const saveButtonText = computed(() => {
 });
 const saveButtonDisabled = computed(() => hasSavedEntry.value && !isDirty.value && !saved.value);
 const reviewReminders = computed(() => [
-  isWeekReviewWindow.value && currentWeekSummary.value.entriesCount >= 3 && !store.reviewByWeek(startOfWeek(todayKey()))
-    ? { id: 'week', title: 'Неделя готова к разбору', text: `${currentWeekSummary.value.entriesCount} записанных дней уже достаточно для короткого обзора.`, to: '/week', label: 'Открыть неделю' }
+  isWeekReviewWindow.value && currentWeekSummary.value.ordinaryCoveredEntriesCount >= 4 && currentWeekSummary.value.ordinaryCoreEntriesCount >= 2 && !store.reviewByWeek(startOfWeek(todayKey()))
+    ? { id: 'week', title: 'Неделя готова к разбору', text: `${currentWeekSummary.value.ordinaryCoveredEntriesCount} содержательных дней уже достаточно для короткого обзора.`, to: '/week', label: 'Открыть неделю' }
     : null,
-  isMonthReviewWindow.value && currentMonthSummary.value.entriesCount >= 8 && !store.reviewByMonth(startOfMonth(todayKey()))
-    ? { id: 'month', title: 'Месяц готов к разбору', text: `${currentMonthSummary.value.entriesCount} записанных дней дают материал для месячного обзора.`, to: '/month', label: 'Открыть месяц' }
+  isMonthReviewWindow.value && currentMonthSummary.value.ordinaryCoveredEntriesCount >= 12 && currentMonthSummary.value.ordinaryCoreEntriesCount >= 6 && !store.reviewByMonth(startOfMonth(todayKey()))
+    ? { id: 'month', title: 'Месяц готов к разбору', text: `${currentMonthSummary.value.ordinaryCoveredEntriesCount} содержательных дней дают материал для месячного обзора.`, to: '/month', label: 'Открыть месяц' }
     : null,
 ].filter((item): item is { id: string; title: string; text: string; to: string; label: string } => item !== null));
 const yesterday = computed(() => addDays(todayKey(), -1));
@@ -136,6 +136,21 @@ async function save() {
 function fillYesterday() {
   selectedDate.value = yesterday.value;
 }
+
+function setEveningFactors(value: string | string[] | null) {
+  form.eveningFactors = Array.isArray(value) ? value as DailyEntry['eveningFactors'] : [];
+  form.eveningFactorsRecorded = true;
+}
+
+function setActivities(value: string | string[] | null) {
+  form.activities = Array.isArray(value) ? value as ActivityId[] : [];
+  form.activitiesRecorded = true;
+}
+
+function setLifeAreas(value: string | string[] | null) {
+  form.lifeAreas = Array.isArray(value) ? value as LifeAreaId[] : [];
+  form.lifeAreasRecorded = true;
+}
 </script>
 
 <template>
@@ -149,10 +164,10 @@ function fillYesterday() {
       <input v-model="selectedDate" class="date-input" type="date" aria-label="Дата записи" />
     </div>
 
-    <section v-if="isToday && currentWeekSummary.entriesCount" class="today-pulse" aria-label="Пульс недели">
+    <section v-if="isToday && currentWeekSummary.coveredEntriesCount" class="today-pulse" aria-label="Пульс недели">
       <div>
         <span class="eyebrow">Пульс недели</span>
-        <p>{{ currentWeekSummary.entriesCount }} заполненных {{ currentWeekSummary.entriesCount === 1 ? 'день' : 'дней' }} · сон {{ formatMinutes(currentWeekSummary.averageSleep === null ? null : Math.round(currentWeekSummary.averageSleep)) }} · {{ currentWeekSummary.externalSteps }} внешних шагов</p>
+        <p>{{ currentWeekSummary.coveredEntriesCount }} содержательных {{ currentWeekSummary.coveredEntriesCount === 1 ? 'день' : 'дней' }} · сон {{ formatMinutes(currentWeekSummary.averageSleep === null ? null : Math.round(currentWeekSummary.averageSleep)) }} · {{ currentWeekSummary.externalSteps }} дн. с внешним карьерным контактом</p>
       </div>
       <p v-if="currentWeekObservation">{{ currentWeekObservation.text }}</p>
     </section>
@@ -223,7 +238,8 @@ function fillYesterday() {
         ></textarea>
         <div class="factor-block">
           <label class="field-label">Факторы перед этим сном</label>
-          <ChipGroup v-model="form.eveningFactors" :options="eveningFactorOptions" multiple />
+          <ChipGroup :model-value="form.eveningFactors" :options="eveningFactorOptions" multiple @update:model-value="setEveningFactors" />
+          <button class="none-option" :class="{ selected: form.eveningFactorsRecorded && !form.eveningFactors.length }" type="button" @click="form.eveningFactors = []; form.eveningFactorsRecorded = true">Ничего из списка</button>
           <textarea
             v-if="form.eveningFactors.length"
             v-model="form.eveningFactorNote"
@@ -263,7 +279,8 @@ function fillYesterday() {
           <span class="section-icon section-icon--green">△</span>
           <div><h2>Движение</h2><p>Можно выбрать несколько вариантов.</p></div>
         </div>
-        <ChipGroup v-model="form.activities as ActivityId[]" :options="activityOptions" multiple />
+        <ChipGroup :model-value="form.activities as ActivityId[]" :options="activityOptions" multiple @update:model-value="setActivities" />
+        <button class="none-option" :class="{ selected: form.activitiesRecorded && !form.activities.length }" type="button" @click="form.activities = []; form.activitiesRecorded = true">Без движения</button>
       </article>
 
       <article class="form-card form-card--nutrition">
@@ -289,7 +306,8 @@ function fillYesterday() {
           <span class="section-icon section-icon--amber">✦</span>
           <div><h2>Области жизни</h2><p>Отметь, что присутствовало сегодня.</p></div>
         </div>
-        <ChipGroup v-model="form.lifeAreas as LifeAreaId[]" :options="activeLifeOptions" multiple />
+        <ChipGroup :model-value="form.lifeAreas as LifeAreaId[]" :options="activeLifeOptions" multiple @update:model-value="setLifeAreas" />
+        <button class="none-option" :class="{ selected: form.lifeAreasRecorded && !form.lifeAreas.length }" type="button" @click="form.lifeAreas = []; form.lifeAreasRecorded = true">Ничего не отмечаю</button>
       </article>
 
       <article class="form-card form-card--special">
@@ -321,9 +339,9 @@ function fillYesterday() {
       <article class="form-card">
         <div class="form-card__heading">
           <span class="section-icon">·</span>
-          <div><h2>Главный факт дня</h2><p>Необязательно. Один факт без анализа.</p></div>
+          <div><h2>Наблюдение дня</h2><p>Событие, изменение или контекст, который стоит запомнить.</p></div>
         </div>
-        <textarea v-model="form.importantFact" rows="2" maxlength="240" placeholder="Например: отправил резюме напрямую в две компании"></textarea>
+        <textarea v-model="form.importantFact" rows="2" maxlength="240" placeholder="Например: разговор заметно изменил настроение на весь день"></textarea>
       </article>
 
       <button class="primary-button primary-button--save" type="submit" :disabled="saveButtonDisabled">

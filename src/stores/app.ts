@@ -100,14 +100,14 @@ export const useAppStore = defineStore('app', {
       this.lifeEvents = this.lifeEvents.filter((event) => event.id !== id);
     },
     async saveReview(review: WeeklyReview) {
-      const plainReview = plainCopy(normalizeWeeklyReview(review));
+      const plainReview = plainCopy(normalizeWeeklyReview({ ...review, updatedAt: new Date().toISOString() }));
       await db.weeklyReviews.put(plainReview);
       const index = this.weeklyReviews.findIndex((item) => item.weekStart === review.weekStart);
       if (index >= 0) this.weeklyReviews[index] = plainReview;
       else this.weeklyReviews.push(plainReview);
     },
     async saveMonthlyReview(review: MonthlyReview) {
-      const plainReview = plainCopy(normalizeMonthlyReview(review));
+      const plainReview = plainCopy(normalizeMonthlyReview({ ...review, updatedAt: new Date().toISOString() }));
       await db.monthlyReviews.put(plainReview);
       const index = this.monthlyReviews.findIndex((item) => item.monthStart === review.monthStart);
       if (index >= 0) this.monthlyReviews[index] = plainReview;

@@ -59,14 +59,14 @@ function areaMeta(value: ResultRecord['area']) {
 <template>
   <section class="page">
     <div class="page-heading">
-      <div><span class="eyebrow">Завершённые вещи</span><h1>Результаты</h1><p>Факты, которые уже произошли и останутся видны в итогах месяца.</p></div>
+      <div><span class="eyebrow">Завершённые итоги</span><h1>Результаты</h1><p>То, что завершилось или дало проверяемый итог и должно остаться отдельным маркером прогресса.</p></div>
     </div>
 
     <article class="result-composer">
-      <div class="form-card__heading"><span class="section-icon section-icon--green">✓</span><div><h2>{{ editingId === null ? 'Добавить результат' : 'Редактировать результат' }}</h2><p>Один завершённый факт.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--green">✓</span><div><h2>{{ editingId === null ? 'Добавить результат' : 'Редактировать результат' }}</h2><p>Завершённое действие, полученный ответ или созданный итог.</p></div></div>
       <ChipGroup v-model="area" :options="resultOptions" />
       <div class="result-composer__fields">
-        <input v-model="title" type="text" maxlength="160" placeholder="Например: прошёл техническое собеседование" @keyup.enter="saveResult" />
+        <input v-model="title" type="text" maxlength="160" placeholder="Например: выпустил первую рабочую версию приложения" @keyup.enter="saveResult" />
         <input v-model="date" class="date-input" type="date" aria-label="Дата результата" />
         <button class="primary-button" type="button" :disabled="!title.trim() || saving" @click="saveResult">{{ editingId === null ? 'Добавить результат' : 'Сохранить результат' }}</button>
       </div>
