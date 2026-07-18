@@ -3,7 +3,7 @@ import { db } from '../db';
 import { plainCopy } from '../services/plain';
 import { defaultSettings, normalizeDailyEntry, normalizeLifeEvent, normalizeMonthlyReview, normalizeSettings, normalizeWeeklyReview, type AppSettings, type DailyEntry, type LifeEventRecord, type MonthlyReview, type ResultRecord, type WeeklyReview } from '../types';
 
-type ExportPayload = {
+export type ExportPayload = {
   version: 1 | 2 | 3;
   exportedAt: string;
   dailyEntries: DailyEntry[];

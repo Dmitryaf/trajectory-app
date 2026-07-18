@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue';
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
+import type { Session } from '@supabase/supabase-js';
 import ChipGroup from '../components/ChipGroup.vue';
-import { useAppStore } from '../stores/app';
+import { useAppStore, type ExportPayload } from '../stores/app';
 import { buildAiReportPayload, buildAiReportPrompt, type AiReportPeriod } from '../services/aiReport';
+import { getCloudSession, isCloudSyncConfigured, loadCloudSnapshot, onCloudAuthChange, saveCloudSnapshot, signInToCloud, signOutFromCloud, signUpToCloud } from '../services/cloudSync';
 import { todayKey } from '../services/dates';
 import { plainCopy } from '../services/plain';
 import { careerOptions, createCustomOption, lifeAreaOptions, type AppSettings, type CareerState, type LifeAreaId } from '../types';
@@ -15,8 +17,33 @@ const importInput = ref<HTMLInputElement>();
 const newCareerLabel = ref('');
 const newCareerCountsAsExternal = ref(true);
 const newLifeAreaLabel = ref('');
+const cloudConfigured = isCloudSyncConfigured();
+const cloudSession = ref<Session | null>(null);
+const cloudEmail = ref('');
+const cloudPassword = ref('');
+const cloudStatus = ref('');
 const allCareerOptions = computed(() => [...careerOptions, ...settings.customCareerOptions]);
 const allLifeAreaOptions = computed(() => [...lifeAreaOptions, ...settings.customLifeAreaOptions]);
+const cloudUserEmail = computed(() => cloudSession.value?.user.email ?? '');
+
+let stopCloudAuthListener: (() => void) | null = null;
+
+onMounted(async () => {
+  if (!cloudConfigured) return;
+  try {
+    cloudSession.value = await getCloudSession();
+    const listener = onCloudAuthChange((session) => {
+      cloudSession.value = session;
+    });
+    stopCloudAuthListener = () => listener.data.subscription.unsubscribe();
+  } catch (error) {
+    cloudStatus.value = error instanceof Error ? error.message : 'Не удалось проверить облачную сессию';
+  }
+});
+
+onUnmounted(() => {
+  stopCloudAuthListener?.();
+});
 
 async function save() {
   await store.saveSettings(plainCopy(settings));
@@ -66,6 +93,62 @@ function exportData() {
   link.download = `trajectory-backup-${new Date().toISOString().slice(0, 10)}.json`;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+async function signInCloud() {
+  await runCloudAction(async () => {
+    cloudSession.value = await signInToCloud(cloudEmail.value.trim(), cloudPassword.value);
+    cloudPassword.value = '';
+    cloudStatus.value = 'Вход выполнен';
+  });
+}
+
+async function signUpCloud() {
+  await runCloudAction(async () => {
+    cloudSession.value = await signUpToCloud(cloudEmail.value.trim(), cloudPassword.value);
+    cloudPassword.value = '';
+    cloudStatus.value = cloudSession.value ? 'Аккаунт создан, вход выполнен' : 'Аккаунт создан. Если включено подтверждение, проверь почту';
+  });
+}
+
+async function signOutCloud() {
+  await runCloudAction(async () => {
+    await signOutFromCloud();
+    cloudSession.value = null;
+    cloudStatus.value = 'Выход выполнен';
+  });
+}
+
+async function saveBackupToCloud() {
+  await runCloudAction(async () => {
+    const updatedAt = await saveCloudSnapshot(store.exportData());
+    cloudStatus.value = `Облачная копия сохранена: ${new Date(updatedAt).toLocaleString('ru-RU')}`;
+  });
+}
+
+async function restoreBackupFromCloud() {
+  await runCloudAction(async () => {
+    const snapshot = await loadCloudSnapshot();
+    if (!snapshot) {
+      cloudStatus.value = 'В облаке пока нет копии';
+      return;
+    }
+
+    const updatedAt = new Date(snapshot.updatedAt).toLocaleString('ru-RU');
+    if (!window.confirm(`Заменить локальные данные облачной копией от ${updatedAt}? Перед этим лучше скачать локальную копию.`)) return;
+    await store.importData(snapshot.payload as ExportPayload);
+    Object.assign(settings, plainCopy(store.settings));
+    cloudStatus.value = `Данные восстановлены из облака: ${updatedAt}`;
+  });
+}
+
+async function runCloudAction(action: () => Promise<void>) {
+  cloudStatus.value = '';
+  try {
+    await action();
+  } catch (error) {
+    cloudStatus.value = error instanceof Error ? error.message : 'Облачное действие не выполнено';
+  }
 }
 
 async function copyAiPrompt(period: Exclude<AiReportPeriod, 'range'>) {
@@ -207,6 +290,33 @@ async function clearAll() {
         <input ref="importInput" class="visually-hidden" type="file" accept="application/json" @change="importData" />
       </div>
       <div class="danger-zone"><div><strong>Удалить все данные</strong><p>Записи, результаты, обзоры и настройки будут очищены.</p></div><button class="danger-button" type="button" @click="clearAll">Удалить</button></div>
+    </article>
+
+    <article class="settings-card">
+      <div class="form-card__heading"><span class="section-icon section-icon--green">↥</span><div><h2>Облачная копия</h2><p>Личная синхронизация через Supabase. Доступ к копии закрыт правилами RLS и привязан к твоему аккаунту.</p></div></div>
+      <div v-if="!cloudConfigured" class="cloud-sync-note">
+        <strong>Облако ещё не подключено</strong>
+        <p>Добавь `VITE_SUPABASE_URL` и `VITE_SUPABASE_ANON_KEY` в Vercel Environment Variables после создания проекта Supabase.</p>
+      </div>
+      <template v-else>
+        <div v-if="!cloudSession" class="cloud-auth-grid">
+          <label class="form-control"><span class="field-label">Email</span><input v-model="cloudEmail" type="email" autocomplete="email" placeholder="you@example.com" /></label>
+          <label class="form-control"><span class="field-label">Пароль</span><input v-model="cloudPassword" type="password" autocomplete="current-password" placeholder="Минимум 6 символов" /></label>
+          <div class="cloud-actions">
+            <button class="primary-button" type="button" :disabled="!cloudEmail.trim() || !cloudPassword" @click="signInCloud">Войти</button>
+            <button class="secondary-button" type="button" :disabled="!cloudEmail.trim() || !cloudPassword" @click="signUpCloud">Создать аккаунт</button>
+          </div>
+        </div>
+        <div v-else class="cloud-session">
+          <div><strong>{{ cloudUserEmail }}</strong><p>Облачная копия доступна только этому пользователю.</p></div>
+          <button class="ghost-button" type="button" @click="signOutCloud">Выйти</button>
+        </div>
+        <div class="data-actions">
+          <button class="secondary-button" type="button" :disabled="!cloudSession" @click="saveBackupToCloud">Сохранить в облако</button>
+          <button class="secondary-button" type="button" :disabled="!cloudSession" @click="restoreBackupFromCloud">Загрузить из облака</button>
+        </div>
+      </template>
+      <p v-if="cloudStatus" class="settings-status">{{ cloudStatus }}</p>
     </article>
 
     <article class="settings-card">
