@@ -275,7 +275,7 @@ async function clearAll() {
         <template v-if="cloudSession">
           <div class="cloud-session">
             <div><strong>{{ cloudUserEmail }}</strong><p>Облачная копия доступна только этому пользователю.</p></div>
-            <button class="ghost-button" type="button" @click="signOutCloud">Выйти</button>
+            <button class="secondary-button cloud-session__logout" type="button" @click="signOutCloud">Выйти</button>
           </div>
           <div class="cloud-sync-note" :class="`cloud-sync-note--${store.cloudSyncStatus}`">
             <strong>{{ cloudStatusTitle }}</strong>
