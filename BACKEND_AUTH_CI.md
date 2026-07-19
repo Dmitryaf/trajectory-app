@@ -15,12 +15,19 @@ The first backend layer uses Supabase:
 - Supabase Auth for email/password sign-in.
 - Postgres table `trajectory_snapshots` for one cloud JSON snapshot per user.
 - Row Level Security policies where `auth.uid()` must match `user_id`.
-- The app remains offline-first; cloud sync is a manual backup/restore action.
+- The app remains offline-first; IndexedDB is the local cache and Supabase stores the user's cloud snapshot.
 - The public Vercel URL opens the sign-in screen first, not the tracker UI.
+- When an authenticated browser has an empty local cache, the app tries to bootstrap it from the user's cloud snapshot.
+- Local changes are saved to IndexedDB first, then the app tries to update the cloud snapshot.
+- If cloud save fails, the local data remains available and the app marks sync as pending.
+- If the local cache and cloud snapshot both contain data and the app cannot prove they are the same lineage, it marks a conflict and asks the user to choose manually.
+- Importing a JSON backup while signed in updates the cloud snapshot after the local import succeeds.
 
 This is intentionally simpler than normalizing every entity into separate tables. It preserves the current analytics code and reduces migration risk. A normalized schema can be added later when multi-device conflict resolution, server-side analytics, or collaboration becomes necessary.
 
 IndexedDB is still relevant in this phase. Supabase is not yet the primary per-record database for daily entries, results, events, and reviews; it stores one protected snapshot per user. Removing IndexedDB before implementing per-record sync would break offline use and increase the risk of data loss or conflicts.
+
+The safety rule is that the app never silently overwrites non-empty local data with a different non-empty cloud snapshot. Empty local cache can be filled from cloud automatically. A known stale local cache can be refreshed from cloud automatically. Unknown divergence becomes an explicit conflict.
 
 The next backend phase, when needed, should make Supabase the source of truth with normalized tables, `updated_at` fields per record, RLS policies per table, explicit conflict rules, and automatic sync from the local cache.
 

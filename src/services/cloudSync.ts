@@ -8,6 +8,23 @@ let client: SupabaseClient | null = null;
 export type CloudSnapshot = {
   payload: unknown;
   updatedAt: string;
+  userId: string;
+};
+
+export type CloudSyncMeta = {
+  lastCloudUpdatedAt: string;
+  lastSyncedAt: string;
+  pending: boolean;
+  conflict: boolean;
+  error: string;
+};
+
+const emptyMeta: CloudSyncMeta = {
+  lastCloudUpdatedAt: '',
+  lastSyncedAt: '',
+  pending: false,
+  conflict: false,
+  error: ''
 };
 
 export function isCloudSyncConfigured(): boolean {
@@ -81,6 +98,7 @@ export async function loadCloudSnapshot(): Promise<CloudSnapshot | null> {
   return {
     payload: data.payload,
     updatedAt: data.updated_at,
+    userId: session.user.id,
   };
 }
 
@@ -96,7 +114,59 @@ export async function saveCloudSnapshot(payload: unknown): Promise<string> {
     });
 
   if (error) throw error;
+  saveCloudSyncMeta(session.user.id, {
+    lastCloudUpdatedAt: updatedAt,
+    lastSyncedAt: new Date().toISOString(),
+    pending: false,
+    conflict: false,
+    error: ''
+  });
   return updatedAt;
+}
+
+export function getCloudSyncMeta(userId: string): CloudSyncMeta {
+  try {
+    const value = window.localStorage.getItem(cloudSyncMetaKey(userId));
+    return value ? { ...emptyMeta, ...JSON.parse(value) } : { ...emptyMeta };
+  } catch {
+    return { ...emptyMeta };
+  }
+}
+
+export function saveCloudSyncMeta(userId: string, patch: Partial<CloudSyncMeta>) {
+  const next = { ...getCloudSyncMeta(userId), ...patch };
+  window.localStorage.setItem(cloudSyncMetaKey(userId), JSON.stringify(next));
+  return next;
+}
+
+export function markCloudSyncPending(userId: string, error: string) {
+  return saveCloudSyncMeta(userId, {
+    pending: true,
+    error
+  });
+}
+
+export function markCloudSyncConflict(userId: string, cloudUpdatedAt: string) {
+  return saveCloudSyncMeta(userId, {
+    lastCloudUpdatedAt: cloudUpdatedAt,
+    pending: false,
+    conflict: true,
+    error: ''
+  });
+}
+
+export function markCloudSyncSynced(userId: string, cloudUpdatedAt: string) {
+  return saveCloudSyncMeta(userId, {
+    lastCloudUpdatedAt: cloudUpdatedAt,
+    lastSyncedAt: new Date().toISOString(),
+    pending: false,
+    conflict: false,
+    error: ''
+  });
+}
+
+function cloudSyncMetaKey(userId: string) {
+  return `trajectory:cloud-sync:${userId}`;
 }
 
 async function requireSession(): Promise<Session> {

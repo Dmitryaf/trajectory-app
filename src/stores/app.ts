@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import { db } from '../db';
+import { isCloudSyncConfigured, markCloudSyncPending, saveCloudSnapshot } from '../services/cloudSync';
 import { plainCopy } from '../services/plain';
+import { useAuthStore } from './auth';
 import { defaultSettings, normalizeDailyEntry, normalizeLifeEvent, normalizeMonthlyReview, normalizeSettings, normalizeWeeklyReview, type AppSettings, type DailyEntry, type LifeEventRecord, type MonthlyReview, type ResultRecord, type WeeklyReview } from '../types';
 
 export type ExportPayload = {
@@ -14,10 +16,17 @@ export type ExportPayload = {
   settings: AppSettings;
 };
 
+type CloudSyncStatus = 'disabled' | 'idle' | 'syncing' | 'synced' | 'pending' | 'conflict' | 'error';
+
 export const useAppStore = defineStore('app', {
   state: () => ({
     loaded: false,
     loadError: '',
+    cloudSyncStatus: (isCloudSyncConfigured() ? 'idle' : 'disabled') as CloudSyncStatus,
+    cloudSyncMessage: '',
+    cloudSyncUpdatedAt: '',
+    cloudSyncError: '',
+    cloudSyncQueued: false,
     dailyEntries: [] as DailyEntry[],
     results: [] as ResultRecord[],
     lifeEvents: [] as LifeEventRecord[],
@@ -63,11 +72,13 @@ export const useAppStore = defineStore('app', {
       const index = this.dailyEntries.findIndex((item) => item.date === saved.date);
       if (index >= 0) this.dailyEntries[index] = saved;
       else this.dailyEntries.push(saved);
+      void this.syncCloudSnapshot();
     },
     async addResult(result: Omit<ResultRecord, 'id' | 'createdAt'>) {
       const record: ResultRecord = plainCopy({ ...result, createdAt: new Date().toISOString() });
       const id = await db.results.add(record);
       this.results.unshift({ ...record, id });
+      void this.syncCloudSnapshot();
     },
     async updateResult(result: ResultRecord) {
       if (result.id === undefined) return;
@@ -76,16 +87,19 @@ export const useAppStore = defineStore('app', {
       const index = this.results.findIndex((item) => item.id === record.id);
       if (index >= 0) this.results[index] = record;
       this.results.sort((a, b) => b.date.localeCompare(a.date));
+      void this.syncCloudSnapshot();
     },
     async removeResult(id: number) {
       await db.results.delete(id);
       this.results = this.results.filter((result) => result.id !== id);
+      void this.syncCloudSnapshot();
     },
     async addLifeEvent(event: Omit<LifeEventRecord, 'id' | 'createdAt'>) {
       const record: LifeEventRecord = plainCopy({ ...event, createdAt: new Date().toISOString() });
       const id = await db.lifeEvents.add(record);
       this.lifeEvents.unshift({ ...record, id });
       this.lifeEvents.sort((a, b) => b.date.localeCompare(a.date));
+      void this.syncCloudSnapshot();
     },
     async updateLifeEvent(event: LifeEventRecord) {
       if (event.id === undefined) return;
@@ -94,10 +108,12 @@ export const useAppStore = defineStore('app', {
       const index = this.lifeEvents.findIndex((item) => item.id === record.id);
       if (index >= 0) this.lifeEvents[index] = record;
       this.lifeEvents.sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
+      void this.syncCloudSnapshot();
     },
     async removeLifeEvent(id: number) {
       await db.lifeEvents.delete(id);
       this.lifeEvents = this.lifeEvents.filter((event) => event.id !== id);
+      void this.syncCloudSnapshot();
     },
     async saveReview(review: WeeklyReview) {
       const plainReview = plainCopy(normalizeWeeklyReview({ ...review, updatedAt: new Date().toISOString() }));
@@ -105,6 +121,7 @@ export const useAppStore = defineStore('app', {
       const index = this.weeklyReviews.findIndex((item) => item.weekStart === review.weekStart);
       if (index >= 0) this.weeklyReviews[index] = plainReview;
       else this.weeklyReviews.push(plainReview);
+      void this.syncCloudSnapshot();
     },
     async saveMonthlyReview(review: MonthlyReview) {
       const plainReview = plainCopy(normalizeMonthlyReview({ ...review, updatedAt: new Date().toISOString() }));
@@ -112,10 +129,12 @@ export const useAppStore = defineStore('app', {
       const index = this.monthlyReviews.findIndex((item) => item.monthStart === review.monthStart);
       if (index >= 0) this.monthlyReviews[index] = plainReview;
       else this.monthlyReviews.push(plainReview);
+      void this.syncCloudSnapshot();
     },
     async saveSettings(settings: AppSettings) {
       await db.settings.put(plainCopy(settings));
       this.settings = plainCopy(settings);
+      void this.syncCloudSnapshot();
     },
     exportData(): ExportPayload {
       return {
@@ -129,7 +148,7 @@ export const useAppStore = defineStore('app', {
         settings: this.settings
       };
     },
-    async importData(payload: ExportPayload) {
+    async importData(payload: ExportPayload, options: { syncCloud?: boolean } = {}) {
       if (![1, 2, 3].includes(payload.version) || !Array.isArray(payload.dailyEntries) || !Array.isArray(payload.results)) {
         throw new Error('Неподдерживаемый формат резервной копии');
       }
@@ -143,8 +162,9 @@ export const useAppStore = defineStore('app', {
         await db.settings.put(plainCopy(normalizeSettings(payload.settings ?? defaultSettings)));
       });
       await this.load();
+      if (options.syncCloud) void this.syncCloudSnapshot({ force: true });
     },
-    async clearAll() {
+    async clearAll(options: { syncCloud?: boolean } = { syncCloud: true }) {
       await db.transaction('rw', [db.dailyEntries, db.results, db.lifeEvents, db.weeklyReviews, db.monthlyReviews, db.settings], async () => {
         await Promise.all([db.dailyEntries.clear(), db.results.clear(), db.lifeEvents.clear(), db.weeklyReviews.clear(), db.monthlyReviews.clear(), db.settings.clear()]);
       });
@@ -155,10 +175,48 @@ export const useAppStore = defineStore('app', {
       this.monthlyReviews = [];
       this.settings = structuredClone(defaultSettings);
       await db.settings.put(plainCopy(this.settings));
+      if (options.syncCloud) void this.syncCloudSnapshot({ force: true });
+    },
+    setCloudSyncState(status: CloudSyncStatus, message = '', details: { updatedAt?: string; error?: string } = {}) {
+      this.cloudSyncStatus = isCloudSyncConfigured() ? status : 'disabled';
+      this.cloudSyncMessage = message;
+      this.cloudSyncUpdatedAt = details.updatedAt ?? this.cloudSyncUpdatedAt;
+      this.cloudSyncError = details.error ?? '';
+    },
+    async syncCloudSnapshot(options: { force?: boolean } = {}) {
+      if (!isCloudSyncConfigured()) {
+        this.setCloudSyncState('disabled');
+        return;
+      }
+      if (this.cloudSyncStatus === 'conflict' && !options.force) return;
+      if (this.cloudSyncStatus === 'syncing') {
+        this.cloudSyncQueued = true;
+        return;
+      }
+
+      this.setCloudSyncState('syncing', 'Сохраняю облачную копию…');
+      do {
+        this.cloudSyncQueued = false;
+        try {
+          const updatedAt = await saveCloudSnapshot(this.exportData());
+          this.setCloudSyncState('synced', `Облако обновлено: ${new Date(updatedAt).toLocaleString('ru-RU')}`, { updatedAt });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Не удалось сохранить облачную копию';
+          const userId = useAuthStore().session?.user.id;
+          if (userId) markCloudSyncPending(userId, message);
+          this.setCloudSyncState('pending', 'Изменения сохранены локально. Облако обновится после повторной синхронизации.', { error: message });
+          return;
+        }
+      } while (this.cloudSyncQueued);
     },
     unload() {
       this.loaded = false;
       this.loadError = '';
+      this.cloudSyncStatus = isCloudSyncConfigured() ? 'idle' : 'disabled';
+      this.cloudSyncMessage = '';
+      this.cloudSyncUpdatedAt = '';
+      this.cloudSyncError = '';
+      this.cloudSyncQueued = false;
       this.dailyEntries = [];
       this.results = [];
       this.lifeEvents = [];

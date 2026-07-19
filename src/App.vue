@@ -4,7 +4,8 @@ import { RouterLink, RouterView } from 'vue-router';
 import { Toaster } from 'vue-sonner';
 import 'vue-sonner/style.css';
 import AuthGate from './components/AuthGate.vue';
-import { useAppStore } from './stores/app';
+import { getCloudSyncMeta, loadCloudSnapshot, markCloudSyncConflict, markCloudSyncSynced } from './services/cloudSync';
+import { useAppStore, type ExportPayload } from './stores/app';
 import { useAuthStore } from './stores/auth';
 
 const store = useAppStore();
@@ -30,9 +31,62 @@ async function loadAppData() {
   try {
     await prepareLocalCacheOwner();
     await store.load();
+    await reconcileCloudSnapshotOnStartup();
   } catch (error) {
     console.error('Не удалось загрузить локальные данные', error);
   }
+}
+
+async function reconcileCloudSnapshotOnStartup() {
+  if (!auth.requiresAuth || !auth.session?.user.id) return;
+
+  try {
+    const userId = auth.session.user.id;
+    const snapshot = await loadCloudSnapshot();
+    const meta = getCloudSyncMeta(userId);
+
+    if (!snapshot) {
+      if (hasLocalData()) await store.syncCloudSnapshot({ force: true });
+      else store.setCloudSyncState('synced', 'Облако пока пустое');
+      return;
+    }
+
+    if (!hasLocalData()) {
+      await store.importData(snapshot.payload as ExportPayload, { syncCloud: false });
+      markCloudSyncSynced(userId, snapshot.updatedAt);
+      store.setCloudSyncState('synced', `Загружена облачная копия: ${new Date(snapshot.updatedAt).toLocaleString('ru-RU')}`, { updatedAt: snapshot.updatedAt });
+      return;
+    }
+
+    if (meta.lastCloudUpdatedAt === snapshot.updatedAt) {
+      if (meta.pending) await store.syncCloudSnapshot({ force: true });
+      else store.setCloudSyncState('synced', `Облако синхронизировано: ${new Date(snapshot.updatedAt).toLocaleString('ru-RU')}`, { updatedAt: snapshot.updatedAt });
+      return;
+    }
+
+    if (meta.lastCloudUpdatedAt && !meta.pending && !meta.conflict) {
+      await store.importData(snapshot.payload as ExportPayload, { syncCloud: false });
+      markCloudSyncSynced(userId, snapshot.updatedAt);
+      store.setCloudSyncState('synced', `Загружена более свежая облачная копия: ${new Date(snapshot.updatedAt).toLocaleString('ru-RU')}`, { updatedAt: snapshot.updatedAt });
+      return;
+    }
+
+    markCloudSyncConflict(userId, snapshot.updatedAt);
+    store.setCloudSyncState('conflict', 'В этом браузере и в облаке есть разные данные. Выбери действие в настройках.', { updatedAt: snapshot.updatedAt });
+  } catch (error) {
+    console.warn('Не удалось загрузить облачную копию', error);
+    store.setCloudSyncState('pending', 'Локальные данные доступны. Облако пока не проверено.', { error: error instanceof Error ? error.message : 'Не удалось проверить облако' });
+  }
+}
+
+function hasLocalData() {
+  return Boolean(
+    store.dailyEntries.length
+      || store.results.length
+      || store.lifeEvents.length
+      || store.weeklyReviews.length
+      || store.monthlyReviews.length
+  );
 }
 
 async function prepareLocalCacheOwner() {
@@ -41,7 +95,7 @@ async function prepareLocalCacheOwner() {
   const userId = auth.session.user.id;
   const localOwnerId = window.localStorage.getItem(localOwnerKey);
   if (localOwnerId && localOwnerId !== userId) {
-    await store.clearAll();
+    await store.clearAll({ syncCloud: false });
   }
   window.localStorage.setItem(localOwnerKey, userId);
 }
@@ -76,7 +130,16 @@ const navItems = [
         <p>{{ store.loadError }}</p>
         <button class="button button--primary" type="button" @click="store.load()">Повторить</button>
       </section>
-      <RouterView v-else />
+      <template v-else>
+        <section v-if="store.cloudSyncStatus === 'pending' || store.cloudSyncStatus === 'conflict' || store.cloudSyncStatus === 'error'" class="sync-banner" :class="`sync-banner--${store.cloudSyncStatus}`">
+          <div>
+            <strong>{{ store.cloudSyncStatus === 'conflict' ? 'Нужен выбор по облаку' : 'Облако не обновлено' }}</strong>
+            <p>{{ store.cloudSyncMessage }}</p>
+          </div>
+          <RouterLink class="secondary-button" to="/settings">Настройки</RouterLink>
+        </section>
+        <RouterView />
+      </template>
     </main>
 
     <nav v-if="canOpenApp && store.loaded" class="bottom-nav" aria-label="Основная навигация">

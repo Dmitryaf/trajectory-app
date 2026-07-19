@@ -4,7 +4,7 @@ import ChipGroup from '../components/ChipGroup.vue';
 import { useAppStore, type ExportPayload } from '../stores/app';
 import { useAuthStore } from '../stores/auth';
 import { buildAiReportPayload, buildAiReportPrompt, type AiReportPeriod } from '../services/aiReport';
-import { loadCloudSnapshot, saveCloudSnapshot } from '../services/cloudSync';
+import { loadCloudSnapshot, markCloudSyncSynced } from '../services/cloudSync';
 import { todayKey } from '../services/dates';
 import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { plainCopy } from '../services/plain';
@@ -21,6 +21,15 @@ const allCareerOptions = computed(() => [...careerOptions, ...settings.customCar
 const allLifeAreaOptions = computed(() => [...lifeAreaOptions, ...settings.customLifeAreaOptions]);
 const cloudSession = computed(() => auth.session);
 const cloudUserEmail = computed(() => auth.userEmail);
+const cloudStatusTitle = computed(() => {
+  if (!auth.configured) return 'Облако не подключено';
+  if (store.cloudSyncStatus === 'synced') return 'Облако синхронизировано';
+  if (store.cloudSyncStatus === 'syncing') return 'Идёт синхронизация';
+  if (store.cloudSyncStatus === 'pending') return 'Есть локальные изменения';
+  if (store.cloudSyncStatus === 'conflict') return 'Нужен выбор';
+  return 'Статус облака';
+});
+const cloudStatusText = computed(() => store.cloudSyncMessage || 'Локальные данные используются как кэш, облачная копия привязана к аккаунту.');
 
 async function save(message = 'Настройки сохранены') {
   await store.saveSettings(plainCopy(settings));
@@ -81,8 +90,8 @@ async function signOutCloud() {
 
 async function saveBackupToCloud() {
   await runCloudAction(async () => {
-    const updatedAt = await saveCloudSnapshot(store.exportData());
-    notifySaved(`Облачная копия сохранена: ${new Date(updatedAt).toLocaleString('ru-RU')}`);
+    await store.syncCloudSnapshot({ force: true });
+    notifySaved('Локальная версия сохранена в облако');
   });
 }
 
@@ -96,8 +105,10 @@ async function restoreBackupFromCloud() {
 
     const updatedAt = new Date(snapshot.updatedAt).toLocaleString('ru-RU');
     if (!window.confirm(`Заменить локальные данные облачной копией от ${updatedAt}? Перед этим лучше скачать локальную копию.`)) return;
-    await store.importData(snapshot.payload as ExportPayload);
+    await store.importData(snapshot.payload as ExportPayload, { syncCloud: false });
     Object.assign(settings, plainCopy(store.settings));
+    markCloudSyncSynced(snapshot.userId, snapshot.updatedAt);
+    store.setCloudSyncState('synced', `Загружена облачная копия: ${updatedAt}`, { updatedAt: snapshot.updatedAt });
     notifySaved(`Данные восстановлены из облака: ${updatedAt}`);
   });
 }
@@ -144,9 +155,13 @@ async function importData(event: Event) {
   if (!file) return;
   try {
     const payload = JSON.parse(await file.text());
-    await store.importData(payload);
+    await store.importData(payload, { syncCloud: Boolean(cloudSession.value) });
     Object.assign(settings, plainCopy(store.settings));
-    notifySaved('Резервная копия восстановлена');
+    if (cloudSession.value) {
+      notifySaved('Резервная копия восстановлена. Облако обновляется.');
+    } else {
+      notifySaved('Резервная копия восстановлена');
+    }
   } catch (error) {
     notifyError(error instanceof Error ? error.message : 'Не удалось импортировать данные');
   }
@@ -156,7 +171,7 @@ async function importData(event: Event) {
 async function clearAll() {
   if (!window.confirm('Удалить все записи, результаты и обзоры? Перед этим лучше скачать резервную копию.')) return;
   if (!window.confirm('Это действие нельзя отменить. Точно удалить все данные?')) return;
-  await store.clearAll();
+  await store.clearAll({ syncCloud: Boolean(cloudSession.value) });
   Object.assign(settings, plainCopy(store.settings));
   notifyInfo('Все данные удалены');
 }
@@ -257,10 +272,17 @@ async function clearAll() {
         <p>Добавь `VITE_SUPABASE_URL` и `VITE_SUPABASE_ANON_KEY` в Vercel Environment Variables после создания проекта Supabase.</p>
       </div>
       <template v-else>
-        <div v-if="cloudSession" class="cloud-session">
-          <div><strong>{{ cloudUserEmail }}</strong><p>Облачная копия доступна только этому пользователю.</p></div>
-          <button class="ghost-button" type="button" @click="signOutCloud">Выйти</button>
-        </div>
+        <template v-if="cloudSession">
+          <div class="cloud-session">
+            <div><strong>{{ cloudUserEmail }}</strong><p>Облачная копия доступна только этому пользователю.</p></div>
+            <button class="ghost-button" type="button" @click="signOutCloud">Выйти</button>
+          </div>
+          <div class="cloud-sync-note" :class="`cloud-sync-note--${store.cloudSyncStatus}`">
+            <strong>{{ cloudStatusTitle }}</strong>
+            <p>{{ cloudStatusText }}</p>
+            <p v-if="store.cloudSyncError">Ошибка: {{ store.cloudSyncError }}</p>
+          </div>
+        </template>
         <div v-else class="cloud-sync-note">
           <strong>Сессия не найдена</strong>
           <p>Обнови страницу и войди снова. До входа приложение не загружает записи.</p>
