@@ -1,16 +1,48 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { RouterLink, RouterView } from 'vue-router';
+import AuthGate from './components/AuthGate.vue';
 import { useAppStore } from './stores/app';
+import { useAuthStore } from './stores/auth';
 
 const store = useAppStore();
+const auth = useAuthStore();
+const canOpenApp = computed(() => auth.initialized && auth.isAuthenticated);
+const localOwnerKey = 'trajectory:local-owner-id';
+
 onMounted(async () => {
+  await auth.init();
+  if (canOpenApp.value) await loadAppData();
+});
+
+watch(canOpenApp, async (allowed) => {
+  if (allowed) {
+    await loadAppData();
+  } else if (auth.requiresAuth) {
+    store.unload();
+  }
+});
+
+async function loadAppData() {
+  if (store.loaded) return;
   try {
+    await prepareLocalCacheOwner();
     await store.load();
   } catch (error) {
     console.error('Не удалось загрузить локальные данные', error);
   }
-});
+}
+
+async function prepareLocalCacheOwner() {
+  if (!auth.requiresAuth || !auth.session?.user.id) return;
+
+  const userId = auth.session.user.id;
+  const localOwnerId = window.localStorage.getItem(localOwnerKey);
+  if (localOwnerId && localOwnerId !== userId) {
+    await store.clearAll();
+  }
+  window.localStorage.setItem(localOwnerKey, userId);
+}
 
 const navItems = [
   { to: '/', label: 'Сегодня', icon: '●' },
@@ -33,7 +65,9 @@ const navItems = [
     </header>
 
     <main class="app-main">
-      <div v-if="!store.loaded" class="loading-card">Загружаю записи…</div>
+      <div v-if="!auth.initialized" class="loading-card">Проверяю доступ…</div>
+      <AuthGate v-else-if="auth.requiresAuth && !auth.isAuthenticated" />
+      <div v-else-if="!store.loaded" class="loading-card">Загружаю записи…</div>
       <section v-else-if="store.loadError" class="card storage-error">
         <p class="eyebrow">Локальное хранилище недоступно</p>
         <h1>Записи пока не открылись</h1>
@@ -43,7 +77,7 @@ const navItems = [
       <RouterView v-else />
     </main>
 
-    <nav class="bottom-nav" aria-label="Основная навигация">
+    <nav v-if="canOpenApp && store.loaded" class="bottom-nav" aria-label="Основная навигация">
       <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" class="bottom-nav__item">
         <span>{{ item.icon }}</span>
         <small>{{ item.label }}</small>

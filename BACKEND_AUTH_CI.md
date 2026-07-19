@@ -6,6 +6,8 @@ The deployed Vercel URL is public, but the app data is still local to each brows
 
 Cloud data changes the threat model. Once records are stored outside the browser, every cloud table must be protected by authentication and Row Level Security.
 
+The production app uses an auth gate when Supabase environment variables are configured. Local IndexedDB data is loaded only after a verified Supabase session exists. The local cache is also bound to the current Supabase `user.id`; if another user signs in on the same browser, the previous local cache is cleared before the app loads.
+
 ## Chosen first backend layer
 
 The first backend layer uses Supabase:
@@ -14,6 +16,7 @@ The first backend layer uses Supabase:
 - Postgres table `trajectory_snapshots` for one cloud JSON snapshot per user.
 - Row Level Security policies where `auth.uid()` must match `user_id`.
 - The app remains offline-first; cloud sync is a manual backup/restore action.
+- The public Vercel URL opens the sign-in screen first, not the tracker UI.
 
 This is intentionally simpler than normalizing every entity into separate tables. It preserves the current analytics code and reduces migration risk. A normalized schema can be added later when multi-device conflict resolution, server-side analytics, or collaboration becomes necessary.
 
@@ -61,3 +64,5 @@ Vercel handles CD:
 ## Operational rule
 
 Before using cloud restore, download a local JSON backup. The cloud restore intentionally replaces the local IndexedDB state with the saved cloud snapshot.
+
+If using a shared computer, sign out after use. Signing out hides the app and clears in-memory state, but browser-level security still depends on the device and browser profile being trustworthy.

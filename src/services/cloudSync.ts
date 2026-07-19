@@ -36,6 +36,16 @@ export async function getCloudSession(): Promise<Session | null> {
   return data.session;
 }
 
+export async function getVerifiedCloudSession(): Promise<Session | null> {
+  const session = await getCloudSession();
+  if (!session) return null;
+
+  const { error } = await getSupabaseClient().auth.getUser();
+  if (error) throw error;
+
+  return session;
+}
+
 export function onCloudAuthChange(callback: (session: Session | null) => void) {
   return getSupabaseClient().auth.onAuthStateChange((_event, session) => callback(session));
 }

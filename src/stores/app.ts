@@ -155,6 +155,16 @@ export const useAppStore = defineStore('app', {
       this.monthlyReviews = [];
       this.settings = structuredClone(defaultSettings);
       await db.settings.put(plainCopy(this.settings));
+    },
+    unload() {
+      this.loaded = false;
+      this.loadError = '';
+      this.dailyEntries = [];
+      this.results = [];
+      this.lifeEvents = [];
+      this.weeklyReviews = [];
+      this.monthlyReviews = [];
+      this.settings = structuredClone(defaultSettings);
     }
   }
 });
