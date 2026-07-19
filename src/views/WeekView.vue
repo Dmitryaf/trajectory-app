@@ -53,10 +53,10 @@ const rhythmDays = computed(() => days.value.map((day) => {
 }));
 const rhythmOption = computed<EChartsCoreOption>(() => {
   const labels = rhythmDays.value.map((item) => formatDate(item.day, { weekday: 'short', day: '2-digit' }));
-  const actionRows = ['Карьера', 'Наружу', 'В сторону', 'Движение', 'Питание', 'Особый день'];
+  const actionRows = ['Карьера', 'Реальный шаг', 'В сторону', 'Движение', 'Питание', 'Особый день'];
   const actionSeries = [
     { name: 'Карьера', row: 'Карьера', color: '#4188e8', active: (item: (typeof rhythmDays.value)[number]) => item.hasCareer },
-    { name: 'Наружу', row: 'Наружу', color: '#5264d8', active: (item: (typeof rhythmDays.value)[number]) => item.hasExternalAction },
+    { name: 'Реальный шаг', row: 'Реальный шаг', color: '#5264d8', active: (item: (typeof rhythmDays.value)[number]) => item.hasExternalAction },
     { name: 'В сторону', row: 'В сторону', color: '#b85c4c', active: (item: (typeof rhythmDays.value)[number]) => item.hasDrift },
     { name: 'Движение', row: 'Движение', color: '#38b989', active: (item: (typeof rhythmDays.value)[number]) => item.hasMovement },
     { name: 'Питание поддержало', row: 'Питание', color: '#38b989', active: (item: (typeof rhythmDays.value)[number]) => item.hasNutritionSupport },
@@ -160,11 +160,11 @@ function downloadJson() {
 
     <div class="metrics-grid">
       <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="`${summary.sleepSamples} дн. без особых`" accent="#7367f0" />
-      <MetricCard label="Карьерных дней" :value="summary.careerDays" :hint="`${summary.externalSteps} с внешним контактом`" accent="#4188e8" />
-      <MetricCard label="Направление" :value="`${summary.externalActionDays}/${summary.preparationDays}`" :hint="`наружу / подготовка · ${summary.actionDirectionSamples} дн.`" accent="#5264d8" />
+      <MetricCard label="Карьера" :value="summary.careerDays" :hint="`${summary.externalSteps} дн. с откликом или разговором`" accent="#4188e8" />
+      <MetricCard label="Реальные шаги" :value="`${summary.externalActionDays}/${summary.preparationDays}`" :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`" accent="#5264d8" />
       <MetricCard label="Дней с движением" :value="summary.movementDays" :hint="`${summary.movementSamples} дн. с отметкой`" accent="#38b989" />
       <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="`поддержало / мешало · ${summary.nutritionSamples} дн.`" accent="#d39b2f" />
-      <MetricCard label="Результатов" :value="results.length" accent="#f0ad42" />
+      <MetricCard label="Итогов" :value="results.length" accent="#f0ad42" />
     </div>
 
     <article class="insight-card"><span class="insight-card__mark">⌁</span><p>{{ summaryText }}</p></article>
@@ -195,7 +195,7 @@ function downloadJson() {
     </article>
 
     <article v-if="actionNotes.length" class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Проверка направления</span><h2>Что выходило наружу</h2></div><span class="count-badge">{{ actionNotes.length }}</span></div>
+      <div class="section-heading"><div><span class="eyebrow">Движение к цели</span><h2>Что было реальным шагом, а что подготовкой</h2></div><span class="count-badge">{{ actionNotes.length }}</span></div>
       <div class="note-list">
         <article v-for="entry in actionNotes" :key="entry.date" class="note-item">
           <time>{{ formatDate(entry.date, { weekday: 'short', day: 'numeric' }) }}</time>
@@ -251,12 +251,12 @@ function downloadJson() {
     </article>
 
     <article v-if="results.length" class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Законченные вещи</span><h2>Результаты недели</h2></div></div>
+      <div class="section-heading"><div><span class="eyebrow">Завершённые факты</span><h2>Итоги недели</h2></div></div>
       <ul class="compact-results"><li v-for="result in results" :key="result.id"><span>✓</span>{{ result.title }}</li></ul>
     </article>
 
     <article v-if="lifeEvents.length" class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Длинная дуга</span><h2>События из архива</h2></div><span class="count-badge">{{ lifeEvents.length }}</span></div>
+      <div class="section-heading"><div><span class="eyebrow">Важный контекст</span><h2>События недели</h2></div><span class="count-badge">{{ lifeEvents.length }}</span></div>
       <div class="note-list">
         <article v-for="event in lifeEvents" :key="event.id" class="note-item">
           <time>{{ formatDate(event.date, { weekday: 'short', day: 'numeric' }) }}</time>
@@ -273,16 +273,16 @@ function downloadJson() {
       <template v-if="previousReview?.nextLever || previousReview?.ifThenPlan">
         <div class="previous-plan">
           <span class="eyebrow">Проверка прошлого решения</span>
-          <p v-if="previousReview.nextLever"><strong>Рычаг:</strong> {{ previousReview.nextLever }}</p>
+          <p v-if="previousReview.nextLever"><strong>Изменение:</strong> {{ previousReview.nextLever }}</p>
           <p v-if="previousReview.ifThenPlan"><strong>План:</strong> {{ previousReview.ifThenPlan }}</p>
         </div>
         <label class="field-label">Что получилось на практике?</label><textarea v-model="review.previousPlanOutcome" rows="2" placeholder="Сработало, не сработало или данных пока недостаточно — и почему"></textarea>
       </template>
       <label class="field-label">Три опорных факта недели</label>
-      <input v-for="(_, index) in review.results" :key="index" v-model="review.results[index]" type="text" :placeholder="`${index + 1}. Результат или значимый факт`" />
+      <input v-for="(_, index) in review.results" :key="index" v-model="review.results[index]" type="text" :placeholder="`${index + 1}. Итог или значимый факт`" />
       <label class="field-label">Что помогало?</label><textarea v-model="review.support" rows="2" placeholder="Люди, режим, место, привычка или решение"></textarea>
       <label class="field-label">Что мешало сильнее всего?</label><textarea v-model="review.obstacle" rows="2" placeholder="Один главный фактор"></textarea>
-      <label class="field-label">Один рычаг на следующую неделю</label><textarea v-model="review.nextLever" rows="2" placeholder="Одно конкретное изменение"></textarea>
+      <label class="field-label">Одно изменение на следующую неделю</label><textarea v-model="review.nextLever" rows="2" placeholder="Что конкретно изменить, оставить или убрать"></textarea>
       <label class="field-label">План если-то</label><textarea v-model="review.ifThenPlan" rows="2" placeholder="Если появится главный фактор, то я сделаю конкретное действие"></textarea>
       <button class="primary-button" type="button" @click="saveReview">Сохранить обзор</button>
     </article>

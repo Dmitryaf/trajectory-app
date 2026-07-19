@@ -113,8 +113,8 @@ async function signOut() {
 
 const navItems = [
   { to: '/', label: 'Сегодня', icon: '●' },
-  { to: '/results', label: 'Результаты', icon: '✓' },
-  { to: '/events', label: 'Архив', icon: '◆' },
+  { to: '/results', label: 'Итоги', icon: '✓' },
+  { to: '/events', label: 'События', icon: '◆' },
   { to: '/week', label: 'Неделя', icon: '▦' },
   { to: '/month', label: 'Месяц', icon: '▥' },
   { to: '/trends', label: 'Тренды', icon: '≋' },

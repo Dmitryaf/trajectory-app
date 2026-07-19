@@ -238,15 +238,15 @@ export function buildEventComparison(
       comparisonMetric('sleep', 'Сон', 'minutes', beforeSummary.averageSleep, afterSummary.averageSleep, beforeSummary.sleepSamples, afterSummary.sleepSamples),
       comparisonMetric('energy', 'Энергия', 'number', beforeSummary.averageEnergy, afterSummary.averageEnergy, beforeSummary.energySamples, afterSummary.energySamples),
       comparisonMetric('weight', 'Вес', 'weight', beforeSummary.averageWeightKg, afterSummary.averageWeightKg, beforeSummary.weightSamples, afterSummary.weightSamples),
-      comparisonMetric('external', 'Внешние действия', 'percent', ratioPercent(beforeSummary.externalActionDays, beforeSummary.actionDirectionSamples), ratioPercent(afterSummary.externalActionDays, afterSummary.actionDirectionSamples), beforeSummary.actionDirectionSamples, afterSummary.actionDirectionSamples),
+      comparisonMetric('external', 'Реальные шаги', 'percent', ratioPercent(beforeSummary.externalActionDays, beforeSummary.actionDirectionSamples), ratioPercent(afterSummary.externalActionDays, afterSummary.actionDirectionSamples), beforeSummary.actionDirectionSamples, afterSummary.actionDirectionSamples),
       comparisonMetric('nutrition', 'Питание поддержало цель', 'percent', ratioPercent(beforeSummary.nutritionSupportDays, beforeSummary.nutritionSamples), ratioPercent(afterSummary.nutritionSupportDays, afterSummary.nutritionSamples), beforeSummary.nutritionSamples, afterSummary.nutritionSamples),
-      comparisonMetric('results', 'Результаты', 'count', beforeResults, afterResults, null, null),
+      comparisonMetric('results', 'Итоги', 'count', beforeResults, afterResults, null, null),
     ],
   };
 }
 
 export function weekSummaryText(summary: PeriodSummary, activeAreas: LifeAreaId[], areaOptions: Option[] = lifeAreaOptions): string {
-  if (!summary.coveredEntriesCount) return 'Пока нет содержательных записей за эту неделю. Здесь появится краткая сводка фактов.';
+  if (!summary.coveredEntriesCount) return 'Пока нет заполненных записей за эту неделю. Здесь появится краткая сводка фактов.';
 
   const labels = new Map(areaOptions.map((item) => [item.id, item.label]));
   const present = activeAreas.filter((area) => summary.areaCounts[area] > 0).map((area) => (labels.get(area) ?? area).toLowerCase());
@@ -255,14 +255,14 @@ export function weekSummaryText(summary: PeriodSummary, activeAreas: LifeAreaId[
     : [];
   const parts = [
     `${summary.careerDays} карьерных ${plural(summary.careerDays, 'день', 'дня', 'дней')}`,
-    `${summary.externalSteps} ${plural(summary.externalSteps, 'день', 'дня', 'дней')} с внешним карьерным контактом`,
+    `${summary.externalSteps} ${plural(summary.externalSteps, 'день', 'дня', 'дней')} с откликом, разговором или итогом`,
     `${summary.movementDays} ${plural(summary.movementDays, 'день с движением', 'дня с движением', 'дней с движением')}`
   ];
   if (summary.nutritionSupportDays || summary.nutritionBlockDays) {
     parts.push(`питание поддержало ${summary.nutritionSupportDays}, мешало ${summary.nutritionBlockDays}`);
   }
   if (summary.externalActionDays || summary.preparationDays || summary.driftDays) {
-    parts.push(`направление: внешние ${summary.externalActionDays}, подготовка ${summary.preparationDays}, в сторону ${summary.driftDays}`);
+    parts.push(`движение к цели: реальные шаги ${summary.externalActionDays}, подготовка ${summary.preparationDays}, в сторону ${summary.driftDays}`);
   }
   if (summary.averageSleep !== null) parts.push(`средний сон ${formatMinutes(Math.round(summary.averageSleep))}`);
   if (summary.averageTimeInBed !== null && summary.averageSleep !== null && summary.averageTimeInBed - summary.averageSleep >= 45) {
@@ -375,13 +375,13 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
   const enoughEntries = period === 'week'
     ? summary.ordinaryCoveredEntriesCount >= 4 && summary.ordinaryCoreEntriesCount >= 2
     : summary.ordinaryCoveredEntriesCount >= 12 && summary.ordinaryCoreEntriesCount >= 6;
-  const minTarget = period === 'week' ? '4 содержательных дня, из них 2 с основными данными' : '12 содержательных дней, из них 6 с основными данными';
+  const minTarget = period === 'week' ? '4 заполненных дня, из них 2 с основными полями' : '12 заполненных дней, из них 6 с основными полями';
 
   cues.push({
     id: 'coverage',
     title: enoughEntries ? 'Данных достаточно для обзора' : 'Данных пока мало',
     text: enoughEntries
-      ? `${summary.ordinaryCoveredEntriesCount} содержательных дней, из них ${summary.ordinaryCoreEntriesCount} с основными данными, уже дают рабочую картину периода.`
+      ? `${summary.ordinaryCoveredEntriesCount} заполненных дней, из них ${summary.ordinaryCoreEntriesCount} с основными полями, уже дают рабочую картину периода.`
       : `Для рабочего обзора лучше иметь хотя бы ${minTarget} без отметки «особый день». Сейчас: ${summary.ordinaryCoveredEntriesCount} и ${summary.ordinaryCoreEntriesCount}.`,
     tone: enoughEntries ? 'good' : 'warning',
   });
@@ -427,8 +427,8 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
   if (summary.externalSteps > 0 || summary.careerDays > 0) {
     cues.push({
       id: 'career',
-      title: summary.externalSteps > 0 ? 'Были дни с внешним карьерным контактом' : 'Карьера появлялась',
-      text: `${summary.careerDays} карьерных ${plural(summary.careerDays, 'день', 'дня', 'дней')}, из них ${summary.externalSteps} с внешним контактом. Так проще сверить ощущение с фактами.`,
+      title: summary.externalSteps > 0 ? 'Были отклики, разговоры или итоги по карьере' : 'Карьера появлялась',
+      text: `${summary.careerDays} карьерных ${plural(summary.careerDays, 'день', 'дня', 'дней')}, из них ${summary.externalSteps} с откликом, разговором или итогом. Так проще сверить ощущение с фактами.`,
       tone: summary.externalSteps > 0 ? 'good' : 'neutral',
     });
   }
@@ -436,15 +436,15 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
   if (summary.preparationDays >= 3 && summary.externalActionDays <= 1) {
     cues.push({
       id: 'direction-preparation',
-      title: 'Много подготовки, мало внешнего контакта',
-      text: `${summary.preparationDays} ${plural(summary.preparationDays, 'день', 'дня', 'дней')} отмечены как подготовка, внешних шагов — ${summary.externalActionDays}. Стоит проверить, не заменяет ли подготовка обратную связь от реальности.`,
+      title: 'Много подготовки, мало реальных шагов',
+      text: `${summary.preparationDays} ${plural(summary.preparationDays, 'день', 'дня', 'дней')} отмечены как подготовка, реальных шагов — ${summary.externalActionDays}. Стоит проверить, не заменяет ли подготовка действие, которое даёт ответ извне.`,
       tone: 'warning',
     });
   } else if (summary.externalActionDays >= 2) {
     cues.push({
       id: 'direction-external',
-      title: 'Были внешние шаги',
-      text: `${summary.externalActionDays} ${plural(summary.externalActionDays, 'день', 'дня', 'дней')} с действиями, которые выходили наружу. Это хороший слой для проверки целей фактами.`,
+      title: 'Были реальные шаги',
+      text: `${summary.externalActionDays} ${plural(summary.externalActionDays, 'день', 'дня', 'дней')} с действиями, которые могли дать ответ извне: отклик, разговор, публикация, встреча или похожий шаг.`,
       tone: 'good',
     });
   }
@@ -462,7 +462,7 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
     cues.push({
       id: 'results',
       title: 'Есть завершённые вещи',
-      text: `${results.length} ${plural(results.length, 'результат', 'результата', 'результатов')} за период. Это отдельный слой прогресса, даже если состояние было неровным.`,
+      text: `${results.length} ${plural(results.length, 'итог', 'итога', 'итогов')} за период. Это отдельный слой прогресса, даже если состояние было неровным.`,
       tone: 'good',
     });
   }
@@ -491,7 +491,7 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
     cues.push({
       id: 'context',
       title: 'Есть поправка на контекст',
-      text: `${summary.specialDays} особых ${plural(summary.specialDays, 'день', 'дня', 'дней')} и ${lifeEvents.length} ${plural(lifeEvents.length, 'событие архива', 'события архива', 'событий архива')}. Такой период лучше не сравнивать с обычным ритмом напрямую.`,
+      text: `${summary.specialDays} особых ${plural(summary.specialDays, 'день', 'дня', 'дней')} и ${lifeEvents.length} ${plural(lifeEvents.length, 'важное событие', 'важных события', 'важных событий')}. Такой период лучше не сравнивать с обычным ритмом напрямую.`,
       tone: 'neutral',
     });
   }
@@ -511,7 +511,7 @@ export function buildRangeReviewCues(rangeMonths: number, entries: DailyEntry[],
   cues.push({
     id: 'coverage',
     title: enoughEntries ? 'Период покрыт достаточно ровно' : 'Покрытие периода неровное',
-    text: `${summary.coveredEntriesCount} содержательных дней, из них ${summary.ordinaryCoreEntriesCount} с основными данными, в ${monthsWithData} из ${rangeMonths} мес.`,
+    text: `${summary.coveredEntriesCount} заполненных дней, из них ${summary.ordinaryCoreEntriesCount} с основными полями, в ${monthsWithData} из ${rangeMonths} мес.`,
     tone: enoughEntries ? 'good' : 'warning',
   });
 
@@ -531,21 +531,21 @@ export function buildRangeReviewCues(rangeMonths: number, entries: DailyEntry[],
     const preparationRate = ratioPercent(summary.preparationDays, summary.actionDirectionSamples) ?? 0;
     const driftRate = ratioPercent(summary.driftDays, summary.actionDirectionSamples) ?? 0;
     if (preparationRate >= 60 && externalRate <= 20) {
-      cues.push({ id: 'direction-preparation', title: 'Подготовка редко переходила наружу', text: `Подготовка — ${preparationRate}% отмеченных дней направления, внешние шаги — ${externalRate}%. Стоит проверить критерий реального контакта с целью.`, tone: 'warning' });
+      cues.push({ id: 'direction-preparation', title: 'Подготовка редко переходила в реальные шаги', text: `Подготовка — ${preparationRate}% отмеченных дней, реальные шаги — ${externalRate}%. Стоит проверить, какие действия дают ответ извне.`, tone: 'warning' });
     } else if (externalRate >= 35) {
-      cues.push({ id: 'direction-external', title: 'Внешний контакт сохранялся', text: `Внешние шаги появлялись в ${externalRate}% дней с отмеченным направлением. Сверь это с реальными результатами периода.`, tone: 'good' });
+      cues.push({ id: 'direction-external', title: 'Реальные шаги сохранялись', text: `Реальные шаги появлялись в ${externalRate}% дней с отмеченным движением к цели. Сверь это с итогами периода.`, tone: 'good' });
     }
     if (driftRate >= 30) {
-      cues.push({ id: 'direction-drift', title: 'Уход в сторону повторялся', text: `${driftRate}% дней с отмеченным направлением ушли в сторону. Ищи повторяющееся условие, а не одну причину всего периода.`, tone: 'warning' });
+      cues.push({ id: 'direction-drift', title: 'Уход в сторону повторялся', text: `${driftRate}% дней с отмеченным движением к цели ушли в сторону. Ищи повторяющееся условие, а не одну причину всего периода.`, tone: 'warning' });
     }
   }
 
   if (results.length) {
-    cues.push({ id: 'results', title: 'Есть завершённые результаты', text: `${results.length} ${plural(results.length, 'результат', 'результата', 'результатов')} за период. Сопоставь их с внешними действиями, а не только с занятостью.`, tone: 'good' });
+    cues.push({ id: 'results', title: 'Есть завершённые итоги', text: `${results.length} ${plural(results.length, 'итог', 'итога', 'итогов')} за период. Сопоставь их с реальными шагами, а не только с занятостью.`, tone: 'good' });
   }
 
   if (summary.specialDays || lifeEvents.length) {
-    cues.push({ id: 'context', title: 'Траектория менялась вместе с контекстом', text: `${summary.specialDays} особых ${plural(summary.specialDays, 'день', 'дня', 'дней')} и ${lifeEvents.length} ${plural(lifeEvents.length, 'событие архива', 'события архива', 'событий архива')}. Они исключены из базовых средних состояния.`, tone: 'neutral' });
+    cues.push({ id: 'context', title: 'Динамика менялась вместе с контекстом', text: `${summary.specialDays} особых ${plural(summary.specialDays, 'день', 'дня', 'дней')} и ${lifeEvents.length} ${plural(lifeEvents.length, 'важное событие', 'важных события', 'важных событий')}. Они исключены из базовых средних состояния.`, tone: 'neutral' });
   }
 
   return limitCues(cues, ['coverage', 'results', 'context']);
@@ -639,7 +639,7 @@ export function buildReviewQuestions(period: 'week' | 'month'): string[] {
   const label = period === 'week' ? 'неделе' : 'месяце';
   return [
     `Что в этой ${label} повторялось чаще всего и могло влиять на состояние?`,
-    'Что из сделанного создало обратную связь от реальности?',
+    'Какие действия могли дать ответ извне: отклик, разговор, публикация, встреча или собеседование?',
     'Какой один фактор стоит уменьшить в следующем периоде?',
     'Какое одно действие или условие стоит сохранить, потому что оно помогало?',
   ];

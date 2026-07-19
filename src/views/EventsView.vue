@@ -29,7 +29,7 @@ async function saveEvent() {
       await store.updateLifeEvent({ id: editingId.value, createdAt: editingCreatedAt.value, date: date.value, type: type.value, title: cleanTitle, note: note.value.trim() });
     }
     resetForm();
-    notifySaved(wasEditing ? 'Событие обновлено' : 'Событие добавлено в архив');
+    notifySaved(wasEditing ? 'Событие обновлено' : 'Событие добавлено');
   } catch (error) {
     notifyUnknownError(error, 'Не удалось сохранить событие');
   } finally {
@@ -57,7 +57,7 @@ function resetForm() {
 }
 
 async function remove(id?: number) {
-  if (id === undefined || !window.confirm('Удалить это событие из архива?')) return;
+  if (id === undefined || !window.confirm('Удалить это событие?')) return;
   await store.removeLifeEvent(id);
   if (editingId.value === id) resetForm();
   notifyInfo('Событие удалено');
@@ -71,18 +71,18 @@ function eventMeta(value: LifeEventRecord['type']) {
 <template>
   <section class="page">
     <div class="page-heading">
-      <div><span class="eyebrow">Жизненный контекст</span><h1>Архив</h1><p>Важные изменения, решения и события отдельно от ежедневной записи.</p></div>
+      <div><span class="eyebrow">Жизненный контекст</span><h1>События</h1><p>Важные изменения, решения и обстоятельства, которые могут объяснять будущие сдвиги в данных.</p></div>
     </div>
 
     <article class="result-composer">
-      <div class="form-card__heading"><span class="section-icon section-icon--amber">◆</span><div><h2>{{ editingId === null ? 'Добавить событие' : 'Редактировать событие' }}</h2><p>Событие, которое поможет понять будущие тренды.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--amber">◆</span><div><h2>{{ editingId === null ? 'Добавить событие' : 'Редактировать событие' }}</h2><p>Сюда лучше добавлять не каждый день, а только то, что может менять общий контекст.</p></div></div>
       <ChipGroup v-model="type" :options="lifeEventTypeOptions" />
       <div class="event-composer__fields">
         <input v-model="title" type="text" maxlength="140" placeholder="Например: решил сменить направление поиска работы" @keyup.enter="saveEvent" />
         <input v-model="date" class="date-input" type="date" aria-label="Дата события" />
       </div>
       <textarea v-model="note" rows="2" maxlength="360" placeholder="Контекст, если он важен. Без обязательного анализа." />
-      <button class="primary-button" type="button" :disabled="!title.trim() || saving" @click="saveEvent">{{ editingId === null ? 'Добавить в архив' : 'Сохранить событие' }}</button>
+      <button class="primary-button" type="button" :disabled="!title.trim() || saving" @click="saveEvent">{{ editingId === null ? 'Добавить событие' : 'Сохранить событие' }}</button>
       <button v-if="editingId !== null" class="secondary-button composer-cancel" type="button" @click="resetForm">Отменить редактирование</button>
     </article>
 
@@ -101,6 +101,6 @@ function eventMeta(value: LifeEventRecord['type']) {
         </div>
       </article>
     </div>
-    <div v-else class="empty-state"><span>◆</span><h3>Архив пока пуст</h3><p>Здесь будут решения, изменения и события, которые помогают видеть длинную траекторию.</p></div>
+    <div v-else class="empty-state"><span>◆</span><h3>Событий пока нет</h3><p>Здесь будут решения, изменения и обстоятельства, которые помогают объяснять длинную динамику.</p></div>
   </section>
 </template>

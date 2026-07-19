@@ -64,10 +64,10 @@ const saveButtonText = computed(() => {
 const saveButtonDisabled = computed(() => hasSavedEntry.value && !isDirty.value && !saved.value);
 const reviewReminders = computed(() => [
   isWeekReviewWindow.value && currentWeekSummary.value.ordinaryCoveredEntriesCount >= 4 && currentWeekSummary.value.ordinaryCoreEntriesCount >= 2 && !store.reviewByWeek(startOfWeek(todayKey()))
-    ? { id: 'week', title: 'Неделя готова к разбору', text: `${currentWeekSummary.value.ordinaryCoveredEntriesCount} содержательных дней уже достаточно для короткого обзора.`, to: '/week', label: 'Открыть неделю' }
+    ? { id: 'week', title: 'Неделя готова к разбору', text: `${currentWeekSummary.value.ordinaryCoveredEntriesCount} заполненных дней уже достаточно для короткого обзора.`, to: '/week', label: 'Открыть неделю' }
     : null,
   isMonthReviewWindow.value && currentMonthSummary.value.ordinaryCoveredEntriesCount >= 12 && currentMonthSummary.value.ordinaryCoreEntriesCount >= 6 && !store.reviewByMonth(startOfMonth(todayKey()))
-    ? { id: 'month', title: 'Месяц готов к разбору', text: `${currentMonthSummary.value.ordinaryCoveredEntriesCount} содержательных дней дают материал для месячного обзора.`, to: '/month', label: 'Открыть месяц' }
+    ? { id: 'month', title: 'Месяц готов к разбору', text: `${currentMonthSummary.value.ordinaryCoveredEntriesCount} заполненных дней дают материал для месячного обзора.`, to: '/month', label: 'Открыть месяц' }
     : null,
 ].filter((item): item is { id: string; title: string; text: string; to: string; label: string } => item !== null));
 const yesterday = computed(() => addDays(todayKey(), -1));
@@ -170,7 +170,7 @@ function setLifeAreas(value: string | string[] | null) {
     <section v-if="isToday && currentWeekSummary.coveredEntriesCount" class="today-pulse" aria-label="Пульс недели">
       <div>
         <span class="eyebrow">Пульс недели</span>
-        <p>{{ currentWeekSummary.coveredEntriesCount }} содержательных {{ currentWeekSummary.coveredEntriesCount === 1 ? 'день' : 'дней' }} · сон {{ formatMinutes(currentWeekSummary.averageSleep === null ? null : Math.round(currentWeekSummary.averageSleep)) }} · {{ currentWeekSummary.externalSteps }} дн. с внешним карьерным контактом</p>
+        <p>{{ currentWeekSummary.coveredEntriesCount }} {{ currentWeekSummary.coveredEntriesCount === 1 ? 'заполненный день' : 'заполненных дней' }} · сон {{ formatMinutes(currentWeekSummary.averageSleep === null ? null : Math.round(currentWeekSummary.averageSleep)) }} · {{ currentWeekSummary.externalSteps }} дн. с откликом, встречей или ответом</p>
       </div>
       <p v-if="currentWeekObservation">{{ currentWeekObservation.text }}</p>
     </section>
@@ -256,7 +256,7 @@ function setLifeAreas(value: string | string[] | null) {
       <article class="form-card">
         <div class="form-card__heading">
           <span class="section-icon section-icon--blue">↗</span>
-          <div><h2>Карьера</h2><p>Самый заметный контакт с карьерой за день.</p></div>
+          <div><h2>Карьера</h2><p>Что реально было по работе: подготовка, проект, отклик, разговор или итог.</p></div>
         </div>
         <ChipGroup v-model="form.careerStates as CareerState[]" :options="careerItems" multiple />
       </article>
@@ -264,16 +264,16 @@ function setLifeAreas(value: string | string[] | null) {
       <article class="form-card form-card--direction">
         <div class="form-card__heading">
           <span class="section-icon section-icon--blue">⌁</span>
-          <div><h2>Направление действия</h2><p>{{ form.focusTitle || store.settings.activeFocusTitle ? `Фокус: ${form.focusTitle || store.settings.activeFocusTitle}` : 'Проверка: день двигал цель наружу или оставался подготовкой.' }}</p></div>
+          <div><h2>Куда ушёл день</h2><p>{{ form.focusTitle || store.settings.activeFocusTitle ? `Фокус: ${form.focusTitle || store.settings.activeFocusTitle}` : 'Отметь, был ли реальный шаг к цели или день остался подготовкой.' }}</p></div>
         </div>
-        <p v-if="form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion" class="form-context">Внешний шаг: {{ form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion }}</p>
+        <p v-if="form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion" class="form-context">Реальный шаг: {{ form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion }}</p>
         <ChipGroup v-model="form.actionDirection as ActionDirectionId | null" :options="actionDirectionOptions" allow-clear />
         <textarea
           v-if="form.actionDirection"
           v-model="form.actionNote"
           rows="2"
           maxlength="180"
-          placeholder="Например: написал человеку, изучал тему, поддерживал режим, день ушёл в новости"
+          placeholder="Например: отправил отклик, написал человеку, изучал тему, поддерживал режим, день ушёл в новости"
         ></textarea>
       </article>
 
@@ -342,7 +342,7 @@ function setLifeAreas(value: string | string[] | null) {
       <article class="form-card">
         <div class="form-card__heading">
           <span class="section-icon">·</span>
-          <div><h2>Наблюдение дня</h2><p>Событие, изменение или контекст, который стоит запомнить.</p></div>
+          <div><h2>Факт дня</h2><p>Один заметный факт, который поможет потом понять этот день.</p></div>
         </div>
         <textarea v-model="form.importantFact" rows="2" maxlength="240" placeholder="Например: разговор заметно изменил настроение на весь день"></textarea>
       </article>

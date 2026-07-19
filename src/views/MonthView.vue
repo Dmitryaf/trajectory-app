@@ -211,7 +211,7 @@ function downloadJson() {
 
 <template>
   <section class="page">
-    <div class="page-heading"><div><span class="eyebrow">Месячная сводка</span><h1>Месяц</h1><p>Результаты, состояние и контекст месяца без общей оценки.</p></div></div>
+    <div class="page-heading"><div><span class="eyebrow">Месячная сводка</span><h1>Месяц</h1><p>Итоги, состояние и контекст месяца без общей оценки.</p></div></div>
     <PeriodNavigator
       :title="formatDate(start, { month: 'long', year: 'numeric' })"
       :subtitle="start === startOfMonth(todayKey()) ? 'Текущий месяц' : ''"
@@ -219,12 +219,12 @@ function downloadJson() {
     />
 
     <div class="metrics-grid">
-      <MetricCard label="Содержательных дней" :value="summary.coveredEntriesCount" :hint="`${summary.ordinaryCoreEntriesCount} с основными данными`" accent="#5865db" />
+      <MetricCard label="Заполненных дней" :value="summary.coveredEntriesCount" :hint="`${summary.ordinaryCoreEntriesCount} с основными полями`" accent="#5865db" />
       <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="`${summary.sleepSamples} дн. без особых`" accent="#7367f0" />
-      <MetricCard label="Карьерный контакт" :value="summary.externalSteps" hint="дней с внешней отметкой" accent="#4188e8" />
-      <MetricCard label="Направление" :value="`${summary.externalActionDays}/${summary.preparationDays}`" :hint="`наружу / подготовка · ${summary.actionDirectionSamples} дн.`" accent="#5264d8" />
+      <MetricCard label="Карьера" :value="summary.externalSteps" hint="дней с откликом, разговором или итогом" accent="#4188e8" />
+      <MetricCard label="Реальные шаги" :value="`${summary.externalActionDays}/${summary.preparationDays}`" :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`" accent="#5264d8" />
       <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="summary.averageWeightKg === null ? `${summary.nutritionSamples} дн. с отметкой` : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг · ${summary.weightSamples} изм.`" accent="#d39b2f" />
-      <MetricCard label="Особых дней" :value="summary.specialDays" :hint="`${results.length} результатов`" accent="#eb7458" />
+      <MetricCard label="Особых дней" :value="summary.specialDays" :hint="`${results.length} итогов`" accent="#eb7458" />
     </div>
 
     <article class="dashboard-card">
@@ -257,7 +257,7 @@ function downloadJson() {
         <span><i class="legend-dot legend-dot--energy-low"></i>низкая энергия</span>
         <span><i class="legend-dot legend-dot--energy-high"></i>высокая энергия</span>
         <span><i class="legend-dot legend-dot--career"></i>карьера</span>
-        <span><i class="legend-dot legend-dot--direction"></i>внешний шаг</span>
+        <span><i class="legend-dot legend-dot--direction"></i>реальный шаг</span>
         <span><i class="legend-dot legend-dot--drift"></i>в сторону</span>
         <span><i class="legend-dot legend-dot--movement"></i>движение</span>
         <span><i class="legend-dot legend-dot--nutrition"></i>питание поддержало</span>
@@ -271,8 +271,8 @@ function downloadJson() {
       <label class="field-label">Главный повторяющийся паттерн</label><textarea v-model="review.mainPattern" rows="2" placeholder="Что устойчиво повторялось в данных и контексте"></textarea>
       <label class="field-label">Что поддерживало?</label><textarea v-model="review.support" rows="2" placeholder="Условия, решения или люди, которые помогали"></textarea>
       <label class="field-label">Что мешало сильнее всего?</label><textarea v-model="review.obstacle" rows="2" placeholder="Один главный повторяющийся фактор"></textarea>
-      <label class="field-label">Что изменило курс?</label><textarea v-model="review.courseChange" rows="2" placeholder="Событие, решение или результат, после которого траектория изменилась"></textarea>
-      <label class="field-label">Фокус следующего месяца</label><textarea v-model="review.nextFocus" rows="2" placeholder="Одно направление и наблюдаемый результат"></textarea>
+      <label class="field-label">Что изменило месяц?</label><textarea v-model="review.courseChange" rows="2" placeholder="Событие, решение или итог, после которого данные стали выглядеть иначе"></textarea>
+      <label class="field-label">Фокус следующего месяца</label><textarea v-model="review.nextFocus" rows="2" placeholder="Одна цель и понятный признак, что ты сдвинулся"></textarea>
       <label class="field-label">План если-то</label><textarea v-model="review.ifThenPlan" rows="2" placeholder="Если появится конкретный фактор, то я сделаю конкретное действие"></textarea>
       <button class="primary-button" type="button" @click="saveReview">Сохранить итог месяца</button>
     </article>
@@ -345,14 +345,14 @@ function downloadJson() {
       </article>
 
       <article class="dashboard-card">
-        <div class="section-heading"><div><span class="eyebrow">Завершённые вещи</span><h2>Результаты месяца</h2></div><span class="count-badge">{{ results.length }}</span></div>
+      <div class="section-heading"><div><span class="eyebrow">Завершённые факты</span><h2>Итоги месяца</h2></div><span class="count-badge">{{ results.length }}</span></div>
         <ul v-if="results.length" class="compact-results"><li v-for="result in results" :key="result.id"><span>✓</span><div>{{ result.title }}<small>{{ formatDate(result.date, { day: 'numeric', month: 'short' }) }}</small></div></li></ul>
-        <div v-else class="empty-state empty-state--compact"><p>Пока нет зафиксированных результатов.</p></div>
+        <div v-else class="empty-state empty-state--compact"><p>Пока нет зафиксированных итогов.</p></div>
       </article>
     </div>
 
     <article v-if="actionNotes.length" class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Проверка направления</span><h2>Контакт с реальностью</h2></div><span class="count-badge">{{ actionNotes.length }}</span></div>
+      <div class="section-heading"><div><span class="eyebrow">Движение к цели</span><h2>Реальные шаги и подготовка</h2></div><span class="count-badge">{{ actionNotes.length }}</span></div>
       <div class="note-list note-list--columns">
         <article v-for="entry in actionNotes" :key="entry.date" class="note-item">
           <time>{{ formatDate(entry.date, { day: 'numeric', month: 'short' }) }}</time>
@@ -362,7 +362,7 @@ function downloadJson() {
     </article>
 
     <article v-if="lifeEvents.length" class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Длинная дуга</span><h2>События из архива</h2></div><span class="count-badge">{{ lifeEvents.length }}</span></div>
+      <div class="section-heading"><div><span class="eyebrow">Важный контекст</span><h2>События месяца</h2></div><span class="count-badge">{{ lifeEvents.length }}</span></div>
       <div class="note-list note-list--columns">
         <article v-for="event in lifeEvents" :key="event.id" class="note-item">
           <time>{{ formatDate(event.date, { day: 'numeric', month: 'short' }) }}</time>

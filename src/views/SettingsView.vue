@@ -169,7 +169,7 @@ async function importData(event: Event) {
 }
 
 async function clearAll() {
-  if (!window.confirm('Удалить все записи, результаты и обзоры? Перед этим лучше скачать резервную копию.')) return;
+  if (!window.confirm('Удалить все записи, итоги и обзоры? Перед этим лучше скачать резервную копию.')) return;
   if (!window.confirm('Это действие нельзя отменить. Точно удалить все данные?')) return;
   await store.clearAll({ syncCloud: Boolean(cloudSession.value) });
   Object.assign(settings, plainCopy(store.settings));
@@ -179,10 +179,10 @@ async function clearAll() {
 
 <template>
   <section class="page">
-    <div class="page-heading"><div><span class="eyebrow">Настройка трекера</span><h1>Настройки</h1><p>Активные области, карьерные пункты, один эксперимент и резервная копия.</p></div></div>
+    <div class="page-heading"><div><span class="eyebrow">Настройка трекера</span><h1>Настройки</h1><p>Здесь задаются личные области, рабочий фокус, питание, эксперимент и копии данных.</p></div></div>
 
     <article class="settings-card">
-      <div class="form-card__heading"><span class="section-icon section-icon--amber">✦</span><div><h2>Области жизни</h2><p>Выбранные области появятся в ежедневной записи и обзорах.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--amber">✦</span><div><h2>Области жизни</h2><p>То, что важно замечать в обычные дни: семья, отдых, чтение или свои пункты.</p></div></div>
       <ChipGroup v-model="settings.activeLifeAreas as LifeAreaId[]" :options="allLifeAreaOptions" multiple />
       <div class="custom-options">
         <label class="field-label" for="new-life-area">Своя область</label>
@@ -201,11 +201,11 @@ async function clearAll() {
     </article>
 
     <article class="settings-card">
-      <div class="form-card__heading"><span class="section-icon section-icon--blue">↗</span><div><h2>Карьера</h2><p>Добавь пункт, который важно видеть в ежедневной записи: например «Отклики».</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--blue">↗</span><div><h2>Карьера</h2><p>Задай текущую рабочую цель и что считать реальным шагом к ней.</p></div></div>
       <div class="settings-field-stack">
-        <label class="field-label" for="active-focus">Текущий фокус</label>
+        <label class="field-label" for="active-focus">Текущая рабочая цель</label>
         <input id="active-focus" v-model="settings.activeFocusTitle" type="text" maxlength="100" placeholder="Например: найти работу frontend-разработчиком" />
-        <label class="field-label" for="external-evidence">Что считается контактом с реальностью</label>
+        <label class="field-label" for="external-evidence">Что считать реальным шагом</label>
         <textarea id="external-evidence" v-model="settings.externalEvidenceCriterion" rows="2" maxlength="220" placeholder="Например: отклик, сообщение человеку, собеседование или публикация проекта"></textarea>
       </div>
       <div class="option-preview">
@@ -219,10 +219,10 @@ async function clearAll() {
           <input id="new-career-option" v-model="newCareerLabel" type="text" maxlength="32" placeholder="Отклики" @keyup.enter="addCareerOption" />
           <button class="secondary-button" type="button" :disabled="!newCareerLabel.trim()" @click="addCareerOption">Добавить</button>
         </div>
-        <label class="toggle-row toggle-row--compact"><span><strong>Считать внешним шагом</strong><small>Подходит для откликов, сообщений рекрутерам и собеседований.</small></span><input v-model="newCareerCountsAsExternal" type="checkbox" /></label>
+        <label class="toggle-row toggle-row--compact"><span><strong>Считать реальным шагом</strong><small>Подходит для откликов, сообщений рекрутерам, публикаций и собеседований.</small></span><input v-model="newCareerCountsAsExternal" type="checkbox" /></label>
         <div v-if="settings.customCareerOptions.length" class="custom-list">
           <div v-for="option in settings.customCareerOptions" :key="option.id" class="custom-list__item">
-            <span><i>{{ option.icon }}</i>{{ option.label }}<small v-if="option.countsAsExternal">внешний шаг</small></span>
+            <span><i>{{ option.icon }}</i>{{ option.label }}<small v-if="option.countsAsExternal">реальный шаг</small></span>
             <button class="ghost-button ghost-button--danger" type="button" :aria-label="`Удалить ${option.label}`" @click="removeCareerOption(option.id)">×</button>
           </div>
         </div>
@@ -262,7 +262,7 @@ async function clearAll() {
         <button class="secondary-button" type="button" @click="importInput?.click()">Восстановить из копии</button>
         <input ref="importInput" class="visually-hidden" type="file" accept="application/json" @change="importData" />
       </div>
-      <div class="danger-zone"><div><strong>Удалить все данные</strong><p>Записи, результаты, обзоры и настройки будут очищены.</p></div><button class="danger-button" type="button" @click="clearAll">Удалить</button></div>
+      <div class="danger-zone"><div><strong>Удалить все данные</strong><p>Записи, итоги, обзоры и настройки будут очищены.</p></div><button class="danger-button" type="button" @click="clearAll">Удалить</button></div>
     </article>
 
     <article class="settings-card">

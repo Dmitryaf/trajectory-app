@@ -135,9 +135,9 @@ export type Option<T extends string = string> = {
 export const careerOptions: Option<BaseCareerState>[] = [
   { id: "preparation", label: "Подготовка", icon: "◫" },
   { id: "project", label: "Проект", icon: "◇" },
-  { id: "external", label: "Внешний шаг", icon: "↗" },
+  { id: "external", label: "Отклик/контакт", icon: "↗" },
   { id: "interview", label: "Собеседование", icon: "◉" },
-  { id: "result", label: "Результат", icon: "✓" },
+  { id: "result", label: "Итог", icon: "✓" },
 ];
 
 export const activityOptions: Option<ActivityId>[] = [
@@ -155,7 +155,7 @@ export const nutritionOptions: Option<NutritionState>[] = [
 ];
 
 export const actionDirectionOptions: Option<ActionDirectionId>[] = [
-  { id: "external", label: "Внешний шаг", icon: "↗" },
+  { id: "external", label: "Реальный шаг", icon: "↗" },
   { id: "preparation", label: "Подготовка", icon: "◫" },
   { id: "maintenance", label: "Поддержание", icon: "○" },
   { id: "recovery", label: "Восстановление", icon: "◌" },

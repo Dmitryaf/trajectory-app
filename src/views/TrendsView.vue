@@ -100,7 +100,7 @@ const trendOverviewOption = computed<EChartsCoreOption>(() => ({
         symbol: ['none', 'none'],
         lineStyle: { color: '#eb7458', type: 'dashed', width: 1.5 },
         label: { color: '#a94f3e', fontWeight: 750, formatter: (params: { value?: number }) => String(params.value ?? '') },
-        tooltip: { formatter: (params: { data?: { name?: string } }) => params.data?.name ?? 'Событие архива' },
+        tooltip: { formatter: (params: { data?: { name?: string } }) => params.data?.name ?? 'Важное событие' },
         data: eventLines.value,
       },
     },
@@ -121,7 +121,7 @@ const coverageOption = computed<EChartsCoreOption>(() => ({
     formatter: (params: { value?: [string, number] }) => {
       const date = params.value?.[0];
       const level = params.value?.[1] ?? 0;
-      const label = level === 2 ? 'основные данные есть' : level === 1 ? 'заполнено частично' : 'записи нет';
+      const label = level === 2 ? 'основные поля заполнены' : level === 1 ? 'заполнено частично' : 'записи нет';
       return date ? `${formatDate(date, { day: 'numeric', month: 'long', year: 'numeric' })}<br>${label}` : label;
     },
   },
@@ -136,7 +136,7 @@ const coverageOption = computed<EChartsCoreOption>(() => ({
     pieces: [
       { value: 0, label: 'нет записи', color: '#edf0f5' },
       { value: 1, label: 'частично', color: '#b8c1d8' },
-      { value: 2, label: 'основные данные', color: '#4bcda0' },
+      { value: 2, label: 'основные поля', color: '#4bcda0' },
     ],
   },
   calendar: {
@@ -163,7 +163,7 @@ function savedDate(updatedAt: string, fallback: string): string {
 
 const decisionTimeline = computed(() => [
   ...lifeEvents.value.map((event) => ({ date: event.date, type: 'Событие', tone: 'event', title: event.title, detail: event.note })),
-  ...results.value.map((result) => ({ date: result.date, type: 'Результат', tone: 'result', title: result.title, detail: '' })),
+  ...results.value.map((result) => ({ date: result.date, type: 'Итог', tone: 'result', title: result.title, detail: '' })),
   ...store.weeklyReviews.flatMap((review) => {
     const date = savedDate(review.updatedAt, endOfWeek(review.weekStart));
     const items = [];
@@ -204,12 +204,12 @@ const progressOption = computed<EChartsCoreOption>(() => ({
     { type: 'value', minInterval: 1, axisLabel: { color: '#7d8798' }, splitLine: { show: false } }
   ],
   series: [
-    { name: 'наружу', type: 'bar', stack: 'direction', data: monthRows.value.map((row) => ratioPercent(row.summary.externalActionDays, row.summary.actionDirectionSamples)), itemStyle: { borderRadius: [5, 5, 0, 0] } },
+    { name: 'реальные шаги', type: 'bar', stack: 'direction', data: monthRows.value.map((row) => ratioPercent(row.summary.externalActionDays, row.summary.actionDirectionSamples)), itemStyle: { borderRadius: [5, 5, 0, 0] } },
     { name: 'подготовка', type: 'bar', stack: 'direction', data: monthRows.value.map((row) => ratioPercent(row.summary.preparationDays, row.summary.actionDirectionSamples)) },
     { name: 'поддержание', type: 'bar', stack: 'direction', data: monthRows.value.map((row) => ratioPercent(row.summary.actionDirectionCounts.maintenance, row.summary.actionDirectionSamples)) },
     { name: 'восстановление', type: 'bar', stack: 'direction', data: monthRows.value.map((row) => ratioPercent(row.summary.actionDirectionCounts.recovery, row.summary.actionDirectionSamples)) },
     { name: 'в сторону', type: 'bar', stack: 'direction', data: monthRows.value.map((row) => ratioPercent(row.summary.driftDays, row.summary.actionDirectionSamples)) },
-    { name: 'результаты', type: 'line', yAxisIndex: 1, data: monthRows.value.map((row) => row.resultsCount), symbolSize: 8, lineStyle: { width: 3 } }
+    { name: 'итоги', type: 'line', yAxisIndex: 1, data: monthRows.value.map((row) => row.resultsCount), symbolSize: 8, lineStyle: { width: 3 } }
   ]
 }));
 
@@ -299,7 +299,7 @@ function downloadJson() {
 <template>
   <section class="page">
     <div class="page-heading">
-      <div><span class="eyebrow">Длинная динамика</span><h1>Тренды</h1><p>Календарные 3, 6 и 12 месяцев: не для самооценки, а чтобы увидеть устойчивые контуры.</p></div>
+      <div><span class="eyebrow">3–12 месяцев</span><h1>Тренды</h1><p>Долгий обзор без общего балла: сон, энергия, вес, питание, реальные шаги и важные события.</p></div>
     </div>
 
     <div class="range-tabs" aria-label="Период динамики">
@@ -307,24 +307,24 @@ function downloadJson() {
     </div>
 
     <div class="metrics-grid">
-      <MetricCard label="Содержательных дней" :value="summary.coveredEntriesCount" :hint="`${summary.ordinaryCoreEntriesCount} с основными данными`" accent="#5865db" />
+      <MetricCard label="Заполненных дней" :value="summary.coveredEntriesCount" :hint="`${summary.ordinaryCoreEntriesCount} с основными полями`" accent="#5865db" />
       <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="`${summary.sleepSamples} дн. без особых`" accent="#7367f0" />
-      <MetricCard label="Карьерный контакт" :value="summary.externalSteps" hint="дней с внешней отметкой" accent="#4188e8" />
-      <MetricCard label="Направление" :value="`${summary.externalActionDays}/${summary.preparationDays}`" :hint="`наружу / подготовка · ${summary.actionDirectionSamples} дн.`" accent="#5264d8" />
+      <MetricCard label="Карьера" :value="summary.externalSteps" hint="дней с откликом, разговором или итогом" accent="#4188e8" />
+      <MetricCard label="Реальные шаги" :value="`${summary.externalActionDays}/${summary.preparationDays}`" :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`" accent="#5264d8" />
       <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="summary.averageWeightKg === null ? `${summary.nutritionSamples} дн. с отметкой` : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг · ${summary.weightSamples} изм.`" accent="#d39b2f" />
-      <MetricCard label="Результатов" :value="results.length" :hint="`${lifeEvents.length} событий архива`" accent="#f0ad42" />
+      <MetricCard label="Итогов" :value="results.length" :hint="`${lifeEvents.length} важных событий`" accent="#f0ad42" />
     </div>
 
     <article class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Качество наблюдений</span><h2>Карта заполнения</h2></div><small>без серий и оценок</small></div>
       <EChartPanel :option="coverageOption" :height="230" aria-label="Календарная карта полноты дневных записей" />
-      <p class="data-note">«Основные данные» означают, что заполнены хотя бы два слоя: состояние, действия или питание. Карта нужна только для оценки надёжности выводов.</p>
+      <p class="data-note">«Основные поля» означают, что заполнены хотя бы два блока: состояние, действия или питание. Карта нужна только для оценки надёжности выводов.</p>
     </article>
 
     <article class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Динамика периода</span><h2>Сон и энергия</h2></div><small>* неполный текущий месяц</small></div>
       <EChartPanel :option="trendOverviewOption" :height="320" aria-label="Динамика сна и энергии по месяцам" />
-      <p v-if="lifeEvents.length" class="data-note">Оранжевые пунктирные линии показывают месяцы с событиями из Архива. Число у линии — количество событий; наведи на неё, чтобы увидеть список.</p>
+      <p v-if="lifeEvents.length" class="data-note">Оранжевые пунктирные линии показывают месяцы с важными событиями. Число у линии — количество событий; наведи на неё, чтобы увидеть список.</p>
     </article>
 
     <article v-if="lifeEvents.length" class="dashboard-card">
@@ -339,7 +339,7 @@ function downloadJson() {
             </span>
             <span class="event-picker__chevron">⌄</span>
           </summary>
-          <div class="event-picker__menu" role="listbox" aria-label="События Архива">
+          <div class="event-picker__menu" role="listbox" aria-label="Важные события">
             <button
               v-for="event in lifeEvents"
               :key="eventKey(event)"
@@ -382,7 +382,7 @@ function downloadJson() {
 
     <article class="dashboard-card">
       <div class="section-heading">
-        <div><span class="eyebrow">Опорные выводы</span><h2>Что видно на длинном периоде</h2></div>
+        <div><span class="eyebrow">Опорные выводы</span><h2>Что видно за выбранные месяцы</h2></div>
         <div class="period-actions">
           <button class="secondary-button" type="button" @click="copyPrompt">Скопировать промпт</button>
           <button class="secondary-button" type="button" @click="downloadJson">Скачать пакет</button>
@@ -397,14 +397,14 @@ function downloadJson() {
     </article>
 
     <article class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Контакт с реальностью</span><h2>Доля направлений и результаты</h2></div><small>столбцы: % отмеченных дней</small></div>
-      <EChartPanel :option="progressOption" :height="320" aria-label="Динамика внешних действий, подготовки, ухода в сторону и результатов" />
+      <div class="section-heading"><div><span class="eyebrow">Движение к цели</span><h2>Реальные шаги, подготовка и итоги</h2></div><small>столбцы: % отмеченных дней</small></div>
+      <EChartPanel :option="progressOption" :height="320" aria-label="Динамика реальных шагов, подготовки, ухода в сторону и итогов" />
     </article>
 
     <article class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Состояние</span><h2>Сон и энергия по месяцам</h2></div></div>
       <div class="trend-table">
-        <div class="trend-table__head"><span>месяц</span><span>заполнено</span><span>сон (дни)</span><span>вес (изм.)</span><span>энергия (дни)</span><span>наружу / подг.</span><span>питание + / −</span><span>особые</span></div>
+        <div class="trend-table__head"><span>месяц</span><span>заполнено</span><span>сон (дни)</span><span>вес (изм.)</span><span>энергия (дни)</span><span>шаги / подг.</span><span>питание + / −</span><span>особые</span></div>
         <div v-for="row in monthRows" :key="`${row.monthStart}-state`" class="trend-table__row">
           <strong>{{ row.label }}</strong>
           <span>{{ coverageText(row) }}</span>
@@ -432,7 +432,7 @@ function downloadJson() {
     </article>
 
     <article v-if="decisionTimeline.length" class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">История изменений</span><h2>События, решения и результаты</h2></div><span class="count-badge">{{ decisionTimeline.length }}</span></div>
+      <div class="section-heading"><div><span class="eyebrow">История изменений</span><h2>События, решения и итоги</h2></div><span class="count-badge">{{ decisionTimeline.length }}</span></div>
       <div class="decision-timeline">
         <article v-for="(item, index) in decisionTimeline" :key="`${item.date}-${item.type}-${index}`" class="decision-timeline__item" :class="`decision-timeline__item--${item.tone}`">
           <time>{{ formatDate(item.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</time>

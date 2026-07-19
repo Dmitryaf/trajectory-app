@@ -11,8 +11,8 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', component: () => import('./views/TodayView.vue'), meta: { title: 'Сегодня' } },
-    { path: '/results', component: () => import('./views/ResultsView.vue'), meta: { title: 'Результаты' } },
-    { path: '/events', component: () => import('./views/EventsView.vue'), meta: { title: 'Архив' } },
+    { path: '/results', component: () => import('./views/ResultsView.vue'), meta: { title: 'Итоги' } },
+    { path: '/events', component: () => import('./views/EventsView.vue'), meta: { title: 'События' } },
     { path: '/week', component: () => import('./views/WeekView.vue'), meta: { title: 'Неделя' } },
     { path: '/month', component: () => import('./views/MonthView.vue'), meta: { title: 'Месяц' } },
     { path: '/trends', component: () => import('./views/TrendsView.vue'), meta: { title: 'Тренды' } },
