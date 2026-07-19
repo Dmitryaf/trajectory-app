@@ -412,7 +412,7 @@ textarea { resize: vertical; min-height: 64px; }
 .visually-hidden { position: absolute !important; width: 1px !important; height: 1px !important; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .loading-card { padding: 40px; text-align: center; color: var(--muted); }
 .auth-shell { display: grid; min-height: calc(100vh - 210px); place-items: center; padding: 22px 0 48px; }
-.auth-card { width: min(560px, 100%); max-width: 100%; min-width: 0; overflow: hidden; padding: 28px; border: 1px solid rgba(222, 227, 238, .95); border-radius: 24px; background: rgba(255,255,255,.95); box-shadow: var(--shadow); }
+.auth-card { width: min(560px, calc(100vw - 28px)); max-width: 100%; min-width: 0; overflow: hidden; padding: 28px; border: 1px solid rgba(222, 227, 238, .95); border-radius: 24px; background: rgba(255,255,255,.95); box-shadow: var(--shadow); }
 .auth-card__brand { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 22px; }
 .auth-card__brand > div { min-width: 0; }
 .auth-card__brand h1 { margin-bottom: 8px; font-size: 38px; }
