@@ -412,15 +412,17 @@ textarea { resize: vertical; min-height: 64px; }
 .visually-hidden { position: absolute !important; width: 1px !important; height: 1px !important; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .loading-card { padding: 40px; text-align: center; color: var(--muted); }
 .auth-shell { display: grid; min-height: calc(100vh - 210px); place-items: center; padding: 22px 0 48px; }
-.auth-card { width: min(560px, 100%); padding: 28px; border: 1px solid rgba(222, 227, 238, .95); border-radius: 24px; background: rgba(255,255,255,.95); box-shadow: var(--shadow); }
+.auth-card { width: min(560px, 100%); max-width: 100%; min-width: 0; overflow: hidden; padding: 28px; border: 1px solid rgba(222, 227, 238, .95); border-radius: 24px; background: rgba(255,255,255,.95); box-shadow: var(--shadow); }
 .auth-card__brand { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 22px; }
+.auth-card__brand > div { min-width: 0; }
 .auth-card__brand h1 { margin-bottom: 8px; font-size: 38px; }
 .auth-card__brand p:last-child { margin-bottom: 0; }
-.auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px; padding: 5px; border: 1px solid #e5eaf2; border-radius: 15px; background: #f7f9fc; }
-.auth-tabs button { min-height: 42px; border: 0; border-radius: 11px; background: transparent; color: #667187; cursor: pointer; font-weight: 800; }
+.auth-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); min-width: 0; gap: 8px; margin-bottom: 18px; padding: 5px; border: 1px solid #e5eaf2; border-radius: 15px; background: #f7f9fc; }
+.auth-tabs button { min-width: 0; min-height: 42px; overflow: hidden; border: 0; border-radius: 11px; background: transparent; color: #667187; cursor: pointer; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .auth-tabs button.active { background: #fff; color: var(--navy); box-shadow: 0 6px 14px rgba(35, 46, 70, .08); }
-.auth-form { display: grid; gap: 12px; }
+.auth-form { display: grid; min-width: 0; gap: 12px; }
 .auth-form .primary-button { min-height: 50px; margin-top: 4px; }
+.auth-card p, .auth-footnote { overflow-wrap: anywhere; }
 .auth-footnote { margin: 14px 0 0; color: #7a8497; font-size: 12px; line-height: 1.5; }
 
 @media (min-width: 980px) {
@@ -439,6 +441,8 @@ textarea { resize: vertical; min-height: 64px; }
   .auth-card { padding: 20px; border-radius: 20px; }
   .auth-card__brand { flex-direction: column; gap: 12px; }
   .auth-card__brand h1 { font-size: 34px; }
+  .auth-tabs { gap: 5px; }
+  .auth-tabs button { padding: 0 6px; font-size: 13px; }
   .today-pulse, .recovery-nudge, .review-nudge, .entry-change-notice { flex-direction: column; align-items: stretch; padding: 15px; }
   .today-pulse > p { max-width: none; }
   .form-card, .result-composer, .dashboard-card, .review-card, .settings-card { padding: 18px; border-radius: 18px; }
