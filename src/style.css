@@ -437,8 +437,8 @@ textarea { resize: vertical; min-height: 64px; }
   .page-heading .date-input { width: 46px; min-width: 46px; color: transparent; padding: 10px; }
   .page-heading .date-input::-webkit-calendar-picker-indicator { margin: 0; opacity: 1; }
   h1 { font-size: 36px; }
-  .auth-shell { min-height: calc(100vh - 170px); padding-top: 8px; }
-  .auth-card { padding: 20px; border-radius: 20px; }
+  .auth-shell { display: block; width: 100%; min-width: 0; min-height: calc(100vh - 170px); padding-top: 8px; }
+  .auth-card { width: 100%; padding: 20px; border-radius: 20px; }
   .auth-card__brand { flex-direction: column; gap: 12px; }
   .auth-card__brand h1 { font-size: 34px; }
   .auth-tabs { gap: 5px; }
