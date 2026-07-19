@@ -5,6 +5,7 @@ import { Toaster } from 'vue-sonner';
 import 'vue-sonner/style.css';
 import AuthGate from './components/AuthGate.vue';
 import { getCloudSyncMeta, loadCloudSnapshot, markCloudSyncConflict, markCloudSyncSynced } from './services/cloudSync';
+import { notifyInfo, notifyUnknownError } from './services/notifications';
 import { useAppStore, type ExportPayload } from './stores/app';
 import { useAuthStore } from './stores/auth';
 
@@ -100,6 +101,16 @@ async function prepareLocalCacheOwner() {
   window.localStorage.setItem(localOwnerKey, userId);
 }
 
+async function signOut() {
+  try {
+    await auth.signOut();
+    store.unload();
+    notifyInfo('Выход выполнен');
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось выйти');
+  }
+}
+
 const navItems = [
   { to: '/', label: 'Сегодня', icon: '●' },
   { to: '/results', label: 'Результаты', icon: '✓' },
@@ -118,6 +129,12 @@ const navItems = [
         <span class="brand__mark"><i></i></span>
         <span><strong>Траектория</strong><small>факты, а не оценка</small></span>
       </RouterLink>
+      <div v-if="canOpenApp && store.loaded && auth.requiresAuth" class="account-strip" aria-label="Аккаунт">
+        <span class="account-strip__email" :title="auth.userEmail">{{ auth.userEmail }}</span>
+        <button class="account-strip__logout" type="button" :disabled="auth.loading" @click="signOut">
+          Выйти
+        </button>
+      </div>
     </header>
 
     <main class="app-main">

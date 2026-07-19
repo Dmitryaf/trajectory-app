@@ -40,7 +40,7 @@ input:focus, textarea:focus { border-color: #93b8ea; box-shadow: 0 0 0 4px rgba(
 textarea { resize: vertical; min-height: 64px; }
 
 .app-shell { min-height: 100vh; }
-.app-header { height: 78px; display: flex; align-items: center; max-width: 980px; margin: 0 auto; padding: 0 24px; }
+.app-header { height: 78px; display: flex; justify-content: space-between; align-items: center; gap: 14px; max-width: 980px; margin: 0 auto; padding: 0 24px; }
 .brand { display: inline-flex; align-items: center; gap: 12px; color: var(--navy); text-decoration: none; }
 .brand__mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 14px; background: var(--navy); position: relative; overflow: hidden; box-shadow: 0 8px 18px rgba(17, 24, 43, .18); }
 .brand__mark::before { content: ""; width: 25px; height: 11px; border: 3px solid var(--accent); border-top: 0; border-left-color: transparent; border-radius: 50%; transform: rotate(-15deg); }
@@ -48,6 +48,14 @@ textarea { resize: vertical; min-height: 64px; }
 .brand strong, .brand small { display: block; }
 .brand strong { font-size: 16px; letter-spacing: 0; }
 .brand small { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.account-strip { min-width: 0; display: inline-flex; align-items: center; gap: 8px; }
+.account-strip__email { max-width: 240px; overflow: hidden; color: #6a7488; font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.account-strip__logout {
+  flex: 0 0 auto; min-height: 36px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.82); padding: 8px 12px;
+  color: #4f5b70; cursor: pointer; font-size: 13px; font-weight: 800; transition: border-color .15s ease, background-color .15s ease, color .15s ease;
+}
+.account-strip__logout:hover { border-color: #cfd7e5; background: #fff; color: var(--navy); }
+.account-strip__logout:disabled { opacity: .58; cursor: not-allowed; }
 .app-main { max-width: 980px; margin: 0 auto; padding: 22px 24px 120px; }
 .page { min-width: 0; animation: page-in .25s ease-out; }
 @keyframes page-in { from { opacity: 0; transform: translateY(5px); } }
@@ -441,6 +449,8 @@ textarea { resize: vertical; min-height: 64px; }
 
 @media (max-width: 720px) {
   .app-header { height: 66px; padding: 0 16px; }
+  .account-strip__email { display: none; }
+  .account-strip__logout { min-height: 34px; padding: 7px 10px; font-size: 12px; }
   .app-main { padding: 10px 14px 105px; }
   .page-heading { align-items: flex-start; margin: 10px 2px 22px; }
   .page-heading .date-input { width: 46px; min-width: 46px; color: transparent; padding: 10px; }
