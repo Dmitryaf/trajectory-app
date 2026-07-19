@@ -185,7 +185,6 @@ export const eveningFactorOptions: Option<EveningFactorId>[] = [
   { id: "screen", label: "Экран перед сном", icon: "▣" },
   { id: "news", label: "Новости", icon: "!" },
   { id: "series_video", label: "Сериалы/видео", icon: "▶" },
-  { id: "porn", label: "Порно", icon: "·" },
   { id: "work_code", label: "Работа/код", icon: "◇" },
   { id: "late_food", label: "Поздняя еда", icon: "+" },
   { id: "caffeine_alcohol", label: "Кофеин/алкоголь", icon: "◌" },
