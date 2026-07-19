@@ -664,7 +664,7 @@ export function specialDayLabel(value: string | null): string {
 }
 
 export function eveningFactorLabel(value: string): string {
-  if (value === 'porn') return '18+ контент';
+  if (value === 'porn') return 'Другое';
   return eveningFactorOptions.find((option) => option.id === value)?.label ?? value;
 }
 
