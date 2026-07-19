@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue';
 import { RouterLink, RouterView } from 'vue-router';
+import { Toaster } from 'vue-sonner';
+import 'vue-sonner/style.css';
 import AuthGate from './components/AuthGate.vue';
 import { useAppStore } from './stores/app';
 import { useAuthStore } from './stores/auth';
@@ -51,7 +53,7 @@ const navItems = [
   { to: '/week', label: 'Неделя', icon: '▦' },
   { to: '/month', label: 'Месяц', icon: '▥' },
   { to: '/trends', label: 'Тренды', icon: '≋' },
-  { to: '/settings', label: 'Ещё', icon: '•••' }
+  { to: '/settings', label: 'Настройки', icon: '⚙' }
 ];
 </script>
 
@@ -83,5 +85,7 @@ const navItems = [
         <small>{{ item.label }}</small>
       </RouterLink>
     </nav>
+
+    <Toaster position="top-right" rich-colors close-button />
   </div>
 </template>

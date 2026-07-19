@@ -6,13 +6,13 @@ import MetricCard from '../components/MetricCard.vue';
 import { buildCoverageSeries, buildEventComparison, buildRangeReviewCues, entriesForPeriod, factorSummaries, ratioPercent, resultsForPeriod, summarize, type EventComparisonMetric } from '../services/analytics';
 import { addMonths, dateRange, endOfMonth, endOfWeek, formatDate, formatMinutes, monthsBetween, startOfMonth, toDateKey, todayKey } from '../services/dates';
 import { buildRangePackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../services/exportPackage';
+import { notifyInfo, notifySaved } from '../services/notifications';
 import { useAppStore } from '../stores/app';
 
 type RangeMonths = 3 | 6 | 12;
 
 const store = useAppStore();
 const range = ref<RangeMonths>(3);
-const exportStatus = ref('');
 const selectedEventKey = ref('');
 const eventPicker = ref<HTMLDetailsElement>();
 const rangeOptions: Array<{ value: RangeMonths; label: string }> = [
@@ -287,17 +287,12 @@ function createPackage() {
 
 async function copyPrompt() {
   await copyPackagePrompt(createPackage(), store.settings);
-  showExportStatus(`Промпт за ${range.value} мес. скопирован`);
+  notifySaved(`Промпт за ${range.value} мес. скопирован`);
 }
 
 function downloadJson() {
   downloadAiPackage(createPackage());
-  showExportStatus(`Пакет за ${range.value} мес. скачан`);
-}
-
-function showExportStatus(message: string) {
-  exportStatus.value = message;
-  window.setTimeout(() => (exportStatus.value = ''), 1800);
+  notifyInfo(`Пакет за ${range.value} мес. скачан`);
 }
 </script>
 
@@ -393,7 +388,6 @@ function showExportStatus(message: string) {
           <button class="secondary-button" type="button" @click="downloadJson">Скачать пакет</button>
         </div>
       </div>
-      <p v-if="exportStatus" class="settings-status">{{ exportStatus }}</p>
       <div class="review-cue-grid">
         <article v-for="cue in cues" :key="cue.id" class="review-cue" :class="`review-cue--${cue.tone}`">
           <strong>{{ cue.title }}</strong>

@@ -100,7 +100,7 @@ export async function saveCloudSnapshot(payload: unknown): Promise<string> {
 }
 
 async function requireSession(): Promise<Session> {
-  const session = await getCloudSession();
+  const session = await getVerifiedCloudSession();
   if (!session) throw new Error('Сначала войди в облачную копию');
   return session;
 }

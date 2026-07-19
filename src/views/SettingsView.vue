@@ -6,28 +6,25 @@ import { useAuthStore } from '../stores/auth';
 import { buildAiReportPayload, buildAiReportPrompt, type AiReportPeriod } from '../services/aiReport';
 import { loadCloudSnapshot, saveCloudSnapshot } from '../services/cloudSync';
 import { todayKey } from '../services/dates';
+import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { plainCopy } from '../services/plain';
 import { careerOptions, createCustomOption, lifeAreaOptions, type AppSettings, type CareerState, type LifeAreaId } from '../types';
 
 const store = useAppStore();
 const settings = reactive<AppSettings>(plainCopy(store.settings));
-const status = ref('');
-const aiStatus = ref('');
 const importInput = ref<HTMLInputElement>();
 const newCareerLabel = ref('');
 const newCareerCountsAsExternal = ref(true);
 const newLifeAreaLabel = ref('');
 const auth = useAuthStore();
-const cloudStatus = ref('');
 const allCareerOptions = computed(() => [...careerOptions, ...settings.customCareerOptions]);
 const allLifeAreaOptions = computed(() => [...lifeAreaOptions, ...settings.customLifeAreaOptions]);
 const cloudSession = computed(() => auth.session);
 const cloudUserEmail = computed(() => auth.userEmail);
 
-async function save() {
+async function save(message = 'Настройки сохранены') {
   await store.saveSettings(plainCopy(settings));
-  status.value = 'Настройки сохранены';
-  window.setTimeout(() => (status.value = ''), 1800);
+  notifySaved(message);
 }
 
 async function addCareerOption() {
@@ -72,19 +69,20 @@ function exportData() {
   link.download = `trajectory-backup-${new Date().toISOString().slice(0, 10)}.json`;
   link.click();
   URL.revokeObjectURL(url);
+  notifyInfo('Резервная копия скачана');
 }
 
 async function signOutCloud() {
   await runCloudAction(async () => {
     await auth.signOut();
-    cloudStatus.value = 'Выход выполнен';
+    notifyInfo('Выход выполнен');
   });
 }
 
 async function saveBackupToCloud() {
   await runCloudAction(async () => {
     const updatedAt = await saveCloudSnapshot(store.exportData());
-    cloudStatus.value = `Облачная копия сохранена: ${new Date(updatedAt).toLocaleString('ru-RU')}`;
+    notifySaved(`Облачная копия сохранена: ${new Date(updatedAt).toLocaleString('ru-RU')}`);
   });
 }
 
@@ -92,7 +90,7 @@ async function restoreBackupFromCloud() {
   await runCloudAction(async () => {
     const snapshot = await loadCloudSnapshot();
     if (!snapshot) {
-      cloudStatus.value = 'В облаке пока нет копии';
+      notifyInfo('В облаке пока нет копии');
       return;
     }
 
@@ -100,24 +98,22 @@ async function restoreBackupFromCloud() {
     if (!window.confirm(`Заменить локальные данные облачной копией от ${updatedAt}? Перед этим лучше скачать локальную копию.`)) return;
     await store.importData(snapshot.payload as ExportPayload);
     Object.assign(settings, plainCopy(store.settings));
-    cloudStatus.value = `Данные восстановлены из облака: ${updatedAt}`;
+    notifySaved(`Данные восстановлены из облака: ${updatedAt}`);
   });
 }
 
 async function runCloudAction(action: () => Promise<void>) {
-  cloudStatus.value = '';
   try {
     await action();
   } catch (error) {
-    cloudStatus.value = error instanceof Error ? error.message : 'Облачное действие не выполнено';
+    notifyUnknownError(error, 'Облачное действие не выполнено');
   }
 }
 
 async function copyAiPrompt(period: Exclude<AiReportPeriod, 'range'>) {
   const payload = createAiPayload(period);
   await navigator.clipboard.writeText(buildAiReportPrompt(payload, store.settings));
-  aiStatus.value = 'Промпт для GPT скопирован';
-  window.setTimeout(() => (aiStatus.value = ''), 1800);
+  notifySaved('Промпт для GPT скопирован');
 }
 
 function downloadAiPackage(period: Exclude<AiReportPeriod, 'range'>) {
@@ -129,8 +125,7 @@ function downloadAiPackage(period: Exclude<AiReportPeriod, 'range'>) {
   link.download = `trajectory-ai-${period}-${payload.start}-${payload.end}.json`;
   link.click();
   URL.revokeObjectURL(url);
-  aiStatus.value = period === 'week' ? 'Пакет недели скачан' : 'Пакет месяца скачан';
-  window.setTimeout(() => (aiStatus.value = ''), 1800);
+  notifyInfo(period === 'week' ? 'Пакет недели скачан' : 'Пакет месяца скачан');
 }
 
 function createAiPayload(period: Exclude<AiReportPeriod, 'range'>) {
@@ -151,10 +146,11 @@ async function importData(event: Event) {
     const payload = JSON.parse(await file.text());
     await store.importData(payload);
     Object.assign(settings, plainCopy(store.settings));
-    status.value = 'Резервная копия восстановлена';
+    notifySaved('Резервная копия восстановлена');
   } catch (error) {
-    status.value = error instanceof Error ? error.message : 'Не удалось импортировать данные';
+    notifyError(error instanceof Error ? error.message : 'Не удалось импортировать данные');
   }
+  if (importInput.value) importInput.value.value = '';
 }
 
 async function clearAll() {
@@ -162,7 +158,7 @@ async function clearAll() {
   if (!window.confirm('Это действие нельзя отменить. Точно удалить все данные?')) return;
   await store.clearAll();
   Object.assign(settings, plainCopy(store.settings));
-  status.value = 'Все данные удалены';
+  notifyInfo('Все данные удалены');
 }
 </script>
 
@@ -186,7 +182,7 @@ async function clearAll() {
           </div>
         </div>
       </div>
-      <button class="primary-button" type="button" @click="save">{{ status || 'Сохранить области' }}</button>
+      <button class="primary-button" type="button" @click="save('Области сохранены')">Сохранить области</button>
     </article>
 
     <article class="settings-card">
@@ -216,14 +212,14 @@ async function clearAll() {
           </div>
         </div>
       </div>
-      <button class="primary-button" type="button" @click="save">{{ status || 'Сохранить карьерный фокус' }}</button>
+      <button class="primary-button" type="button" @click="save('Карьерный фокус сохранён')">Сохранить карьерный фокус</button>
     </article>
 
     <article class="settings-card">
       <div class="form-card__heading"><span class="section-icon section-icon--green">◐</span><div><h2>Критерий питания</h2><p>Определи наблюдаемые признаки заранее, чтобы ежедневная отметка не зависела только от настроения.</p></div></div>
       <label class="field-label" for="nutrition-criterion">Что означает «поддержало цель»</label>
       <textarea id="nutrition-criterion" v-model="settings.nutritionGoalCriterion" rows="3" maxlength="280" placeholder="Например: ел по плану, был нормальный ужин, не было незапланированных вечерних перекусов"></textarea>
-      <button class="primary-button" type="button" @click="save">{{ status || 'Сохранить настройки' }}</button>
+      <button class="primary-button" type="button" @click="save('Критерий питания сохранён')">Сохранить настройки</button>
     </article>
 
     <article class="settings-card">
@@ -241,7 +237,7 @@ async function clearAll() {
       </div>
       <label class="field-label" for="experiment-conclusion">Итог после завершения</label>
       <textarea id="experiment-conclusion" v-model="settings.experiment.conclusion" rows="2" maxlength="240" placeholder="Помогло, не помогло или данных пока недостаточно"></textarea>
-      <button class="primary-button" type="button" @click="save">{{ status || 'Сохранить настройки' }}</button>
+      <button class="primary-button" type="button" @click="save('Эксперимент сохранён')">Сохранить настройки</button>
     </article>
 
     <article class="settings-card">
@@ -274,7 +270,6 @@ async function clearAll() {
           <button class="secondary-button" type="button" :disabled="!cloudSession" @click="restoreBackupFromCloud">Загрузить из облака</button>
         </div>
       </template>
-      <p v-if="cloudStatus" class="settings-status">{{ cloudStatus }}</p>
     </article>
 
     <article class="settings-card">
@@ -285,7 +280,6 @@ async function clearAll() {
         <button class="secondary-button" type="button" @click="downloadAiPackage('week')">Скачать пакет недели</button>
         <button class="secondary-button" type="button" @click="downloadAiPackage('month')">Скачать пакет месяца</button>
       </div>
-      <p v-if="aiStatus" class="settings-status">{{ aiStatus }}</p>
     </article>
   </section>
 </template>

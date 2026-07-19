@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import ChipGroup from '../components/ChipGroup.vue';
 import { formatDate, todayKey } from '../services/dates';
+import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { useAppStore } from '../stores/app';
 import { lifeEventTypeOptions, type LifeEventRecord, type LifeEventType } from '../types';
 
@@ -20,13 +21,20 @@ async function saveEvent() {
   const cleanTitle = title.value.trim();
   if (!cleanTitle) return;
   saving.value = true;
-  if (editingId.value === null) {
-    await store.addLifeEvent({ date: date.value, type: type.value, title: cleanTitle, note: note.value.trim() });
-  } else {
-    await store.updateLifeEvent({ id: editingId.value, createdAt: editingCreatedAt.value, date: date.value, type: type.value, title: cleanTitle, note: note.value.trim() });
+  const wasEditing = editingId.value !== null;
+  try {
+    if (editingId.value === null) {
+      await store.addLifeEvent({ date: date.value, type: type.value, title: cleanTitle, note: note.value.trim() });
+    } else {
+      await store.updateLifeEvent({ id: editingId.value, createdAt: editingCreatedAt.value, date: date.value, type: type.value, title: cleanTitle, note: note.value.trim() });
+    }
+    resetForm();
+    notifySaved(wasEditing ? 'Событие обновлено' : 'Событие добавлено в архив');
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось сохранить событие');
+  } finally {
+    saving.value = false;
   }
-  resetForm();
-  saving.value = false;
 }
 
 function edit(event: LifeEventRecord) {
@@ -52,6 +60,7 @@ async function remove(id?: number) {
   if (id === undefined || !window.confirm('Удалить это событие из архива?')) return;
   await store.removeLifeEvent(id);
   if (editingId.value === id) resetForm();
+  notifyInfo('Событие удалено');
 }
 
 function eventMeta(value: LifeEventRecord['type']) {

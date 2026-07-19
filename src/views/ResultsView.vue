@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import ChipGroup from '../components/ChipGroup.vue';
 import { formatDate, todayKey } from '../services/dates';
+import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { useAppStore } from '../stores/app';
 import { resultAreaOptions, type ResultRecord } from '../types';
 
@@ -19,13 +20,20 @@ async function saveResult() {
   const clean = title.value.trim();
   if (!clean) return;
   saving.value = true;
-  if (editingId.value === null) {
-    await store.addResult({ date: date.value, area: area.value, title: clean });
-  } else {
-    await store.updateResult({ id: editingId.value, createdAt: editingCreatedAt.value, date: date.value, area: area.value, title: clean });
+  const wasEditing = editingId.value !== null;
+  try {
+    if (editingId.value === null) {
+      await store.addResult({ date: date.value, area: area.value, title: clean });
+    } else {
+      await store.updateResult({ id: editingId.value, createdAt: editingCreatedAt.value, date: date.value, area: area.value, title: clean });
+    }
+    resetForm();
+    notifySaved(wasEditing ? 'Результат обновлён' : 'Результат добавлен');
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось сохранить результат');
+  } finally {
+    saving.value = false;
   }
-  resetForm();
-  saving.value = false;
 }
 
 function edit(result: ResultRecord) {
@@ -49,6 +57,7 @@ async function remove(id?: number) {
   if (id === undefined || !window.confirm('Удалить этот результат?')) return;
   await store.removeResult(id);
   if (editingId.value === id) resetForm();
+  notifyInfo('Результат удалён');
 }
 
 function areaMeta(value: ResultRecord['area']) {

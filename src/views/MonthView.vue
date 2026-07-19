@@ -8,13 +8,12 @@ import { actionDirectionLabel, buildObservations, buildReviewCues, buildReviewQu
 import { addDays, dateRange, endOfMonth, formatDate, formatMinutes, fromDateKey, startOfMonth, todayKey, toDateKey } from '../services/dates';
 import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../services/exportPackage';
 import { useAppStore } from '../stores/app';
+import { notifyInfo, notifySaved } from '../services/notifications';
 import { plainCopy } from '../services/plain';
 import { actionDirectionOptions, emptyMonthlyReview, lifeAreaOptions, type MonthlyReview } from '../types';
 
 const store = useAppStore();
 const anchor = ref(todayKey());
-const exportStatus = ref('');
-const reviewSaved = ref(false);
 const start = computed(() => startOfMonth(anchor.value));
 const end = computed(() => endOfMonth(anchor.value));
 const entries = computed(() => entriesForMonth(store.dailyEntries, anchor.value));
@@ -162,15 +161,13 @@ const review = reactive<MonthlyReview>(emptyMonthlyReview(start.value));
 function loadReview() {
   const existing = store.reviewByMonth(start.value);
   Object.assign(review, emptyMonthlyReview(start.value), existing ? plainCopy(existing) : {});
-  reviewSaved.value = false;
 }
 
 watch(start, loadReview, { immediate: true });
 
 async function saveReview() {
   await store.saveMonthlyReview(plainCopy(review));
-  reviewSaved.value = true;
-  window.setTimeout(() => (reviewSaved.value = false), 1800);
+  notifySaved('Итог месяца сохранён');
 }
 
 function energyLevel(value: number | null): 'empty' | 'low' | 'mid' | 'high' {
@@ -269,17 +266,12 @@ function createPackage() {
 
 async function copyPrompt() {
   await copyPackagePrompt(createPackage(), store.settings);
-  showExportStatus('Промпт для GPT скопирован');
+  notifySaved('Промпт для GPT скопирован');
 }
 
 function downloadJson() {
   downloadAiPackage(createPackage());
-  showExportStatus('Пакет месяца скачан');
-}
-
-function showExportStatus(message: string) {
-  exportStatus.value = message;
-  window.setTimeout(() => (exportStatus.value = ''), 1800);
+  notifyInfo('Пакет месяца скачан');
 }
 </script>
 
@@ -348,7 +340,7 @@ function showExportStatus(message: string) {
       <label class="field-label">Что изменило курс?</label><textarea v-model="review.courseChange" rows="2" placeholder="Событие, решение или результат, после которого траектория изменилась"></textarea>
       <label class="field-label">Фокус следующего месяца</label><textarea v-model="review.nextFocus" rows="2" placeholder="Одно направление и наблюдаемый результат"></textarea>
       <label class="field-label">План если-то</label><textarea v-model="review.ifThenPlan" rows="2" placeholder="Если появится конкретный фактор, то я сделаю конкретное действие"></textarea>
-      <button class="primary-button" type="button" @click="saveReview">{{ reviewSaved ? 'Обзор сохранён' : 'Сохранить итог месяца' }}</button>
+      <button class="primary-button" type="button" @click="saveReview">Сохранить итог месяца</button>
     </article>
 
     <article class="dashboard-card">
@@ -359,7 +351,6 @@ function showExportStatus(message: string) {
           <button class="secondary-button" type="button" @click="downloadJson">Скачать пакет</button>
         </div>
       </div>
-      <p v-if="exportStatus" class="settings-status">{{ exportStatus }}</p>
       <div class="review-cue-grid">
         <article v-for="cue in reviewCues" :key="cue.id" class="review-cue" :class="`review-cue--${cue.tone}`">
           <strong>{{ cue.title }}</strong>

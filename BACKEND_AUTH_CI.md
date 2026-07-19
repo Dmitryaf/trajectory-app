@@ -20,6 +20,10 @@ The first backend layer uses Supabase:
 
 This is intentionally simpler than normalizing every entity into separate tables. It preserves the current analytics code and reduces migration risk. A normalized schema can be added later when multi-device conflict resolution, server-side analytics, or collaboration becomes necessary.
 
+IndexedDB is still relevant in this phase. Supabase is not yet the primary per-record database for daily entries, results, events, and reviews; it stores one protected snapshot per user. Removing IndexedDB before implementing per-record sync would break offline use and increase the risk of data loss or conflicts.
+
+The next backend phase, when needed, should make Supabase the source of truth with normalized tables, `updated_at` fields per record, RLS policies per table, explicit conflict rules, and automatic sync from the local cache.
+
 ## Supabase setup
 
 1. Create a Supabase project.

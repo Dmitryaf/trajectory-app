@@ -5,6 +5,7 @@ import ScalePicker from '../components/ScalePicker.vue';
 import { useAppStore } from '../stores/app';
 import { addDays, endOfMonth, endOfWeek, formatDate, formatMinutes, startOfMonth, startOfWeek, todayKey } from '../services/dates';
 import { buildObservations, entriesForPeriod, entriesForWeek, summarize } from '../services/analytics';
+import { notifyError, notifySaved } from '../services/notifications';
 import { plainCopy } from '../services/plain';
 import {
   actionDirectionOptions,
@@ -56,7 +57,6 @@ const entryChangeNotice = computed(() => {
   return '';
 });
 const saveButtonText = computed(() => {
-  if (saved.value) return `Сохранено · ${weekEntryCount.value} дн. на неделе`;
   if (hasSavedEntry.value && isDirty.value) return 'Сохранить изменения';
   if (hasSavedEntry.value) return 'Запись сохранена';
   return 'Сохранить день';
@@ -117,6 +117,7 @@ async function save() {
   validationMessage.value = '';
   if (sleepHours.value !== null && timeInBedHours.value !== null && sleepHours.value > timeInBedHours.value) {
     validationMessage.value = 'Время сна не может быть больше времени в кровати.';
+    notifyError(validationMessage.value);
     return;
   }
   const entry = plainCopy(form);
@@ -126,10 +127,12 @@ async function save() {
   if (!hasSavedEntry.value && !entry.focusTitle.trim()) entry.focusTitle = store.settings.activeFocusTitle.trim();
   if (!hasSavedEntry.value && !entry.externalEvidenceCriterion.trim()) entry.externalEvidenceCriterion = store.settings.externalEvidenceCriterion.trim();
   if (!hasSavedEntry.value && !entry.nutritionCriterion.trim()) entry.nutritionCriterion = store.settings.nutritionGoalCriterion.trim();
+  const wasExistingEntry = hasSavedEntry.value;
   await store.saveEntry(entry);
   Object.assign(form, entry);
   originalEntrySnapshot.value = snapshotEntry(form);
   saved.value = true;
+  notifySaved(wasExistingEntry ? `Запись за ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })} обновлена` : 'День сохранён');
   window.setTimeout(() => (saved.value = false), 2200);
 }
 

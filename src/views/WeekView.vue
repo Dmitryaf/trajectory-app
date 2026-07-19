@@ -7,14 +7,13 @@ import PeriodNavigator from '../components/PeriodNavigator.vue';
 import { actionDirectionLabel, buildReviewCues, buildReviewQuestions, careerStatesForEntry, entriesForWeek, eveningFactorLabel, hasArea, resultsForPeriod, specialDayLabel, summarize, weekSummaryText } from '../services/analytics';
 import { addDays, endOfWeek, formatDate, formatMinutes, startOfWeek, todayKey } from '../services/dates';
 import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../services/exportPackage';
+import { notifyInfo, notifySaved } from '../services/notifications';
 import { plainCopy } from '../services/plain';
 import { useAppStore } from '../stores/app';
 import { emptyWeeklyReview, lifeAreaOptions, type WeeklyReview } from '../types';
 
 const store = useAppStore();
 const anchor = ref(todayKey());
-const saved = ref(false);
-const exportStatus = ref('');
 const start = computed(() => startOfWeek(anchor.value));
 const end = computed(() => endOfWeek(anchor.value));
 const days = computed(() => Array.from({ length: 7 }, (_, index) => addDays(start.value, index)));
@@ -120,14 +119,12 @@ const review = reactive<WeeklyReview>(emptyWeeklyReview(start.value));
 function loadReview() {
   const existing = store.reviewByWeek(start.value);
   Object.assign(review, emptyWeeklyReview(start.value), existing ? plainCopy(existing) : {});
-  saved.value = false;
 }
 watch(start, loadReview, { immediate: true });
 
 async function saveReview() {
   await store.saveReview(plainCopy(review));
-  saved.value = true;
-  window.setTimeout(() => (saved.value = false), 1800);
+  notifySaved('Обзор недели сохранён');
 }
 
 function createPackage() {
@@ -143,17 +140,12 @@ function createPackage() {
 
 async function copyPrompt() {
   await copyPackagePrompt(createPackage(), store.settings);
-  showExportStatus('Промпт для GPT скопирован');
+  notifySaved('Промпт для GPT скопирован');
 }
 
 function downloadJson() {
   downloadAiPackage(createPackage());
-  showExportStatus('Пакет недели скачан');
-}
-
-function showExportStatus(message: string) {
-  exportStatus.value = message;
-  window.setTimeout(() => (exportStatus.value = ''), 1800);
+  notifyInfo('Пакет недели скачан');
 }
 </script>
 
@@ -191,7 +183,6 @@ function showExportStatus(message: string) {
           <button class="secondary-button" type="button" @click="downloadJson">Скачать пакет</button>
         </div>
       </div>
-      <p v-if="exportStatus" class="settings-status">{{ exportStatus }}</p>
       <div class="review-cue-grid">
         <article v-for="cue in reviewCues" :key="cue.id" class="review-cue" :class="`review-cue--${cue.tone}`">
           <strong>{{ cue.title }}</strong>
@@ -293,7 +284,7 @@ function showExportStatus(message: string) {
       <label class="field-label">Что мешало сильнее всего?</label><textarea v-model="review.obstacle" rows="2" placeholder="Один главный фактор"></textarea>
       <label class="field-label">Один рычаг на следующую неделю</label><textarea v-model="review.nextLever" rows="2" placeholder="Одно конкретное изменение"></textarea>
       <label class="field-label">План если-то</label><textarea v-model="review.ifThenPlan" rows="2" placeholder="Если появится главный фактор, то я сделаю конкретное действие"></textarea>
-      <button class="primary-button" type="button" @click="saveReview">{{ saved ? 'Сохранено ✓' : 'Сохранить обзор' }}</button>
+      <button class="primary-button" type="button" @click="saveReview">Сохранить обзор</button>
     </article>
   </section>
 </template>
