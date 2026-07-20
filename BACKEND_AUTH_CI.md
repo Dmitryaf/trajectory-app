@@ -8,6 +8,8 @@ Cloud data changes the threat model. Once records are stored outside the browser
 
 The production app uses an auth gate when Supabase environment variables are configured. Local IndexedDB data is loaded only after a verified Supabase session exists. The local cache is also bound to the current Supabase `user.id`; if another user signs in on the same browser, the previous local cache is cleared before the app loads.
 
+This is a single-user deployment. The application exposes sign-in only and does not contain a sign-up flow. After the owner's account has been created, new-user registration must also be disabled in Supabase Authentication settings. Hiding registration in the frontend is not a security boundary by itself.
+
 ## Chosen first backend layer
 
 The first backend layer uses Supabase:
@@ -36,8 +38,10 @@ The next backend phase, when needed, should make Supabase the source of truth wi
 1. Create a Supabase project.
 2. Open SQL Editor.
 3. Run `supabase/trajectory_snapshots.sql`.
-4. Open Project Settings -> API.
-5. Copy:
+4. Create the owner's account in Supabase Authentication.
+5. Disable new-user sign-ups in Supabase Authentication settings.
+6. Open Project Settings -> API.
+7. Copy:
    - Project URL
    - anon public key
 6. Add them to Vercel Project Settings -> Environment Variables:
