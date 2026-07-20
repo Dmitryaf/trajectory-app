@@ -289,7 +289,7 @@ export function hasMovement(entry: DailyEntry): boolean {
   return entry.activities.some((activity) => activity !== 'recovery');
 }
 
-export function buildObservations(entries: DailyEntry[]): Observation[] {
+export function buildObservations(entries: DailyEntry[], factorOptions: Option<EveningFactorId>[] = eveningFactorOptions): Observation[] {
   const observations: Observation[] = [];
   const ordinaryEntries = entries.filter((entry) => entry.specialDay === null);
   const energyEntries = ordinaryEntries.filter((entry) => entry.energy !== null);
@@ -330,7 +330,7 @@ export function buildObservations(entries: DailyEntry[]): Observation[] {
     });
   }
 
-  const leadingFactor = factorSummaries(entries)[0];
+  const leadingFactor = factorSummaries(entries, factorOptions)[0];
   if (leadingFactor && leadingFactor.count >= 2) {
     const details = factorComparisonText(leadingFactor);
     observations.push({
@@ -343,9 +343,9 @@ export function buildObservations(entries: DailyEntry[]): Observation[] {
   return observations;
 }
 
-export function factorSummaries(entries: DailyEntry[]): FactorSummary[] {
+export function factorSummaries(entries: DailyEntry[], factorOptions: Option<EveningFactorId>[] = eveningFactorOptions): FactorSummary[] {
   const ordinaryEntries = entries.filter((entry) => entry.specialDay === null);
-  return eveningFactorOptions
+  return factorOptions
     .map((option) => {
       const matching = ordinaryEntries.filter((entry) => entry.eveningFactors.includes(option.id));
       const other = ordinaryEntries.filter((entry) => entry.eveningFactorsRecorded && !entry.eveningFactors.includes(option.id));
@@ -368,9 +368,9 @@ export function factorSummaries(entries: DailyEntry[]): FactorSummary[] {
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 }
 
-export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[], results: ResultRecord[], lifeEvents: LifeEventRecord[], externalCareerIds: string[] = externalCareerStates): ReviewCue[] {
+export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[], results: ResultRecord[], lifeEvents: LifeEventRecord[], externalCareerIds: string[] = externalCareerStates, factorOptions: Option<EveningFactorId>[] = eveningFactorOptions): ReviewCue[] {
   const summary = summarize(entries, externalCareerIds);
-  const factors = factorSummaries(entries);
+  const factors = factorSummaries(entries, factorOptions);
   const cues: ReviewCue[] = [];
   const enoughEntries = period === 'week'
     ? summary.ordinaryCoveredEntriesCount >= 4 && summary.ordinaryCoreEntriesCount >= 2
@@ -499,7 +499,7 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
   return limitCues(cues, ['coverage', 'results', 'context']);
 }
 
-export function buildRangeReviewCues(rangeMonths: number, entries: DailyEntry[], results: ResultRecord[], lifeEvents: LifeEventRecord[], externalCareerIds: string[] = externalCareerStates): ReviewCue[] {
+export function buildRangeReviewCues(rangeMonths: number, entries: DailyEntry[], results: ResultRecord[], lifeEvents: LifeEventRecord[], externalCareerIds: string[] = externalCareerStates, factorOptions: Option<EveningFactorId>[] = eveningFactorOptions): ReviewCue[] {
   const summary = summarize(entries, externalCareerIds);
   const cues: ReviewCue[] = [];
   const coveredEntries = entries.filter((entry) => dataCoverageLevel(entry) > 0);
@@ -515,7 +515,7 @@ export function buildRangeReviewCues(rangeMonths: number, entries: DailyEntry[],
     tone: enoughEntries ? 'good' : 'warning',
   });
 
-  const factor = factorSummaries(entries).find((item) => item.count >= Math.max(3, rangeMonths));
+  const factor = factorSummaries(entries, factorOptions).find((item) => item.count >= Math.max(3, rangeMonths));
   if (factor) {
     const comparison = factorComparisonText(factor);
     cues.push({
@@ -663,9 +663,9 @@ export function specialDayLabel(value: string | null): string {
   return specialDayOptions.find((option) => option.id === value)?.label ?? 'Особый день';
 }
 
-export function eveningFactorLabel(value: string): string {
+export function eveningFactorLabel(value: string, factorOptions: Option<EveningFactorId>[] = eveningFactorOptions): string {
   if (value === 'porn') return 'Другое';
-  return eveningFactorOptions.find((option) => option.id === value)?.label ?? value;
+  return factorOptions.find((option) => option.id === value)?.label ?? value;
 }
 
 export function actionDirectionLabel(value: string | null): string {

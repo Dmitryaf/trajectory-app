@@ -8,6 +8,7 @@ import { addMonths, dateRange, endOfMonth, endOfWeek, formatDate, formatMinutes,
 import { buildRangePackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../services/exportPackage';
 import { notifyInfo, notifySaved } from '../services/notifications';
 import { useAppStore } from '../stores/app';
+import { eveningFactorOptions } from '../types';
 
 type RangeMonths = 3 | 6 | 12;
 
@@ -25,11 +26,12 @@ const externalCareerIds = computed(() => ['external', 'interview', 'result', ...
 const end = computed(() => todayKey());
 const start = computed(() => startOfMonth(addMonths(todayKey(), -(range.value - 1))));
 const entries = computed(() => entriesForPeriod(store.dailyEntries, start.value, end.value));
+const eveningFactorItems = computed(() => [...eveningFactorOptions, ...store.settings.customEveningFactorOptions]);
 const results = computed(() => resultsForPeriod(store.results, start.value, end.value));
 const lifeEvents = computed(() => store.lifeEvents.filter((event) => event.date >= start.value && event.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)));
 const summary = computed(() => summarize(entries.value, externalCareerIds.value));
-const factors = computed(() => factorSummaries(entries.value).slice(0, 5));
-const cues = computed(() => buildRangeReviewCues(range.value, entries.value, results.value, lifeEvents.value, externalCareerIds.value));
+const factors = computed(() => factorSummaries(entries.value, eveningFactorItems.value).slice(0, 5));
+const cues = computed(() => buildRangeReviewCues(range.value, entries.value, results.value, lifeEvents.value, externalCareerIds.value, eveningFactorItems.value));
 
 function eventKey(event: (typeof store.lifeEvents)[number]): string {
   return `${event.date}|${event.createdAt}`;
@@ -281,7 +283,7 @@ function createPackage() {
     lifeEvents: store.lifeEvents,
     reviews: store.weeklyReviews,
     monthlyReviews: store.monthlyReviews,
-    settings: store.settings
+    settings: store.settings,
   });
 }
 
@@ -292,8 +294,9 @@ async function copyPrompt() {
 
 function downloadJson() {
   downloadAiPackage(createPackage());
-  notifyInfo(`Пакет за ${range.value} мес. скачан`);
+  notifyInfo(`Данные за ${range.value} мес. скачаны`);
 }
+
 </script>
 
 <template>
@@ -385,7 +388,7 @@ function downloadJson() {
         <div><span class="eyebrow">Опорные выводы</span><h2>Что видно за выбранные месяцы</h2></div>
         <div class="period-actions">
           <button class="secondary-button" type="button" @click="copyPrompt">Скопировать промпт</button>
-          <button class="secondary-button" type="button" @click="downloadJson">Скачать пакет</button>
+          <button class="secondary-button" type="button" @click="downloadJson">Скачать данные</button>
         </div>
       </div>
       <div class="review-cue-grid">

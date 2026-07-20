@@ -10,7 +10,7 @@ import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackag
 import { useAppStore } from '../stores/app';
 import { notifyInfo, notifySaved } from '../services/notifications';
 import { plainCopy } from '../services/plain';
-import { emptyMonthlyReview, lifeAreaOptions, type MonthlyReview } from '../types';
+import { emptyMonthlyReview, eveningFactorOptions, lifeAreaOptions, type MonthlyReview } from '../types';
 
 const store = useAppStore();
 const anchor = ref(todayKey());
@@ -19,13 +19,17 @@ const end = computed(() => endOfMonth(anchor.value));
 const entries = computed(() => entriesForMonth(store.dailyEntries, anchor.value));
 const externalCareerIds = computed(() => ['external', 'interview', 'result', ...store.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id)]);
 const summary = computed(() => summarize(entries.value, externalCareerIds.value));
-const observations = computed(() => buildObservations(entries.value));
-const factors = computed(() => factorSummaries(entries.value));
+const eveningFactorItems = computed(() => [...eveningFactorOptions, ...store.settings.customEveningFactorOptions]);
+const observations = computed(() => buildObservations(entries.value, eveningFactorItems.value));
+const factors = computed(() => factorSummaries(entries.value, eveningFactorItems.value));
 const results = computed(() => resultsForPeriod(store.results, start.value, end.value));
+const showAllResults = ref(false);
+const displayedResults = computed(() => showAllResults.value ? results.value : results.value.slice(0, 5));
 const lifeEvents = computed(() => store.lifeEvents.filter((event) => event.date >= start.value && event.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)));
-const reviewCues = computed(() => buildReviewCues('month', entries.value, results.value, lifeEvents.value, externalCareerIds.value));
+const reviewCues = computed(() => buildReviewCues('month', entries.value, results.value, lifeEvents.value, externalCareerIds.value, eveningFactorItems.value));
 const reviewQuestions = buildReviewQuestions('month');
 const monthDates = computed(() => dateRange(start.value, end.value));
+const chartDates = computed(() => monthDates.value.filter((date) => date <= todayKey()));
 const entriesByDate = computed(() => new Map(entries.value.map((entry) => [entry.date, entry])));
 const sleepEntries = computed(() => [...entries.value].filter((entry) => entry.specialDay === null && entry.sleepMinutes !== null).sort((a, b) => a.date.localeCompare(b.date)));
 const weightEntries = computed(() => entries.value.filter((entry) => entry.specialDay === null && entry.weightKg !== null).sort((a, b) => a.date.localeCompare(b.date)));
@@ -33,7 +37,7 @@ const weightHistoryEntries = computed(() => store.dailyEntries
   .filter((entry) => entry.date >= addDays(start.value, -6) && entry.date <= end.value && entry.specialDay === null && entry.weightKg !== null)
   .sort((a, b) => a.date.localeCompare(b.date)));
 const sleepEnergyOption = computed<EChartsCoreOption>(() => {
-  const rows = monthDates.value.map((date) => {
+  const rows = chartDates.value.map((date) => {
     const entry = entriesByDate.value.get(date);
     return { date, entry: entry?.specialDay === null ? entry : undefined };
   });
@@ -64,7 +68,7 @@ const sleepEnergyOption = computed<EChartsCoreOption>(() => {
   };
 });
 const weightOption = computed<EChartsCoreOption>(() => {
-  const rows = monthDates.value.map((date) => {
+  const rows = chartDates.value.map((date) => {
     const entry = entriesByDate.value.get(date);
     const weight = entry?.specialDay === null ? entry.weightKg : null;
     const windowStart = addDays(date, -6);
@@ -124,6 +128,7 @@ const review = reactive<MonthlyReview>(emptyMonthlyReview(start.value));
 function loadReview() {
   const existing = store.reviewByMonth(start.value);
   Object.assign(review, emptyMonthlyReview(start.value), existing ? plainCopy(existing) : {});
+  showAllResults.value = false;
 }
 
 watch(start, loadReview, { immediate: true });
@@ -131,6 +136,27 @@ watch(start, loadReview, { immediate: true });
 async function saveReview() {
   await store.saveMonthlyReview(plainCopy(review));
   notifySaved('Итог месяца сохранён');
+}
+
+function createPackage() {
+  return buildPeriodPackage('month', anchor.value, {
+    entries: store.dailyEntries,
+    results: store.results,
+    lifeEvents: store.lifeEvents,
+    reviews: store.weeklyReviews,
+    monthlyReviews: store.monthlyReviews,
+    settings: store.settings,
+  });
+}
+
+async function copyPrompt() {
+  await copyPackagePrompt(createPackage(), store.settings);
+  notifySaved('Промпт для анализа скопирован');
+}
+
+function downloadJson() {
+  downloadAiPackage(createPackage());
+  notifyInfo('Данные месяца скачаны');
 }
 
 function energyLevel(value: number | null): 'empty' | 'low' | 'mid' | 'high' {
@@ -187,26 +213,6 @@ function shiftMonth(offset: number) {
   anchor.value = toDateKey(date);
 }
 
-function createPackage() {
-  return buildPeriodPackage('month', anchor.value, {
-    entries: store.dailyEntries,
-    results: store.results,
-    lifeEvents: store.lifeEvents,
-    reviews: store.weeklyReviews,
-    monthlyReviews: store.monthlyReviews,
-    settings: store.settings
-  });
-}
-
-async function copyPrompt() {
-  await copyPackagePrompt(createPackage(), store.settings);
-  notifySaved('Промпт для GPT скопирован');
-}
-
-function downloadJson() {
-  downloadAiPackage(createPackage());
-  notifyInfo('Пакет месяца скачан');
-}
 </script>
 
 <template>
@@ -279,10 +285,10 @@ function downloadJson() {
 
     <article class="dashboard-card">
       <div class="section-heading">
-        <div><span class="eyebrow">Разбор без ИИ</span><h2>Месячный обзор</h2></div>
+        <div><span class="eyebrow">Короткий разбор</span><h2>Месячный обзор</h2></div>
         <div class="period-actions">
           <button class="secondary-button" type="button" @click="copyPrompt">Скопировать промпт</button>
-          <button class="secondary-button" type="button" @click="downloadJson">Скачать пакет</button>
+          <button class="secondary-button" type="button" @click="downloadJson">Скачать данные</button>
         </div>
       </div>
       <div class="review-cue-grid">
@@ -313,7 +319,7 @@ function downloadJson() {
     </article>
 
     <article v-if="weightEntries.length" class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Вес</span><h2>Измерения и семидневный тренд</h2></div><small>особые дни исключены</small></div>
+      <div class="section-heading"><div><span class="eyebrow">Вес</span><h2>Измерения и семидневный тренд</h2></div><small>данные по {{ formatDate(chartDates.at(-1) || end, { day: 'numeric', month: 'short' }) }} · особые дни исключены</small></div>
       <EChartPanel :option="weightOption" :height="280" aria-label="Вес и среднее значение за семь дней" />
     </article>
 
@@ -346,8 +352,9 @@ function downloadJson() {
 
       <article class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Завершённые факты</span><h2>Итоги месяца</h2></div><span class="count-badge">{{ results.length }}</span></div>
-        <ul v-if="results.length" class="compact-results"><li v-for="result in results" :key="result.id"><span>✓</span><div>{{ result.title }}<small>{{ formatDate(result.date, { day: 'numeric', month: 'short' }) }}</small></div></li></ul>
-        <div v-else class="empty-state empty-state--compact"><p>Пока нет зафиксированных итогов.</p></div>
+        <ul v-if="results.length" class="compact-results"><li v-for="result in displayedResults" :key="result.id"><span>✓</span><div>{{ result.title }}<small>{{ formatDate(result.date, { day: 'numeric', month: 'short' }) }}</small></div></li></ul>
+        <button v-if="results.length > 5" class="secondary-button load-more" type="button" @click="showAllResults = !showAllResults">{{ showAllResults ? 'Свернуть' : `Показать все (${results.length})` }}</button>
+        <div v-if="!results.length" class="empty-state empty-state--compact"><p>Пока нет зафиксированных итогов.</p></div>
       </article>
     </div>
 

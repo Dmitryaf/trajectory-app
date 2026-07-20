@@ -73,12 +73,6 @@ export async function signInToCloud(email: string, password: string): Promise<Se
   return data.session;
 }
 
-export async function signUpToCloud(email: string, password: string): Promise<Session | null> {
-  const { data, error } = await getSupabaseClient().auth.signUp({ email, password });
-  if (error) throw error;
-  return data.session;
-}
-
 export async function signOutFromCloud(): Promise<void> {
   const { error } = await getSupabaseClient().auth.signOut();
   if (error) throw error;

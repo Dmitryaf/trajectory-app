@@ -10,7 +10,7 @@ import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackag
 import { notifyInfo, notifySaved } from '../services/notifications';
 import { plainCopy } from '../services/plain';
 import { useAppStore } from '../stores/app';
-import { emptyWeeklyReview, lifeAreaOptions, type WeeklyReview } from '../types';
+import { emptyWeeklyReview, eveningFactorOptions, lifeAreaOptions, type WeeklyReview } from '../types';
 
 const store = useAppStore();
 const anchor = ref(todayKey());
@@ -20,11 +20,12 @@ const days = computed(() => Array.from({ length: 7 }, (_, index) => addDays(star
 const entries = computed(() => entriesForWeek(store.dailyEntries, anchor.value));
 const entriesByDate = computed(() => new Map(entries.value.map((entry) => [entry.date, entry])));
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
+const eveningFactorItems = computed(() => [...eveningFactorOptions, ...store.settings.customEveningFactorOptions]);
 const externalCareerIds = computed(() => ['external', 'interview', 'result', ...store.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id)]);
 const summary = computed(() => summarize(entries.value, externalCareerIds.value));
 const results = computed(() => resultsForPeriod(store.results, start.value, end.value));
 const lifeEvents = computed(() => store.lifeEvents.filter((event) => event.date >= start.value && event.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)));
-const reviewCues = computed(() => buildReviewCues('week', entries.value, results.value, lifeEvents.value, externalCareerIds.value));
+const reviewCues = computed(() => buildReviewCues('week', entries.value, results.value, lifeEvents.value, externalCareerIds.value, eveningFactorItems.value));
 const reviewQuestions = buildReviewQuestions('week');
 const previousReview = computed(() => store.reviewByWeek(addDays(start.value, -7)));
 const rows = computed(() => [
@@ -134,19 +135,20 @@ function createPackage() {
     lifeEvents: store.lifeEvents,
     reviews: store.weeklyReviews,
     monthlyReviews: store.monthlyReviews,
-    settings: store.settings
+    settings: store.settings,
   });
 }
 
 async function copyPrompt() {
   await copyPackagePrompt(createPackage(), store.settings);
-  notifySaved('Промпт для GPT скопирован');
+  notifySaved('Промпт для анализа скопирован');
 }
 
 function downloadJson() {
   downloadAiPackage(createPackage());
-  notifyInfo('Пакет недели скачан');
+  notifyInfo('Данные недели скачаны');
 }
+
 </script>
 
 <template>
@@ -177,10 +179,10 @@ function downloadJson() {
 
     <article class="dashboard-card">
       <div class="section-heading">
-        <div><span class="eyebrow">Разбор без ИИ</span><h2>На что обратить внимание</h2></div>
+        <div><span class="eyebrow">Короткий разбор</span><h2>На что обратить внимание</h2></div>
         <div class="period-actions">
           <button class="secondary-button" type="button" @click="copyPrompt">Скопировать промпт</button>
-          <button class="secondary-button" type="button" @click="downloadJson">Скачать пакет</button>
+          <button class="secondary-button" type="button" @click="downloadJson">Скачать данные</button>
         </div>
       </div>
       <div class="review-cue-grid">
@@ -231,7 +233,7 @@ function downloadJson() {
         <article v-for="entry in factorNotes" :key="entry.date" class="factor-note-item">
           <time>{{ formatDate(entry.date, { weekday: 'short', day: 'numeric' }) }}</time>
           <div>
-            <span v-for="factor in entry.eveningFactors" :key="factor" class="mini-pill">{{ eveningFactorLabel(factor) }}</span>
+            <span v-for="factor in entry.eveningFactors" :key="factor" class="mini-pill">{{ eveningFactorLabel(factor, eveningFactorItems) }}</span>
             <p v-if="entry.eveningFactorNote">{{ entry.eveningFactorNote }}</p>
           </div>
         </article>

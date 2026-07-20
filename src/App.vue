@@ -113,12 +113,10 @@ async function signOut() {
 
 const navItems = [
   { to: '/', label: 'Сегодня', icon: '●' },
-  { to: '/results', label: 'Итоги', icon: '✓' },
-  { to: '/events', label: 'События', icon: '◆' },
   { to: '/week', label: 'Неделя', icon: '▦' },
   { to: '/month', label: 'Месяц', icon: '▥' },
   { to: '/trends', label: 'Тренды', icon: '≋' },
-  { to: '/settings', label: 'Настройки', icon: '⚙' }
+  { to: '/more', label: 'Ещё', icon: '•••' }
 ];
 </script>
 
@@ -160,7 +158,7 @@ const navItems = [
     </main>
 
     <nav v-if="canOpenApp && store.loaded" class="bottom-nav" aria-label="Основная навигация">
-      <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" class="bottom-nav__item">
+      <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" class="bottom-nav__item" :class="{ 'router-link-active': item.to === '/more' && ['/results', '/events', '/settings'].includes($route.path) }">
         <span>{{ item.icon }}</span>
         <small>{{ item.label }}</small>
       </RouterLink>

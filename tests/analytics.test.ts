@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildCoverageSeries, buildEventComparison, buildObservations, buildRangeReviewCues, buildReviewCues, dataCoverageLevel, entriesForPeriod, entriesForWeek, factorSummaries, summarize, weekSummaryText } from '../src/services/analytics';
 import { buildAiReportPayload, buildAiReportRangePayload } from '../src/services/aiReport';
 import { addMonths, monthsBetween } from '../src/services/dates';
-import { defaultSettings, emptyDailyEntry, normalizeDailyEntry, normalizeMonthlyReview, normalizeWeeklyReview, type DailyEntry } from '../src/types';
+import { defaultSettings, emptyDailyEntry, experimentAppliesToDate, normalizeDailyEntry, normalizeLifeEvent, normalizeMonthlyReview, normalizeSettings, normalizeWeeklyReview, type DailyEntry } from '../src/types';
 
 function entry(date: string, patch: Partial<DailyEntry>): DailyEntry {
   return {
@@ -92,6 +92,64 @@ describe('analytics', () => {
     expect(summary.experimentCompletedDays).toBe(1);
   });
 
+  it('shows an active experiment only inside its configured dates', () => {
+    const experiment = { ...defaultSettings.experiment, active: true, startDate: '2026-07-10', endDate: '2026-07-20' };
+    expect(experimentAppliesToDate(experiment, '2026-07-09')).toBe(false);
+    expect(experimentAppliesToDate(experiment, '2026-07-10')).toBe(true);
+    expect(experimentAppliesToDate(experiment, '2026-07-20')).toBe(true);
+    expect(experimentAppliesToDate(experiment, '2026-07-21')).toBe(false);
+  });
+
+  it('migrates old settings and event terminology without losing history', () => {
+    const settings = normalizeSettings({ activeLifeAreas: ['family', 'spiritual'], customEveningFactorOptions: [{ id: 'custom:evening:test', label: 'Душ', archived: true }] });
+    const event = normalizeLifeEvent({ date: '2026-07-10', title: 'Старая веха', type: 'milestone' });
+    expect(settings.activeLifeAreas).toEqual(['family']);
+    expect(settings.customEveningFactorOptions[0].archived).toBe(true);
+    expect(event.type).toBe('change');
+  });
+
+  it('uses custom factor labels in summaries', () => {
+    const factors = factorSummaries([
+      entry('2026-07-13', { eveningFactors: ['custom:evening:shower'] })
+    ], [{ id: 'custom:evening:shower', label: 'Душ', icon: '+' }]);
+    expect(factors[0].label).toBe('Душ');
+  });
+
+  it('builds a manual analysis package with labels and experiment context', () => {
+    const settings = structuredClone(defaultSettings);
+    settings.customEveningFactorOptions = [{ id: 'custom:evening:shower', label: 'Душ', custom: true }];
+    settings.experiment = { ...settings.experiment, active: true, title: 'Без новостей', startDate: '2026-07-13', endDate: '2026-07-19', conclusion: 'unclear' };
+    const payload = buildAiReportPayload('week', '2026-07-16', {
+      entries: [entry('2026-07-13', { eveningFactors: ['custom:evening:shower'] })],
+      results: [],
+      lifeEvents: [],
+      reviews: [{ ...normalizeWeeklyReview({ weekStart: '2026-07-06' }), nextLever: 'Ложиться раньше' }],
+      monthlyReviews: [],
+      settings,
+    });
+
+    expect(payload.version).toBe(4);
+    expect(payload.dataThrough).toBe('2026-07-19');
+    expect(payload.labels.eveningFactors).toContainEqual(expect.objectContaining({ id: 'custom:evening:shower', label: 'Душ' }));
+    expect(payload.factorSummaries[0].label).toBe('Душ');
+    expect(payload.settingsSnapshot.experiment.conclusion).toBe('unclear');
+    expect(payload.previousWeeklyReview?.nextLever).toBe('Ложиться раньше');
+  });
+
+  it('limits a long-range analysis package to its selected data boundary', () => {
+    const payload = buildAiReportRangePayload(3, '2026-07-16', {
+      entries: [entry('2026-05-01', { energy: 3 }), entry('2026-07-17', { energy: 5 })],
+      results: [],
+      lifeEvents: [],
+      reviews: [],
+      monthlyReviews: [],
+      settings: defaultSettings,
+    });
+    expect(payload.start).toBe('2026-05-01');
+    expect(payload.dataThrough).toBe('2026-07-16');
+    expect(payload.entries.map((item) => item.date)).toEqual(['2026-05-01']);
+  });
+
   it('selects entries only from the requested Monday-Sunday week', () => {
     const entries = [
       entry('2026-07-12', {}),
@@ -170,51 +228,6 @@ describe('analytics', () => {
     expect(factors[0].count).toBe(2);
     expect(factors[0].averageSleep).toBe(390);
     expect(factors[0].averageEnergy).toBe(2.5);
-  });
-
-  it('includes life events in the AI package only for the selected period', () => {
-    const payload = buildAiReportPayload('week', '2026-07-16', {
-      entries: [entry('2026-07-13', { energy: 3 })],
-      results: [],
-      lifeEvents: [
-        { id: 1, date: '2026-07-15', type: 'decision', title: 'Сменил фокус поиска', note: 'Больше фронтенда', createdAt: '2026-07-15T10:00:00.000Z' },
-        { id: 2, date: '2026-07-21', type: 'event', title: 'Будущее событие', note: '', createdAt: '2026-07-21T10:00:00.000Z' }
-      ],
-      reviews: [],
-      monthlyReviews: [],
-      settings: defaultSettings
-    });
-
-    expect(payload.version).toBe(3);
-    expect(payload.lifeEvents).toHaveLength(1);
-    expect(payload.lifeEvents[0].title).toBe('Сменил фокус поиска');
-  });
-
-  it('builds AI packages for long trend ranges', () => {
-    const payload = buildAiReportRangePayload(3, '2026-07-16', {
-      entries: [
-        entry('2026-04-30', { energy: 1 }),
-        entry('2026-05-01', { energy: 3 }),
-        entry('2026-07-16', { energy: 5 })
-      ],
-      results: [
-        { id: 1, date: '2026-06-10', area: 'career', title: 'Сделал проект', createdAt: '2026-06-10T10:00:00.000Z' }
-      ],
-      lifeEvents: [
-        { id: 1, date: '2026-07-01', type: 'change', title: 'Новый режим', note: '', createdAt: '2026-07-01T10:00:00.000Z' }
-      ],
-      reviews: [],
-      monthlyReviews: [],
-      settings: defaultSettings
-    });
-
-    expect(payload.period).toBe('range');
-    expect(payload.rangeMonths).toBe(3);
-    expect(payload.start).toBe('2026-05-01');
-    expect(payload.end).toBe('2026-07-16');
-    expect(payload.entries.map((item) => item.date)).toEqual(['2026-05-01', '2026-07-16']);
-    expect(payload.results).toHaveLength(1);
-    expect(payload.lifeEvents).toHaveLength(1);
   });
 
   it('builds local review cues from factual period data', () => {

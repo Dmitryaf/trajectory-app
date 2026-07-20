@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import type { Session } from '@supabase/supabase-js';
-import { getVerifiedCloudSession, isCloudSyncConfigured, onCloudAuthChange, signInToCloud, signOutFromCloud, signUpToCloud } from '../services/cloudSync';
+import { getVerifiedCloudSession, isCloudSyncConfigured, onCloudAuthChange, signInToCloud, signOutFromCloud } from '../services/cloudSync';
 
 let unsubscribeAuth: (() => void) | null = null;
 
@@ -50,18 +50,6 @@ export const useAuthStore = defineStore('auth', {
         this.session = await signInToCloud(email, password);
       } catch (error) {
         this.error = 'Не удалось войти. Проверь email и пароль.';
-        throw error;
-      } finally {
-        this.loading = false;
-      }
-    },
-    async signUp(email: string, password: string) {
-      this.loading = true;
-      this.error = '';
-      try {
-        this.session = await signUpToCloud(email, password);
-      } catch (error) {
-        this.error = 'Не удалось создать аккаунт. Проверь email и пароль.';
         throw error;
       } finally {
         this.loading = false;

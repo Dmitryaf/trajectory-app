@@ -8,7 +8,7 @@ import { loadCloudSnapshot, markCloudSyncSynced } from '../services/cloudSync';
 import { todayKey } from '../services/dates';
 import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { plainCopy } from '../services/plain';
-import { careerOptions, createCustomOption, lifeAreaOptions, type AppSettings, type CareerState, type LifeAreaId } from '../types';
+import { careerOptions, createCustomOption, eveningFactorOptions, lifeAreaOptions, type AppSettings, type CareerState, type EveningFactorId, type LifeAreaId, type Option } from '../types';
 
 const store = useAppStore();
 const settings = reactive<AppSettings>(plainCopy(store.settings));
@@ -16,9 +16,11 @@ const importInput = ref<HTMLInputElement>();
 const newCareerLabel = ref('');
 const newCareerCountsAsExternal = ref(true);
 const newLifeAreaLabel = ref('');
+const newEveningFactorLabel = ref('');
 const auth = useAuthStore();
-const allCareerOptions = computed(() => [...careerOptions, ...settings.customCareerOptions]);
-const allLifeAreaOptions = computed(() => [...lifeAreaOptions, ...settings.customLifeAreaOptions]);
+const allCareerOptions = computed(() => [...careerOptions, ...settings.customCareerOptions.filter((option) => !option.archived)]);
+const allLifeAreaOptions = computed(() => [...lifeAreaOptions, ...settings.customLifeAreaOptions.filter((option) => !option.archived)]);
+const allEveningFactorOptions = computed(() => [...eveningFactorOptions, ...settings.customEveningFactorOptions.filter((option) => !option.archived)]);
 const cloudSession = computed(() => auth.session);
 const cloudUserEmail = computed(() => auth.userEmail);
 const cloudStatusTitle = computed(() => {
@@ -30,15 +32,42 @@ const cloudStatusTitle = computed(() => {
   return 'Статус облака';
 });
 const cloudStatusText = computed(() => store.cloudSyncMessage || 'Локальные данные используются как кэш, облачная копия привязана к аккаунту.');
+const experimentConclusionOptions = [
+  { id: 'helped', label: 'Помогло', icon: '✓' },
+  { id: 'unclear', label: 'Пока неясно', icon: '·' },
+  { id: 'not_helped', label: 'Не помогло', icon: '×' },
+];
 
 async function save(message = 'Настройки сохранены') {
   await store.saveSettings(plainCopy(settings));
   notifySaved(message);
 }
 
+async function saveExperiment() {
+  const experiment = settings.experiment;
+  if (experiment.active && !experiment.title.trim()) {
+    notifyError('Укажи условие эксперимента');
+    return;
+  }
+  if (experiment.startDate && experiment.endDate && experiment.startDate > experiment.endDate) {
+    notifyError('Дата окончания эксперимента должна быть не раньше даты начала');
+    return;
+  }
+  await save('Эксперимент сохранён');
+}
+
 async function addCareerOption() {
   const label = newCareerLabel.value.trim();
-  if (!label || hasOption(allCareerOptions.value, label)) return;
+  if (!label || hasOption(careerOptions, label)) return;
+  const archived = findArchived(settings.customCareerOptions, label);
+  if (archived) {
+    archived.archived = false;
+    archived.countsAsExternal = newCareerCountsAsExternal.value;
+    newCareerLabel.value = '';
+    await save();
+    return;
+  }
+  if (hasOption(settings.customCareerOptions, label)) return;
   settings.customCareerOptions.push({ ...createCustomOption(label, 'career'), countsAsExternal: newCareerCountsAsExternal.value });
   newCareerLabel.value = '';
   newCareerCountsAsExternal.value = true;
@@ -46,13 +75,23 @@ async function addCareerOption() {
 }
 
 async function removeCareerOption(id: CareerState) {
-  settings.customCareerOptions = settings.customCareerOptions.filter((option) => option.id !== id);
+  const option = settings.customCareerOptions.find((item) => item.id === id);
+  if (option) option.archived = true;
   await save();
 }
 
 async function addLifeArea() {
   const label = newLifeAreaLabel.value.trim();
-  if (!label || hasOption(allLifeAreaOptions.value, label)) return;
+  if (!label || hasOption(lifeAreaOptions, label)) return;
+  const archived = findArchived(settings.customLifeAreaOptions, label);
+  if (archived) {
+    archived.archived = false;
+    settings.activeLifeAreas.push(archived.id);
+    newLifeAreaLabel.value = '';
+    await save();
+    return;
+  }
+  if (hasOption(settings.customLifeAreaOptions, label)) return;
   const option = createCustomOption(label, 'life');
   settings.customLifeAreaOptions.push(option);
   settings.activeLifeAreas.push(option.id);
@@ -61,13 +100,34 @@ async function addLifeArea() {
 }
 
 async function removeLifeArea(id: LifeAreaId) {
-  settings.customLifeAreaOptions = settings.customLifeAreaOptions.filter((option) => option.id !== id);
+  const option = settings.customLifeAreaOptions.find((item) => item.id === id);
+  if (option) option.archived = true;
   settings.activeLifeAreas = settings.activeLifeAreas.filter((area) => area !== id);
   await save();
 }
 
+async function addEveningFactor() {
+  const label = newEveningFactorLabel.value.trim();
+  if (!label || hasOption(eveningFactorOptions, label)) return;
+  const archived = findArchived(settings.customEveningFactorOptions, label);
+  if (archived) archived.archived = false;
+  else if (!hasOption(settings.customEveningFactorOptions, label)) settings.customEveningFactorOptions.push(createCustomOption(label, 'evening'));
+  newEveningFactorLabel.value = '';
+  await save('Факторы перед сном сохранены');
+}
+
+async function removeEveningFactor(id: EveningFactorId) {
+  const option = settings.customEveningFactorOptions.find((item) => item.id === id);
+  if (option) option.archived = true;
+  await save('Фактор скрыт из ежедневной записи');
+}
+
 function hasOption(options: { label: string }[], label: string) {
   return options.some((option) => option.label.trim().toLocaleLowerCase('ru-RU') === label.toLocaleLowerCase('ru-RU'));
+}
+
+function findArchived<T extends string>(options: Option<T>[], label: string) {
+  return options.find((option) => option.archived && option.label.trim().toLocaleLowerCase('ru-RU') === label.toLocaleLowerCase('ru-RU'));
 }
 
 function exportData() {
@@ -121,32 +181,32 @@ async function runCloudAction(action: () => Promise<void>) {
   }
 }
 
-async function copyAiPrompt(period: Exclude<AiReportPeriod, 'range'>) {
-  const payload = createAiPayload(period);
+async function copyAnalysisPrompt(period: Exclude<AiReportPeriod, 'range'>) {
+  const payload = createAnalysisPayload(period);
   await navigator.clipboard.writeText(buildAiReportPrompt(payload, store.settings));
-  notifySaved('Промпт для GPT скопирован');
+  notifySaved('Промпт для анализа скопирован');
 }
 
-function downloadAiPackage(period: Exclude<AiReportPeriod, 'range'>) {
-  const payload = createAiPayload(period);
+function downloadAnalysisData(period: Exclude<AiReportPeriod, 'range'>) {
+  const payload = createAnalysisPayload(period);
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `trajectory-ai-${period}-${payload.start}-${payload.end}.json`;
+  link.download = `trajectory-analysis-${period}-${payload.start}-${payload.dataThrough}.json`;
   link.click();
   URL.revokeObjectURL(url);
-  notifyInfo(period === 'week' ? 'Пакет недели скачан' : 'Пакет месяца скачан');
+  notifyInfo(period === 'week' ? 'Данные недели скачаны' : 'Данные месяца скачаны');
 }
 
-function createAiPayload(period: Exclude<AiReportPeriod, 'range'>) {
+function createAnalysisPayload(period: Exclude<AiReportPeriod, 'range'>) {
   return buildAiReportPayload(period, todayKey(), {
     entries: store.dailyEntries,
     results: store.results,
     lifeEvents: store.lifeEvents,
     reviews: store.weeklyReviews,
     monthlyReviews: store.monthlyReviews,
-    settings: store.settings
+    settings: store.settings,
   });
 }
 
@@ -190,14 +250,35 @@ async function clearAll() {
           <input id="new-life-area" v-model="newLifeAreaLabel" type="text" maxlength="32" placeholder="Учёба" @keyup.enter="addLifeArea" />
           <button class="secondary-button" type="button" :disabled="!newLifeAreaLabel.trim()" @click="addLifeArea">Добавить</button>
         </div>
-        <div v-if="settings.customLifeAreaOptions.length" class="custom-list">
-          <div v-for="option in settings.customLifeAreaOptions" :key="option.id" class="custom-list__item">
+        <div v-if="settings.customLifeAreaOptions.some((option) => !option.archived)" class="custom-list">
+          <div v-for="option in settings.customLifeAreaOptions.filter((item) => !item.archived)" :key="option.id" class="custom-list__item">
             <span><i>{{ option.icon }}</i>{{ option.label }}</span>
-            <button class="ghost-button ghost-button--danger" type="button" :aria-label="`Удалить ${option.label}`" @click="removeLifeArea(option.id)">×</button>
+            <button class="ghost-button ghost-button--danger" type="button" :aria-label="`Скрыть ${option.label}`" @click="removeLifeArea(option.id)">×</button>
           </div>
         </div>
       </div>
       <button class="primary-button" type="button" @click="save('Области сохранены')">Сохранить области</button>
+    </article>
+
+    <article class="settings-card">
+      <div class="form-card__heading"><span class="section-icon section-icon--violet">◒</span><div><h2>Факторы перед сном</h2><p>Добавляй только повторяющиеся условия, которые пригодятся в недельном или месячном разборе.</p></div></div>
+      <div class="option-preview">
+        <span v-for="option in allEveningFactorOptions" :key="option.id" class="option-pill"><i v-if="option.icon">{{ option.icon }}</i>{{ option.label }}</span>
+      </div>
+      <div class="custom-options">
+        <label class="field-label" for="new-evening-factor">Свой фактор</label>
+        <div class="inline-add">
+          <input id="new-evening-factor" v-model="newEveningFactorLabel" type="text" maxlength="40" placeholder="Например: душ перед сном" @keyup.enter="addEveningFactor" />
+          <button class="secondary-button" type="button" :disabled="!newEveningFactorLabel.trim()" @click="addEveningFactor">Добавить</button>
+        </div>
+        <div v-if="settings.customEveningFactorOptions.some((option) => !option.archived)" class="custom-list">
+          <div v-for="option in settings.customEveningFactorOptions.filter((item) => !item.archived)" :key="option.id" class="custom-list__item">
+            <span><i>{{ option.icon }}</i>{{ option.label }}</span>
+            <button class="ghost-button ghost-button--danger" type="button" :aria-label="`Скрыть ${option.label}`" @click="removeEveningFactor(option.id)">×</button>
+          </div>
+        </div>
+        <p class="data-note">Скрытый фактор исчезает из новых записей, но остаётся подписанным в истории.</p>
+      </div>
     </article>
 
     <article class="settings-card">
@@ -220,10 +301,10 @@ async function clearAll() {
           <button class="secondary-button" type="button" :disabled="!newCareerLabel.trim()" @click="addCareerOption">Добавить</button>
         </div>
         <label class="toggle-row toggle-row--compact"><span><strong>Считать реальным шагом</strong><small>Подходит для откликов, сообщений рекрутерам, публикаций и собеседований.</small></span><input v-model="newCareerCountsAsExternal" type="checkbox" /></label>
-        <div v-if="settings.customCareerOptions.length" class="custom-list">
-          <div v-for="option in settings.customCareerOptions" :key="option.id" class="custom-list__item">
+        <div v-if="settings.customCareerOptions.some((option) => !option.archived)" class="custom-list">
+          <div v-for="option in settings.customCareerOptions.filter((item) => !item.archived)" :key="option.id" class="custom-list__item">
             <span><i>{{ option.icon }}</i>{{ option.label }}<small v-if="option.countsAsExternal">реальный шаг</small></span>
-            <button class="ghost-button ghost-button--danger" type="button" :aria-label="`Удалить ${option.label}`" @click="removeCareerOption(option.id)">×</button>
+            <button class="ghost-button ghost-button--danger" type="button" :aria-label="`Скрыть ${option.label}`" @click="removeCareerOption(option.id)">×</button>
           </div>
         </div>
       </div>
@@ -251,12 +332,12 @@ async function clearAll() {
         <label class="form-control"><span class="field-label">Окончание</span><input v-model="settings.experiment.endDate" type="date" /></label>
       </div>
       <label class="field-label" for="experiment-conclusion">Итог после завершения</label>
-      <textarea id="experiment-conclusion" v-model="settings.experiment.conclusion" rows="2" maxlength="240" placeholder="Помогло, не помогло или данных пока недостаточно"></textarea>
-      <button class="primary-button" type="button" @click="save('Эксперимент сохранён')">Сохранить настройки</button>
+      <ChipGroup v-model="settings.experiment.conclusion" :options="experimentConclusionOptions" allow-clear />
+      <button class="primary-button" type="button" @click="saveExperiment">Сохранить настройки</button>
     </article>
 
     <article class="settings-card">
-      <div class="form-card__heading"><span class="section-icon section-icon--blue">↓</span><div><h2>Резервная копия</h2><p>Данные пока хранятся только в этом браузере.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--blue">↓</span><div><h2>Резервная копия</h2><p>JSON-копия нужна как ручная страховка независимо от облачной синхронизации.</p></div></div>
       <div class="data-actions">
         <button class="secondary-button" type="button" @click="exportData">Скачать копию</button>
         <button class="secondary-button" type="button" @click="importInput?.click()">Восстановить из копии</button>
@@ -295,13 +376,15 @@ async function clearAll() {
     </article>
 
     <article class="settings-card">
-      <div class="form-card__heading"><span class="section-icon section-icon--green">AI</span><div><h2>Пакет для GPT</h2><p>Без платного API: скопируй промпт или скачай JSON для ручного анализа.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--green">↗</span><div><h2>Данные для внешнего анализа</h2><p>Скопируй готовый промпт или скачай JSON, чтобы вручную передать его выбранной нейросети. Приложение само ничего не отправляет.</p></div></div>
       <div class="ai-actions">
-        <button class="secondary-button" type="button" @click="copyAiPrompt('week')">Скопировать промпт недели</button>
-        <button class="secondary-button" type="button" @click="copyAiPrompt('month')">Скопировать промпт месяца</button>
-        <button class="secondary-button" type="button" @click="downloadAiPackage('week')">Скачать пакет недели</button>
-        <button class="secondary-button" type="button" @click="downloadAiPackage('month')">Скачать пакет месяца</button>
+        <button class="secondary-button" type="button" @click="copyAnalysisPrompt('week')">Промпт недели</button>
+        <button class="secondary-button" type="button" @click="copyAnalysisPrompt('month')">Промпт месяца</button>
+        <button class="secondary-button" type="button" @click="downloadAnalysisData('week')">Данные недели</button>
+        <button class="secondary-button" type="button" @click="downloadAnalysisData('month')">Данные месяца</button>
       </div>
+      <p class="data-note">В пакет входят личные заметки выбранного периода. Перед передачей внешнему сервису можно просмотреть скачанный JSON.</p>
     </article>
+
   </section>
 </template>

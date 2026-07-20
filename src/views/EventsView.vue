@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import ChipGroup from '../components/ChipGroup.vue';
 import { formatDate, todayKey } from '../services/dates';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
@@ -14,8 +14,22 @@ const type = ref<LifeEventType>('change');
 const editingId = ref<number | null>(null);
 const editingCreatedAt = ref('');
 const saving = ref(false);
+const filterText = ref('');
+const filterType = ref('all');
+const dateFrom = ref('');
+const dateTo = ref('');
+const visibleCount = ref(20);
 
 const recentEvents = computed(() => [...store.lifeEvents].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)));
+const filteredEvents = computed(() => recentEvents.value.filter((event) => {
+  const query = filterText.value.trim().toLocaleLowerCase('ru-RU');
+  return (!query || `${event.title} ${event.note}`.toLocaleLowerCase('ru-RU').includes(query))
+    && (filterType.value === 'all' || event.type === filterType.value)
+    && (!dateFrom.value || event.date >= dateFrom.value)
+    && (!dateTo.value || event.date <= dateTo.value);
+}));
+const visibleEvents = computed(() => filteredEvents.value.slice(0, visibleCount.value));
+watch([filterText, filterType, dateFrom, dateTo], () => { visibleCount.value = 20; });
 
 async function saveEvent() {
   const cleanTitle = title.value.trim();
@@ -86,9 +100,15 @@ function eventMeta(value: LifeEventRecord['type']) {
       <button v-if="editingId !== null" class="secondary-button composer-cancel" type="button" @click="resetForm">Отменить редактирование</button>
     </article>
 
-    <div class="section-heading"><div><span class="eyebrow">Хронология</span><h2>Важные события</h2></div><span class="count-badge">{{ recentEvents.length }}</span></div>
-    <div v-if="recentEvents.length" class="timeline-list">
-      <article v-for="event in recentEvents" :key="event.id" class="timeline-item">
+    <div class="section-heading"><div><span class="eyebrow">Хронология</span><h2>Важные события</h2></div><span class="count-badge">{{ filteredEvents.length }}</span></div>
+    <div class="archive-filters">
+      <input v-model="filterText" type="search" placeholder="Поиск по событиям" aria-label="Поиск по событиям" />
+      <select v-model="filterType" aria-label="Тип события"><option value="all">Все типы</option><option v-for="option in lifeEventTypeOptions" :key="option.id" :value="option.id">{{ option.label }}</option></select>
+      <label><span>С</span><input v-model="dateFrom" type="date" /></label>
+      <label><span>По</span><input v-model="dateTo" type="date" /></label>
+    </div>
+    <div v-if="visibleEvents.length" class="timeline-list">
+      <article v-for="event in visibleEvents" :key="event.id" class="timeline-item">
         <span class="timeline-item__icon">{{ eventMeta(event.type).icon }}</span>
         <div>
           <strong>{{ event.title }}</strong>
@@ -100,7 +120,8 @@ function eventMeta(value: LifeEventRecord['type']) {
           <button class="ghost-button ghost-button--danger" type="button" aria-label="Удалить событие" @click="remove(event.id)">×</button>
         </div>
       </article>
+      <button v-if="visibleCount < filteredEvents.length" class="secondary-button load-more" type="button" @click="visibleCount += 20">Показать ещё</button>
     </div>
-    <div v-else class="empty-state"><span>◆</span><h3>Событий пока нет</h3><p>Здесь будут решения, изменения и обстоятельства, которые помогают объяснять длинную динамику.</p></div>
+    <div v-else class="empty-state"><span>◆</span><h3>{{ recentEvents.length ? 'Ничего не найдено' : 'Событий пока нет' }}</h3><p>{{ recentEvents.length ? 'Измени фильтры или диапазон дат.' : 'Здесь будут решения, изменения и обстоятельства, которые помогают объяснять длинную динамику.' }}</p></div>
   </section>
 </template>

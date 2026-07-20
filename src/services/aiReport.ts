@@ -1,17 +1,33 @@
-import { buildObservations, entriesForMonth, entriesForPeriod, entriesForWeek, factorSummaries, resultsForPeriod, summarize, weekSummaryText } from './analytics';
-import { addMonths, endOfMonth, endOfWeek, formatDate, startOfMonth, startOfWeek } from './dates';
-import type { AppSettings, DailyEntry, LifeEventRecord, MonthlyReview, ResultRecord, WeeklyReview } from '../types';
-import { lifeAreaOptions } from '../types';
+import { buildObservations, entriesForPeriod, factorSummaries, resultsForPeriod, summarize, weekSummaryText } from './analytics';
+import { addDays, addMonths, endOfMonth, endOfWeek, formatDate, startOfMonth, startOfWeek, todayKey } from './dates';
+import {
+  actionDirectionOptions,
+  activityOptions,
+  careerOptions,
+  eveningFactorOptions,
+  lifeAreaOptions,
+  lifeEventTypeOptions,
+  nutritionOptions,
+  resultAreaOptions,
+  specialDayOptions,
+  type AppSettings,
+  type DailyEntry,
+  type LifeEventRecord,
+  type MonthlyReview,
+  type ResultRecord,
+  type WeeklyReview,
+} from '../types';
 
 export type AiReportPeriod = 'week' | 'month' | 'range';
 
 export type AiReportPayload = {
   app: 'trajectory';
-  version: 3;
+  version: 4;
   period: AiReportPeriod;
   rangeMonths?: number;
   start: string;
   end: string;
+  dataThrough: string;
   generatedAt: string;
   summary: ReturnType<typeof summarize>;
   observations: ReturnType<typeof buildObservations>;
@@ -20,17 +36,17 @@ export type AiReportPayload = {
   results: ResultRecord[];
   lifeEvents: LifeEventRecord[];
   weeklyReview?: WeeklyReview;
+  previousWeeklyReview?: WeeklyReview;
   monthlyReview?: MonthlyReview;
+  previousMonthlyReview?: MonthlyReview;
   monthlyReviews?: MonthlyReview[];
+  labels: ReturnType<typeof buildLabelDictionary>;
   settingsSnapshot: {
     activeLifeAreas: string[];
     activeFocusTitle: string;
     externalEvidenceCriterion: string;
     nutritionGoalCriterion: string;
-    experimentActive: boolean;
-    experimentTitle: string;
-    experimentHypothesis: string;
-    experimentTargetMetric: string;
+    experiment: AppSettings['experiment'];
   };
 };
 
@@ -46,68 +62,75 @@ export type AiReportSourceData = {
 export function buildAiReportPayload(period: Exclude<AiReportPeriod, 'range'>, anchor: string, source: AiReportSourceData): AiReportPayload {
   const start = period === 'week' ? startOfWeek(anchor) : startOfMonth(anchor);
   const end = period === 'week' ? endOfWeek(anchor) : endOfMonth(anchor);
-  const entries = period === 'week' ? entriesForWeek(source.entries, anchor) : entriesForMonth(source.entries, anchor);
-  const externalCareerIds = ['external', 'interview', 'result', ...source.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id)];
-
-  return {
-    app: 'trajectory',
-    version: 3,
-    period,
-    start,
-    end,
-    generatedAt: new Date().toISOString(),
-    summary: summarize(entries, externalCareerIds),
-    observations: buildObservations(entries),
-    factorSummaries: factorSummaries(entries),
-    entries,
-    results: resultsForPeriod(source.results, start, end),
-    lifeEvents: source.lifeEvents.filter((event) => event.date >= start && event.date <= end).sort((a, b) => b.date.localeCompare(a.date)),
+  const dataThrough = end < todayKey() ? end : todayKey();
+  return buildPayload(period, start, end, dataThrough, source, {
     weeklyReview: period === 'week' ? source.reviews.find((review) => review.weekStart === start) : undefined,
+    previousWeeklyReview: period === 'week' ? source.reviews.find((review) => review.weekStart === addDays(start, -7)) : undefined,
     monthlyReview: period === 'month' ? source.monthlyReviews.find((review) => review.monthStart === start) : undefined,
-    settingsSnapshot: {
-      activeLifeAreas: source.settings.activeLifeAreas,
-      activeFocusTitle: source.settings.activeFocusTitle,
-      externalEvidenceCriterion: source.settings.externalEvidenceCriterion,
-      nutritionGoalCriterion: source.settings.nutritionGoalCriterion,
-      experimentActive: source.settings.experiment.active,
-      experimentTitle: source.settings.experiment.title,
-      experimentHypothesis: source.settings.experiment.hypothesis,
-      experimentTargetMetric: source.settings.experiment.targetMetric,
-    },
-  };
+    previousMonthlyReview: period === 'month' ? source.monthlyReviews.find((review) => review.monthStart === addMonths(start, -1)) : undefined,
+  });
 }
 
 export function buildAiReportRangePayload(rangeMonths: number, anchor: string, source: AiReportSourceData): AiReportPayload {
   const start = startOfMonth(addMonths(anchor, -(rangeMonths - 1)));
-  const end = anchor;
-  const entries = entriesForPeriod(source.entries, start, end);
-  const externalCareerIds = ['external', 'interview', 'result', ...source.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id)];
+  const end = anchor < todayKey() ? anchor : todayKey();
+  return buildPayload('range', start, end, end, source, {
+    rangeMonths,
+    monthlyReviews: source.monthlyReviews.filter((review) => review.monthStart >= start && review.monthStart <= end).sort((a, b) => a.monthStart.localeCompare(b.monthStart)),
+  });
+}
+
+function buildPayload(
+  period: AiReportPeriod,
+  start: string,
+  end: string,
+  dataThrough: string,
+  source: AiReportSourceData,
+  extra: Partial<AiReportPayload>,
+): AiReportPayload {
+  const entries = dataThrough >= start ? entriesForPeriod(source.entries, start, dataThrough) : [];
+  const careerItems = [...careerOptions, ...source.settings.customCareerOptions];
+  const factorItems = [...eveningFactorOptions, ...source.settings.customEveningFactorOptions];
+  const externalCareerIds = careerItems.filter((option) => option.countsAsExternal || ['external', 'interview', 'result'].includes(option.id)).map((option) => option.id);
 
   return {
     app: 'trajectory',
-    version: 3,
-    period: 'range',
-    rangeMonths,
+    version: 4,
+    period,
     start,
     end,
+    dataThrough,
     generatedAt: new Date().toISOString(),
     summary: summarize(entries, externalCareerIds),
-    observations: buildObservations(entries),
-    factorSummaries: factorSummaries(entries),
+    observations: buildObservations(entries, factorItems),
+    factorSummaries: factorSummaries(entries, factorItems),
     entries,
-    results: resultsForPeriod(source.results, start, end),
-    lifeEvents: source.lifeEvents.filter((event) => event.date >= start && event.date <= end).sort((a, b) => b.date.localeCompare(a.date)),
-    monthlyReviews: source.monthlyReviews.filter((review) => review.monthStart >= start && review.monthStart <= end).sort((a, b) => a.monthStart.localeCompare(b.monthStart)),
+    results: dataThrough >= start ? resultsForPeriod(source.results, start, dataThrough) : [],
+    lifeEvents: source.lifeEvents.filter((event) => event.date >= start && event.date <= dataThrough).sort((a, b) => b.date.localeCompare(a.date)),
+    labels: buildLabelDictionary(source.settings),
     settingsSnapshot: {
       activeLifeAreas: source.settings.activeLifeAreas,
       activeFocusTitle: source.settings.activeFocusTitle,
       externalEvidenceCriterion: source.settings.externalEvidenceCriterion,
       nutritionGoalCriterion: source.settings.nutritionGoalCriterion,
-      experimentActive: source.settings.experiment.active,
-      experimentTitle: source.settings.experiment.title,
-      experimentHypothesis: source.settings.experiment.hypothesis,
-      experimentTargetMetric: source.settings.experiment.targetMetric,
+      experiment: structuredClone(source.settings.experiment),
     },
+    ...extra,
+  };
+}
+
+function buildLabelDictionary(settings: AppSettings) {
+  const copyOptions = <T extends string>(options: Array<{ id: T; label: string; countsAsExternal?: boolean; archived?: boolean }>) => options.map(({ id, label, countsAsExternal, archived }) => ({ id, label, ...(countsAsExternal ? { countsAsExternal: true } : {}), ...(archived ? { archived: true } : {}) }));
+  return {
+    career: copyOptions([...careerOptions, ...settings.customCareerOptions]),
+    lifeAreas: copyOptions([...lifeAreaOptions, ...settings.customLifeAreaOptions]),
+    eveningFactors: copyOptions([...eveningFactorOptions, ...settings.customEveningFactorOptions]),
+    activities: copyOptions(activityOptions),
+    actionDirections: copyOptions(actionDirectionOptions),
+    nutrition: copyOptions(nutritionOptions),
+    specialDays: copyOptions(specialDayOptions),
+    eventTypes: copyOptions(lifeEventTypeOptions),
+    resultAreas: copyOptions([...resultAreaOptions, ...settings.customLifeAreaOptions]),
   };
 }
 
@@ -121,25 +144,27 @@ export function buildAiReportPrompt(payload: AiReportPayload, settings: AppSetti
       : `${payload.rangeMonths ?? 'несколько'} месяцев: ${formatDate(payload.start, { month: 'short', year: 'numeric' })} — ${formatDate(payload.end, { month: 'short', year: 'numeric' })}`;
 
   return [
-    `Проанализируй данные приложения "Траектория" за ${periodTitle}.`,
+    `Проанализируй данные личного трекера «Траектория» за ${periodTitle}. Фактические данные доступны по ${formatDate(payload.dataThrough, { day: 'numeric', month: 'long', year: 'numeric' })}.`,
     '',
-    'Роль: спокойный аналитик поведения. Не морализируй, не ставь диагнозы, не используй стыд, оценки личности, streaks или общий балл.',
-    'Цель: помочь увидеть факты, повторяющиеся факторы, возможные связи и 1-3 понятных изменения на следующий период.',
+    'Роль: спокойный аналитик поведения. Не морализируй, не ставь диагнозы, не оценивай личность и не считай общий балл.',
+    'Цель: показать факты, повторяющиеся условия, осторожные гипотезы и 1–3 практических изменения на следующий период.',
     '',
     'Формат ответа:',
-    '1. Короткая фактическая сводка.',
-    '2. Что поддерживало движение.',
-    '3. Что, вероятно, мешало сну, энергии, действиям или цели по весу.',
-    '4. Где подготовка могла заменять реальные шаги: отклик, разговор, публикацию, встречу, собеседование или другой ответ извне.',
-    '5. Одно главное изменение на следующий период и короткий план если-то.',
-    '6. Что не стоит переинтерпретировать из-за малого количества данных или особых дней.',
-    '7. Если есть сохранённый прошлый обзор: что из принятого решения подтвердилось, а что нет.',
+    '1. Короткая фактическая сводка с числом наблюдений.',
+    '2. Что поддерживало состояние и движение.',
+    '3. Что могло мешать; называй это связью, а не причиной.',
+    '4. Какие действия дали внешний результат, а где преобладала подготовка.',
+    '5. Одно главное изменение и короткий план «если — то».',
+    '6. Ограничения данных: пропуски, малая выборка, особые дни и неполный период.',
+    '7. Если есть прошлый обзор, сопоставь его решение с последующими фактами.',
     '',
-    'Правила анализа данных:',
-    '- всегда учитывай число наблюдений по конкретной метрике, а не только общее число записей;',
+    'Правила:',
+    '- технические идентификаторы расшифровывай через объект labels;',
+    '- пропуск не считай нулём или ответом «нет»;',
     '- особые дни не используй как обычную базу сравнения;',
-    '- фактор считай только возможной связью и сравнивай с днями без него;',
-    '- неполный текущий месяц не сравнивай с полным без поправки;',
+    '- вечерний фактор сравнивай с отмеченными днями без него;',
+    '- не обсуждай карьеру, вес или эксперимент, если соответствующих данных нет;',
+    '- не продолжай данные в будущее и не выдавай сглаживание за прогноз;',
     '',
     summaryText ? `Локальная сводка приложения: ${summaryText}` : '',
     '',

@@ -16,6 +16,7 @@ const router = createRouter({
     { path: '/week', component: () => import('./views/WeekView.vue'), meta: { title: 'Неделя' } },
     { path: '/month', component: () => import('./views/MonthView.vue'), meta: { title: 'Месяц' } },
     { path: '/trends', component: () => import('./views/TrendsView.vue'), meta: { title: 'Тренды' } },
+    { path: '/more', component: () => import('./views/MoreView.vue'), meta: { title: 'Ещё' } },
     { path: '/settings', component: () => import('./views/SettingsView.vue'), meta: { title: 'Настройки' } }
   ]
 });

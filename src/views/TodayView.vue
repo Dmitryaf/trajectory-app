@@ -12,6 +12,7 @@ import {
   activityOptions,
   careerOptions,
   emptyDailyEntry,
+  experimentAppliesToDate,
   eveningFactorOptions,
   lifeAreaOptions,
   nutritionOptions,
@@ -34,7 +35,8 @@ const validationMessage = ref('');
 const originalEntrySnapshot = ref('');
 const form = reactive<DailyEntry>(emptyDailyEntry(selectedDate.value));
 
-const careerItems = computed(() => [...careerOptions, ...store.settings.customCareerOptions]);
+const careerItems = computed(() => [...careerOptions, ...store.settings.customCareerOptions.filter((option) => !option.archived)]);
+const eveningFactorItems = computed(() => [...eveningFactorOptions, ...store.settings.customEveningFactorOptions.filter((option) => !option.archived)]);
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
 const activeLifeOptions = computed(() => lifeAreaItems.value.filter((option) => store.settings.activeLifeAreas.includes(option.id)));
 const isToday = computed(() => selectedDate.value === todayKey());
@@ -42,7 +44,7 @@ const weekEntryCount = computed(() => entriesForWeek(store.dailyEntries, selecte
 const currentWeekEntries = computed(() => entriesForWeek(store.dailyEntries, todayKey()));
 const externalCareerIds = computed(() => ['external', 'interview', 'result', ...store.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id)]);
 const currentWeekSummary = computed(() => summarize(currentWeekEntries.value, externalCareerIds.value));
-const currentWeekObservation = computed(() => buildObservations(currentWeekEntries.value)[0]);
+const currentWeekObservation = computed(() => buildObservations(currentWeekEntries.value, eveningFactorItems.value)[0]);
 const currentMonthEntries = computed(() => entriesForPeriod(store.dailyEntries, startOfMonth(todayKey()), endOfMonth(todayKey())));
 const currentMonthSummary = computed(() => summarize(currentMonthEntries.value, externalCareerIds.value));
 const isWeekReviewWindow = computed(() => isToday.value && todayKey() >= addDays(endOfWeek(todayKey()), -1));
@@ -62,6 +64,9 @@ const saveButtonText = computed(() => {
   return 'Сохранить день';
 });
 const saveButtonDisabled = computed(() => hasSavedEntry.value && !isDirty.value && !saved.value);
+const experimentAppliesToSelectedDate = computed(() => {
+  return experimentAppliesToDate(store.settings.experiment, selectedDate.value);
+});
 const reviewReminders = computed(() => [
   isWeekReviewWindow.value && currentWeekSummary.value.ordinaryCoveredEntriesCount >= 4 && currentWeekSummary.value.ordinaryCoreEntriesCount >= 2 && !store.reviewByWeek(startOfWeek(todayKey()))
     ? { id: 'week', title: 'Неделя готова к разбору', text: `${currentWeekSummary.value.ordinaryCoveredEntriesCount} заполненных дней уже достаточно для короткого обзора.`, to: '/week', label: 'Открыть неделю' }
@@ -164,7 +169,7 @@ function setLifeAreas(value: string | string[] | null) {
         <h1>{{ isToday ? 'Сегодня' : formatDate(selectedDate, { day: 'numeric', month: 'long', weekday: 'long' }) }}</h1>
         <p>Только факты. Обычно это занимает меньше минуты.</p>
       </div>
-      <input v-model="selectedDate" class="date-input" type="date" aria-label="Дата записи" />
+      <input v-model="selectedDate" class="date-input" type="date" :max="todayKey()" aria-label="Дата записи" />
     </div>
 
     <section v-if="isToday && currentWeekSummary.coveredEntriesCount" class="today-pulse" aria-label="Пульс недели">
@@ -191,7 +196,7 @@ function setLifeAreas(value: string | string[] | null) {
     <section v-for="reminder in reviewReminders" :key="reminder.id" class="review-nudge" aria-label="Период готов к обзору">
       <div>
         <strong>{{ reminder.title }}</strong>
-        <p>{{ reminder.text }} Пакет для GPT можно скачать в обзоре периода.</p>
+        <p>{{ reminder.text }}</p>
       </div>
       <RouterLink class="secondary-button" :to="reminder.to">{{ reminder.label }}</RouterLink>
     </section>
@@ -241,7 +246,7 @@ function setLifeAreas(value: string | string[] | null) {
         ></textarea>
         <div class="factor-block">
           <label class="field-label">Факторы перед этим сном</label>
-          <ChipGroup :model-value="form.eveningFactors" :options="eveningFactorOptions" multiple @update:model-value="setEveningFactors" />
+          <ChipGroup :model-value="form.eveningFactors" :options="eveningFactorItems" multiple @update:model-value="setEveningFactors" />
           <button class="none-option" :class="{ selected: form.eveningFactorsRecorded && !form.eveningFactors.length }" type="button" @click="form.eveningFactors = []; form.eveningFactorsRecorded = true">Ничего из списка</button>
           <textarea
             v-if="form.eveningFactors.length"
@@ -325,17 +330,18 @@ function setLifeAreas(value: string | string[] | null) {
         </template>
       </article>
 
-      <article v-if="store.settings.experiment.active" class="form-card form-card--experiment">
+      <article v-if="experimentAppliesToSelectedDate" class="form-card form-card--experiment">
         <div class="form-card__heading">
           <span class="section-icon section-icon--orange">⌁</span>
           <div><h2>Текущий эксперимент</h2><p>{{ store.settings.experiment.title }}</p></div>
         </div>
         <p v-if="store.settings.experiment.hypothesis" class="form-context">Гипотеза: {{ store.settings.experiment.hypothesis }}</p>
         <p v-if="store.settings.experiment.targetMetric" class="form-context">Проверяем: {{ store.settings.experiment.targetMetric }}</p>
+        <label class="field-label">Условие эксперимента сегодня выполнено?</label>
         <div class="binary-choice">
-          <button type="button" :class="{ selected: form.experimentCompleted === true }" @click="form.experimentCompleted = true">Да</button>
-          <button type="button" :class="{ selected: form.experimentCompleted === false }" @click="form.experimentCompleted = false">Нет</button>
-          <button type="button" :class="{ selected: form.experimentCompleted === null }" @click="form.experimentCompleted = null">Пропустить</button>
+          <button type="button" :class="{ selected: form.experimentCompleted === true }" @click="form.experimentCompleted = true">Выполнено</button>
+          <button type="button" :class="{ selected: form.experimentCompleted === false }" @click="form.experimentCompleted = false">Не выполнено</button>
+          <button type="button" :class="{ selected: form.experimentCompleted === null }" @click="form.experimentCompleted = null">Не отмечать</button>
         </div>
       </article>
 

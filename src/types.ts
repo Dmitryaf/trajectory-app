@@ -10,7 +10,7 @@ export type NutritionState = "supports_goal" | "neutral" | "blocks_goal";
 export type ActionDirectionId = "external" | "preparation" | "maintenance" | "recovery" | "drift";
 export type SpecialDayId = "sick" | "travel" | "overload" | "event" | "recovery" | "other";
 export type LifeEventType = "change" | "milestone" | "decision" | "event" | "insight" | "other";
-export type EveningFactorId =
+export type BaseEveningFactorId =
   | "late_bedtime"
   | "screen"
   | "news"
@@ -21,6 +21,7 @@ export type EveningFactorId =
   | "caffeine_alcohol"
   | "anxiety_overload"
   | "other";
+export type EveningFactorId = BaseEveningFactorId | string;
 export type BaseLifeAreaId =
   | "family"
   | "reading"
@@ -115,9 +116,11 @@ export type Experiment = {
 
 export type AppSettings = {
   id: "main";
+  settingsVersion: number;
   activeLifeAreas: LifeAreaId[];
   customCareerOptions: Option<CareerState>[];
   customLifeAreaOptions: Option<LifeAreaId>[];
+  customEveningFactorOptions: Option<EveningFactorId>[];
   activeFocusTitle: string;
   externalEvidenceCriterion: string;
   nutritionGoalCriterion: string;
@@ -130,6 +133,7 @@ export type Option<T extends string = string> = {
   icon?: string;
   custom?: boolean;
   countsAsExternal?: boolean;
+  archived?: boolean;
 };
 
 export const careerOptions: Option<BaseCareerState>[] = [
@@ -173,14 +177,13 @@ export const specialDayOptions: Option<SpecialDayId>[] = [
 
 export const lifeEventTypeOptions: Option<LifeEventType>[] = [
   { id: "change", label: "Изменение", icon: "↻" },
-  { id: "milestone", label: "Веха", icon: "◆" },
   { id: "decision", label: "Решение", icon: "✓" },
   { id: "event", label: "Событие", icon: "◉" },
   { id: "insight", label: "Наблюдение", icon: "✦" },
   { id: "other", label: "Другое", icon: "·" },
 ];
 
-export const eveningFactorOptions: Option<EveningFactorId>[] = [
+export const eveningFactorOptions: Option<BaseEveningFactorId>[] = [
   { id: "late_bedtime", label: "Поздно лёг", icon: "◷" },
   { id: "screen", label: "Экран перед сном", icon: "▣" },
   { id: "news", label: "Новости", icon: "!" },
@@ -213,9 +216,11 @@ export const resultAreaOptions: Option<ResultRecord["area"]>[] = [
 
 export const defaultSettings: AppSettings = {
   id: "main",
-  activeLifeAreas: ["family", "reading", "creativity", "spiritual", "rest"],
+  settingsVersion: 2,
+  activeLifeAreas: ["family", "reading", "creativity", "rest"],
   customCareerOptions: [],
   customLifeAreaOptions: [],
+  customEveningFactorOptions: [],
   activeFocusTitle: "",
   externalEvidenceCriterion: "",
   nutritionGoalCriterion: "",
@@ -228,14 +233,21 @@ export function normalizeSettings(settings: Partial<AppSettings> | null | undefi
   const source = settings ?? {};
   const customCareerOptions = sanitizeOptions(source.customCareerOptions);
   const customLifeAreaOptions = sanitizeOptions(source.customLifeAreaOptions);
+  const customEveningFactorOptions = sanitizeOptions(source.customEveningFactorOptions);
+
+  const activeLifeAreas = Array.isArray(source.activeLifeAreas)
+    ? source.activeLifeAreas.filter((area): area is LifeAreaId => typeof area === "string")
+    : defaultSettings.activeLifeAreas;
 
   return {
     ...structuredClone(defaultSettings),
     ...source,
     id: "main",
-    activeLifeAreas: Array.isArray(source.activeLifeAreas) ? source.activeLifeAreas.filter((area): area is LifeAreaId => typeof area === "string") : defaultSettings.activeLifeAreas,
+    settingsVersion: defaultSettings.settingsVersion,
+    activeLifeAreas: (source.settingsVersion ?? 1) < 2 ? activeLifeAreas.filter((area) => area !== "spiritual") : activeLifeAreas,
     customCareerOptions,
     customLifeAreaOptions,
+    customEveningFactorOptions,
     activeFocusTitle: typeof source.activeFocusTitle === "string" ? source.activeFocusTitle : "",
     externalEvidenceCriterion: typeof source.externalEvidenceCriterion === "string" ? source.externalEvidenceCriterion : "",
     nutritionGoalCriterion: typeof source.nutritionGoalCriterion === "string" ? source.nutritionGoalCriterion : "",
@@ -243,9 +255,15 @@ export function normalizeSettings(settings: Partial<AppSettings> | null | undefi
   };
 }
 
-export function createCustomOption(label: string, prefix: "career" | "life"): Option<string> {
+export function createCustomOption(label: string, prefix: "career" | "life" | "evening"): Option<string> {
   const suffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   return { id: `custom:${prefix}:${suffix}`, label: label.trim(), icon: "+", custom: true };
+}
+
+export function experimentAppliesToDate(experiment: Experiment, date: string): boolean {
+  return experiment.active
+    && (!experiment.startDate || date >= experiment.startDate)
+    && (!experiment.endDate || date <= experiment.endDate);
 }
 
 function sanitizeOptions(options: unknown): Option<string>[] {
@@ -258,6 +276,7 @@ function sanitizeOptions(options: unknown): Option<string>[] {
       icon: option.icon ?? "+",
       custom: true,
       countsAsExternal: Boolean(option.countsAsExternal),
+      archived: Boolean(option.archived),
     }));
 }
 
@@ -342,7 +361,7 @@ export function normalizeDailyEntry(entry: Partial<DailyEntry> & { date: string 
 export function normalizeLifeEvent(event: Partial<LifeEventRecord> & { date: string; title: string }): LifeEventRecord {
   return {
     date: event.date,
-    type: typeof event.type === "string" ? event.type : "event",
+    type: event.type === "milestone" ? "change" : typeof event.type === "string" ? event.type : "event",
     title: typeof event.title === "string" ? event.title : "",
     note: typeof event.note === "string" ? event.note : "",
     createdAt: typeof event.createdAt === "string" ? event.createdAt : new Date().toISOString(),

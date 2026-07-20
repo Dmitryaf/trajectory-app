@@ -11,7 +11,7 @@ export function buildRangePackage(rangeMonths: number, anchor: string, source: A
 
 export function downloadAiPackage(payload: AiReportPayload) {
   const suffix = payload.period === 'range' ? `${payload.rangeMonths}-months` : payload.period;
-  downloadJson(payload, `trajectory-ai-${suffix}-${payload.start}-${payload.end}.json`);
+  downloadJson(payload, `trajectory-analysis-${suffix}-${payload.start}-${payload.dataThrough}.json`);
 }
 
 export async function copyAiPrompt(payload: AiReportPayload, settings: AppSettings) {

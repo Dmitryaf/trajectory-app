@@ -132,8 +132,9 @@ export const useAppStore = defineStore('app', {
       void this.syncCloudSnapshot();
     },
     async saveSettings(settings: AppSettings) {
-      await db.settings.put(plainCopy(settings));
-      this.settings = plainCopy(settings);
+      const normalized = plainCopy(normalizeSettings(settings));
+      await db.settings.put(normalized);
+      this.settings = normalized;
       void this.syncCloudSnapshot();
     },
     exportData(): ExportPayload {
