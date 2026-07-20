@@ -6,6 +6,7 @@ import { useAppStore } from '../stores/app';
 import { addDays, endOfMonth, endOfWeek, formatDate, formatMinutes, startOfMonth, startOfWeek, todayKey } from '../services/dates';
 import { buildObservations, entriesForPeriod, entriesForWeek, summarize } from '../services/analytics';
 import { notifyError, notifySaved } from '../services/notifications';
+import { inputHoursToMinutes, minutesToInputHours } from '../services/numbers';
 import { plainCopy } from '../services/plain';
 import {
   actionDirectionOptions,
@@ -82,8 +83,8 @@ function snapshotEntry(entry: DailyEntry) {
   const entryForSnapshot = { ...plainCopy(entry), updatedAt: '' };
   return JSON.stringify({
     ...entryForSnapshot,
-    sleepMinutes: sleepHours.value === null ? null : Math.round(sleepHours.value * 60),
-    timeInBedMinutes: timeInBedHours.value === null ? null : Math.round(timeInBedHours.value * 60),
+    sleepMinutes: inputHoursToMinutes(sleepHours.value),
+    timeInBedMinutes: inputHoursToMinutes(timeInBedHours.value),
     weightKg: normalizeWeight(weightKg.value)
   });
 }
@@ -96,8 +97,8 @@ function loadEntry(date: string) {
   validationMessage.value = '';
   const existing = store.entryByDate(date);
   Object.assign(form, existing ? plainCopy(existing) : emptyDailyEntry(date));
-  sleepHours.value = form.sleepMinutes === null ? null : form.sleepMinutes / 60;
-  timeInBedHours.value = form.timeInBedMinutes === null ? null : form.timeInBedMinutes / 60;
+  sleepHours.value = minutesToInputHours(form.sleepMinutes);
+  timeInBedHours.value = minutesToInputHours(form.timeInBedMinutes);
   weightKg.value = form.weightKg;
   originalEntrySnapshot.value = snapshotEntry(form);
   saved.value = false;
@@ -106,7 +107,7 @@ function loadEntry(date: string) {
 watch(selectedDate, loadEntry, { immediate: true });
 watch(() => [form.bedtime, form.wakeTime], ([bedtime, wakeTime]) => {
   const duration = timeBetween(String(bedtime), String(wakeTime));
-  if (duration !== null) timeInBedHours.value = duration / 60;
+  if (duration !== null) timeInBedHours.value = minutesToInputHours(duration);
 });
 
 function timeBetween(start: string, end: string): number | null {
@@ -126,8 +127,8 @@ async function save() {
     return;
   }
   const entry = plainCopy(form);
-  entry.sleepMinutes = sleepHours.value === null ? null : Math.round(sleepHours.value * 60);
-  entry.timeInBedMinutes = timeInBedHours.value === null ? null : Math.round(timeInBedHours.value * 60);
+  entry.sleepMinutes = inputHoursToMinutes(sleepHours.value);
+  entry.timeInBedMinutes = inputHoursToMinutes(timeInBedHours.value);
   entry.weightKg = normalizeWeight(weightKg.value);
   if (!hasSavedEntry.value && !entry.focusTitle.trim()) entry.focusTitle = store.settings.activeFocusTitle.trim();
   if (!hasSavedEntry.value && !entry.externalEvidenceCriterion.trim()) entry.externalEvidenceCriterion = store.settings.externalEvidenceCriterion.trim();
@@ -219,14 +220,14 @@ function setLifeAreas(value: string | string[] | null) {
           <div>
             <label class="field-label" for="sleep-hours">Примерно спал</label>
             <div class="number-field">
-              <input id="sleep-hours" v-model.number="sleepHours" type="number" min="0" max="16" step="0.25" inputmode="decimal" placeholder="7.5" />
+              <input id="sleep-hours" v-model.number="sleepHours" type="number" min="0" max="16" step="0.01" inputmode="decimal" placeholder="7.5" />
               <span>часов</span>
             </div>
           </div>
           <div>
             <label class="field-label" for="time-in-bed-hours">В кровати</label>
             <div class="number-field">
-              <input id="time-in-bed-hours" v-model.number="timeInBedHours" type="number" min="0" max="18" step="0.25" inputmode="decimal" placeholder="8.5" />
+              <input id="time-in-bed-hours" v-model.number="timeInBedHours" type="number" min="0" max="18" step="0.01" inputmode="decimal" placeholder="8.5" />
               <span>часов</span>
             </div>
           </div>
