@@ -4,7 +4,7 @@ import { RouterLink, RouterView } from 'vue-router';
 import { Toaster } from 'vue-sonner';
 import 'vue-sonner/style.css';
 import AuthGate from './components/AuthGate.vue';
-import { getCloudSyncMeta, loadCloudSnapshot, markCloudSyncConflict, markCloudSyncSynced } from './services/cloudSync';
+import { prepareLocalCacheOwner, reconcileCloudSnapshotOnStartup } from './features/sync/startup';
 import { notifyInfo, notifyUnknownError } from './services/notifications';
 import { useAppStore } from './stores/app';
 import { useAuthStore } from './stores/auth';
@@ -12,7 +12,6 @@ import { useAuthStore } from './stores/auth';
 const store = useAppStore();
 const auth = useAuthStore();
 const canOpenApp = computed(() => auth.initialized && auth.isAuthenticated);
-const localOwnerKey = 'trajectory:local-owner-id';
 let appDataLoadPromise: Promise<void> | null = null;
 
 onMounted(async () => {
@@ -34,9 +33,9 @@ async function loadAppData() {
 
   appDataLoadPromise = (async () => {
     try {
-      await prepareLocalCacheOwner();
+      await prepareLocalCacheOwner(store, auth.requiresAuth ? auth.session?.user.id : null);
       await store.load();
-      await reconcileCloudSnapshotOnStartup();
+      await reconcileCloudSnapshotOnStartup(store, auth.requiresAuth ? auth.session?.user.id : null);
     } catch (error) {
       console.error('Не удалось загрузить локальные данные', error);
     } finally {
@@ -50,69 +49,6 @@ async function loadAppData() {
 async function retryLoadAppData() {
   store.unload();
   await loadAppData();
-}
-
-async function reconcileCloudSnapshotOnStartup() {
-  if (!auth.requiresAuth || !auth.session?.user.id) return;
-
-  try {
-    const userId = auth.session.user.id;
-    const snapshot = await loadCloudSnapshot();
-    const meta = getCloudSyncMeta(userId);
-
-    if (!snapshot) {
-      if (hasLocalData()) await store.syncCloudSnapshot({ force: true });
-      else store.setCloudSyncState('synced', 'Облако пока пустое');
-      return;
-    }
-
-    if (!hasLocalData()) {
-      await store.importData(snapshot.payload, { syncCloud: false });
-      markCloudSyncSynced(userId, snapshot.updatedAt);
-      store.setCloudSyncState('synced', `Загружена облачная копия: ${new Date(snapshot.updatedAt).toLocaleString('ru-RU')}`, { updatedAt: snapshot.updatedAt });
-      return;
-    }
-
-    if (meta.lastCloudUpdatedAt === snapshot.updatedAt) {
-      if (meta.pending) await store.syncCloudSnapshot({ force: true });
-      else store.setCloudSyncState('synced', `Облако синхронизировано: ${new Date(snapshot.updatedAt).toLocaleString('ru-RU')}`, { updatedAt: snapshot.updatedAt });
-      return;
-    }
-
-    if (meta.lastCloudUpdatedAt && !meta.pending && !meta.conflict) {
-      await store.importData(snapshot.payload, { syncCloud: false });
-      markCloudSyncSynced(userId, snapshot.updatedAt);
-      store.setCloudSyncState('synced', `Загружена более свежая облачная копия: ${new Date(snapshot.updatedAt).toLocaleString('ru-RU')}`, { updatedAt: snapshot.updatedAt });
-      return;
-    }
-
-    markCloudSyncConflict(userId, snapshot.updatedAt);
-    store.setCloudSyncState('conflict', 'В этом браузере и в облаке есть разные данные. Выбери действие в настройках.', { updatedAt: snapshot.updatedAt });
-  } catch (error) {
-    console.warn('Не удалось загрузить облачную копию', error);
-    store.setCloudSyncState('pending', 'Локальные данные доступны. Облако пока не проверено.', { error: error instanceof Error ? error.message : 'Не удалось проверить облако' });
-  }
-}
-
-function hasLocalData() {
-  return Boolean(
-    store.dailyEntries.length
-      || store.results.length
-      || store.lifeEvents.length
-      || store.weeklyReviews.length
-      || store.monthlyReviews.length
-  );
-}
-
-async function prepareLocalCacheOwner() {
-  if (!auth.requiresAuth || !auth.session?.user.id) return;
-
-  const userId = auth.session.user.id;
-  const localOwnerId = window.localStorage.getItem(localOwnerKey);
-  if (localOwnerId && localOwnerId !== userId) {
-    await store.clearAll({ syncCloud: false });
-  }
-  window.localStorage.setItem(localOwnerKey, userId);
 }
 
 async function signOut() {
