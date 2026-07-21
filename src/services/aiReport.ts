@@ -113,7 +113,7 @@ function buildPayload(
       activeFocusTitle: source.settings.activeFocusTitle,
       externalEvidenceCriterion: source.settings.externalEvidenceCriterion,
       nutritionGoalCriterion: source.settings.nutritionGoalCriterion,
-      experiment: structuredClone(source.settings.experiment),
+      experiment: { ...source.settings.experiment },
     },
     ...extra,
   };

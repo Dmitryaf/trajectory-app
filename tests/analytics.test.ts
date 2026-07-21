@@ -1,3 +1,4 @@
+import { reactive } from 'vue';
 import { describe, expect, it } from 'vitest';
 import { buildCoverageSeries, buildEventComparison, buildObservations, buildRangeReviewCues, buildReviewCues, dataCoverageLevel, entriesForPeriod, entriesForWeek, factorSummaries, summarize, weekSummaryText } from '../src/services/analytics';
 import { buildAiReportPayload, buildAiReportRangePayload } from '../src/services/aiReport';
@@ -134,6 +135,23 @@ describe('analytics', () => {
     expect(payload.factorSummaries[0].label).toBe('Душ');
     expect(payload.settingsSnapshot.experiment.conclusion).toBe('unclear');
     expect(payload.previousWeeklyReview?.nextLever).toBe('Ложиться раньше');
+  });
+
+  it('builds an analysis package from reactive application settings', () => {
+    const settings = reactive(structuredClone(defaultSettings));
+    settings.experiment = { ...settings.experiment, active: true, title: 'Спокойный вечер' };
+
+    const payload = buildAiReportPayload('week', '2026-07-16', {
+      entries: [],
+      results: [],
+      lifeEvents: [],
+      reviews: [],
+      monthlyReviews: [],
+      settings,
+    });
+
+    expect(payload.settingsSnapshot.experiment.title).toBe('Спокойный вечер');
+    expect(() => JSON.stringify(payload)).not.toThrow();
   });
 
   it('limits a long-range analysis package to its selected data boundary', () => {
