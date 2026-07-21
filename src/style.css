@@ -568,6 +568,8 @@ textarea { resize: vertical; min-height: 64px; }
 .auth-footnote { margin: 14px 0 0; color: #7a8497; font-size: 12px; line-height: 1.5; }
 
 @media (min-width: 980px) {
+  .header-settings-link { width: 38px; min-height: 38px; justify-content: center; padding: 0; }
+  .header-settings-link strong { display: none; }
   .account-strip__email { max-width: 150px; }
   .bottom-nav { position: absolute; top: 8px; bottom: auto; gap: 2px; }
   .bottom-nav__item { min-width: 60px; padding: 8px 6px; }

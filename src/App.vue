@@ -128,7 +128,7 @@ const navItems = [
         <span><strong>Траектория</strong><small>факты, а не оценка</small></span>
       </RouterLink>
       <div v-if="canOpenApp && store.loaded" class="header-actions">
-        <RouterLink to="/settings" class="header-settings-link" aria-label="Открыть настройки">
+        <RouterLink to="/settings" class="header-settings-link" aria-label="Открыть настройки" title="Настройки">
           <span>⚙</span><strong>Настройки</strong>
         </RouterLink>
         <div v-if="auth.requiresAuth" class="account-strip" aria-label="Аккаунт">
