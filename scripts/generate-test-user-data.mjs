@@ -39,7 +39,7 @@ const factorCycles = [
   [],
   ['screen'],
   ['work_code', 'late_bedtime'],
-  ['custom:evening:shower'],
+  ['anxiety_overload'],
   ['late_food', 'screen'],
 ];
 const activityCycles = [['walk'], ['workout'], [], ['boxing'], ['recovery']];
@@ -56,7 +56,7 @@ const dailyEntries = trackedDates.map((date, index) => {
   const factors = factorCycles[index % factorCycles.length];
   const special = specialDays[date] ?? null;
   const careerStates = index % 4 === 0
-    ? ['preparation', 'custom:career:responses']
+    ? ['preparation', 'external']
     : index % 5 === 0
       ? ['project', 'external']
       : [index % 3 === 0 ? 'project' : 'preparation'];
@@ -77,7 +77,7 @@ const dailyEntries = trackedDates.map((date, index) => {
     stateContext: special ? special[1] : index % 6 === 0 ? 'День с большим количеством встреч' : '',
     eveningFactors: factors,
     eveningFactorsRecorded: true,
-    eveningFactorNote: factors.includes('custom:evening:shower') ? 'После душа было проще переключиться на сон' : '',
+    eveningFactorNote: factors.includes('anxiety_overload') ? 'Вечером было сложно переключиться после насыщенного дня' : '',
     specialDay: special?.[0] ?? null,
     specialDayNote: special?.[1] ?? '',
     careerState: careerStates[0],
@@ -88,8 +88,8 @@ const dailyEntries = trackedDates.map((date, index) => {
     nutritionNote: index % 7 === 0 ? 'Поздний ужин после насыщенного дня' : '',
     nutritionCriterion: 'Регулярные приёмы пищи без позднего переедания',
     weightKg: new Date(`${date}T00:00:00Z`).getUTCDay() === 1 ? Number((89.3 - index * 0.055).toFixed(1)) : null,
-    actionDirection: careerStates.some((state) => ['external', 'custom:career:responses'].includes(state)) ? 'external' : index % 6 === 0 ? 'recovery' : 'preparation',
-    actionNote: careerStates.includes('custom:career:responses') ? 'Выбрал вакансию и адаптировал сопроводительное письмо' : '',
+    actionDirection: careerStates.includes('external') ? 'external' : index % 6 === 0 ? 'recovery' : 'preparation',
+    actionNote: careerStates.includes('external') ? 'Выбрал подходящий вариант и подготовил отклик' : '',
     focusTitle: 'Найти устойчивый ритм поиска работы и личного проекта',
     externalEvidenceCriterion: 'Отправленный отклик, назначенный разговор или опубликованный результат',
     lifeAreas: lifeAreaCycles[index % lifeAreaCycles.length],
@@ -102,7 +102,7 @@ const dailyEntries = trackedDates.map((date, index) => {
 
 const resultTitles = [
   ['career', 'Обновил блок опыта в резюме'],
-  ['career', 'Отправил адресный отклик'],
+  ['career', 'Отправил отклик'],
   ['custom:life:personal-projects', 'Собрал новый экран проекта'],
   ['reading', 'Закончил главу и выписал идеи'],
   ['sport', 'Провёл тренировку по плану'],
@@ -189,18 +189,16 @@ const payload = {
   monthlyReviews,
   settings: {
     id: 'main',
-    settingsVersion: 3,
+    settingsVersion: 4,
     activeDailyBlocks: ['sleep', 'career', 'movement', 'nutrition'],
     activeLifeAreas: ['family', 'reading', 'creativity', 'rest', 'friends', 'english', 'custom:life:personal-projects'],
     customCareerOptions: [
-      { id: 'custom:career:responses', label: 'Адресные отклики', icon: '+', custom: true, countsAsExternal: true, archived: false },
       { id: 'custom:career:course', label: 'Учебный курс', icon: '+', custom: true, countsAsExternal: false, archived: true },
     ],
     customLifeAreaOptions: [
       { id: 'custom:life:personal-projects', label: 'Личные проекты', icon: '+', custom: true, archived: false },
     ],
     customEveningFactorOptions: [
-      { id: 'custom:evening:shower', label: 'Спокойный душ', icon: '+', custom: true, archived: false },
       { id: 'custom:evening:music', label: 'Музыка перед сном', icon: '+', custom: true, archived: true },
     ],
     activeFocusTitle: 'Найти устойчивый ритм поиска работы и личного проекта',

@@ -33,6 +33,9 @@ export type BaseLifeAreaId =
 export type LifeAreaId = BaseLifeAreaId | string;
 export type DailyBlockId = "sleep" | "career" | "movement" | "nutrition";
 
+const removedDemoCareerOptionId = "custom:career:responses";
+const removedDemoEveningFactorId = "custom:evening:shower";
+
 export type DailyEntry = {
   date: string;
   bedtime: string;
@@ -225,7 +228,7 @@ export const dailyBlockOptions: Option<DailyBlockId>[] = [
 
 export const defaultSettings: AppSettings = {
   id: "main",
-  settingsVersion: 3,
+  settingsVersion: 4,
   activeDailyBlocks: dailyBlockOptions.map((option) => option.id),
   activeLifeAreas: ["family", "reading", "creativity", "rest"],
   customCareerOptions: [],
@@ -241,9 +244,11 @@ export const externalCareerStates: CareerState[] = ["external", "interview", "re
 
 export function normalizeSettings(settings: Partial<AppSettings> | null | undefined): AppSettings {
   const source = settings ?? {};
-  const customCareerOptions = sanitizeOptions(source.customCareerOptions);
+  const customCareerOptions = sanitizeOptions(source.customCareerOptions)
+    .filter((option) => option.id !== removedDemoCareerOptionId);
   const customLifeAreaOptions = sanitizeOptions(source.customLifeAreaOptions);
-  const customEveningFactorOptions = sanitizeOptions(source.customEveningFactorOptions);
+  const customEveningFactorOptions = sanitizeOptions(source.customEveningFactorOptions)
+    .filter((option) => option.id !== removedDemoEveningFactorId);
 
   const activeLifeAreas = Array.isArray(source.activeLifeAreas)
     ? source.activeLifeAreas.filter((area): area is LifeAreaId => typeof area === "string")
@@ -362,9 +367,12 @@ export function emptyDailyEntry(date: string): DailyEntry {
 }
 
 export function normalizeDailyEntry(entry: Partial<DailyEntry> & { date: string }): DailyEntry {
-  const careerStates = Array.isArray(entry.careerStates)
+  const sourceCareerStates = Array.isArray(entry.careerStates)
     ? Array.from(new Set(entry.careerStates.filter((state): state is CareerState => typeof state === "string")))
     : typeof entry.careerState === "string" ? [entry.careerState] : [];
+  const careerStates = Array.from(new Set(sourceCareerStates.map((state) => (
+    state === removedDemoCareerOptionId ? "external" : state
+  ))));
   const activities = Array.isArray(entry.activities)
     ? entry.activities.filter((activity): activity is ActivityId => activityOptions.some((option) => option.id === activity))
     : [];
@@ -393,7 +401,9 @@ export function normalizeDailyEntry(entry: Partial<DailyEntry> & { date: string 
     lifeAreas: Array.isArray(entry.lifeAreas) ? entry.lifeAreas.filter((area): area is LifeAreaId => typeof area === "string") : [],
     lifeAreasRecorded: typeof entry.lifeAreasRecorded === "boolean" ? entry.lifeAreasRecorded : Array.isArray(entry.lifeAreas) && entry.lifeAreas.length > 0,
     stateContext: typeof entry.stateContext === "string" ? entry.stateContext : "",
-    eveningFactors: Array.isArray(entry.eveningFactors) ? entry.eveningFactors.filter((factor): factor is EveningFactorId => typeof factor === "string") : [],
+    eveningFactors: Array.isArray(entry.eveningFactors)
+      ? entry.eveningFactors.filter((factor): factor is EveningFactorId => typeof factor === "string" && factor !== removedDemoEveningFactorId)
+      : [],
     eveningFactorsRecorded: typeof entry.eveningFactorsRecorded === "boolean" ? entry.eveningFactorsRecorded : Array.isArray(entry.eveningFactors) && entry.eveningFactors.length > 0,
     eveningFactorNote: typeof entry.eveningFactorNote === "string" ? entry.eveningFactorNote : "",
     specialDay: typeof entry.specialDay === "string" && specialDayOptions.some((option) => option.id === entry.specialDay) ? entry.specialDay : null,

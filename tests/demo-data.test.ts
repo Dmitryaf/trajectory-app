@@ -12,17 +12,18 @@ describe('test user fixture', () => {
   it('uses the current import schema and normalized settings', () => {
     expect(fixture.version).toBe(3);
     const settings = normalizeSettings(fixture.settings);
-    expect(settings.settingsVersion).toBe(3);
+    expect(settings.settingsVersion).toBe(4);
     expect(settings.activeDailyBlocks).toEqual(['sleep', 'career', 'movement', 'nutrition']);
     expect(settings.activeLifeAreas).not.toContain('spiritual');
-    expect(settings.customEveningFactorOptions.some((option) => !option.archived)).toBe(true);
+    expect(settings.customCareerOptions.some((option) => option.label === 'Адресные отклики')).toBe(false);
+    expect(settings.customEveningFactorOptions.some((option) => option.label === 'Спокойный душ')).toBe(false);
   });
 
   it('covers new and high-volume UI scenarios', () => {
     const entries = fixture.dailyEntries.map(normalizeDailyEntry);
     expect(entries.length).toBeGreaterThanOrEqual(24);
     expect(entries.some((entry) => entry.careerStates.length > 1)).toBe(true);
-    expect(entries.some((entry) => entry.eveningFactors.includes('custom:evening:shower'))).toBe(true);
+    expect(entries.some((entry) => entry.eveningFactors.includes('anxiety_overload'))).toBe(true);
     expect(entries.some((entry) => entry.specialDay !== null)).toBe(true);
     expect(fixture.results.length).toBeGreaterThan(20);
     expect(fixture.lifeEvents?.length).toBeGreaterThanOrEqual(8);

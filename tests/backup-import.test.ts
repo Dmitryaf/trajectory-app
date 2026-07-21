@@ -81,7 +81,7 @@ describe('backup import', () => {
     expect(store.lifeEvents).toEqual([]);
     expect(store.monthlyReviews).toEqual([]);
     expect(store.weeklyReviews[0].ifThenPlan).toBe('');
-    expect(store.settings.settingsVersion).toBe(3);
+    expect(store.settings.settingsVersion).toBe(4);
     expect(store.settings.activeDailyBlocks).toEqual(['sleep', 'career', 'movement', 'nutrition']);
     expect(store.settings.activeLifeAreas).toEqual(['family']);
 
