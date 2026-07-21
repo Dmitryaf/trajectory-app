@@ -67,7 +67,7 @@ const rhythmOption = computed<EChartsCoreOption>(() => {
   ];
 
   return {
-    color: ['#7367f0', '#11182b'],
+    color: ['#7467e8', '#1d5148'],
     tooltip: { trigger: 'item' },
     legend: { data: ['Сон', 'Энергия'], top: 0, right: 0, itemWidth: 12, itemHeight: 10, textStyle: { color: '#657085', fontSize: 12 } },
     grid: [
@@ -92,7 +92,7 @@ const rhythmOption = computed<EChartsCoreOption>(() => {
         barMaxWidth: 34,
         data: rhythmDays.value.map((item) => item.entry?.sleepMinutes === null || item.entry?.sleepMinutes === undefined
           ? null
-          : { value: Math.round((item.entry.sleepMinutes / 60) * 10) / 10, itemStyle: { color: item.entry.specialDay ? '#eb7458' : '#7367f0', borderRadius: [6, 6, 2, 2] } }),
+          : { value: Math.round((item.entry.sleepMinutes / 60) * 10) / 10, itemStyle: { color: item.entry.specialDay ? '#eb7458' : '#7467e8', borderRadius: [6, 6, 2, 2] } }),
       },
       {
         name: 'Энергия',
@@ -160,7 +160,7 @@ function downloadJson() {
 </script>
 
 <template>
-  <section class="page">
+  <section class="page page--review page--week">
     <div class="page-heading"><div><span class="eyebrow">Недельная сводка</span><h1>Неделя</h1><p>Факты недели без общего балла.</p></div></div>
     <PeriodNavigator
       :title="`${formatDate(start, { day: 'numeric', month: 'short' })} — ${formatDate(end, { day: 'numeric', month: 'short' })}`"
@@ -169,12 +169,12 @@ function downloadJson() {
     />
 
     <div class="metrics-grid">
-      <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="`${summary.sleepSamples} дн. без особых`" accent="#7367f0" />
-      <MetricCard label="Карьера" :value="summary.careerDays" :hint="`${summary.externalSteps} дн. с откликом или разговором`" accent="#4188e8" />
-      <MetricCard label="Реальные шаги" :value="`${summary.externalActionDays}/${summary.preparationDays}`" :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`" accent="#5264d8" />
-      <MetricCard label="Дней с движением" :value="summary.movementDays" :hint="`${summary.movementSamples} дн. с отметкой`" accent="#38b989" />
-      <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="`поддержало / мешало · ${summary.nutritionSamples} дн.`" accent="#d39b2f" />
-      <MetricCard label="Итогов" :value="results.length" accent="#f0ad42" />
+      <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="`${summary.sleepSamples} дн. без особых`" accent="#7467e8" />
+      <MetricCard label="Карьера" :value="summary.careerDays" :hint="`${summary.externalSteps} дн. с откликом или разговором`" accent="#3f82d5" />
+      <MetricCard label="Реальные шаги" :value="`${summary.externalActionDays}/${summary.preparationDays}`" :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`" accent="#1d5148" />
+      <MetricCard label="Дней с движением" :value="summary.movementDays" :hint="`${summary.movementSamples} дн. с отметкой`" accent="#2eaa7f" />
+      <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="`поддержало / мешало · ${summary.nutritionSamples} дн.`" accent="#d9952f" />
+      <MetricCard label="Итогов" :value="results.length" accent="#e7a43b" />
     </div>
 
     <article class="insight-card"><span class="insight-card__mark">⌁</span><p>{{ summaryText }}</p></article>

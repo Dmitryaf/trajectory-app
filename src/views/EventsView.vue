@@ -87,12 +87,12 @@ function eventMeta(value: LifeEventRecord['type']) {
 </script>
 
 <template>
-  <section class="page">
+  <section class="page page--archive page--events">
     <div class="page-heading">
       <div><span class="eyebrow">Жизненный контекст</span><h1>События и инсайты</h1><p>Важные изменения, решения, наблюдения и обстоятельства, которые помогают увидеть траекторию.</p></div>
     </div>
 
-    <article class="result-composer">
+    <article class="result-composer result-composer--events">
       <div class="form-card__heading"><span class="section-icon section-icon--amber">◆</span><div><h2>{{ editingId === null ? 'Добавить запись' : 'Редактировать запись' }}</h2><p>Событие меняет контекст, инсайт сохраняет важное понимание.</p></div></div>
       <ChipGroup v-model="type" :options="lifeEventTypeOptions" />
       <div class="event-composer__fields">
@@ -104,32 +104,34 @@ function eventMeta(value: LifeEventRecord['type']) {
       <button v-if="editingId !== null" class="secondary-button composer-cancel" type="button" @click="resetForm">Отменить редактирование</button>
     </article>
 
-    <div class="section-heading"><div><span class="eyebrow">Хронология</span><h2>Важные события</h2></div><span class="count-badge">{{ filteredEvents.length }}</span></div>
-    <div class="archive-filters">
-      <input v-model="filterText" type="search" placeholder="Поиск по событиям" aria-label="Поиск по событиям" />
-      <select v-model="filterType" aria-label="Тип события"><option value="all">Все типы</option><option v-for="option in lifeEventTypeOptions" :key="option.id" :value="option.id">{{ option.label }}</option></select>
-      <label><span>С</span><input v-model="dateFrom" type="date" /></label>
-      <label><span>По</span><input v-model="dateTo" type="date" /></label>
-    </div>
-    <div v-if="visibleEvents.length" class="timeline-list">
-      <article v-for="event in visibleEvents" :key="event.id" class="timeline-item">
-        <span class="timeline-item__icon">{{ eventMeta(event.type).icon }}</span>
-        <div>
-          <strong>{{ event.title }}</strong>
-          <small>{{ eventMeta(event.type).label }} · {{ formatDate(event.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</small>
-          <p v-if="event.note">{{ event.note }}</p>
-        </div>
-        <div class="item-actions">
-          <button class="ghost-button" type="button" aria-label="Редактировать событие" @click="edit(event)">✎</button>
-          <button class="ghost-button ghost-button--danger" type="button" aria-label="Удалить событие" @click="remove(event.id)">×</button>
-        </div>
-      </article>
-      <nav v-if="pageCount > 1" class="archive-pagination" aria-label="Страницы событий">
-        <button class="secondary-button" type="button" :disabled="currentPage === 1" @click="currentPage -= 1">Назад</button>
-        <span>{{ currentPage }} из {{ pageCount }}</span>
-        <button class="secondary-button" type="button" :disabled="currentPage === pageCount" @click="currentPage += 1">Дальше</button>
-      </nav>
-    </div>
-    <div v-else class="empty-state"><span>◆</span><h3>{{ recentEvents.length ? 'Ничего не найдено' : 'Событий пока нет' }}</h3><p>{{ recentEvents.length ? 'Измени фильтры или диапазон дат.' : 'Здесь будут решения, изменения и обстоятельства, которые помогают объяснять длинную динамику.' }}</p></div>
+    <section class="archive-panel">
+      <div class="section-heading"><div><span class="eyebrow">Хронология</span><h2>Важные события</h2></div><span class="count-badge">{{ filteredEvents.length }}</span></div>
+      <div class="archive-filters">
+        <input v-model="filterText" type="search" placeholder="Поиск по событиям" aria-label="Поиск по событиям" />
+        <select v-model="filterType" aria-label="Тип события"><option value="all">Все типы</option><option v-for="option in lifeEventTypeOptions" :key="option.id" :value="option.id">{{ option.label }}</option></select>
+        <label><span>С</span><input v-model="dateFrom" type="date" /></label>
+        <label><span>По</span><input v-model="dateTo" type="date" /></label>
+      </div>
+      <div v-if="visibleEvents.length" class="timeline-list">
+        <article v-for="event in visibleEvents" :key="event.id" class="timeline-item">
+          <span class="timeline-item__icon">{{ eventMeta(event.type).icon }}</span>
+          <div>
+            <strong>{{ event.title }}</strong>
+            <small>{{ eventMeta(event.type).label }} · {{ formatDate(event.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</small>
+            <p v-if="event.note">{{ event.note }}</p>
+          </div>
+          <div class="item-actions">
+            <button class="ghost-button" type="button" aria-label="Редактировать событие" @click="edit(event)">✎</button>
+            <button class="ghost-button ghost-button--danger" type="button" aria-label="Удалить событие" @click="remove(event.id)">×</button>
+          </div>
+        </article>
+        <nav v-if="pageCount > 1" class="archive-pagination" aria-label="Страницы событий">
+          <button class="secondary-button" type="button" :disabled="currentPage === 1" @click="currentPage -= 1">Назад</button>
+          <span>{{ currentPage }} из {{ pageCount }}</span>
+          <button class="secondary-button" type="button" :disabled="currentPage === pageCount" @click="currentPage += 1">Дальше</button>
+        </nav>
+      </div>
+      <div v-else class="empty-state"><span>◆</span><h3>{{ recentEvents.length ? 'Ничего не найдено' : 'Событий пока нет' }}</h3><p>{{ recentEvents.length ? 'Измени фильтры или диапазон дат.' : 'Здесь будут решения, изменения и обстоятельства, которые помогают объяснять длинную динамику.' }}</p></div>
+    </section>
   </section>
 </template>

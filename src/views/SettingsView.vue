@@ -239,10 +239,10 @@ async function clearAll() {
 </script>
 
 <template>
-  <section class="page">
+  <section class="page page--settings">
     <div class="page-heading"><div><span class="eyebrow">Настройка трекера</span><h1>Настройки</h1><p>Здесь задаются личные области, рабочий фокус, питание, эксперимент и копии данных.</p></div></div>
 
-    <article class="settings-card">
+    <article class="settings-card settings-card--areas">
       <div class="form-card__heading"><span class="section-icon section-icon--amber">✦</span><div><h2>Области жизни</h2><p>То, что важно замечать в обычные дни: семья, отдых, чтение или свои пункты.</p></div></div>
       <ChipGroup v-model="settings.activeLifeAreas as LifeAreaId[]" :options="allLifeAreaOptions" multiple />
       <div class="custom-options">
@@ -261,7 +261,7 @@ async function clearAll() {
       <button class="primary-button" type="button" @click="save('Области сохранены')">Сохранить области</button>
     </article>
 
-    <article class="settings-card">
+    <article class="settings-card settings-card--sleep">
       <div class="form-card__heading"><span class="section-icon section-icon--violet">◒</span><div><h2>Факторы перед сном</h2><p>Добавляй только повторяющиеся условия, которые пригодятся в недельном или месячном разборе.</p></div></div>
       <div class="option-preview">
         <span v-for="option in allEveningFactorOptions" :key="option.id" class="option-pill"><i v-if="option.icon">{{ option.icon }}</i>{{ option.label }}</span>
@@ -282,7 +282,7 @@ async function clearAll() {
       </div>
     </article>
 
-    <article class="settings-card">
+    <article class="settings-card settings-card--career">
       <div class="form-card__heading"><span class="section-icon section-icon--blue">↗</span><div><h2>Карьера</h2><p>Задай текущую рабочую цель и что считать реальным шагом к ней.</p></div></div>
       <div class="settings-field-stack">
         <label class="field-label" for="active-focus">Текущая рабочая цель</label>
@@ -312,14 +312,14 @@ async function clearAll() {
       <button class="primary-button" type="button" @click="save('Карьерный фокус сохранён')">Сохранить карьерный фокус</button>
     </article>
 
-    <article class="settings-card">
+    <article class="settings-card settings-card--nutrition">
       <div class="form-card__heading"><span class="section-icon section-icon--green">◐</span><div><h2>Критерий питания</h2><p>Определи наблюдаемые признаки заранее, чтобы ежедневная отметка не зависела только от настроения.</p></div></div>
       <label class="field-label" for="nutrition-criterion">Что означает «поддержало цель»</label>
       <textarea id="nutrition-criterion" v-model="settings.nutritionGoalCriterion" rows="3" maxlength="280" placeholder="Например: ел по плану, был нормальный ужин, не было незапланированных вечерних перекусов"></textarea>
       <button class="primary-button" type="button" @click="save('Критерий питания сохранён')">Сохранить настройки</button>
     </article>
 
-    <article class="settings-card">
+    <article class="settings-card settings-card--experiment">
       <div class="form-card__heading"><span class="section-icon section-icon--orange">⌁</span><div><h2>Временный эксперимент</h2><p>Например: не читать новости после 22:00 в течение двух недель.</p></div></div>
       <label class="toggle-row"><span><strong>Включить эксперимент</strong><small>В ежедневной записи появится один дополнительный вопрос.</small></span><input v-model="settings.experiment.active" type="checkbox" /></label>
       <label class="field-label" for="experiment-title">Условие эксперимента</label>
@@ -337,7 +337,7 @@ async function clearAll() {
       <button class="primary-button" type="button" @click="saveExperiment">Сохранить настройки</button>
     </article>
 
-    <article class="settings-card">
+    <article class="settings-card settings-card--backup">
       <div class="form-card__heading"><span class="section-icon section-icon--blue">↓</span><div><h2>Резервная копия</h2><p>JSON-копия нужна как ручная страховка независимо от облачной синхронизации.</p></div></div>
       <div class="data-actions">
         <button class="secondary-button" type="button" @click="exportData">Скачать копию</button>
@@ -347,7 +347,7 @@ async function clearAll() {
       <div class="danger-zone"><div><strong>Удалить все данные</strong><p>Записи, итоги, обзоры и настройки будут очищены.</p></div><button class="danger-button" type="button" @click="clearAll">Удалить</button></div>
     </article>
 
-    <article class="settings-card">
+    <article class="settings-card settings-card--cloud">
       <div class="form-card__heading"><span class="section-icon section-icon--green">↥</span><div><h2>Облачная копия</h2></div></div>
       <div v-if="!auth.configured" class="cloud-sync-note">
         <strong>Облачная копия недоступна</strong>
@@ -376,7 +376,7 @@ async function clearAll() {
       </template>
     </article>
 
-    <article class="settings-card">
+    <article class="settings-card settings-card--analysis">
       <div class="form-card__heading"><span class="section-icon section-icon--green">↗</span><div><h2>Данные для внешнего анализа</h2><p>Скопируй готовый промпт или скачай JSON, чтобы вручную передать его выбранной нейросети. Приложение само ничего не отправляет.</p></div></div>
       <div class="ai-actions">
         <button class="secondary-button" type="button" @click="copyAnalysisPrompt('week')">Промпт недели</button>

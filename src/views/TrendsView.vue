@@ -75,7 +75,7 @@ const eventLines = computed(() => monthRows.value.flatMap((row) => {
 }));
 
 const trendOverviewOption = computed<EChartsCoreOption>(() => ({
-  color: ['#7367f0', '#4bcda0'],
+  color: ['#7467e8', '#2eaa7f'],
   tooltip: { trigger: 'axis' },
   legend: { top: 0, right: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: '#657085', fontSize: 12 } },
   grid: { left: 44, right: 44, top: 44, bottom: 34 },
@@ -137,8 +137,8 @@ const coverageOption = computed<EChartsCoreOption>(() => ({
     textStyle: { color: '#657085', fontSize: 11 },
     pieces: [
       { value: 0, label: 'нет записи', color: '#edf0f5' },
-      { value: 1, label: 'частично', color: '#b8c1d8' },
-      { value: 2, label: 'основные поля', color: '#4bcda0' },
+      { value: 1, label: 'частично', color: '#b8c8c2' },
+      { value: 2, label: 'основные поля', color: '#2eaa7f' },
     ],
   },
   calendar: {
@@ -182,7 +182,7 @@ const decisionTimeline = computed(() => [
   })),
 ].filter((item) => item.date >= start.value && item.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30));
 const weightOption = computed<EChartsCoreOption>(() => ({
-  color: ['#d39b2f'],
+  color: ['#d9952f'],
   tooltip: { trigger: 'axis' },
   grid: { left: 52, right: 24, top: 20, bottom: 34 },
   xAxis: { type: 'category', data: monthRows.value.map((row) => row.label), axisTick: { show: false }, axisLine: { lineStyle: { color: '#dfe4ed' } }, axisLabel: { color: '#7d8798' } },
@@ -190,7 +190,7 @@ const weightOption = computed<EChartsCoreOption>(() => ({
   series: [{ name: 'средний вес', type: 'line', symbolSize: 8, data: monthRows.value.map((row) => roundValue(row.summary.averageWeightKg)), connectNulls: false, lineStyle: { width: 3 } }]
 }));
 const progressOption = computed<EChartsCoreOption>(() => ({
-  color: ['#5264d8', '#7eb4ef', '#4bcda0', '#b8c1d8', '#b85c4c', '#f0ad42'],
+  color: ['#1d5148', '#6f9f91', '#2eaa7f', '#b8c8c2', '#b85c4c', '#e7a43b'],
   tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
   legend: { top: 0, right: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: '#657085', fontSize: 12 } },
   grid: { left: 36, right: 24, top: 44, bottom: 34 },
@@ -308,7 +308,7 @@ function downloadJson() {
 </script>
 
 <template>
-  <section class="page">
+  <section class="page page--review page--trends">
     <div class="page-heading">
       <div><span class="eyebrow">3–12 месяцев</span><h1>Тренды</h1><p>Долгий обзор без общего балла: сон, энергия, вес, питание, реальные шаги и важные события.</p></div>
     </div>
@@ -318,27 +318,27 @@ function downloadJson() {
     </div>
 
     <div class="metrics-grid">
-      <MetricCard label="Заполненных дней" :value="summary.coveredEntriesCount" :hint="`${summary.ordinaryCoreEntriesCount} с основными полями`" accent="#5865db" />
-      <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="`${summary.sleepSamples} дн. без особых`" accent="#7367f0" />
-      <MetricCard label="Карьера" :value="summary.externalSteps" hint="дней с откликом, разговором или итогом" accent="#4188e8" />
-      <MetricCard label="Реальные шаги" :value="`${summary.externalActionDays}/${summary.preparationDays}`" :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`" accent="#5264d8" />
-      <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="summary.averageWeightKg === null ? `${summary.nutritionSamples} дн. с отметкой` : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг · ${summary.weightSamples} изм.`" accent="#d39b2f" />
-      <MetricCard label="Итогов" :value="results.length" :hint="`${lifeEvents.length} важных событий`" accent="#f0ad42" />
+      <MetricCard label="Заполненных дней" :value="summary.coveredEntriesCount" :hint="`${summary.ordinaryCoreEntriesCount} с основными полями`" accent="#1d5148" />
+      <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="`${summary.sleepSamples} дн. без особых`" accent="#7467e8" />
+      <MetricCard label="Карьера" :value="summary.externalSteps" hint="дней с откликом, разговором или итогом" accent="#3f82d5" />
+      <MetricCard label="Реальные шаги" :value="`${summary.externalActionDays}/${summary.preparationDays}`" :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`" accent="#2eaa7f" />
+      <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="summary.averageWeightKg === null ? `${summary.nutritionSamples} дн. с отметкой` : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг · ${summary.weightSamples} изм.`" accent="#d9952f" />
+      <MetricCard label="Итогов" :value="results.length" :hint="`${lifeEvents.length} важных событий`" accent="#e7a43b" />
     </div>
 
-    <article class="dashboard-card">
+    <article class="dashboard-card dashboard-card--quality">
       <div class="section-heading"><div><span class="eyebrow">Качество наблюдений</span><h2>Карта заполнения</h2></div><small>без серий и оценок</small></div>
       <EChartPanel :option="coverageOption" :height="230" aria-label="Календарная карта полноты дневных записей" />
       <p class="data-note">«Основные поля» означают, что заполнены хотя бы два блока: состояние, действия или питание. Карта нужна только для оценки надёжности выводов.</p>
     </article>
 
-    <article class="dashboard-card">
+    <article class="dashboard-card dashboard-card--trend">
       <div class="section-heading"><div><span class="eyebrow">Динамика периода</span><h2>Сон и энергия</h2></div><small>* неполный текущий месяц</small></div>
       <EChartPanel :option="trendOverviewOption" :height="320" aria-label="Динамика сна и энергии по месяцам" />
       <p v-if="lifeEvents.length" class="data-note">Оранжевые пунктирные линии показывают месяцы с важными событиями. Число у линии — количество событий; наведи на неё, чтобы увидеть список.</p>
     </article>
 
-    <article v-if="lifeEvents.length" class="dashboard-card">
+    <article v-if="lifeEvents.length" class="dashboard-card dashboard-card--event">
       <div class="section-heading">
         <div><span class="eyebrow">До и после</span><h2>Что менялось рядом с событием</h2></div>
         <details ref="eventPicker" class="event-picker">
@@ -386,12 +386,12 @@ function downloadJson() {
       <p v-else class="empty-copy">После события пока не прошло ни одного полного дня для сравнения.</p>
     </article>
 
-    <article class="dashboard-card">
+    <article class="dashboard-card dashboard-card--weight">
       <div class="section-heading"><div><span class="eyebrow">Тренд без разовых скачков</span><h2>Вес по месяцам</h2></div><small>среднее и число измерений — в таблице</small></div>
       <EChartPanel :option="weightOption" :height="260" aria-label="Динамика среднего веса по месяцам" />
     </article>
 
-    <article class="dashboard-card">
+    <article class="dashboard-card dashboard-card--insights">
       <div class="section-heading">
         <div><span class="eyebrow">Опорные выводы</span><h2>Что видно за выбранные месяцы</h2></div>
         <div class="period-actions">
@@ -407,12 +407,12 @@ function downloadJson() {
       </div>
     </article>
 
-    <article class="dashboard-card">
+    <article class="dashboard-card dashboard-card--progress">
       <div class="section-heading"><div><span class="eyebrow">Движение к цели</span><h2>Реальные шаги, подготовка и итоги</h2></div><small>столбцы: % отмеченных дней</small></div>
       <EChartPanel :option="progressOption" :height="320" aria-label="Динамика реальных шагов, подготовки, ухода в сторону и итогов" />
     </article>
 
-    <article class="dashboard-card">
+    <article class="dashboard-card dashboard-card--table">
       <div class="section-heading"><div><span class="eyebrow">Состояние</span><h2>Сон и энергия по месяцам</h2></div></div>
       <div class="trend-table">
         <div class="trend-table__head"><span>месяц</span><span>заполнено</span><span>сон (дни)</span><span>вес (изм.)</span><span>энергия (дни)</span><span>шаги / подг.</span><span>питание + / −</span><span>особые</span></div>
@@ -429,7 +429,7 @@ function downloadJson() {
       </div>
     </article>
 
-    <article v-if="factors.length" class="dashboard-card">
+    <article v-if="factors.length" class="dashboard-card dashboard-card--factors">
       <div class="section-heading"><div><span class="eyebrow">Повторяемость</span><h2>Главные вечерние факторы</h2></div></div>
       <div class="factor-summary-list">
         <article v-for="factor in factors" :key="factor.id" class="factor-summary-item">
@@ -442,7 +442,7 @@ function downloadJson() {
       <p class="data-note">Формат: значение в дни с фактором / в обычные дни без него. Особые дни исключены; это связь, а не доказанная причина.</p>
     </article>
 
-    <article v-if="decisionTimeline.length" class="dashboard-card">
+    <article v-if="decisionTimeline.length" class="dashboard-card dashboard-card--timeline">
       <div class="section-heading"><div><span class="eyebrow">История изменений</span><h2>События, решения и итоги</h2></div><span class="count-badge">{{ decisionTimeline.length }}</span></div>
       <div class="decision-timeline">
         <article v-for="(item, index) in decisionTimeline" :key="`${item.date}-${item.type}-${index}`" class="decision-timeline__item" :class="`decision-timeline__item--${item.tone}`">

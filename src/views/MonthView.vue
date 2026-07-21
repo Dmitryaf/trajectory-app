@@ -42,7 +42,7 @@ const sleepEnergyOption = computed<EChartsCoreOption>(() => {
     return { date, entry: entry?.specialDay === null ? entry : undefined };
   });
   return {
-    color: ['#7367f0', '#b8c1d8', '#4bcda0'],
+    color: ['#7467e8', '#b8c8c2', '#2eaa7f'],
     tooltip: {
       trigger: 'axis',
       formatter: (params: unknown) => formatSleepTooltip(params)
@@ -80,7 +80,7 @@ const weightOption = computed<EChartsCoreOption>(() => {
     };
   });
   return {
-    color: ['#d39b2f', '#5264d8'],
+    color: ['#d9952f', '#1d5148'],
     tooltip: { trigger: 'axis' },
     legend: { top: 0, right: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: '#657085', fontSize: 12 } },
     grid: { left: 52, right: 24, top: 42, bottom: 34 },
@@ -224,7 +224,7 @@ function shiftMonth(offset: number) {
 </script>
 
 <template>
-  <section class="page">
+  <section class="page page--review page--month">
     <div class="page-heading"><div><span class="eyebrow">Месячная сводка</span><h1>Месяц</h1><p>Итоги, состояние и контекст месяца без общей оценки.</p></div></div>
     <PeriodNavigator
       :title="formatDate(start, { month: 'long', year: 'numeric' })"
@@ -233,11 +233,11 @@ function shiftMonth(offset: number) {
     />
 
     <div class="metrics-grid">
-      <MetricCard label="Заполненных дней" :value="summary.coveredEntriesCount" :hint="`${summary.ordinaryCoreEntriesCount} с основными полями`" accent="#5865db" />
-      <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="`${summary.sleepSamples} дн. без особых`" accent="#7367f0" />
-      <MetricCard label="Карьера" :value="summary.externalSteps" hint="дней с откликом, разговором или итогом" accent="#4188e8" />
-      <MetricCard label="Реальные шаги" :value="`${summary.externalActionDays}/${summary.preparationDays}`" :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`" accent="#5264d8" />
-      <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="summary.averageWeightKg === null ? `${summary.nutritionSamples} дн. с отметкой` : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг · ${summary.weightSamples} изм.`" accent="#d39b2f" />
+      <MetricCard label="Заполненных дней" :value="summary.coveredEntriesCount" :hint="`${summary.ordinaryCoreEntriesCount} с основными полями`" accent="#1d5148" />
+      <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="`${summary.sleepSamples} дн. без особых`" accent="#7467e8" />
+      <MetricCard label="Карьера" :value="summary.externalSteps" hint="дней с откликом, разговором или итогом" accent="#3f82d5" />
+      <MetricCard label="Реальные шаги" :value="`${summary.externalActionDays}/${summary.preparationDays}`" :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`" accent="#2eaa7f" />
+      <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="summary.averageWeightKg === null ? `${summary.nutritionSamples} дн. с отметкой` : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг · ${summary.weightSamples} изм.`" accent="#d9952f" />
       <MetricCard label="Особых дней" :value="summary.specialDays" :hint="`${results.length} итогов`" accent="#eb7458" />
     </div>
 

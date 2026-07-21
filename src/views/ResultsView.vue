@@ -85,12 +85,12 @@ function areaMeta(value: ResultRecord['area']) {
 </script>
 
 <template>
-  <section class="page">
+  <section class="page page--archive page--results">
     <div class="page-heading">
       <div><span class="eyebrow">Завершённые факты</span><h1>Итоги</h1><p>То, что уже произошло и показывает движение: готовая версия, отправленный пакет, ответ, встреча или другой проверяемый факт.</p></div>
     </div>
 
-    <article class="result-composer">
+    <article class="result-composer result-composer--results">
       <div class="form-card__heading"><span class="section-icon section-icon--green">✓</span><div><h2>{{ editingId === null ? 'Добавить итог' : 'Редактировать итог' }}</h2><p>Завершённое действие, полученный ответ или созданная вещь.</p></div></div>
       <ChipGroup v-model="area" :options="resultEntryOptions" />
       <div class="result-composer__fields">
@@ -101,28 +101,30 @@ function areaMeta(value: ResultRecord['area']) {
       <button v-if="editingId !== null" class="secondary-button composer-cancel" type="button" @click="resetForm">Отменить редактирование</button>
     </article>
 
-    <div class="section-heading"><div><span class="eyebrow">Архив</span><h2>Итоги</h2></div><span class="count-badge">{{ filteredResults.length }}</span></div>
-    <div class="archive-filters">
-      <input v-model="filterText" type="search" placeholder="Поиск по итогам" aria-label="Поиск по итогам" />
-      <select v-model="filterArea" aria-label="Область итога"><option value="all">Все области</option><option v-for="option in resultOptions" :key="option.id" :value="option.id">{{ option.label }}</option></select>
-      <label><span>С</span><input v-model="dateFrom" type="date" /></label>
-      <label><span>По</span><input v-model="dateTo" type="date" /></label>
-    </div>
-    <div v-if="visibleResults.length" class="results-list">
-      <article v-for="result in visibleResults" :key="result.id" class="result-item">
-        <span class="result-item__icon">{{ areaMeta(result.area).icon }}</span>
-        <div><strong>{{ result.title }}</strong><small>{{ areaMeta(result.area).label }} · {{ formatDate(result.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</small></div>
-        <div class="item-actions">
-          <button class="ghost-button" type="button" aria-label="Редактировать итог" @click="edit(result)">✎</button>
-          <button class="ghost-button ghost-button--danger" type="button" aria-label="Удалить итог" @click="remove(result.id)">×</button>
-        </div>
-      </article>
-      <nav v-if="pageCount > 1" class="archive-pagination" aria-label="Страницы итогов">
-        <button class="secondary-button" type="button" :disabled="currentPage === 1" @click="currentPage -= 1">Назад</button>
-        <span>{{ currentPage }} из {{ pageCount }}</span>
-        <button class="secondary-button" type="button" :disabled="currentPage === pageCount" @click="currentPage += 1">Дальше</button>
-      </nav>
-    </div>
-    <div v-else class="empty-state"><span>✓</span><h3>{{ recentResults.length ? 'Ничего не найдено' : 'Итогов пока нет' }}</h3><p>{{ recentResults.length ? 'Измени фильтры или диапазон дат.' : 'Добавь завершённый факт — он появится в недельном и месячном обзоре.' }}</p></div>
+    <section class="archive-panel">
+      <div class="section-heading"><div><span class="eyebrow">Архив</span><h2>Итоги</h2></div><span class="count-badge">{{ filteredResults.length }}</span></div>
+      <div class="archive-filters">
+        <input v-model="filterText" type="search" placeholder="Поиск по итогам" aria-label="Поиск по итогам" />
+        <select v-model="filterArea" aria-label="Область итога"><option value="all">Все области</option><option v-for="option in resultOptions" :key="option.id" :value="option.id">{{ option.label }}</option></select>
+        <label><span>С</span><input v-model="dateFrom" type="date" /></label>
+        <label><span>По</span><input v-model="dateTo" type="date" /></label>
+      </div>
+      <div v-if="visibleResults.length" class="results-list">
+        <article v-for="result in visibleResults" :key="result.id" class="result-item">
+          <span class="result-item__icon">{{ areaMeta(result.area).icon }}</span>
+          <div><strong>{{ result.title }}</strong><small>{{ areaMeta(result.area).label }} · {{ formatDate(result.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</small></div>
+          <div class="item-actions">
+            <button class="ghost-button" type="button" aria-label="Редактировать итог" @click="edit(result)">✎</button>
+            <button class="ghost-button ghost-button--danger" type="button" aria-label="Удалить итог" @click="remove(result.id)">×</button>
+          </div>
+        </article>
+        <nav v-if="pageCount > 1" class="archive-pagination" aria-label="Страницы итогов">
+          <button class="secondary-button" type="button" :disabled="currentPage === 1" @click="currentPage -= 1">Назад</button>
+          <span>{{ currentPage }} из {{ pageCount }}</span>
+          <button class="secondary-button" type="button" :disabled="currentPage === pageCount" @click="currentPage += 1">Дальше</button>
+        </nav>
+      </div>
+      <div v-else class="empty-state"><span>✓</span><h3>{{ recentResults.length ? 'Ничего не найдено' : 'Итогов пока нет' }}</h3><p>{{ recentResults.length ? 'Измени фильтры или диапазон дат.' : 'Добавь завершённый факт — он появится в недельном и месячном обзоре.' }}</p></div>
+    </section>
   </section>
 </template>

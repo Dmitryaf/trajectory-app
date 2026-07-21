@@ -127,26 +127,41 @@ const navItems = [
         <span class="brand__mark"><i></i></span>
         <span><strong>Траектория</strong><small>факты, а не оценка</small></span>
       </RouterLink>
-      <div v-if="canOpenApp && store.loaded && auth.requiresAuth" class="account-strip" aria-label="Аккаунт">
-        <span class="account-strip__email" :title="auth.userEmail">{{ auth.userEmail }}</span>
-        <button class="account-strip__logout" type="button" :disabled="auth.loading" @click="signOut">
-          Выйти
-        </button>
+      <div v-if="canOpenApp && store.loaded" class="header-actions">
+        <RouterLink to="/settings" class="header-settings-link" aria-label="Открыть настройки">
+          <span>⚙</span><strong>Настройки</strong>
+        </RouterLink>
+        <div v-if="auth.requiresAuth" class="account-strip" aria-label="Аккаунт">
+          <span class="account-strip__email" :title="auth.userEmail">{{ auth.userEmail }}</span>
+          <button class="account-strip__logout" type="button" :disabled="auth.loading" @click="signOut">
+            Выйти
+          </button>
+        </div>
       </div>
     </header>
 
     <main class="app-main">
-      <div v-if="!auth.initialized" class="loading-card">Проверяю доступ…</div>
+      <div v-if="!auth.initialized" class="loading-card" role="status" aria-live="polite">
+        <span class="loading-card__mark" aria-hidden="true"><i></i></span>
+        <strong>Проверяю доступ…</strong>
+      </div>
       <AuthGate v-else-if="auth.requiresAuth && !auth.isAuthenticated" />
-      <div v-else-if="!store.loaded" class="loading-card">Загружаю записи…</div>
-      <section v-else-if="store.loadError" class="card storage-error">
-        <p class="eyebrow">Локальное хранилище недоступно</p>
-        <h1>Записи пока не открылись</h1>
-        <p>{{ store.loadError }}</p>
-        <button class="button button--primary" type="button" @click="store.load()">Повторить</button>
+      <div v-else-if="!store.loaded" class="loading-card" role="status" aria-live="polite">
+        <span class="loading-card__mark" aria-hidden="true"><i></i></span>
+        <strong>Загружаю записи…</strong>
+      </div>
+      <section v-else-if="store.loadError" class="storage-error" role="alert">
+        <span class="storage-error__mark" aria-hidden="true">!</span>
+        <div>
+          <p class="eyebrow">Локальное хранилище недоступно</p>
+          <h1>Записи пока не открылись</h1>
+          <p>{{ store.loadError }}</p>
+          <button class="primary-button" type="button" @click="store.load()">Повторить</button>
+        </div>
       </section>
       <template v-else>
         <section v-if="store.cloudSyncStatus === 'pending' || store.cloudSyncStatus === 'conflict' || store.cloudSyncStatus === 'error'" class="sync-banner" :class="`sync-banner--${store.cloudSyncStatus}`">
+          <span class="sync-banner__mark" aria-hidden="true">{{ store.cloudSyncStatus === 'conflict' ? '!' : '↥' }}</span>
           <div>
             <strong>{{ store.cloudSyncStatus === 'conflict' ? 'Нужен выбор по облаку' : 'Облако не обновлено' }}</strong>
             <p>{{ store.cloudSyncMessage }}</p>
@@ -158,7 +173,7 @@ const navItems = [
     </main>
 
     <nav v-if="canOpenApp && store.loaded" class="bottom-nav" aria-label="Основная навигация">
-      <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" class="bottom-nav__item" :class="{ 'router-link-active': item.to === '/more' && ['/results', '/events', '/settings'].includes($route.path) }">
+      <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" class="bottom-nav__item" :class="{ 'router-link-active': item.to === '/more' && ['/results', '/events'].includes($route.path) }">
         <span>{{ item.icon }}</span>
         <small>{{ item.label }}</small>
       </RouterLink>

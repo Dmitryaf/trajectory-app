@@ -20,6 +20,10 @@ const sections = computed(() => [
         <i>→</i>
       </RouterLink>
     </div>
-    <RouterLink to="/settings" class="journal-settings-link"><span>⚙</span>Настройки</RouterLink>
+    <RouterLink to="/settings" class="journal-settings-card">
+      <span>⚙</span>
+      <div><small>Управление трекером</small><h2>Настройки</h2><p>Области, фокус, эксперимент, резервные копии и экспорт данных.</p></div>
+      <i>→</i>
+    </RouterLink>
   </section>
 </template>
