@@ -10,3 +10,4 @@ trajectory-app/
 .env.*.local
 
 .vercel
+storybook-static/

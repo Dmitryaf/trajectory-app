@@ -53,7 +53,7 @@ git diff --cached --check
 
 ## Git hooks
 
-- `pre-commit` запускает `npm run check` — тесты и production-сборку;
+- `pre-commit` запускает `npm run check` — тесты, production-сборку, smoke-проверку и статическую сборку Storybook;
 - `commit-msg` проверяет Conventional Commits через commitlint;
 - допустимый формат: `type: короткое описание`, например `fix: исправить экспорт данных`;
 - основные типы: `feat`, `fix`, `docs`, `test`, `refactor`, `build`, `ci`, `chore`;
