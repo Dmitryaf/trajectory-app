@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import AutoGrowTextarea from '../components/AutoGrowTextarea.vue';
 import ChipGroup from '../components/ChipGroup.vue';
 import ArchiveDateRange from '../features/journal/ArchiveDateRange.vue';
+import ArchivePagination from '../features/journal/ArchivePagination.vue';
+import { useArchiveList } from '../features/journal/useArchiveList';
 import { formatDate, todayKey } from '../services/dates';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
-import { pageCount as countPages, pageItems } from '../services/pagination';
 import { useAppStore } from '../stores/app';
 import { lifeEventTypeOptions, type LifeEventRecord, type LifeEventType } from '../types';
 
@@ -17,26 +18,22 @@ const type = ref<LifeEventType>('change');
 const editingId = ref<number | null>(null);
 const editingCreatedAt = ref('');
 const saving = ref(false);
-const filterText = ref('');
-const filterType = ref('all');
-const dateFrom = ref(todayKey());
-const dateTo = ref('');
-const currentPage = ref(1);
 const expandedNotes = ref<string[]>([]);
-const pageSize = 8;
 
 const recentEvents = computed(() => [...store.lifeEvents].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)));
-const filteredEvents = computed(() => recentEvents.value.filter((event) => {
-  const query = filterText.value.trim().toLocaleLowerCase('ru-RU');
-  return (!query || `${event.title} ${event.note}`.toLocaleLowerCase('ru-RU').includes(query))
-    && (filterType.value === 'all' || event.type === filterType.value)
-    && (!dateFrom.value || event.date >= dateFrom.value)
-    && (!dateTo.value || event.date <= dateTo.value);
-}));
-const pageCount = computed(() => countPages(filteredEvents.value.length, pageSize));
-const visibleEvents = computed(() => pageItems(filteredEvents.value, currentPage.value, pageSize));
-watch([filterText, filterType, dateFrom, dateTo], () => { currentPage.value = 1; });
-watch(pageCount, (count) => { currentPage.value = Math.min(currentPage.value, count); });
+const {
+  filterText,
+  filterCategory: filterType,
+  dateFrom,
+  dateTo,
+  currentPage,
+  filteredItems: filteredEvents,
+  pageCount,
+  visibleItems: visibleEvents
+} = useArchiveList(recentEvents, {
+  getSearchText: (event) => `${event.title} ${event.note}`,
+  getCategory: (event) => event.type
+});
 
 async function saveEvent() {
   const cleanTitle = title.value.trim();
@@ -143,11 +140,7 @@ function toggleNote(event: LifeEventRecord) {
             <button class="ghost-button ghost-button--danger" type="button" aria-label="Удалить событие" @click="remove(event.id)">×</button>
           </div>
         </article>
-        <nav v-if="pageCount > 1" class="archive-pagination" aria-label="Страницы событий">
-          <button class="secondary-button" type="button" :disabled="currentPage === 1" @click="currentPage -= 1">Назад</button>
-          <span>{{ currentPage }} из {{ pageCount }}</span>
-          <button class="secondary-button" type="button" :disabled="currentPage === pageCount" @click="currentPage += 1">Дальше</button>
-        </nav>
+        <ArchivePagination v-model:page="currentPage" :page-count="pageCount" context-label="событий" />
       </div>
       <div v-else class="empty-state"><span>◆</span><h3>{{ recentEvents.length ? 'Ничего не найдено' : 'Записей пока нет' }}</h3><p>{{ recentEvents.length ? 'Измени фильтры или диапазон дат.' : 'Добавь событие или мысль, которую важно не потерять.' }}</p></div>
     </section>
