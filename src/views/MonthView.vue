@@ -271,9 +271,9 @@ function shiftMonth(offset: number) {
         <span><i class="legend-dot legend-dot--energy-low"></i>низкая энергия</span>
         <span><i class="legend-dot legend-dot--energy-high"></i>высокая энергия</span>
         <span><i class="legend-dot legend-dot--career"></i>карьера</span>
-        <span><i class="legend-dot legend-dot--direction"></i>реальный шаг</span>
+        <span><i class="legend-dot legend-dot--direction"></i>конкретное действие</span>
         <span><i class="legend-dot legend-dot--drift"></i>в сторону</span>
-        <span><i class="legend-dot legend-dot--movement"></i>движение</span>
+        <span><i class="legend-dot legend-dot--movement"></i>физическая активность</span>
         <span><i class="legend-dot legend-dot--nutrition"></i>питание поддержало</span>
         <span><i class="legend-dot legend-dot--nutrition-block"></i>питание мешало</span>
         <span><i class="legend-dot legend-dot--special"></i>особый день</span>
@@ -282,11 +282,11 @@ function shiftMonth(offset: number) {
 
     <article class="review-card">
       <div class="section-heading"><div><span class="eyebrow">Сохранить вывод</span><h2>Итог месяца</h2></div><small>{{ formatDate(end, { day: 'numeric', month: 'long' }) }}</small></div>
-      <label class="field-label">Главный повторяющийся паттерн</label><textarea v-model="review.mainPattern" rows="2" placeholder="Что устойчиво повторялось в данных и контексте"></textarea>
+      <label class="field-label">Что чаще всего повторялось?</label><textarea v-model="review.mainPattern" rows="2" placeholder="Повторяющееся действие, состояние или условие"></textarea>
       <label class="field-label">Что поддерживало?</label><textarea v-model="review.support" rows="2" placeholder="Условия, решения или люди, которые помогали"></textarea>
       <label class="field-label">Что мешало сильнее всего?</label><textarea v-model="review.obstacle" rows="2" placeholder="Один главный повторяющийся фактор"></textarea>
       <label class="field-label">Что изменило месяц?</label><textarea v-model="review.courseChange" rows="2" placeholder="Событие, решение или итог, после которого данные стали выглядеть иначе"></textarea>
-      <label class="field-label">Фокус следующего месяца</label><textarea v-model="review.nextFocus" rows="2" placeholder="Одна цель и понятный признак, что ты сдвинулся"></textarea>
+      <label class="field-label">Главная цель следующего месяца</label><textarea v-model="review.nextFocus" rows="2" placeholder="Одна цель и понятный результат, который можно заметить"></textarea>
       <label class="field-label">План если-то</label><textarea v-model="review.ifThenPlan" rows="2" placeholder="Если появится конкретный фактор, то я сделаю конкретное действие"></textarea>
       <button class="primary-button" type="button" @click="saveReview">Сохранить итог месяца</button>
     </article>
@@ -367,11 +367,11 @@ function shiftMonth(offset: number) {
     </div>
 
     <article v-if="actionNotes.length" class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Движение к цели</span><h2>Реальные шаги и подготовка</h2></div><span class="count-badge">{{ actionNotes.length }}</span></div>
+      <div class="section-heading"><div><span class="eyebrow">Действия по цели</span><h2>Конкретные действия и подготовка</h2></div><span class="count-badge">{{ actionNotes.length }}</span></div>
       <div class="note-list note-list--columns">
         <article v-for="entry in actionNotes" :key="entry.date" class="note-item">
           <time>{{ formatDate(entry.date, { day: 'numeric', month: 'short' }) }}</time>
-          <p><strong>{{ actionDirectionLabel(entry.actionDirection) }}</strong><span v-if="entry.focusTitle"><br />Фокус: {{ entry.focusTitle }}</span><span v-if="entry.actionNote"><br />{{ entry.actionNote }}</span></p>
+          <p><strong>{{ actionDirectionLabel(entry.actionDirection) }}</strong><span v-if="entry.focusTitle"><br />Цель: {{ entry.focusTitle }}</span><span v-if="entry.actionNote"><br />{{ entry.actionNote }}</span></p>
         </article>
       </div>
     </article>

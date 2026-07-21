@@ -256,13 +256,13 @@ export function weekSummaryText(summary: PeriodSummary, activeAreas: LifeAreaId[
   const parts = [
     `${summary.careerDays} карьерных ${plural(summary.careerDays, 'день', 'дня', 'дней')}`,
     `${summary.externalSteps} ${plural(summary.externalSteps, 'день', 'дня', 'дней')} с откликом, разговором или итогом`,
-    `${summary.movementDays} ${plural(summary.movementDays, 'день с движением', 'дня с движением', 'дней с движением')}`
+    `${summary.movementDays} ${plural(summary.movementDays, 'день с активностью', 'дня с активностью', 'дней с активностью')}`
   ];
   if (summary.nutritionSupportDays || summary.nutritionBlockDays) {
     parts.push(`питание поддержало ${summary.nutritionSupportDays}, мешало ${summary.nutritionBlockDays}`);
   }
   if (summary.externalActionDays || summary.preparationDays || summary.driftDays) {
-    parts.push(`движение к цели: реальные шаги ${summary.externalActionDays}, подготовка ${summary.preparationDays}, в сторону ${summary.driftDays}`);
+    parts.push(`действия по цели: конкретные действия ${summary.externalActionDays}, подготовка ${summary.preparationDays}, занимался другим ${summary.driftDays}`);
   }
   if (summary.averageSleep !== null) parts.push(`средний сон ${formatMinutes(Math.round(summary.averageSleep))}`);
   if (summary.averageTimeInBed !== null && summary.averageSleep !== null && summary.averageTimeInBed - summary.averageSleep >= 45) {
@@ -306,8 +306,8 @@ export function buildObservations(entries: DailyEntry[], factorOptions: Option<E
     const direction = movementEnergy > stillEnergy ? 'выше' : 'ниже';
     observations.push({
       id: 'movement-energy',
-      title: 'Движение и энергия',
-      text: `В дни с движением энергия в среднем ${direction}: ${formatNumber(movementEnergy)} против ${formatNumber(stillEnergy)}.`,
+      title: 'Физическая активность и энергия',
+      text: `В дни с физической активностью энергия в среднем ${direction}: ${formatNumber(movementEnergy)} против ${formatNumber(stillEnergy)}.`,
     });
   }
 
@@ -436,15 +436,15 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
   if (summary.preparationDays >= 3 && summary.externalActionDays <= 1) {
     cues.push({
       id: 'direction-preparation',
-      title: 'Много подготовки, мало реальных шагов',
-      text: `${summary.preparationDays} ${plural(summary.preparationDays, 'день', 'дня', 'дней')} отмечены как подготовка, реальных шагов — ${summary.externalActionDays}. Стоит проверить, не заменяет ли подготовка действие, которое даёт ответ извне.`,
+      title: 'Много подготовки, мало конкретных действий',
+      text: `${summary.preparationDays} ${plural(summary.preparationDays, 'день', 'дня', 'дней')} отмечены как подготовка, конкретных действий — ${summary.externalActionDays}. Проверь, приводит ли подготовка к заметному результату.`,
       tone: 'warning',
     });
   } else if (summary.externalActionDays >= 2) {
     cues.push({
       id: 'direction-external',
-      title: 'Были реальные шаги',
-      text: `${summary.externalActionDays} ${plural(summary.externalActionDays, 'день', 'дня', 'дней')} с действиями, которые могли дать ответ извне: отклик, разговор, публикация, встреча или похожий шаг.`,
+      title: 'Были конкретные действия по цели',
+      text: `${summary.externalActionDays} ${plural(summary.externalActionDays, 'день', 'дня', 'дней')} с действиями, после которых мог появиться заметный результат или обратная связь.`,
       tone: 'good',
     });
   }
@@ -452,8 +452,8 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
   if (summary.driftDays >= 2) {
     cues.push({
       id: 'direction-drift',
-      title: 'Дни уходили в сторону',
-      text: `${summary.driftDays} ${plural(summary.driftDays, 'день', 'дня', 'дней')} отмечены как уход в сторону. В разборе лучше искать повторяющийся сценарий, а не обвинять себя.`,
+      title: 'Другие дела занимали день',
+      text: `${summary.driftDays} ${plural(summary.driftDays, 'день', 'дня', 'дней')} были заняты другими делами. В разборе лучше искать повторяющееся условие, а не обвинять себя.`,
       tone: 'warning',
     });
   }
@@ -531,12 +531,12 @@ export function buildRangeReviewCues(rangeMonths: number, entries: DailyEntry[],
     const preparationRate = ratioPercent(summary.preparationDays, summary.actionDirectionSamples) ?? 0;
     const driftRate = ratioPercent(summary.driftDays, summary.actionDirectionSamples) ?? 0;
     if (preparationRate >= 60 && externalRate <= 20) {
-      cues.push({ id: 'direction-preparation', title: 'Подготовка редко переходила в реальные шаги', text: `Подготовка — ${preparationRate}% отмеченных дней, реальные шаги — ${externalRate}%. Стоит проверить, какие действия дают ответ извне.`, tone: 'warning' });
+      cues.push({ id: 'direction-preparation', title: 'Подготовка редко переходила в конкретные действия', text: `Подготовка — ${preparationRate}% отмеченных дней, конкретные действия — ${externalRate}%. Проверь, что может привести к заметному результату.`, tone: 'warning' });
     } else if (externalRate >= 35) {
-      cues.push({ id: 'direction-external', title: 'Реальные шаги сохранялись', text: `Реальные шаги появлялись в ${externalRate}% дней с отмеченным движением к цели. Сверь это с итогами периода.`, tone: 'good' });
+      cues.push({ id: 'direction-external', title: 'Конкретные действия сохранялись', text: `Конкретные действия появлялись в ${externalRate}% дней с отметкой по текущей цели. Сверь это с итогами периода.`, tone: 'good' });
     }
     if (driftRate >= 30) {
-      cues.push({ id: 'direction-drift', title: 'Уход в сторону повторялся', text: `${driftRate}% дней с отмеченным движением к цели ушли в сторону. Ищи повторяющееся условие, а не одну причину всего периода.`, tone: 'warning' });
+      cues.push({ id: 'direction-drift', title: 'Другие занятия часто вытесняли цель', text: `${driftRate}% дней с отметкой по текущей цели были заняты другим. Ищи повторяющееся условие, а не одну причину всего периода.`, tone: 'warning' });
     }
   }
 
@@ -639,7 +639,7 @@ export function buildReviewQuestions(period: 'week' | 'month'): string[] {
   const label = period === 'week' ? 'неделе' : 'месяце';
   return [
     `Что в этой ${label} повторялось чаще всего и могло влиять на состояние?`,
-    'Какие действия могли дать ответ извне: отклик, разговор, публикация, встреча или собеседование?',
+    'Какие действия привели к заметному результату или обратной связи?',
     'Какой один фактор стоит уменьшить в следующем периоде?',
     'Какое одно действие или условие стоит сохранить, потому что оно помогало?',
   ];

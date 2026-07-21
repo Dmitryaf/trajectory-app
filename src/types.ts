@@ -159,11 +159,11 @@ export const nutritionOptions: Option<NutritionState>[] = [
 ];
 
 export const actionDirectionOptions: Option<ActionDirectionId>[] = [
-  { id: "external", label: "Реальный шаг", icon: "↗" },
+  { id: "external", label: "Конкретное действие", icon: "↗" },
   { id: "preparation", label: "Подготовка", icon: "◫" },
   { id: "maintenance", label: "Поддержание", icon: "○" },
   { id: "recovery", label: "Восстановление", icon: "◌" },
-  { id: "drift", label: "Уход в сторону", icon: "!" },
+  { id: "drift", label: "Занимался другим", icon: "!" },
 ];
 
 export const specialDayOptions: Option<SpecialDayId>[] = [

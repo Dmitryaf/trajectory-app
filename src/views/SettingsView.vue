@@ -240,7 +240,7 @@ async function clearAll() {
 
 <template>
   <section class="page page--settings">
-    <div class="page-heading"><div><span class="eyebrow">Настройка трекера</span><h1>Настройки</h1><p>Здесь задаются личные области, рабочий фокус, питание, эксперимент и копии данных.</p></div></div>
+    <div class="page-heading"><div><span class="eyebrow">Настройка приложения</span><h1>Настройки</h1><p>Выбери, что отмечать каждый день, и управляй экспериментом и копиями данных.</p></div></div>
 
     <article class="settings-card settings-card--areas">
       <div class="form-card__heading"><span class="section-icon section-icon--amber">✦</span><div><h2>Области жизни</h2><p>То, что важно замечать в обычные дни: семья, отдых, чтение или свои пункты.</p></div></div>
@@ -283,12 +283,12 @@ async function clearAll() {
     </article>
 
     <article class="settings-card settings-card--career">
-      <div class="form-card__heading"><span class="section-icon section-icon--blue">↗</span><div><h2>Карьера</h2><p>Задай текущую рабочую цель и что считать реальным шагом к ней.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--blue">↗</span><div><h2>Карьера</h2><p>Задай текущую рабочую цель и действия, которые показывают конкретный результат.</p></div></div>
       <div class="settings-field-stack">
         <label class="field-label" for="active-focus">Текущая рабочая цель</label>
-        <input id="active-focus" v-model="settings.activeFocusTitle" type="text" maxlength="100" placeholder="Например: найти работу frontend-разработчиком" />
-        <label class="field-label" for="external-evidence">Что считать реальным шагом</label>
-        <textarea id="external-evidence" v-model="settings.externalEvidenceCriterion" rows="2" maxlength="220" placeholder="Например: отклик, сообщение человеку, собеседование или публикация проекта"></textarea>
+        <input id="active-focus" v-model="settings.activeFocusTitle" type="text" maxlength="100" placeholder="Например: найти новую работу или подготовиться к смене роли" />
+        <label class="field-label" for="external-evidence">Что считать конкретным действием</label>
+        <textarea id="external-evidence" v-model="settings.externalEvidenceCriterion" rows="2" maxlength="220" placeholder="Например: отправленный отклик, разговор, собеседование или выполненное задание"></textarea>
       </div>
       <div class="option-preview">
         <span v-for="option in allCareerOptions" :key="option.id" class="option-pill">
@@ -301,15 +301,15 @@ async function clearAll() {
           <input id="new-career-option" v-model="newCareerLabel" type="text" maxlength="32" placeholder="Отклики" @keyup.enter="addCareerOption" />
           <button class="secondary-button" type="button" :disabled="!newCareerLabel.trim()" @click="addCareerOption">Добавить</button>
         </div>
-        <label class="toggle-row toggle-row--compact"><span><strong>Считать реальным шагом</strong><small>Подходит для откликов, сообщений рекрутерам, публикаций и собеседований.</small></span><input v-model="newCareerCountsAsExternal" type="checkbox" /></label>
+        <label class="toggle-row toggle-row--compact"><span><strong>Считать конкретным действием</strong><small>Подходит для откликов, разговоров, выполненных заданий и собеседований.</small></span><input v-model="newCareerCountsAsExternal" type="checkbox" /></label>
         <div v-if="settings.customCareerOptions.some((option) => !option.archived)" class="custom-list">
           <div v-for="option in settings.customCareerOptions.filter((item) => !item.archived)" :key="option.id" class="custom-list__item">
-            <span><i>{{ option.icon }}</i>{{ option.label }}<small v-if="option.countsAsExternal">реальный шаг</small></span>
+            <span><i>{{ option.icon }}</i>{{ option.label }}<small v-if="option.countsAsExternal">конкретное действие</small></span>
             <button class="ghost-button ghost-button--danger" type="button" :aria-label="`Скрыть ${option.label}`" @click="removeCareerOption(option.id)">×</button>
           </div>
         </div>
       </div>
-      <button class="primary-button" type="button" @click="save('Карьерный фокус сохранён')">Сохранить карьерный фокус</button>
+      <button class="primary-button" type="button" @click="save('Настройки карьеры сохранены')">Сохранить настройки карьеры</button>
     </article>
 
     <article class="settings-card settings-card--nutrition">

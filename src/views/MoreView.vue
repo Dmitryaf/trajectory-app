@@ -22,7 +22,7 @@ const sections = computed(() => [
     </div>
     <RouterLink to="/settings" class="journal-settings-card">
       <span>⚙</span>
-      <div><small>Управление трекером</small><h2>Настройки</h2><p>Области, фокус, эксперимент, резервные копии и экспорт данных.</p></div>
+      <div><small>Управление приложением</small><h2>Настройки</h2><p>Поля ежедневной записи, текущая цель, эксперимент и копии данных.</p></div>
       <i>→</i>
     </RouterLink>
   </section>

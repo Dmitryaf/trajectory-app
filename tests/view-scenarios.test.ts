@@ -54,6 +54,8 @@ describe('daily entry scenario', () => {
     });
 
     expect(wrapper.get('[aria-label="Дата записи"]').attributes('max')).toBe('2026-07-21');
+    expect(wrapper.text()).toContain('Действия по текущей цели');
+    expect(wrapper.text()).toContain('Физическая активность');
 
     await wrapper.get('#bedtime').setValue('23:40');
     await wrapper.get('#wake-time').setValue('07:30');
@@ -96,6 +98,7 @@ describe('journal scenarios', () => {
     const addResult = vi.spyOn(store, 'addResult').mockResolvedValue(undefined);
     const wrapper = mount(ResultsView, { global: { plugins: [pinia] } });
 
+    expect(wrapper.text()).toContain('Здесь можно сохранить выполненное дело, полученный результат или другое важное завершение.');
     await wrapper.get('[aria-label="Поиск по итогам"]').setValue('книгу');
     expect(wrapper.text()).toContain('Дочитал книгу');
     expect(wrapper.text()).not.toContain('Получил ответ');
@@ -121,6 +124,7 @@ describe('journal scenarios', () => {
     const addLifeEvent = vi.spyOn(store, 'addLifeEvent').mockResolvedValue(undefined);
     const wrapper = mount(EventsView, { global: { plugins: [pinia] } });
 
+    expect(wrapper.text()).toContain('Событие — то, что произошло. Инсайт — мысль или вывод, который важно сохранить.');
     await wrapper.get('[aria-label="Поиск по событиям"]').setValue('прогулки');
     expect(wrapper.text()).toContain('Наблюдение');
     expect(wrapper.text()).not.toContain('Встреча');

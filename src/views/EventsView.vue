@@ -89,23 +89,23 @@ function eventMeta(value: LifeEventRecord['type']) {
 <template>
   <section class="page page--archive page--events">
     <div class="page-heading">
-      <div><span class="eyebrow">Жизненный контекст</span><h1>События и инсайты</h1><p>Важные изменения, решения, наблюдения и обстоятельства, которые помогают увидеть траекторию.</p></div>
+      <div><span class="eyebrow">Важные записи</span><h1>События и инсайты</h1><p>Сохраняй важные события, решения и мысли, к которым захочется вернуться позже.</p></div>
     </div>
 
     <article class="result-composer result-composer--events">
-      <div class="form-card__heading"><span class="section-icon section-icon--amber">◆</span><div><h2>{{ editingId === null ? 'Добавить запись' : 'Редактировать запись' }}</h2><p>Событие меняет контекст, инсайт сохраняет важное понимание.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--amber">◆</span><div><h2>{{ editingId === null ? 'Добавить запись' : 'Редактировать запись' }}</h2><p>Событие — то, что произошло. Инсайт — мысль или вывод, который важно сохранить.</p></div></div>
       <ChipGroup v-model="type" :options="lifeEventTypeOptions" />
       <div class="event-composer__fields">
-        <input v-model="title" type="text" maxlength="140" placeholder="Например: решил сменить направление поиска работы" @keyup.enter="saveEvent" />
+        <input v-model="title" type="text" maxlength="140" placeholder="Например: принял важное решение или заметил новое" @keyup.enter="saveEvent" />
         <input v-model="date" class="date-input" type="date" aria-label="Дата события" />
       </div>
-      <textarea v-model="note" rows="2" maxlength="360" placeholder="Контекст, если он важен. Без обязательного анализа." />
+      <textarea v-model="note" rows="2" maxlength="360" placeholder="Что произошло или почему эта мысль важна" />
       <button class="primary-button" type="button" :disabled="!title.trim() || saving" @click="saveEvent">{{ editingId === null ? 'Добавить запись' : 'Сохранить запись' }}</button>
       <button v-if="editingId !== null" class="secondary-button composer-cancel" type="button" @click="resetForm">Отменить редактирование</button>
     </article>
 
     <section class="archive-panel">
-      <div class="section-heading"><div><span class="eyebrow">Хронология</span><h2>Важные события</h2></div><span class="count-badge">{{ filteredEvents.length }}</span></div>
+      <div class="section-heading"><div><span class="eyebrow">Хронология</span><h2>События и инсайты</h2></div><span class="count-badge">{{ filteredEvents.length }}</span></div>
       <div class="archive-filters">
         <input v-model="filterText" type="search" placeholder="Поиск по событиям" aria-label="Поиск по событиям" />
         <select v-model="filterType" aria-label="Тип события"><option value="all">Все типы</option><option v-for="option in lifeEventTypeOptions" :key="option.id" :value="option.id">{{ option.label }}</option></select>
@@ -131,7 +131,7 @@ function eventMeta(value: LifeEventRecord['type']) {
           <button class="secondary-button" type="button" :disabled="currentPage === pageCount" @click="currentPage += 1">Дальше</button>
         </nav>
       </div>
-      <div v-else class="empty-state"><span>◆</span><h3>{{ recentEvents.length ? 'Ничего не найдено' : 'Событий пока нет' }}</h3><p>{{ recentEvents.length ? 'Измени фильтры или диапазон дат.' : 'Здесь будут решения, изменения и обстоятельства, которые помогают объяснять длинную динамику.' }}</p></div>
+      <div v-else class="empty-state"><span>◆</span><h3>{{ recentEvents.length ? 'Ничего не найдено' : 'Записей пока нет' }}</h3><p>{{ recentEvents.length ? 'Измени фильтры или диапазон дат.' : 'Добавь событие или мысль, которую важно не потерять.' }}</p></div>
     </section>
   </section>
 </template>

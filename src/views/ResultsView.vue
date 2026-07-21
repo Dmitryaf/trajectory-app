@@ -87,14 +87,14 @@ function areaMeta(value: ResultRecord['area']) {
 <template>
   <section class="page page--archive page--results">
     <div class="page-heading">
-      <div><span class="eyebrow">Завершённые факты</span><h1>Итоги</h1><p>То, что уже произошло и показывает движение: готовая версия, отправленный пакет, ответ, встреча или другой проверяемый факт.</p></div>
+      <div><span class="eyebrow">Завершённое</span><h1>Итоги</h1><p>Здесь можно сохранить выполненное дело, полученный результат или другое важное завершение.</p></div>
     </div>
 
     <article class="result-composer result-composer--results">
-      <div class="form-card__heading"><span class="section-icon section-icon--green">✓</span><div><h2>{{ editingId === null ? 'Добавить итог' : 'Редактировать итог' }}</h2><p>Завершённое действие, полученный ответ или созданная вещь.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--green">✓</span><div><h2>{{ editingId === null ? 'Добавить итог' : 'Редактировать итог' }}</h2><p>Коротко запиши, что завершилось или какой результат получен.</p></div></div>
       <ChipGroup v-model="area" :options="resultEntryOptions" />
       <div class="result-composer__fields">
-        <input v-model="title" type="text" maxlength="160" placeholder="Например: выпустил первую рабочую версию приложения" @keyup.enter="saveResult" />
+        <input v-model="title" type="text" maxlength="160" placeholder="Например: закончил курс или завершил важное дело" @keyup.enter="saveResult" />
         <input v-model="date" class="date-input" type="date" aria-label="Дата итога" />
         <button class="primary-button" type="button" :disabled="!title.trim() || saving" @click="saveResult">{{ editingId === null ? 'Добавить итог' : 'Сохранить итог' }}</button>
       </div>
@@ -124,7 +124,7 @@ function areaMeta(value: ResultRecord['area']) {
           <button class="secondary-button" type="button" :disabled="currentPage === pageCount" @click="currentPage += 1">Дальше</button>
         </nav>
       </div>
-      <div v-else class="empty-state"><span>✓</span><h3>{{ recentResults.length ? 'Ничего не найдено' : 'Итогов пока нет' }}</h3><p>{{ recentResults.length ? 'Измени фильтры или диапазон дат.' : 'Добавь завершённый факт — он появится в недельном и месячном обзоре.' }}</p></div>
+      <div v-else class="empty-state"><span>✓</span><h3>{{ recentResults.length ? 'Ничего не найдено' : 'Итогов пока нет' }}</h3><p>{{ recentResults.length ? 'Измени фильтры или диапазон дат.' : 'Добавь первое завершённое дело или полученный результат.' }}</p></div>
     </section>
   </section>
 </template>
