@@ -1,0 +1,47 @@
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+
+interface VercelHeader {
+  key: string;
+  value: string;
+}
+
+interface VercelConfig {
+  rewrites: Array<{ source: string; destination: string }>;
+  headers: Array<{ source: string; headers: VercelHeader[] }>;
+}
+
+const config = JSON.parse(
+  readFileSync(new URL('../vercel.json', import.meta.url), 'utf8')
+) as VercelConfig;
+
+const appRoutes = ['/week', '/month', '/trends', '/more', '/results', '/events', '/settings'];
+
+function cacheControlFor(source: string): string | undefined {
+  return config.headers
+    .find((rule) => rule.source === source)
+    ?.headers.find((header) => header.key.toLowerCase() === 'cache-control')
+    ?.value;
+}
+
+describe('deployment configuration', () => {
+  it('rewrites only known SPA routes to index.html', () => {
+    expect(config.rewrites).toEqual(
+      appRoutes.map((source) => ({ source, destination: '/index.html' }))
+    );
+  });
+
+  it('does not contain a catch-all rewrite that can mask missing assets', () => {
+    const wildcardMarkers = ['*', '(', ')', ':', '[', ']'];
+    expect(config.rewrites.some((rule) => wildcardMarkers.some((marker) => rule.source.includes(marker)))).toBe(false);
+    expect(config.rewrites.some((rule) => rule.source.startsWith('/assets') || rule.source.startsWith('/api'))).toBe(false);
+  });
+
+  it('keeps hashed assets immutable', () => {
+    expect(cacheControlFor('/assets/(.*)')).toBe('public, max-age=31536000, immutable');
+  });
+
+  it.each(['/sw.js', '/manifest.webmanifest'])('revalidates %s on every request', (source) => {
+    expect(cacheControlFor(source)).toBe('public, max-age=0, must-revalidate');
+  });
+});

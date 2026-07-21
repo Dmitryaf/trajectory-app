@@ -15,6 +15,7 @@
 ```text
 npm test
 npm run build
+npm run check:dist
 git diff --check
 git status --short
 ```
