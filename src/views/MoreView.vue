@@ -1,22 +1,25 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
+import { useAppStore } from '../stores/app';
 
-const sections = [
-  { to: '/results', icon: '✓', title: 'Итоги', text: 'Завершённые действия, полученные ответы и созданные вещи.' },
-  { to: '/events', icon: '◆', title: 'События', text: 'Изменения и обстоятельства, которые объясняют общий контекст.' },
-  { to: '/settings', icon: '⚙', title: 'Настройки', text: 'Личные области, факторы сна, эксперимент и резервные копии.' },
-];
+const store = useAppStore();
+const sections = computed(() => [
+  { to: '/results', icon: '✓', tone: 'mint', count: store.results.length, title: 'Итоги', text: 'Завершённые действия, полученные ответы и созданные вещи.' },
+  { to: '/events', icon: '✦', tone: 'amber', count: store.lifeEvents.length, title: 'События и инсайты', text: 'Изменения, решения и важные мысли в общей хронологии.' },
+]);
 </script>
 
 <template>
-  <section class="page">
-    <div class="page-heading"><div><span class="eyebrow">Дополнительно</span><h1>Ещё</h1><p>Архив фактов, важный контекст и личные настройки.</p></div></div>
+  <section class="page page--journal">
+    <div class="page-heading"><div><span class="eyebrow">Хронология</span><h1>Журнал</h1><p>Завершённые факты, события и инсайты в отдельных списках.</p></div></div>
     <div class="more-grid">
-      <RouterLink v-for="section in sections" :key="section.to" :to="section.to" class="more-card">
+      <RouterLink v-for="section in sections" :key="section.to" :to="section.to" class="more-card" :class="`more-card--${section.tone}`">
         <span>{{ section.icon }}</span>
-        <div><h2>{{ section.title }}</h2><p>{{ section.text }}</p></div>
+        <div><small>{{ section.count }} в журнале</small><h2>{{ section.title }}</h2><p>{{ section.text }}</p></div>
         <i>→</i>
       </RouterLink>
     </div>
+    <RouterLink to="/settings" class="journal-settings-link"><span>⚙</span>Настройки</RouterLink>
   </section>
 </template>
