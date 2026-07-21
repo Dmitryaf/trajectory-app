@@ -6,7 +6,7 @@ import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
 import { actionDirectionLabel, buildReviewCues, buildReviewQuestions, careerStatesForEntry, entriesForWeek, eveningFactorLabel, hasArea, resultsForPeriod, specialDayLabel, summarize, weekSummaryText } from '../services/analytics';
 import { addDays, endOfWeek, formatDate, formatMinutes, startOfWeek, todayKey } from '../services/dates';
-import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../services/exportPackage';
+import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../features/export/browser';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { plainCopy } from '../services/plain';
 import { useAppStore } from '../stores/app';
@@ -172,7 +172,7 @@ function downloadJson() {
       <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="`${summary.sleepSamples} дн. без особых`" accent="#7467e8" />
       <MetricCard label="Карьера" :value="summary.careerDays" :hint="`${summary.externalSteps} дн. с откликом или разговором`" accent="#3f82d5" />
       <MetricCard label="Реальные шаги" :value="`${summary.externalActionDays}/${summary.preparationDays}`" :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`" accent="#1d5148" />
-      <MetricCard label="Дней с движением" :value="summary.movementDays" :hint="`${summary.movementSamples} дн. с отметкой`" accent="#2eaa7f" />
+      <MetricCard label="Дней с активностью" :value="summary.movementDays" :hint="`${summary.movementSamples} дн. с отметкой`" accent="#2eaa7f" />
       <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="`поддержало / мешало · ${summary.nutritionSamples} дн.`" accent="#d9952f" />
       <MetricCard label="Итогов" :value="results.length" accent="#e7a43b" />
     </div>
@@ -205,11 +205,11 @@ function downloadJson() {
     </article>
 
     <article v-if="actionNotes.length" class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Движение к цели</span><h2>Что было реальным шагом, а что подготовкой</h2></div><span class="count-badge">{{ actionNotes.length }}</span></div>
+      <div class="section-heading"><div><span class="eyebrow">Действия по цели</span><h2>Конкретные действия и подготовка</h2></div><span class="count-badge">{{ actionNotes.length }}</span></div>
       <div class="note-list">
         <article v-for="entry in actionNotes" :key="entry.date" class="note-item">
           <time>{{ formatDate(entry.date, { weekday: 'short', day: 'numeric' }) }}</time>
-          <p><strong>{{ actionDirectionLabel(entry.actionDirection) }}</strong><span v-if="entry.focusTitle"><br />Фокус: {{ entry.focusTitle }}</span><span v-if="entry.actionNote"><br />{{ entry.actionNote }}</span></p>
+          <p><strong>{{ actionDirectionLabel(entry.actionDirection) }}</strong><span v-if="entry.focusTitle"><br />Цель: {{ entry.focusTitle }}</span><span v-if="entry.actionNote"><br />{{ entry.actionNote }}</span></p>
         </article>
       </div>
     </article>

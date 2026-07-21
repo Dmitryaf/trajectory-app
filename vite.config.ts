@@ -11,7 +11,7 @@ export default defineConfig({
       manifest: {
         name: 'Траектория',
         short_name: 'Траектория',
-        description: 'Спокойная панель фактов о жизни, сне и движении вперёд',
+        description: 'Личные записи о состоянии, действиях и важных событиях',
         theme_color: '#11182b',
         background_color: '#f4f6fb',
         display: 'standalone',

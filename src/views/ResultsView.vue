@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import ChipGroup from '../components/ChipGroup.vue';
+import ArchiveDateRange from '../features/journal/ArchiveDateRange.vue';
+import ArchivePagination from '../features/journal/ArchivePagination.vue';
+import { useArchiveList } from '../features/journal/useArchiveList';
 import { formatDate, todayKey } from '../services/dates';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
-import { pageCount as countPages, pageItems } from '../services/pagination';
 import { useAppStore } from '../stores/app';
 import { resultAreaOptions, type ResultRecord } from '../types';
 
@@ -14,26 +16,22 @@ const area = ref<ResultRecord['area']>('career');
 const editingId = ref<number | null>(null);
 const editingCreatedAt = ref('');
 const saving = ref(false);
-const filterText = ref('');
-const filterArea = ref('all');
-const dateFrom = ref('');
-const dateTo = ref('');
-const currentPage = ref(1);
-const pageSize = 8;
 const recentResults = computed(() => [...store.results].sort((a, b) => b.date.localeCompare(a.date)));
 const resultOptions = computed(() => [...resultAreaOptions, ...store.settings.customLifeAreaOptions]);
 const resultEntryOptions = computed(() => [...resultAreaOptions, ...store.settings.customLifeAreaOptions.filter((option) => !option.archived)]);
-const filteredResults = computed(() => recentResults.value.filter((result) => {
-  const query = filterText.value.trim().toLocaleLowerCase('ru-RU');
-  return (!query || result.title.toLocaleLowerCase('ru-RU').includes(query))
-    && (filterArea.value === 'all' || result.area === filterArea.value)
-    && (!dateFrom.value || result.date >= dateFrom.value)
-    && (!dateTo.value || result.date <= dateTo.value);
-}));
-const pageCount = computed(() => countPages(filteredResults.value.length, pageSize));
-const visibleResults = computed(() => pageItems(filteredResults.value, currentPage.value, pageSize));
-watch([filterText, filterArea, dateFrom, dateTo], () => { currentPage.value = 1; });
-watch(pageCount, (count) => { currentPage.value = Math.min(currentPage.value, count); });
+const {
+  filterText,
+  filterCategory: filterArea,
+  dateFrom,
+  dateTo,
+  currentPage,
+  filteredItems: filteredResults,
+  pageCount,
+  visibleItems: visibleResults
+} = useArchiveList(recentResults, {
+  getSearchText: (result) => result.title,
+  getCategory: (result) => result.area
+});
 
 async function saveResult() {
   const clean = title.value.trim();
@@ -87,14 +85,14 @@ function areaMeta(value: ResultRecord['area']) {
 <template>
   <section class="page page--archive page--results">
     <div class="page-heading">
-      <div><span class="eyebrow">Завершённые факты</span><h1>Итоги</h1><p>То, что уже произошло и показывает движение: готовая версия, отправленный пакет, ответ, встреча или другой проверяемый факт.</p></div>
+      <div><span class="eyebrow">Завершённое</span><h1>Итоги</h1><p>Здесь можно сохранить выполненное дело, полученный результат или другое важное завершение.</p></div>
     </div>
 
     <article class="result-composer result-composer--results">
-      <div class="form-card__heading"><span class="section-icon section-icon--green">✓</span><div><h2>{{ editingId === null ? 'Добавить итог' : 'Редактировать итог' }}</h2><p>Завершённое действие, полученный ответ или созданная вещь.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--green">✓</span><div><h2>{{ editingId === null ? 'Добавить итог' : 'Редактировать итог' }}</h2><p>Коротко запиши, что завершилось или какой результат получен.</p></div></div>
       <ChipGroup v-model="area" :options="resultEntryOptions" />
       <div class="result-composer__fields">
-        <input v-model="title" type="text" maxlength="160" placeholder="Например: выпустил первую рабочую версию приложения" @keyup.enter="saveResult" />
+        <input v-model="title" type="text" maxlength="160" placeholder="Например: закончил курс или завершил важное дело" @keyup.enter="saveResult" />
         <input v-model="date" class="date-input" type="date" aria-label="Дата итога" />
         <button class="primary-button" type="button" :disabled="!title.trim() || saving" @click="saveResult">{{ editingId === null ? 'Добавить итог' : 'Сохранить итог' }}</button>
       </div>
@@ -106,8 +104,7 @@ function areaMeta(value: ResultRecord['area']) {
       <div class="archive-filters">
         <input v-model="filterText" type="search" placeholder="Поиск по итогам" aria-label="Поиск по итогам" />
         <select v-model="filterArea" aria-label="Область итога"><option value="all">Все области</option><option v-for="option in resultOptions" :key="option.id" :value="option.id">{{ option.label }}</option></select>
-        <label><span>С</span><input v-model="dateFrom" type="date" /></label>
-        <label><span>По</span><input v-model="dateTo" type="date" /></label>
+        <ArchiveDateRange v-model:date-from="dateFrom" v-model:date-to="dateTo" context-label="итогов" />
       </div>
       <div v-if="visibleResults.length" class="results-list">
         <article v-for="result in visibleResults" :key="result.id" class="result-item">
@@ -118,13 +115,9 @@ function areaMeta(value: ResultRecord['area']) {
             <button class="ghost-button ghost-button--danger" type="button" aria-label="Удалить итог" @click="remove(result.id)">×</button>
           </div>
         </article>
-        <nav v-if="pageCount > 1" class="archive-pagination" aria-label="Страницы итогов">
-          <button class="secondary-button" type="button" :disabled="currentPage === 1" @click="currentPage -= 1">Назад</button>
-          <span>{{ currentPage }} из {{ pageCount }}</span>
-          <button class="secondary-button" type="button" :disabled="currentPage === pageCount" @click="currentPage += 1">Дальше</button>
-        </nav>
+        <ArchivePagination v-model:page="currentPage" :page-count="pageCount" context-label="итогов" />
       </div>
-      <div v-else class="empty-state"><span>✓</span><h3>{{ recentResults.length ? 'Ничего не найдено' : 'Итогов пока нет' }}</h3><p>{{ recentResults.length ? 'Измени фильтры или диапазон дат.' : 'Добавь завершённый факт — он появится в недельном и месячном обзоре.' }}</p></div>
+      <div v-else class="empty-state"><span>✓</span><h3>{{ recentResults.length ? 'Ничего не найдено' : 'Итогов пока нет' }}</h3><p>{{ recentResults.length ? 'Измени фильтры или диапазон дат.' : 'Добавь первое завершённое дело или полученный результат.' }}</p></div>
     </section>
   </section>
 </template>

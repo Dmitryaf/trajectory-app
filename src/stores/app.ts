@@ -4,17 +4,9 @@ import { isCloudSyncConfigured, markCloudSyncPending, saveCloudSnapshot } from '
 import { plainCopy } from '../services/plain';
 import { useAuthStore } from './auth';
 import { defaultSettings, normalizeDailyEntry, normalizeLifeEvent, normalizeMonthlyReview, normalizeSettings, normalizeWeeklyReview, type AppSettings, type DailyEntry, type LifeEventRecord, type MonthlyReview, type ResultRecord, type WeeklyReview } from '../types';
+import { normalizeSnapshot, type ExportPayload } from '../features/backup/snapshot';
 
-export type ExportPayload = {
-  version: 1 | 2 | 3;
-  exportedAt: string;
-  dailyEntries: DailyEntry[];
-  results: ResultRecord[];
-  lifeEvents?: LifeEventRecord[];
-  weeklyReviews: WeeklyReview[];
-  monthlyReviews?: MonthlyReview[];
-  settings: AppSettings;
-};
+export type { ExportPayload } from '../features/backup/snapshot';
 
 type CloudSyncStatus = 'disabled' | 'idle' | 'syncing' | 'synced' | 'pending' | 'conflict' | 'error';
 
@@ -149,18 +141,16 @@ export const useAppStore = defineStore('app', {
         settings: this.settings
       };
     },
-    async importData(payload: ExportPayload, options: { syncCloud?: boolean } = {}) {
-      if (![1, 2, 3].includes(payload.version) || !Array.isArray(payload.dailyEntries) || !Array.isArray(payload.results)) {
-        throw new Error('Неподдерживаемый формат резервной копии');
-      }
+    async importData(payload: unknown, options: { syncCloud?: boolean } = {}) {
+      const prepared = normalizeSnapshot(payload);
       await db.transaction('rw', [db.dailyEntries, db.results, db.lifeEvents, db.weeklyReviews, db.monthlyReviews, db.settings], async () => {
         await Promise.all([db.dailyEntries.clear(), db.results.clear(), db.lifeEvents.clear(), db.weeklyReviews.clear(), db.monthlyReviews.clear(), db.settings.clear()]);
-        await db.dailyEntries.bulkPut(payload.dailyEntries.map((entry) => normalizeDailyEntry(entry)));
-        await db.results.bulkPut(payload.results);
-        await db.lifeEvents.bulkPut((payload.lifeEvents ?? []).map((event) => normalizeLifeEvent(event)));
-        await db.weeklyReviews.bulkPut((payload.weeklyReviews ?? []).map((review) => normalizeWeeklyReview(review)));
-        await db.monthlyReviews.bulkPut((payload.monthlyReviews ?? []).map((review) => normalizeMonthlyReview(review)));
-        await db.settings.put(plainCopy(normalizeSettings(payload.settings ?? defaultSettings)));
+        await db.dailyEntries.bulkPut(prepared.dailyEntries);
+        await db.results.bulkPut(prepared.results);
+        await db.lifeEvents.bulkPut(prepared.lifeEvents ?? []);
+        await db.weeklyReviews.bulkPut(prepared.weeklyReviews);
+        await db.monthlyReviews.bulkPut(prepared.monthlyReviews ?? []);
+        await db.settings.put(plainCopy(prepared.settings));
       });
       await this.load();
       if (options.syncCloud) void this.syncCloudSnapshot({ force: true });
@@ -195,6 +185,8 @@ export const useAppStore = defineStore('app', {
         return;
       }
 
+      const userId = useAuthStore().session?.user.id;
+      if (userId) markCloudSyncPending(userId, 'Локальные изменения ожидают синхронизации');
       this.setCloudSyncState('syncing', 'Сохраняю облачную копию…');
       do {
         this.cloudSyncQueued = false;
@@ -203,7 +195,6 @@ export const useAppStore = defineStore('app', {
           this.setCloudSyncState('synced', `Облако обновлено: ${new Date(updatedAt).toLocaleString('ru-RU')}`, { updatedAt });
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Не удалось сохранить облачную копию';
-          const userId = useAuthStore().session?.user.id;
           if (userId) markCloudSyncPending(userId, message);
           this.setCloudSyncState('pending', 'Изменения сохранены локально. Облако обновится после повторной синхронизации.', { error: message });
           return;

@@ -19,7 +19,7 @@
       "careerState": "preparation",
       "careerStates": [
         "preparation",
-        "custom:career:responses"
+        "external"
       ],
       "activities": [
         "walk"
@@ -30,7 +30,7 @@
       "nutritionCriterion": "Регулярные приёмы пищи без позднего переедания",
       "weightKg": 89.3,
       "actionDirection": "external",
-      "actionNote": "Выбрал вакансию и адаптировал сопроводительное письмо",
+      "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
@@ -133,10 +133,10 @@
       "energy": 5,
       "stateContext": "",
       "eveningFactors": [
-        "custom:evening:shower"
+        "anxiety_overload"
       ],
       "eveningFactorsRecorded": true,
-      "eveningFactorNote": "После душа было проще переключиться на сон",
+      "eveningFactorNote": "Вечером было сложно переключиться после насыщенного дня",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "project",
@@ -184,7 +184,7 @@
       "careerState": "preparation",
       "careerStates": [
         "preparation",
-        "custom:career:responses"
+        "external"
       ],
       "activities": [
         "recovery"
@@ -195,7 +195,7 @@
       "nutritionCriterion": "Регулярные приёмы пищи без позднего переедания",
       "weightKg": null,
       "actionDirection": "external",
-      "actionNote": "Выбрал вакансию и адаптировал сопроводительное письмо",
+      "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
@@ -235,7 +235,7 @@
       "nutritionCriterion": "Регулярные приёмы пищи без позднего переедания",
       "weightKg": null,
       "actionDirection": "external",
-      "actionNote": "",
+      "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
@@ -338,16 +338,16 @@
       "energy": 4,
       "stateContext": "",
       "eveningFactors": [
-        "custom:evening:shower"
+        "anxiety_overload"
       ],
       "eveningFactorsRecorded": true,
-      "eveningFactorNote": "После душа было проще переключиться на сон",
+      "eveningFactorNote": "Вечером было сложно переключиться после насыщенного дня",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
       "careerStates": [
         "preparation",
-        "custom:career:responses"
+        "external"
       ],
       "activities": [
         "boxing"
@@ -358,7 +358,7 @@
       "nutritionCriterion": "Регулярные приёмы пищи без позднего переедания",
       "weightKg": null,
       "actionDirection": "external",
-      "actionNote": "Выбрал вакансию и адаптировал сопроводительное письмо",
+      "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
@@ -440,7 +440,7 @@
       "nutritionCriterion": "Регулярные приёмы пищи без позднего переедания",
       "weightKg": null,
       "actionDirection": "external",
-      "actionNote": "",
+      "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
@@ -513,7 +513,7 @@
       "careerState": "preparation",
       "careerStates": [
         "preparation",
-        "custom:career:responses"
+        "external"
       ],
       "activities": [],
       "activitiesRecorded": true,
@@ -522,7 +522,7 @@
       "nutritionCriterion": "Регулярные приёмы пищи без позднего переедания",
       "weightKg": 88.6,
       "actionDirection": "external",
-      "actionNote": "Выбрал вакансию и адаптировал сопроводительное письмо",
+      "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
@@ -544,10 +544,10 @@
       "energy": 5,
       "stateContext": "",
       "eveningFactors": [
-        "custom:evening:shower"
+        "anxiety_overload"
       ],
       "eveningFactorsRecorded": true,
-      "eveningFactorNote": "После душа было проще переключиться на сон",
+      "eveningFactorNote": "Вечером было сложно переключиться после насыщенного дня",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -645,7 +645,7 @@
       "nutritionCriterion": "Регулярные приёмы пищи без позднего переедания",
       "weightKg": 88.5,
       "actionDirection": "external",
-      "actionNote": "",
+      "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
@@ -676,7 +676,7 @@
       "careerState": "preparation",
       "careerStates": [
         "preparation",
-        "custom:career:responses"
+        "external"
       ],
       "activities": [
         "workout"
@@ -687,7 +687,7 @@
       "nutritionCriterion": "Регулярные приёмы пищи без позднего переедания",
       "weightKg": null,
       "actionDirection": "external",
-      "actionNote": "Выбрал вакансию и адаптировал сопроводительное письмо",
+      "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
@@ -749,10 +749,10 @@
       "energy": 4,
       "stateContext": "День с большим количеством встреч",
       "eveningFactors": [
-        "custom:evening:shower"
+        "anxiety_overload"
       ],
       "eveningFactorsRecorded": true,
-      "eveningFactorNote": "После душа было проще переключиться на сон",
+      "eveningFactorNote": "Вечером было сложно переключиться после насыщенного дня",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "project",
@@ -839,7 +839,7 @@
       "careerState": "preparation",
       "careerStates": [
         "preparation",
-        "custom:career:responses"
+        "external"
       ],
       "activities": [
         "walk"
@@ -850,7 +850,7 @@
       "nutritionCriterion": "Регулярные приёмы пищи без позднего переедания",
       "weightKg": null,
       "actionDirection": "external",
-      "actionNote": "Выбрал вакансию и адаптировал сопроводительное письмо",
+      "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
@@ -953,10 +953,10 @@
       "energy": 5,
       "stateContext": "",
       "eveningFactors": [
-        "custom:evening:shower"
+        "anxiety_overload"
       ],
       "eveningFactorsRecorded": true,
-      "eveningFactorNote": "После душа было проще переключиться на сон",
+      "eveningFactorNote": "Вечером было сложно переключиться после насыщенного дня",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -1004,7 +1004,7 @@
       "careerState": "preparation",
       "careerStates": [
         "preparation",
-        "custom:career:responses"
+        "external"
       ],
       "activities": [
         "recovery"
@@ -1015,7 +1015,7 @@
       "nutritionCriterion": "Регулярные приёмы пищи без позднего переедания",
       "weightKg": 88,
       "actionDirection": "external",
-      "actionNote": "Выбрал вакансию и адаптировал сопроводительное письмо",
+      "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
@@ -1055,7 +1055,7 @@
       "nutritionCriterion": "Регулярные приёмы пищи без позднего переедания",
       "weightKg": null,
       "actionDirection": "external",
-      "actionNote": "",
+      "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
@@ -1158,16 +1158,16 @@
       "energy": 4,
       "stateContext": "",
       "eveningFactors": [
-        "custom:evening:shower"
+        "anxiety_overload"
       ],
       "eveningFactorsRecorded": true,
-      "eveningFactorNote": "После душа было проще переключиться на сон",
+      "eveningFactorNote": "Вечером было сложно переключиться после насыщенного дня",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
       "careerStates": [
         "preparation",
-        "custom:career:responses"
+        "external"
       ],
       "activities": [
         "boxing"
@@ -1178,7 +1178,7 @@
       "nutritionCriterion": "Регулярные приёмы пищи без позднего переедания",
       "weightKg": null,
       "actionDirection": "external",
-      "actionNote": "Выбрал вакансию и адаптировал сопроводительное письмо",
+      "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
@@ -1260,7 +1260,7 @@
       "nutritionCriterion": "Регулярные приёмы пищи без позднего переедания",
       "weightKg": 87.6,
       "actionDirection": "external",
-      "actionNote": "",
+      "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
@@ -1333,7 +1333,7 @@
       "careerState": "preparation",
       "careerStates": [
         "preparation",
-        "custom:career:responses"
+        "external"
       ],
       "activities": [],
       "activitiesRecorded": true,
@@ -1342,7 +1342,7 @@
       "nutritionCriterion": "Регулярные приёмы пищи без позднего переедания",
       "weightKg": null,
       "actionDirection": "external",
-      "actionNote": "Выбрал вакансию и адаптировал сопроводительное письмо",
+      "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
@@ -1364,10 +1364,10 @@
       "energy": 5,
       "stateContext": "",
       "eveningFactors": [
-        "custom:evening:shower"
+        "anxiety_overload"
       ],
       "eveningFactorsRecorded": true,
-      "eveningFactorNote": "После душа было проще переключиться на сон",
+      "eveningFactorNote": "Вечером было сложно переключиться после насыщенного дня",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "project",
@@ -1465,7 +1465,7 @@
       "nutritionCriterion": "Регулярные приёмы пищи без позднего переедания",
       "weightKg": null,
       "actionDirection": "external",
-      "actionNote": "",
+      "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
@@ -1496,7 +1496,7 @@
       "careerState": "preparation",
       "careerStates": [
         "preparation",
-        "custom:career:responses"
+        "external"
       ],
       "activities": [
         "workout"
@@ -1507,7 +1507,7 @@
       "nutritionCriterion": "Регулярные приёмы пищи без позднего переедания",
       "weightKg": null,
       "actionDirection": "external",
-      "actionNote": "Выбрал вакансию и адаптировал сопроводительное письмо",
+      "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
@@ -1572,7 +1572,7 @@
       "id": 2,
       "date": "2026-05-29",
       "area": "career",
-      "title": "Отправил адресный отклик",
+      "title": "Отправил отклик",
       "createdAt": "2026-05-29T19:00:00.000Z"
     },
     {
@@ -1670,7 +1670,7 @@
       "id": 16,
       "date": "2026-07-01",
       "area": "career",
-      "title": "Отправил адресный отклик",
+      "title": "Отправил отклик",
       "createdAt": "2026-07-01T19:00:00.000Z"
     },
     {
@@ -1847,7 +1847,7 @@
       "previousPlanOutcome": "Первый обзор в наборе данных",
       "results": [
         "Обновил блок опыта в резюме",
-        "Отправил адресный отклик",
+        "Отправил отклик",
         "Сохранил время на восстановление"
       ],
       "support": "Один небольшой приоритет на день",
@@ -1945,7 +1945,7 @@
       "previousPlanOutcome": "Основной следующий шаг выполнен",
       "results": [
         "Обновил блок опыта в резюме",
-        "Отправил адресный отклик",
+        "Отправил отклик",
         ""
       ],
       "support": "Заранее определённый первый шаг",
@@ -2020,7 +2020,13 @@
   ],
   "settings": {
     "id": "main",
-    "settingsVersion": 2,
+    "settingsVersion": 4,
+    "activeDailyBlocks": [
+      "sleep",
+      "career",
+      "movement",
+      "nutrition"
+    ],
     "activeLifeAreas": [
       "family",
       "reading",
@@ -2031,14 +2037,6 @@
       "custom:life:personal-projects"
     ],
     "customCareerOptions": [
-      {
-        "id": "custom:career:responses",
-        "label": "Адресные отклики",
-        "icon": "+",
-        "custom": true,
-        "countsAsExternal": true,
-        "archived": false
-      },
       {
         "id": "custom:career:course",
         "label": "Учебный курс",
@@ -2058,13 +2056,6 @@
       }
     ],
     "customEveningFactorOptions": [
-      {
-        "id": "custom:evening:shower",
-        "label": "Спокойный душ",
-        "icon": "+",
-        "custom": true,
-        "archived": false
-      },
       {
         "id": "custom:evening:music",
         "label": "Музыка перед сном",

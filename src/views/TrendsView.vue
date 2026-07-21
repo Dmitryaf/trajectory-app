@@ -5,7 +5,7 @@ import EChartPanel from '../components/charts/EChartPanel.vue';
 import MetricCard from '../components/MetricCard.vue';
 import { buildCoverageSeries, buildEventComparison, buildRangeReviewCues, entriesForPeriod, factorSummaries, ratioPercent, resultsForPeriod, summarize, type EventComparisonMetric } from '../services/analytics';
 import { addMonths, dateRange, endOfMonth, endOfWeek, formatDate, formatMinutes, monthsBetween, startOfMonth, toDateKey, todayKey } from '../services/dates';
-import { buildRangePackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../services/exportPackage';
+import { buildRangePackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../features/export/browser';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { useAppStore } from '../stores/app';
 import { eveningFactorOptions } from '../types';
@@ -206,7 +206,7 @@ const progressOption = computed<EChartsCoreOption>(() => ({
     { type: 'value', minInterval: 1, axisLabel: { color: '#7d8798' }, splitLine: { show: false } }
   ],
   series: [
-    { name: 'реальные шаги', type: 'bar', stack: 'direction', data: monthRows.value.map((row) => ratioPercent(row.summary.externalActionDays, row.summary.actionDirectionSamples)), itemStyle: { borderRadius: [5, 5, 0, 0] } },
+    { name: 'конкретные действия', type: 'bar', stack: 'direction', data: monthRows.value.map((row) => ratioPercent(row.summary.externalActionDays, row.summary.actionDirectionSamples)), itemStyle: { borderRadius: [5, 5, 0, 0] } },
     { name: 'подготовка', type: 'bar', stack: 'direction', data: monthRows.value.map((row) => ratioPercent(row.summary.preparationDays, row.summary.actionDirectionSamples)) },
     { name: 'поддержание', type: 'bar', stack: 'direction', data: monthRows.value.map((row) => ratioPercent(row.summary.actionDirectionCounts.maintenance, row.summary.actionDirectionSamples)) },
     { name: 'восстановление', type: 'bar', stack: 'direction', data: monthRows.value.map((row) => ratioPercent(row.summary.actionDirectionCounts.recovery, row.summary.actionDirectionSamples)) },
@@ -310,7 +310,7 @@ function downloadJson() {
 <template>
   <section class="page page--review page--trends">
     <div class="page-heading">
-      <div><span class="eyebrow">3–12 месяцев</span><h1>Тренды</h1><p>Долгий обзор без общего балла: сон, энергия, вес, питание, реальные шаги и важные события.</p></div>
+      <div><span class="eyebrow">3–12 месяцев</span><h1>Тренды</h1><p>Изменения сна, энергии, веса, питания, действий по цели и важных событий.</p></div>
     </div>
 
     <div class="range-tabs" aria-label="Период динамики">
@@ -408,8 +408,8 @@ function downloadJson() {
     </article>
 
     <article class="dashboard-card dashboard-card--progress">
-      <div class="section-heading"><div><span class="eyebrow">Движение к цели</span><h2>Реальные шаги, подготовка и итоги</h2></div><small>столбцы: % отмеченных дней</small></div>
-      <EChartPanel :option="progressOption" :height="320" aria-label="Динамика реальных шагов, подготовки, ухода в сторону и итогов" />
+      <div class="section-heading"><div><span class="eyebrow">Действия по цели</span><h2>Конкретные действия, подготовка и итоги</h2></div><small>столбцы: % отмеченных дней</small></div>
+      <EChartPanel :option="progressOption" :height="320" aria-label="Динамика конкретных действий, подготовки, других занятий и итогов" />
     </article>
 
     <article class="dashboard-card dashboard-card--table">

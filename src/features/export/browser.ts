@@ -1,5 +1,5 @@
-import { buildAiReportPayload, buildAiReportPrompt, buildAiReportRangePayload, type AiReportPayload, type AiReportSourceData } from './aiReport';
-import type { AppSettings } from '../types';
+import { buildAiReportPayload, buildAiReportPrompt, buildAiReportRangePayload, type AiReportPayload, type AiReportSourceData } from './report';
+import type { AppSettings } from '../../types';
 
 export function buildPeriodPackage(period: 'week' | 'month', anchor: string, source: AiReportSourceData) {
   return buildAiReportPayload(period, anchor, source);

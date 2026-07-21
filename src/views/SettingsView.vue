@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
 import ChipGroup from '../components/ChipGroup.vue';
-import { useAppStore, type ExportPayload } from '../stores/app';
+import { useAppStore } from '../stores/app';
 import { useAuthStore } from '../stores/auth';
-import { buildAiReportPayload, buildAiReportPrompt, type AiReportPeriod } from '../services/aiReport';
-import { copyText, downloadJson } from '../services/exportPackage';
+import { copyText, downloadJson } from '../features/export/browser';
+import { buildAiReportPayload, buildAiReportPrompt, type AiReportPeriod } from '../features/export/report';
 import { loadCloudSnapshot, markCloudSyncSynced } from '../services/cloudSync';
 import { todayKey } from '../services/dates';
 import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { plainCopy } from '../services/plain';
-import { careerOptions, createCustomOption, eveningFactorOptions, lifeAreaOptions, type AppSettings, type CareerState, type EveningFactorId, type LifeAreaId, type Option } from '../types';
+import { careerOptions, createCustomOption, dailyBlockOptions, eveningFactorOptions, lifeAreaOptions, type AppSettings, type CareerState, type DailyBlockId, type EveningFactorId, type LifeAreaId, type Option } from '../types';
 
 const store = useAppStore();
 const settings = reactive<AppSettings>(plainCopy(store.settings));
@@ -164,7 +164,7 @@ async function restoreBackupFromCloud() {
 
     const updatedAt = new Date(snapshot.updatedAt).toLocaleString('ru-RU');
     if (!window.confirm(`Заменить локальные данные облачной копией от ${updatedAt}? Перед этим лучше скачать локальную копию.`)) return;
-    await store.importData(snapshot.payload as ExportPayload, { syncCloud: false });
+    await store.importData(snapshot.payload, { syncCloud: false });
     Object.assign(settings, plainCopy(store.settings));
     markCloudSyncSynced(snapshot.userId, snapshot.updatedAt);
     store.setCloudSyncState('synced', `Загружена облачная копия: ${updatedAt}`, { updatedAt: snapshot.updatedAt });
@@ -240,7 +240,14 @@ async function clearAll() {
 
 <template>
   <section class="page page--settings">
-    <div class="page-heading"><div><span class="eyebrow">Настройка трекера</span><h1>Настройки</h1><p>Здесь задаются личные области, рабочий фокус, питание, эксперимент и копии данных.</p></div></div>
+    <div class="page-heading"><div><span class="eyebrow">Настройка приложения</span><h1>Настройки</h1><p>Выбери, что отмечать каждый день, и управляй экспериментом и копиями данных.</p></div></div>
+
+    <article class="settings-card settings-card--daily-blocks">
+      <div class="form-card__heading"><span class="section-icon section-icon--blue">☷</span><div><h2>Блоки ежедневной записи</h2><p>Скрой то, что сейчас не нужно заполнять. Старые записи и их данные останутся в обзорах и выгрузке.</p></div></div>
+      <ChipGroup v-model="settings.activeDailyBlocks as DailyBlockId[]" :options="dailyBlockOptions" multiple />
+      <p v-if="!settings.activeDailyBlocks.length" class="data-note">Останутся общие блоки: действия по текущей цели, области жизни, необычный день и факт дня.</p>
+      <button class="primary-button" type="button" @click="save('Блоки ежедневной записи сохранены')">Сохранить блоки</button>
+    </article>
 
     <article class="settings-card settings-card--areas">
       <div class="form-card__heading"><span class="section-icon section-icon--amber">✦</span><div><h2>Области жизни</h2><p>То, что важно замечать в обычные дни: семья, отдых, чтение или свои пункты.</p></div></div>
@@ -283,12 +290,12 @@ async function clearAll() {
     </article>
 
     <article class="settings-card settings-card--career">
-      <div class="form-card__heading"><span class="section-icon section-icon--blue">↗</span><div><h2>Карьера</h2><p>Задай текущую рабочую цель и что считать реальным шагом к ней.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--blue">↗</span><div><h2>Карьера</h2><p>Задай текущую рабочую цель и действия, которые показывают конкретный результат.</p></div></div>
       <div class="settings-field-stack">
         <label class="field-label" for="active-focus">Текущая рабочая цель</label>
-        <input id="active-focus" v-model="settings.activeFocusTitle" type="text" maxlength="100" placeholder="Например: найти работу frontend-разработчиком" />
-        <label class="field-label" for="external-evidence">Что считать реальным шагом</label>
-        <textarea id="external-evidence" v-model="settings.externalEvidenceCriterion" rows="2" maxlength="220" placeholder="Например: отклик, сообщение человеку, собеседование или публикация проекта"></textarea>
+        <input id="active-focus" v-model="settings.activeFocusTitle" type="text" maxlength="100" placeholder="Например: найти новую работу или подготовиться к смене роли" />
+        <label class="field-label" for="external-evidence">Что считать конкретным действием</label>
+        <textarea id="external-evidence" v-model="settings.externalEvidenceCriterion" rows="2" maxlength="220" placeholder="Например: отправленный отклик, разговор, собеседование или выполненное задание"></textarea>
       </div>
       <div class="option-preview">
         <span v-for="option in allCareerOptions" :key="option.id" class="option-pill">
@@ -301,15 +308,15 @@ async function clearAll() {
           <input id="new-career-option" v-model="newCareerLabel" type="text" maxlength="32" placeholder="Отклики" @keyup.enter="addCareerOption" />
           <button class="secondary-button" type="button" :disabled="!newCareerLabel.trim()" @click="addCareerOption">Добавить</button>
         </div>
-        <label class="toggle-row toggle-row--compact"><span><strong>Считать реальным шагом</strong><small>Подходит для откликов, сообщений рекрутерам, публикаций и собеседований.</small></span><input v-model="newCareerCountsAsExternal" type="checkbox" /></label>
+        <label class="toggle-row toggle-row--compact"><span><strong>Считать конкретным действием</strong><small>Подходит для откликов, разговоров, выполненных заданий и собеседований.</small></span><input v-model="newCareerCountsAsExternal" type="checkbox" /></label>
         <div v-if="settings.customCareerOptions.some((option) => !option.archived)" class="custom-list">
           <div v-for="option in settings.customCareerOptions.filter((item) => !item.archived)" :key="option.id" class="custom-list__item">
-            <span><i>{{ option.icon }}</i>{{ option.label }}<small v-if="option.countsAsExternal">реальный шаг</small></span>
+            <span><i>{{ option.icon }}</i>{{ option.label }}<small v-if="option.countsAsExternal">конкретное действие</small></span>
             <button class="ghost-button ghost-button--danger" type="button" :aria-label="`Скрыть ${option.label}`" @click="removeCareerOption(option.id)">×</button>
           </div>
         </div>
       </div>
-      <button class="primary-button" type="button" @click="save('Карьерный фокус сохранён')">Сохранить карьерный фокус</button>
+      <button class="primary-button" type="button" @click="save('Настройки карьеры сохранены')">Сохранить настройки карьеры</button>
     </article>
 
     <article class="settings-card settings-card--nutrition">
@@ -377,7 +384,7 @@ async function clearAll() {
     </article>
 
     <article class="settings-card settings-card--analysis">
-      <div class="form-card__heading"><span class="section-icon section-icon--green">↗</span><div><h2>Данные для внешнего анализа</h2><p>Скопируй готовый промпт или скачай JSON, чтобы вручную передать его выбранной нейросети. Приложение само ничего не отправляет.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--green">↗</span><div><h2>Данные для внешнего анализа</h2><p>Промпт содержит читаемую сводку, а отдельный JSON — полную копию данных выбранного периода. Приложение само ничего не отправляет.</p></div></div>
       <div class="ai-actions">
         <button class="secondary-button" type="button" @click="copyAnalysisPrompt('week')">Промпт недели</button>
         <button class="secondary-button" type="button" @click="copyAnalysisPrompt('month')">Промпт месяца</button>

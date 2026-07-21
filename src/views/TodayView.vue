@@ -21,6 +21,7 @@ import {
   type ActionDirectionId,
   type ActivityId,
   type CareerState,
+  type DailyBlockId,
   type DailyEntry,
   type LifeAreaId,
   type NutritionState
@@ -40,6 +41,7 @@ const careerItems = computed(() => [...careerOptions, ...store.settings.customCa
 const eveningFactorItems = computed(() => [...eveningFactorOptions, ...store.settings.customEveningFactorOptions.filter((option) => !option.archived)]);
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
 const activeLifeOptions = computed(() => lifeAreaItems.value.filter((option) => store.settings.activeLifeAreas.includes(option.id)));
+const activeDailyBlocks = computed(() => new Set(store.settings.activeDailyBlocks));
 const isToday = computed(() => selectedDate.value === todayKey());
 const weekEntryCount = computed(() => entriesForWeek(store.dailyEntries, selectedDate.value).length);
 const currentWeekEntries = computed(() => entriesForWeek(store.dailyEntries, todayKey()));
@@ -78,6 +80,10 @@ const reviewReminders = computed(() => [
 ].filter((item): item is { id: string; title: string; text: string; to: string; label: string } => item !== null));
 const yesterday = computed(() => addDays(todayKey(), -1));
 const yesterdayMissing = computed(() => isToday.value && store.loaded && !store.entryByDate(yesterday.value));
+
+function blockIsActive(block: DailyBlockId) {
+  return activeDailyBlocks.value.has(block);
+}
 
 function snapshotEntry(entry: DailyEntry) {
   const entryForSnapshot = { ...plainCopy(entry), updatedAt: '' };
@@ -121,7 +127,7 @@ function timeBetween(start: string, end: string): number | null {
 
 async function save() {
   validationMessage.value = '';
-  if (sleepDurationMinutes.value !== null && timeInBedDurationMinutes.value !== null && sleepDurationMinutes.value > timeInBedDurationMinutes.value) {
+  if (blockIsActive('sleep') && sleepDurationMinutes.value !== null && timeInBedDurationMinutes.value !== null && sleepDurationMinutes.value > timeInBedDurationMinutes.value) {
     validationMessage.value = 'Время сна не может быть больше времени в кровати.';
     notifyError(validationMessage.value);
     return;
@@ -207,7 +213,7 @@ function setLifeAreas(value: string | string[] | null) {
     </section>
 
     <form class="checkin-grid" @submit.prevent="save">
-      <article class="form-card form-card--sleep">
+      <article v-if="blockIsActive('sleep')" class="form-card form-card--sleep">
         <div class="form-card__heading">
           <span class="section-icon section-icon--purple">◒</span>
           <div><h2>Сон и состояние</h2><p>Ночь перед выбранной датой и состояние следующего дня.</p></div>
@@ -257,10 +263,10 @@ function setLifeAreas(value: string | string[] | null) {
         </div>
       </article>
 
-      <article class="form-card">
+      <article v-if="blockIsActive('career')" class="form-card">
         <div class="form-card__heading">
           <span class="section-icon section-icon--blue">↗</span>
-          <div><h2>Карьера</h2><p>Что реально было по работе: подготовка, проект, отклик, разговор или итог.</p></div>
+          <div><h2>Карьера</h2><p>Отметь всё, что сегодня было связано с работой или её поиском.</p></div>
         </div>
         <ChipGroup v-model="form.careerStates as CareerState[]" :options="careerItems" multiple />
       </article>
@@ -268,32 +274,32 @@ function setLifeAreas(value: string | string[] | null) {
       <article class="form-card form-card--direction">
         <div class="form-card__heading">
           <span class="section-icon section-icon--blue">⌁</span>
-          <div><h2>Куда ушёл день</h2><p>{{ form.focusTitle || store.settings.activeFocusTitle ? `Фокус: ${form.focusTitle || store.settings.activeFocusTitle}` : 'Отметь, был ли реальный шаг к цели или день остался подготовкой.' }}</p></div>
+          <div><h2>Действия по текущей цели</h2><p>{{ form.focusTitle || store.settings.activeFocusTitle ? `Текущая цель: ${form.focusTitle || store.settings.activeFocusTitle}` : 'Выбери, что лучше всего описывает этот день относительно твоей цели.' }}</p></div>
         </div>
-        <p v-if="form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion" class="form-context">Реальный шаг: {{ form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion }}</p>
+        <p v-if="form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion" class="form-context">Конкретное действие: {{ form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion }}</p>
         <ChipGroup v-model="form.actionDirection as ActionDirectionId | null" :options="actionDirectionOptions" allow-clear />
         <textarea
           v-if="form.actionDirection"
           v-model="form.actionNote"
           rows="2"
           maxlength="180"
-          placeholder="Например: отправил отклик, написал человеку, изучал тему, поддерживал режим, день ушёл в новости"
+          placeholder="Например: сделал запланированное, готовился, поддерживал привычный ритм или занимался другим"
         ></textarea>
       </article>
 
-      <article class="form-card">
+      <article v-if="blockIsActive('movement')" class="form-card">
         <div class="form-card__heading">
           <span class="section-icon section-icon--green">△</span>
-          <div><h2>Движение</h2><p>Можно выбрать несколько вариантов.</p></div>
+          <div><h2>Физическая активность</h2><p>Можно выбрать несколько вариантов.</p></div>
         </div>
         <ChipGroup :model-value="form.activities as ActivityId[]" :options="activityOptions" multiple @update:model-value="setActivities" />
-        <button class="none-option" :class="{ selected: form.activitiesRecorded && !form.activities.length }" type="button" @click="form.activities = []; form.activitiesRecorded = true">Без движения</button>
+        <button class="none-option" :class="{ selected: form.activitiesRecorded && !form.activities.length }" type="button" @click="form.activities = []; form.activitiesRecorded = true">Без активности</button>
       </article>
 
-      <article class="form-card form-card--nutrition">
+      <article v-if="blockIsActive('nutrition')" class="form-card form-card--nutrition">
         <div class="form-card__heading">
           <span class="section-icon section-icon--green">◐</span>
-          <div><h2>Питание</h2><p>{{ form.nutritionCriterion || store.settings.nutritionGoalCriterion || 'Отметь, поддерживало ли оно цель по весу.' }}</p></div>
+          <div><h2>Питание</h2><p>{{ form.nutritionCriterion || store.settings.nutritionGoalCriterion || 'Отметь, соответствовало ли питание выбранным правилам.' }}</p></div>
         </div>
         <ChipGroup v-model="form.nutritionState as NutritionState | null" :options="nutritionOptions" allow-clear />
         <div class="sleep-field-grid">
@@ -320,7 +326,7 @@ function setLifeAreas(value: string | string[] | null) {
       <article class="form-card form-card--special">
         <div class="form-card__heading">
           <span class="section-icon section-icon--orange">!</span>
-          <div><h2>Особый день</h2><p>Отметка для будущих сравнений и контекста.</p></div>
+          <div><h2>Необычный день</h2><p>Эта отметка поможет отделить его от обычных дней в обзорах.</p></div>
         </div>
         <ChipGroup v-model="form.specialDay" :options="specialDayOptions" allow-clear />
         <template v-if="form.specialDay">
