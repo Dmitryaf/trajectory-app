@@ -1,6 +1,8 @@
 import { reactive } from 'vue';
 import { describe, expect, it } from 'vitest';
-import { buildCoverageSeries, buildEventComparison, buildObservations, buildRangeReviewCues, buildReviewCues, dataCoverageLevel, entriesForPeriod, entriesForWeek, factorSummaries, summarize, weekSummaryText } from '../src/services/analytics';
+import { buildCoverageSeries, dataCoverageLevel } from '../src/features/analytics/coverage';
+import { entriesForPeriod, entriesForWeek, summarize } from '../src/features/analytics/periodSummary';
+import { buildEventComparison, buildObservations, buildRangeReviewCues, buildReviewCues, factorSummaries, weekSummaryText } from '../src/services/analytics';
 import { buildAiReportPayload, buildAiReportPrompt, buildAiReportRangePayload } from '../src/features/export/report';
 import { addMonths, monthsBetween } from '../src/services/dates';
 import { defaultSettings, emptyDailyEntry, experimentAppliesToDate, normalizeDailyEntry, normalizeLifeEvent, normalizeMonthlyReview, normalizeSettings, normalizeWeeklyReview, type DailyEntry } from '../src/types';
@@ -112,17 +114,17 @@ describe('analytics', () => {
 
   it('uses custom factor labels in summaries', () => {
     const factors = factorSummaries([
-      entry('2026-07-13', { eveningFactors: ['custom:evening:shower'] })
-    ], [{ id: 'custom:evening:shower', label: 'Душ', icon: '+' }]);
-    expect(factors[0].label).toBe('Душ');
+      entry('2026-07-13', { eveningFactors: ['custom:evening:rain'] })
+    ], [{ id: 'custom:evening:rain', label: 'Шум за окном', icon: '+' }]);
+    expect(factors[0].label).toBe('Шум за окном');
   });
 
   it('builds a manual analysis package with labels and experiment context', () => {
     const settings = structuredClone(defaultSettings);
-    settings.customEveningFactorOptions = [{ id: 'custom:evening:shower', label: 'Душ', custom: true }];
+    settings.customEveningFactorOptions = [{ id: 'custom:evening:rain', label: 'Шум за окном', custom: true }];
     settings.experiment = { ...settings.experiment, active: true, title: 'Без новостей', startDate: '2026-07-13', endDate: '2026-07-19', conclusion: 'unclear' };
     const payload = buildAiReportPayload('week', '2026-07-16', {
-      entries: [entry('2026-07-13', { eveningFactors: ['custom:evening:shower'] })],
+      entries: [entry('2026-07-13', { eveningFactors: ['custom:evening:rain'] })],
       results: [],
       lifeEvents: [],
       reviews: [{ ...normalizeWeeklyReview({ weekStart: '2026-07-06' }), nextLever: 'Ложиться раньше' }],
@@ -132,17 +134,17 @@ describe('analytics', () => {
 
     expect(payload.version).toBe(4);
     expect(payload.dataThrough).toBe('2026-07-19');
-    expect(payload.labels.eveningFactors).toContainEqual(expect.objectContaining({ id: 'custom:evening:shower', label: 'Душ' }));
-    expect(payload.factorSummaries[0].label).toBe('Душ');
+    expect(payload.labels.eveningFactors).toContainEqual(expect.objectContaining({ id: 'custom:evening:rain', label: 'Шум за окном' }));
+    expect(payload.factorSummaries[0].label).toBe('Шум за окном');
     expect(payload.settingsSnapshot.experiment.conclusion).toBe('unclear');
     expect(payload.previousWeeklyReview?.nextLever).toBe('Ложиться раньше');
 
     const prompt = buildAiReportPrompt(payload, settings);
     expect(prompt).toContain('ДАННЫЕ ДЛЯ АНАЛИЗА');
-    expect(prompt).toContain('Душ');
+    expect(prompt).toContain('Шум за окном');
     expect(prompt).toContain('Ложиться раньше');
     expect(prompt).not.toContain('Данные JSON');
-    expect(prompt).not.toContain('custom:evening:shower');
+    expect(prompt).not.toContain('custom:evening:rain');
     expect(prompt).not.toContain('"generatedAt"');
     expect(prompt.length).toBeLessThan(JSON.stringify(payload, null, 2).length);
   });
