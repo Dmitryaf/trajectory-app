@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import ChipGroup from '../components/ChipGroup.vue';
 import { formatDate, todayKey } from '../services/dates';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
+import { pageCount as countPages, pageItems } from '../services/pagination';
 import { useAppStore } from '../stores/app';
 import { resultAreaOptions, type ResultRecord } from '../types';
 
@@ -17,7 +18,8 @@ const filterText = ref('');
 const filterArea = ref('all');
 const dateFrom = ref('');
 const dateTo = ref('');
-const visibleCount = ref(20);
+const currentPage = ref(1);
+const pageSize = 8;
 const recentResults = computed(() => [...store.results].sort((a, b) => b.date.localeCompare(a.date)));
 const resultOptions = computed(() => [...resultAreaOptions, ...store.settings.customLifeAreaOptions]);
 const resultEntryOptions = computed(() => [...resultAreaOptions, ...store.settings.customLifeAreaOptions.filter((option) => !option.archived)]);
@@ -28,8 +30,10 @@ const filteredResults = computed(() => recentResults.value.filter((result) => {
     && (!dateFrom.value || result.date >= dateFrom.value)
     && (!dateTo.value || result.date <= dateTo.value);
 }));
-const visibleResults = computed(() => filteredResults.value.slice(0, visibleCount.value));
-watch([filterText, filterArea, dateFrom, dateTo], () => { visibleCount.value = 20; });
+const pageCount = computed(() => countPages(filteredResults.value.length, pageSize));
+const visibleResults = computed(() => pageItems(filteredResults.value, currentPage.value, pageSize));
+watch([filterText, filterArea, dateFrom, dateTo], () => { currentPage.value = 1; });
+watch(pageCount, (count) => { currentPage.value = Math.min(currentPage.value, count); });
 
 async function saveResult() {
   const clean = title.value.trim();
@@ -113,7 +117,11 @@ function areaMeta(value: ResultRecord['area']) {
           <button class="ghost-button ghost-button--danger" type="button" aria-label="Удалить итог" @click="remove(result.id)">×</button>
         </div>
       </article>
-      <button v-if="visibleCount < filteredResults.length" class="secondary-button load-more" type="button" @click="visibleCount += 20">Показать ещё</button>
+      <nav v-if="pageCount > 1" class="archive-pagination" aria-label="Страницы итогов">
+        <button class="secondary-button" type="button" :disabled="currentPage === 1" @click="currentPage -= 1">Назад</button>
+        <span>{{ currentPage }} из {{ pageCount }}</span>
+        <button class="secondary-button" type="button" :disabled="currentPage === pageCount" @click="currentPage += 1">Дальше</button>
+      </nav>
     </div>
     <div v-else class="empty-state"><span>✓</span><h3>{{ recentResults.length ? 'Ничего не найдено' : 'Итогов пока нет' }}</h3><p>{{ recentResults.length ? 'Измени фильтры или диапазон дат.' : 'Добавь завершённый факт — он появится в недельном и месячном обзоре.' }}</p></div>
   </section>

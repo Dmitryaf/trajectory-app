@@ -4,6 +4,7 @@ import ChipGroup from '../components/ChipGroup.vue';
 import { useAppStore, type ExportPayload } from '../stores/app';
 import { useAuthStore } from '../stores/auth';
 import { buildAiReportPayload, buildAiReportPrompt, type AiReportPeriod } from '../services/aiReport';
+import { copyText, downloadJson } from '../services/exportPackage';
 import { loadCloudSnapshot, markCloudSyncSynced } from '../services/cloudSync';
 import { todayKey } from '../services/dates';
 import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
@@ -31,7 +32,7 @@ const cloudStatusTitle = computed(() => {
   if (store.cloudSyncStatus === 'conflict') return 'Нужен выбор';
   return 'Статус облака';
 });
-const cloudStatusText = computed(() => store.cloudSyncMessage || 'Локальные данные используются как кэш, облачная копия привязана к аккаунту.');
+const cloudStatusText = computed(() => store.cloudSyncMessage || 'Синхронизация готова.');
 const experimentConclusionOptions = [
   { id: 'helped', label: 'Помогло', icon: '✓' },
   { id: 'unclear', label: 'Пока неясно', icon: '·' },
@@ -131,14 +132,12 @@ function findArchived<T extends string>(options: Option<T>[], label: string) {
 }
 
 function exportData() {
-  const blob = new Blob([JSON.stringify(store.exportData(), null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `trajectory-backup-${new Date().toISOString().slice(0, 10)}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
-  notifyInfo('Резервная копия скачана');
+  try {
+    downloadJson(store.exportData(), `trajectory-backup-${new Date().toISOString().slice(0, 10)}.json`);
+    notifyInfo('Резервная копия скачана');
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось скачать резервную копию');
+  }
 }
 
 async function signOutCloud() {
@@ -182,21 +181,23 @@ async function runCloudAction(action: () => Promise<void>) {
 }
 
 async function copyAnalysisPrompt(period: Exclude<AiReportPeriod, 'range'>) {
-  const payload = createAnalysisPayload(period);
-  await navigator.clipboard.writeText(buildAiReportPrompt(payload, store.settings));
-  notifySaved('Промпт для анализа скопирован');
+  try {
+    const payload = createAnalysisPayload(period);
+    await copyText(buildAiReportPrompt(payload, store.settings));
+    notifySaved('Промпт для анализа скопирован');
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось скопировать промпт');
+  }
 }
 
 function downloadAnalysisData(period: Exclude<AiReportPeriod, 'range'>) {
-  const payload = createAnalysisPayload(period);
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `trajectory-analysis-${period}-${payload.start}-${payload.dataThrough}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
-  notifyInfo(period === 'week' ? 'Данные недели скачаны' : 'Данные месяца скачаны');
+  try {
+    const payload = createAnalysisPayload(period);
+    downloadJson(payload, `trajectory-analysis-${period}-${payload.start}-${payload.dataThrough}.json`);
+    notifyInfo(period === 'week' ? 'Данные недели скачаны' : 'Данные месяца скачаны');
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось скачать данные для анализа');
+  }
 }
 
 function createAnalysisPayload(period: Exclude<AiReportPeriod, 'range'>) {
@@ -347,15 +348,15 @@ async function clearAll() {
     </article>
 
     <article class="settings-card">
-      <div class="form-card__heading"><span class="section-icon section-icon--green">↥</span><div><h2>Облачная копия</h2><p>Личная синхронизация через Supabase. Доступ к копии закрыт правилами RLS и привязан к твоему аккаунту.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--green">↥</span><div><h2>Облачная копия</h2></div></div>
       <div v-if="!auth.configured" class="cloud-sync-note">
-        <strong>Облако ещё не подключено</strong>
-        <p>Добавь `VITE_SUPABASE_URL` и `VITE_SUPABASE_ANON_KEY` в Vercel Environment Variables после создания проекта Supabase.</p>
+        <strong>Облачная копия недоступна</strong>
+        <p>В этой сборке синхронизация не настроена.</p>
       </div>
       <template v-else>
         <template v-if="cloudSession">
           <div class="cloud-session">
-            <div><strong>{{ cloudUserEmail }}</strong><p>Облачная копия доступна только этому пользователю.</p></div>
+            <div><strong>{{ cloudUserEmail }}</strong></div>
             <button class="secondary-button cloud-session__logout" type="button" @click="signOutCloud">Выйти</button>
           </div>
           <div class="cloud-sync-note" :class="`cloud-sync-note--${store.cloudSyncStatus}`">

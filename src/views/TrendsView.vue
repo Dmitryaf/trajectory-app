@@ -6,7 +6,7 @@ import MetricCard from '../components/MetricCard.vue';
 import { buildCoverageSeries, buildEventComparison, buildRangeReviewCues, entriesForPeriod, factorSummaries, ratioPercent, resultsForPeriod, summarize, type EventComparisonMetric } from '../services/analytics';
 import { addMonths, dateRange, endOfMonth, endOfWeek, formatDate, formatMinutes, monthsBetween, startOfMonth, toDateKey, todayKey } from '../services/dates';
 import { buildRangePackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../services/exportPackage';
-import { notifyInfo, notifySaved } from '../services/notifications';
+import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { useAppStore } from '../stores/app';
 import { eveningFactorOptions } from '../types';
 
@@ -288,13 +288,21 @@ function createPackage() {
 }
 
 async function copyPrompt() {
-  await copyPackagePrompt(createPackage(), store.settings);
-  notifySaved(`Промпт за ${range.value} мес. скопирован`);
+  try {
+    await copyPackagePrompt(createPackage(), store.settings);
+    notifySaved(`Промпт за ${range.value} мес. скопирован`);
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось скопировать промпт');
+  }
 }
 
 function downloadJson() {
-  downloadAiPackage(createPackage());
-  notifyInfo(`Данные за ${range.value} мес. скачаны`);
+  try {
+    downloadAiPackage(createPackage());
+    notifyInfo(`Данные за ${range.value} мес. скачаны`);
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось скачать данные');
+  }
 }
 
 </script>

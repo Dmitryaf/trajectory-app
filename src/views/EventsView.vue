@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import ChipGroup from '../components/ChipGroup.vue';
 import { formatDate, todayKey } from '../services/dates';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
+import { pageCount as countPages, pageItems } from '../services/pagination';
 import { useAppStore } from '../stores/app';
 import { lifeEventTypeOptions, type LifeEventRecord, type LifeEventType } from '../types';
 
@@ -18,7 +19,8 @@ const filterText = ref('');
 const filterType = ref('all');
 const dateFrom = ref('');
 const dateTo = ref('');
-const visibleCount = ref(20);
+const currentPage = ref(1);
+const pageSize = 8;
 
 const recentEvents = computed(() => [...store.lifeEvents].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)));
 const filteredEvents = computed(() => recentEvents.value.filter((event) => {
@@ -28,8 +30,10 @@ const filteredEvents = computed(() => recentEvents.value.filter((event) => {
     && (!dateFrom.value || event.date >= dateFrom.value)
     && (!dateTo.value || event.date <= dateTo.value);
 }));
-const visibleEvents = computed(() => filteredEvents.value.slice(0, visibleCount.value));
-watch([filterText, filterType, dateFrom, dateTo], () => { visibleCount.value = 20; });
+const pageCount = computed(() => countPages(filteredEvents.value.length, pageSize));
+const visibleEvents = computed(() => pageItems(filteredEvents.value, currentPage.value, pageSize));
+watch([filterText, filterType, dateFrom, dateTo], () => { currentPage.value = 1; });
+watch(pageCount, (count) => { currentPage.value = Math.min(currentPage.value, count); });
 
 async function saveEvent() {
   const cleanTitle = title.value.trim();
@@ -85,18 +89,18 @@ function eventMeta(value: LifeEventRecord['type']) {
 <template>
   <section class="page">
     <div class="page-heading">
-      <div><span class="eyebrow">Жизненный контекст</span><h1>События</h1><p>Важные изменения, решения и обстоятельства, которые могут объяснять будущие сдвиги в данных.</p></div>
+      <div><span class="eyebrow">Жизненный контекст</span><h1>События и инсайты</h1><p>Важные изменения, решения, наблюдения и обстоятельства, которые помогают увидеть траекторию.</p></div>
     </div>
 
     <article class="result-composer">
-      <div class="form-card__heading"><span class="section-icon section-icon--amber">◆</span><div><h2>{{ editingId === null ? 'Добавить событие' : 'Редактировать событие' }}</h2><p>Сюда лучше добавлять не каждый день, а только то, что может менять общий контекст.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--amber">◆</span><div><h2>{{ editingId === null ? 'Добавить запись' : 'Редактировать запись' }}</h2><p>Событие меняет контекст, инсайт сохраняет важное понимание.</p></div></div>
       <ChipGroup v-model="type" :options="lifeEventTypeOptions" />
       <div class="event-composer__fields">
         <input v-model="title" type="text" maxlength="140" placeholder="Например: решил сменить направление поиска работы" @keyup.enter="saveEvent" />
         <input v-model="date" class="date-input" type="date" aria-label="Дата события" />
       </div>
       <textarea v-model="note" rows="2" maxlength="360" placeholder="Контекст, если он важен. Без обязательного анализа." />
-      <button class="primary-button" type="button" :disabled="!title.trim() || saving" @click="saveEvent">{{ editingId === null ? 'Добавить событие' : 'Сохранить событие' }}</button>
+      <button class="primary-button" type="button" :disabled="!title.trim() || saving" @click="saveEvent">{{ editingId === null ? 'Добавить запись' : 'Сохранить запись' }}</button>
       <button v-if="editingId !== null" class="secondary-button composer-cancel" type="button" @click="resetForm">Отменить редактирование</button>
     </article>
 
@@ -120,7 +124,11 @@ function eventMeta(value: LifeEventRecord['type']) {
           <button class="ghost-button ghost-button--danger" type="button" aria-label="Удалить событие" @click="remove(event.id)">×</button>
         </div>
       </article>
-      <button v-if="visibleCount < filteredEvents.length" class="secondary-button load-more" type="button" @click="visibleCount += 20">Показать ещё</button>
+      <nav v-if="pageCount > 1" class="archive-pagination" aria-label="Страницы событий">
+        <button class="secondary-button" type="button" :disabled="currentPage === 1" @click="currentPage -= 1">Назад</button>
+        <span>{{ currentPage }} из {{ pageCount }}</span>
+        <button class="secondary-button" type="button" :disabled="currentPage === pageCount" @click="currentPage += 1">Дальше</button>
+      </nav>
     </div>
     <div v-else class="empty-state"><span>◆</span><h3>{{ recentEvents.length ? 'Ничего не найдено' : 'Событий пока нет' }}</h3><p>{{ recentEvents.length ? 'Измени фильтры или диапазон дат.' : 'Здесь будут решения, изменения и обстоятельства, которые помогают объяснять длинную динамику.' }}</p></div>
   </section>

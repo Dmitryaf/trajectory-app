@@ -7,7 +7,7 @@ import PeriodNavigator from '../components/PeriodNavigator.vue';
 import { actionDirectionLabel, buildReviewCues, buildReviewQuestions, careerStatesForEntry, entriesForWeek, eveningFactorLabel, hasArea, resultsForPeriod, specialDayLabel, summarize, weekSummaryText } from '../services/analytics';
 import { addDays, endOfWeek, formatDate, formatMinutes, startOfWeek, todayKey } from '../services/dates';
 import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../services/exportPackage';
-import { notifyInfo, notifySaved } from '../services/notifications';
+import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { plainCopy } from '../services/plain';
 import { useAppStore } from '../stores/app';
 import { emptyWeeklyReview, eveningFactorOptions, lifeAreaOptions, type WeeklyReview } from '../types';
@@ -140,13 +140,21 @@ function createPackage() {
 }
 
 async function copyPrompt() {
-  await copyPackagePrompt(createPackage(), store.settings);
-  notifySaved('Промпт для анализа скопирован');
+  try {
+    await copyPackagePrompt(createPackage(), store.settings);
+    notifySaved('Промпт для анализа скопирован');
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось скопировать промпт');
+  }
 }
 
 function downloadJson() {
-  downloadAiPackage(createPackage());
-  notifyInfo('Данные недели скачаны');
+  try {
+    downloadAiPackage(createPackage());
+    notifyInfo('Данные недели скачаны');
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось скачать данные недели');
+  }
 }
 
 </script>
@@ -269,7 +277,7 @@ function downloadJson() {
 
     <article class="review-card">
       <div class="section-heading">
-        <div><span class="eyebrow">До 10 минут</span><h2>Короткий обзор</h2></div>
+        <div><span class="eyebrow">Обзор недели</span><h2>Короткий обзор</h2></div>
         <span class="period-pill">До {{ formatDate(end, { day: 'numeric', month: 'long', year: 'numeric' }) }}</span>
       </div>
       <template v-if="previousReview?.nextLever || previousReview?.ifThenPlan">

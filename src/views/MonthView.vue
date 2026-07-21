@@ -8,7 +8,7 @@ import { actionDirectionLabel, buildObservations, buildReviewCues, buildReviewQu
 import { addDays, dateRange, endOfMonth, formatDate, formatMinutes, fromDateKey, startOfMonth, todayKey, toDateKey } from '../services/dates';
 import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../services/exportPackage';
 import { useAppStore } from '../stores/app';
-import { notifyInfo, notifySaved } from '../services/notifications';
+import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { plainCopy } from '../services/plain';
 import { emptyMonthlyReview, eveningFactorOptions, lifeAreaOptions, type MonthlyReview } from '../types';
 
@@ -150,13 +150,21 @@ function createPackage() {
 }
 
 async function copyPrompt() {
-  await copyPackagePrompt(createPackage(), store.settings);
-  notifySaved('Промпт для анализа скопирован');
+  try {
+    await copyPackagePrompt(createPackage(), store.settings);
+    notifySaved('Промпт для анализа скопирован');
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось скопировать промпт');
+  }
 }
 
 function downloadJson() {
-  downloadAiPackage(createPackage());
-  notifyInfo('Данные месяца скачаны');
+  try {
+    downloadAiPackage(createPackage());
+    notifyInfo('Данные месяца скачаны');
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось скачать данные месяца');
+  }
 }
 
 function energyLevel(value: number | null): 'empty' | 'low' | 'mid' | 'high' {

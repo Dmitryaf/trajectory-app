@@ -29,9 +29,7 @@ async function submit() {
       <div class="auth-card__brand">
         <span class="brand__mark"><i></i></span>
         <div>
-          <p class="eyebrow">Личное пространство</p>
           <h1>Траектория</h1>
-          <p>Войди, чтобы открыть записи, обзоры и облачную копию. Доступ к данным в базе ограничен твоим аккаунтом.</p>
         </div>
       </div>
 
@@ -46,9 +44,7 @@ async function submit() {
         </label>
         <button class="primary-button" type="submit" :disabled="!canSubmit">{{ auth.loading ? 'Проверяю...' : 'Войти' }}</button>
       </form>
-
       <p v-if="status || auth.error" class="settings-status">{{ status || auth.error }}</p>
-      <p class="auth-footnote">Новые аккаунты через приложение не создаются. Данные в Supabase защищены правилами доступа, а локальные записи загружаются только после входа.</p>
     </article>
   </section>
 </template>

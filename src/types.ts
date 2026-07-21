@@ -179,7 +179,7 @@ export const lifeEventTypeOptions: Option<LifeEventType>[] = [
   { id: "change", label: "Изменение", icon: "↻" },
   { id: "decision", label: "Решение", icon: "✓" },
   { id: "event", label: "Событие", icon: "◉" },
-  { id: "insight", label: "Наблюдение", icon: "✦" },
+  { id: "insight", label: "Инсайт", icon: "✦" },
   { id: "other", label: "Другое", icon: "·" },
 ];
 

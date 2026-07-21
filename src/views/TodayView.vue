@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
 import ChipGroup from '../components/ChipGroup.vue';
+import DurationInput from '../components/DurationInput.vue';
 import ScalePicker from '../components/ScalePicker.vue';
 import { useAppStore } from '../stores/app';
 import { addDays, endOfMonth, endOfWeek, formatDate, formatMinutes, startOfMonth, startOfWeek, todayKey } from '../services/dates';
 import { buildObservations, entriesForPeriod, entriesForWeek, summarize } from '../services/analytics';
 import { notifyError, notifySaved } from '../services/notifications';
-import { inputHoursToMinutes, minutesToInputHours } from '../services/numbers';
 import { plainCopy } from '../services/plain';
 import {
   actionDirectionOptions,
@@ -28,8 +28,8 @@ import {
 
 const store = useAppStore();
 const selectedDate = ref(todayKey());
-const sleepHours = ref<number | null>(null);
-const timeInBedHours = ref<number | null>(null);
+const sleepDurationMinutes = ref<number | null>(null);
+const timeInBedDurationMinutes = ref<number | null>(null);
 const weightKg = ref<number | null>(null);
 const saved = ref(false);
 const validationMessage = ref('');
@@ -83,8 +83,8 @@ function snapshotEntry(entry: DailyEntry) {
   const entryForSnapshot = { ...plainCopy(entry), updatedAt: '' };
   return JSON.stringify({
     ...entryForSnapshot,
-    sleepMinutes: inputHoursToMinutes(sleepHours.value),
-    timeInBedMinutes: inputHoursToMinutes(timeInBedHours.value),
+    sleepMinutes: sleepDurationMinutes.value,
+    timeInBedMinutes: timeInBedDurationMinutes.value,
     weightKg: normalizeWeight(weightKg.value)
   });
 }
@@ -97,8 +97,8 @@ function loadEntry(date: string) {
   validationMessage.value = '';
   const existing = store.entryByDate(date);
   Object.assign(form, existing ? plainCopy(existing) : emptyDailyEntry(date));
-  sleepHours.value = minutesToInputHours(form.sleepMinutes);
-  timeInBedHours.value = minutesToInputHours(form.timeInBedMinutes);
+  sleepDurationMinutes.value = form.sleepMinutes;
+  timeInBedDurationMinutes.value = form.timeInBedMinutes;
   weightKg.value = form.weightKg;
   originalEntrySnapshot.value = snapshotEntry(form);
   saved.value = false;
@@ -107,7 +107,7 @@ function loadEntry(date: string) {
 watch(selectedDate, loadEntry, { immediate: true });
 watch(() => [form.bedtime, form.wakeTime], ([bedtime, wakeTime]) => {
   const duration = timeBetween(String(bedtime), String(wakeTime));
-  if (duration !== null) timeInBedHours.value = minutesToInputHours(duration);
+  if (duration !== null) timeInBedDurationMinutes.value = duration;
 });
 
 function timeBetween(start: string, end: string): number | null {
@@ -121,14 +121,14 @@ function timeBetween(start: string, end: string): number | null {
 
 async function save() {
   validationMessage.value = '';
-  if (sleepHours.value !== null && timeInBedHours.value !== null && sleepHours.value > timeInBedHours.value) {
+  if (sleepDurationMinutes.value !== null && timeInBedDurationMinutes.value !== null && sleepDurationMinutes.value > timeInBedDurationMinutes.value) {
     validationMessage.value = 'Время сна не может быть больше времени в кровати.';
     notifyError(validationMessage.value);
     return;
   }
   const entry = plainCopy(form);
-  entry.sleepMinutes = inputHoursToMinutes(sleepHours.value);
-  entry.timeInBedMinutes = inputHoursToMinutes(timeInBedHours.value);
+  entry.sleepMinutes = sleepDurationMinutes.value;
+  entry.timeInBedMinutes = timeInBedDurationMinutes.value;
   entry.weightKg = normalizeWeight(weightKg.value);
   if (!hasSavedEntry.value && !entry.focusTitle.trim()) entry.focusTitle = store.settings.activeFocusTitle.trim();
   if (!hasSavedEntry.value && !entry.externalEvidenceCriterion.trim()) entry.externalEvidenceCriterion = store.settings.externalEvidenceCriterion.trim();
@@ -168,10 +168,14 @@ function setLifeAreas(value: string | string[] | null) {
       <div>
         <span class="eyebrow">Ежедневная запись</span>
         <h1>{{ isToday ? 'Сегодня' : formatDate(selectedDate, { day: 'numeric', month: 'long', weekday: 'long' }) }}</h1>
-        <p>Только факты. Обычно это занимает меньше минуты.</p>
       </div>
       <input v-model="selectedDate" class="date-input" type="date" :max="todayKey()" aria-label="Дата записи" />
     </div>
+
+    <nav class="quick-capture" aria-label="Быстрые записи">
+      <RouterLink to="/results"><span>✓</span><strong>Добавить итог</strong></RouterLink>
+      <RouterLink to="/events"><span>✦</span><strong>Записать событие или инсайт</strong></RouterLink>
+    </nav>
 
     <section v-if="isToday && currentWeekSummary.coveredEntriesCount" class="today-pulse" aria-label="Пульс недели">
       <div>
@@ -219,17 +223,11 @@ function setLifeAreas(value: string | string[] | null) {
           </div>
           <div>
             <label class="field-label" for="sleep-hours">Примерно спал</label>
-            <div class="number-field">
-              <input id="sleep-hours" v-model.number="sleepHours" type="number" min="0" max="16" step="0.01" inputmode="decimal" placeholder="7.5" />
-              <span>часов</span>
-            </div>
+            <DurationInput id="sleep-hours" v-model="sleepDurationMinutes" :max-hours="16" />
           </div>
           <div>
             <label class="field-label" for="time-in-bed-hours">В кровати</label>
-            <div class="number-field">
-              <input id="time-in-bed-hours" v-model.number="timeInBedHours" type="number" min="0" max="18" step="0.01" inputmode="decimal" placeholder="8.5" />
-              <span>часов</span>
-            </div>
+            <DurationInput id="time-in-bed-hours" v-model="timeInBedDurationMinutes" :max-hours="18" />
           </div>
         </div>
         <div class="form-row">

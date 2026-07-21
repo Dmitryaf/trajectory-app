@@ -15,7 +15,7 @@ export function downloadAiPackage(payload: AiReportPayload) {
 }
 
 export async function copyAiPrompt(payload: AiReportPayload, settings: AppSettings) {
-  await navigator.clipboard.writeText(buildAiReportPrompt(payload, settings));
+  await copyText(buildAiReportPrompt(payload, settings));
 }
 
 export function downloadJson(data: unknown, filename: string) {
@@ -24,6 +24,31 @@ export function downloadJson(data: unknown, filename: string) {
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
+  link.hidden = true;
+  document.body.append(link);
   link.click();
-  URL.revokeObjectURL(url);
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export async function copyText(value: string) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(value);
+      return;
+    } catch {
+      // Some installed browsers expose Clipboard API but reject it outside a secure context.
+    }
+  }
+
+  const field = document.createElement('textarea');
+  field.value = value;
+  field.readOnly = true;
+  field.style.position = 'fixed';
+  field.style.opacity = '0';
+  document.body.append(field);
+  field.select();
+  const copied = document.execCommand('copy');
+  field.remove();
+  if (!copied) throw new Error('Браузер не разрешил скопировать текст. Попробуй скачать данные.');
 }
