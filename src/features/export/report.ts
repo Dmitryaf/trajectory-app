@@ -1,5 +1,5 @@
-import { buildObservations, entriesForPeriod, factorSummaries, resultsForPeriod, summarize, weekSummaryText } from './analytics';
-import { addDays, addMonths, endOfMonth, endOfWeek, formatDate, formatMinutes, startOfMonth, startOfWeek, todayKey } from './dates';
+import { buildObservations, entriesForPeriod, factorSummaries, resultsForPeriod, summarize, weekSummaryText } from '../../services/analytics';
+import { addDays, addMonths, endOfMonth, endOfWeek, formatDate, formatMinutes, startOfMonth, startOfWeek, todayKey } from '../../services/dates';
 import {
   actionDirectionOptions,
   activityOptions,
@@ -16,7 +16,7 @@ import {
   type MonthlyReview,
   type ResultRecord,
   type WeeklyReview,
-} from '../types';
+} from '../../types';
 
 export type AiReportPeriod = 'week' | 'month' | 'range';
 

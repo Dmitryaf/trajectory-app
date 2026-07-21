@@ -1,7 +1,7 @@
 import { reactive } from 'vue';
 import { describe, expect, it } from 'vitest';
 import { buildCoverageSeries, buildEventComparison, buildObservations, buildRangeReviewCues, buildReviewCues, dataCoverageLevel, entriesForPeriod, entriesForWeek, factorSummaries, summarize, weekSummaryText } from '../src/services/analytics';
-import { buildAiReportPayload, buildAiReportPrompt, buildAiReportRangePayload } from '../src/services/aiReport';
+import { buildAiReportPayload, buildAiReportPrompt, buildAiReportRangePayload } from '../src/features/export/report';
 import { addMonths, monthsBetween } from '../src/services/dates';
 import { defaultSettings, emptyDailyEntry, experimentAppliesToDate, normalizeDailyEntry, normalizeLifeEvent, normalizeMonthlyReview, normalizeSettings, normalizeWeeklyReview, type DailyEntry } from '../src/types';
 

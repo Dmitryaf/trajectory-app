@@ -5,7 +5,7 @@ import EChartPanel from '../components/charts/EChartPanel.vue';
 import MetricCard from '../components/MetricCard.vue';
 import { buildCoverageSeries, buildEventComparison, buildRangeReviewCues, entriesForPeriod, factorSummaries, ratioPercent, resultsForPeriod, summarize, type EventComparisonMetric } from '../services/analytics';
 import { addMonths, dateRange, endOfMonth, endOfWeek, formatDate, formatMinutes, monthsBetween, startOfMonth, toDateKey, todayKey } from '../services/dates';
-import { buildRangePackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../services/exportPackage';
+import { buildRangePackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../features/export/browser';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { useAppStore } from '../stores/app';
 import { eveningFactorOptions } from '../types';
