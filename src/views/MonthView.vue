@@ -5,8 +5,9 @@ import EChartPanel from '../components/charts/EChartPanel.vue';
 import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
 import { actionDirectionLabel, buildObservations, buildReviewCues, buildReviewQuestions, careerStatesForEntry, entriesForMonth, factorSummaries, resultsForPeriod, specialDayLabel, summarize } from '../services/analytics';
-import { addDays, dateRange, endOfMonth, formatDate, formatMinutes, fromDateKey, startOfMonth, todayKey, toDateKey } from '../services/dates';
+import { dateRange, endOfMonth, formatDate, formatMinutes, fromDateKey, startOfMonth, todayKey, toDateKey } from '../services/dates';
 import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../features/export/browser';
+import { buildWeightSeries } from '../features/analytics/weightSeries';
 import { useAppStore } from '../stores/app';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { plainCopy } from '../services/plain';
@@ -32,10 +33,7 @@ const monthDates = computed(() => dateRange(start.value, end.value));
 const chartDates = computed(() => monthDates.value.filter((date) => date <= todayKey()));
 const entriesByDate = computed(() => new Map(entries.value.map((entry) => [entry.date, entry])));
 const sleepEntries = computed(() => [...entries.value].filter((entry) => entry.specialDay === null && entry.sleepMinutes !== null).sort((a, b) => a.date.localeCompare(b.date)));
-const weightEntries = computed(() => entries.value.filter((entry) => entry.specialDay === null && entry.weightKg !== null).sort((a, b) => a.date.localeCompare(b.date)));
-const weightHistoryEntries = computed(() => store.dailyEntries
-  .filter((entry) => entry.date >= addDays(start.value, -6) && entry.date <= end.value && entry.specialDay === null && entry.weightKg !== null)
-  .sort((a, b) => a.date.localeCompare(b.date)));
+const weightEntries = computed(() => entries.value.filter((entry) => entry.date <= todayKey() && entry.specialDay === null && entry.weightKg !== null).sort((a, b) => a.date.localeCompare(b.date)));
 const sleepEnergyOption = computed<EChartsCoreOption>(() => {
   const rows = chartDates.value.map((date) => {
     const entry = entriesByDate.value.get(date);
@@ -68,17 +66,7 @@ const sleepEnergyOption = computed<EChartsCoreOption>(() => {
   };
 });
 const weightOption = computed<EChartsCoreOption>(() => {
-  const rows = chartDates.value.map((date) => {
-    const entry = entriesByDate.value.get(date);
-    const weight = entry?.specialDay === null ? entry.weightKg : null;
-    const windowStart = addDays(date, -6);
-    const windowValues = weightHistoryEntries.value.filter((item) => item.date >= windowStart && item.date <= date).map((item) => item.weightKg as number);
-    return {
-      date,
-      weight,
-      rolling: windowValues.length >= 2 ? Math.round((windowValues.reduce((sum, value) => sum + value, 0) / windowValues.length) * 10) / 10 : null
-    };
-  });
+  const rows = buildWeightSeries(monthDates.value, store.dailyEntries, todayKey());
   return {
     color: ['#d9952f', '#1d5148'],
     tooltip: { trigger: 'axis' },
