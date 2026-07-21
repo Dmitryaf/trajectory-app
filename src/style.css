@@ -234,6 +234,11 @@ textarea { resize: vertical; min-height: 64px; }
 .page--events .archive-filters { border-color: #eee5d2; background: #fffcf6; }
 .archive-filters label { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; font-weight: 750; }
 .archive-filters input, .archive-filters select { width: 100%; min-width: 0; }
+.archive-date-filter { grid-column: span 2; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.archive-date-filter--active { padding: 9px; border: 1px solid #cfe2d9; border-radius: 13px; background: #edf7f2; }
+.page--events .archive-date-filter--active { border-color: #eadbbd; background: #fff8e9; }
+.archive-date-filter__state { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #315f50; font-size: 12px; font-weight: 700; }
+.archive-date-filter__state .ghost-button { min-height: 34px; padding: 5px 10px; white-space: nowrap; }
 .load-more { width: 100%; margin-top: 4px; }
 .archive-pagination { display: grid; grid-template-columns: 110px 1fr 110px; align-items: center; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #e7edea; }
 .archive-pagination span { text-align: center; color: var(--muted); font-size: 12px; font-weight: 750; }
@@ -631,6 +636,7 @@ textarea { resize: vertical; min-height: 64px; }
   .result-composer__fields .date-input { width: 100%; }
   .archive-filters { grid-template-columns: 1fr 1fr; }
   .archive-filters > input:first-child { grid-column: 1 / -1; }
+  .archive-date-filter { grid-column: 1 / -1; }
   .archive-panel { padding: 18px; border-radius: 20px; }
   .quick-capture { grid-template-columns: 1fr; margin: -28px 12px 24px; }
   .more-grid { grid-template-columns: 1fr; }
@@ -691,6 +697,8 @@ textarea { resize: vertical; min-height: 64px; }
 @media (max-width: 520px) {
   .archive-filters { grid-template-columns: 1fr; }
   .archive-filters > input:first-child { grid-column: auto; }
+  .archive-date-filter { grid-template-columns: 1fr; }
+  .archive-date-filter__state { grid-column: auto; align-items: flex-start; flex-direction: column; }
 }
 
 @media (max-width: 390px) {

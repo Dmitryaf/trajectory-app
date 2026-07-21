@@ -132,6 +132,7 @@ describe('journal scenarios', () => {
   it('adds an outcome and filters the existing archive by text', async () => {
     const { pinia, store } = createStore();
     store.results = [
+      { id: 3, date: '2026-07-21', area: 'career', title: 'Сегодняшний итог', createdAt: '2026-07-21T10:00:00.000Z' },
       { id: 1, date: '2026-07-20', area: 'reading', title: 'Дочитал книгу', createdAt: '2026-07-20T10:00:00.000Z' },
       { id: 2, date: '2026-07-19', area: 'career', title: 'Получил ответ', createdAt: '2026-07-19T10:00:00.000Z' }
     ];
@@ -139,6 +140,14 @@ describe('journal scenarios', () => {
     const wrapper = mount(ResultsView, { global: { plugins: [pinia] } });
 
     expect(wrapper.text()).toContain('Здесь можно сохранить выполненное дело, полученный результат или другое важное завершение.');
+    expect(wrapper.get('[aria-label="Начальная дата итогов"]').element).toHaveProperty('value', '2026-07-21');
+    expect(wrapper.get('[aria-label="Конечная дата итогов"]').element).toHaveProperty('value', '');
+    expect(wrapper.text()).toContain('Сегодняшний итог');
+    expect(wrapper.text()).not.toContain('Дочитал книгу');
+    await wrapper.get('[aria-label="Конечная дата итогов"]').setValue('2026-07-21');
+    await wrapper.get('.archive-date-filter__state button').trigger('click');
+    expect(wrapper.get('[aria-label="Начальная дата итогов"]').element).toHaveProperty('value', '');
+    expect(wrapper.get('[aria-label="Конечная дата итогов"]').element).toHaveProperty('value', '');
     await wrapper.get('[aria-label="Поиск по итогам"]').setValue('книгу');
     expect(wrapper.text()).toContain('Дочитал книгу');
     expect(wrapper.text()).not.toContain('Получил ответ');
@@ -158,6 +167,7 @@ describe('journal scenarios', () => {
   it('adds an insight and finds an event by its note', async () => {
     const { pinia, store } = createStore();
     store.lifeEvents = [
+      { id: 3, date: '2026-07-21', type: 'decision', title: 'Сегодняшнее решение', note: '', createdAt: '2026-07-21T10:00:00.000Z' },
       { id: 1, date: '2026-07-20', type: 'insight', title: 'Наблюдение', note: 'Лучше думаю после прогулки', createdAt: '2026-07-20T10:00:00.000Z' },
       { id: 2, date: '2026-07-19', type: 'event', title: 'Встреча', note: 'Обсудили планы', createdAt: '2026-07-19T10:00:00.000Z' }
     ];
@@ -165,6 +175,11 @@ describe('journal scenarios', () => {
     const wrapper = mount(EventsView, { global: { plugins: [pinia] } });
 
     expect(wrapper.text()).toContain('Событие — то, что произошло. Инсайт — мысль или вывод, который важно сохранить.');
+    expect(wrapper.get('[aria-label="Начальная дата событий"]').element).toHaveProperty('value', '2026-07-21');
+    expect(wrapper.get('[aria-label="Конечная дата событий"]').element).toHaveProperty('value', '');
+    expect(wrapper.text()).toContain('Сегодняшнее решение');
+    expect(wrapper.text()).not.toContain('Наблюдение');
+    await wrapper.get('.archive-date-filter__state button').trigger('click');
     await wrapper.get('[aria-label="Поиск по событиям"]').setValue('прогулки');
     expect(wrapper.text()).toContain('Наблюдение');
     expect(wrapper.text()).not.toContain('Встреча');

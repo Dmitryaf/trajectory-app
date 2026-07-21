@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import ChipGroup from '../components/ChipGroup.vue';
+import ArchiveDateRange from '../features/journal/ArchiveDateRange.vue';
 import { formatDate, todayKey } from '../services/dates';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { pageCount as countPages, pageItems } from '../services/pagination';
@@ -17,7 +18,7 @@ const editingCreatedAt = ref('');
 const saving = ref(false);
 const filterText = ref('');
 const filterType = ref('all');
-const dateFrom = ref('');
+const dateFrom = ref(todayKey());
 const dateTo = ref('');
 const currentPage = ref(1);
 const pageSize = 8;
@@ -109,8 +110,7 @@ function eventMeta(value: LifeEventRecord['type']) {
       <div class="archive-filters">
         <input v-model="filterText" type="search" placeholder="Поиск по событиям" aria-label="Поиск по событиям" />
         <select v-model="filterType" aria-label="Тип события"><option value="all">Все типы</option><option v-for="option in lifeEventTypeOptions" :key="option.id" :value="option.id">{{ option.label }}</option></select>
-        <label><span>С</span><input v-model="dateFrom" type="date" /></label>
-        <label><span>По</span><input v-model="dateTo" type="date" /></label>
+        <ArchiveDateRange v-model:date-from="dateFrom" v-model:date-to="dateTo" context-label="событий" />
       </div>
       <div v-if="visibleEvents.length" class="timeline-list">
         <article v-for="event in visibleEvents" :key="event.id" class="timeline-item">

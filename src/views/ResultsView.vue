@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import ChipGroup from '../components/ChipGroup.vue';
+import ArchiveDateRange from '../features/journal/ArchiveDateRange.vue';
 import { formatDate, todayKey } from '../services/dates';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { pageCount as countPages, pageItems } from '../services/pagination';
@@ -16,7 +17,7 @@ const editingCreatedAt = ref('');
 const saving = ref(false);
 const filterText = ref('');
 const filterArea = ref('all');
-const dateFrom = ref('');
+const dateFrom = ref(todayKey());
 const dateTo = ref('');
 const currentPage = ref(1);
 const pageSize = 8;
@@ -106,8 +107,7 @@ function areaMeta(value: ResultRecord['area']) {
       <div class="archive-filters">
         <input v-model="filterText" type="search" placeholder="Поиск по итогам" aria-label="Поиск по итогам" />
         <select v-model="filterArea" aria-label="Область итога"><option value="all">Все области</option><option v-for="option in resultOptions" :key="option.id" :value="option.id">{{ option.label }}</option></select>
-        <label><span>С</span><input v-model="dateFrom" type="date" /></label>
-        <label><span>По</span><input v-model="dateTo" type="date" /></label>
+        <ArchiveDateRange v-model:date-from="dateFrom" v-model:date-to="dateTo" context-label="итогов" />
       </div>
       <div v-if="visibleResults.length" class="results-list">
         <article v-for="result in visibleResults" :key="result.id" class="result-item">
