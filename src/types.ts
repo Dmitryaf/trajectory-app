@@ -265,7 +265,20 @@ export function normalizeSettings(settings: Partial<AppSettings> | null | undefi
     activeFocusTitle: typeof source.activeFocusTitle === "string" ? source.activeFocusTitle : "",
     externalEvidenceCriterion: typeof source.externalEvidenceCriterion === "string" ? source.externalEvidenceCriterion : "",
     nutritionGoalCriterion: typeof source.nutritionGoalCriterion === "string" ? source.nutritionGoalCriterion : "",
-    experiment: { ...defaultSettings.experiment, ...(source.experiment ?? {}) },
+    experiment: normalizeExperiment(source.experiment),
+  };
+}
+
+function normalizeExperiment(value: unknown): Experiment {
+  const source = value && typeof value === "object" && !Array.isArray(value) ? value as Partial<Experiment> : {};
+  return {
+    active: typeof source.active === "boolean" ? source.active : false,
+    title: typeof source.title === "string" ? source.title : "",
+    hypothesis: typeof source.hypothesis === "string" ? source.hypothesis : "",
+    targetMetric: typeof source.targetMetric === "string" ? source.targetMetric : "",
+    startDate: typeof source.startDate === "string" ? source.startDate : "",
+    endDate: typeof source.endDate === "string" ? source.endDate : "",
+    conclusion: typeof source.conclusion === "string" ? source.conclusion : "",
   };
 }
 
@@ -287,7 +300,7 @@ function sanitizeOptions(options: unknown): Option<string>[] {
     .map((option) => ({
       id: option.id,
       label: option.label,
-      icon: option.icon ?? "+",
+      icon: typeof option.icon === "string" ? option.icon : "+",
       custom: true,
       countsAsExternal: Boolean(option.countsAsExternal),
       archived: Boolean(option.archived),
@@ -300,6 +313,17 @@ function isNutritionState(value: unknown): value is NutritionState {
 
 function isActionDirection(value: unknown): value is ActionDirectionId {
   return typeof value === "string" && actionDirectionOptions.some((option) => option.id === value);
+}
+
+function nullableNumber(value: unknown, min: number, max: number, integer = false): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < min || value > max) return null;
+  return integer && !Number.isInteger(value) ? null : value;
+}
+
+function validTime(value: unknown): string {
+  if (typeof value !== "string" || !/^\d{2}:\d{2}$/.test(value)) return "";
+  const [hours, minutes] = value.split(":").map(Number);
+  return hours! <= 23 && minutes! <= 59 ? value : "";
 }
 
 export function emptyDailyEntry(date: string): DailyEntry {
@@ -341,18 +365,24 @@ export function normalizeDailyEntry(entry: Partial<DailyEntry> & { date: string 
   const careerStates = Array.isArray(entry.careerStates)
     ? Array.from(new Set(entry.careerStates.filter((state): state is CareerState => typeof state === "string")))
     : typeof entry.careerState === "string" ? [entry.careerState] : [];
+  const activities = Array.isArray(entry.activities)
+    ? entry.activities.filter((activity): activity is ActivityId => activityOptions.some((option) => option.id === activity))
+    : [];
 
   return {
     ...emptyDailyEntry(entry.date),
     ...entry,
-    bedtime: typeof entry.bedtime === "string" ? entry.bedtime : "",
-    wakeTime: typeof entry.wakeTime === "string" ? entry.wakeTime : "",
+    bedtime: validTime(entry.bedtime),
+    wakeTime: validTime(entry.wakeTime),
+    sleepMinutes: nullableNumber(entry.sleepMinutes, 0, 24 * 60, true),
+    timeInBedMinutes: nullableNumber(entry.timeInBedMinutes, 0, 18 * 60, true),
+    sleepQuality: nullableNumber(entry.sleepQuality, 1, 5, true),
+    energy: nullableNumber(entry.energy, 1, 5, true),
     careerState: careerStates[0] ?? null,
     careerStates,
-    timeInBedMinutes: typeof entry.timeInBedMinutes === "number" ? entry.timeInBedMinutes : null,
-    weightKg: typeof entry.weightKg === "number" ? entry.weightKg : null,
-    activities: Array.isArray(entry.activities) ? entry.activities : [],
-    activitiesRecorded: typeof entry.activitiesRecorded === "boolean" ? entry.activitiesRecorded : Array.isArray(entry.activities) && entry.activities.length > 0,
+    weightKg: nullableNumber(entry.weightKg, 30, 250),
+    activities,
+    activitiesRecorded: typeof entry.activitiesRecorded === "boolean" ? entry.activitiesRecorded : activities.length > 0,
     nutritionState: isNutritionState(entry.nutritionState) ? entry.nutritionState : null,
     nutritionNote: typeof entry.nutritionNote === "string" ? entry.nutritionNote : "",
     nutritionCriterion: typeof entry.nutritionCriterion === "string" ? entry.nutritionCriterion : "",
@@ -360,25 +390,30 @@ export function normalizeDailyEntry(entry: Partial<DailyEntry> & { date: string 
     actionNote: typeof entry.actionNote === "string" ? entry.actionNote : "",
     focusTitle: typeof entry.focusTitle === "string" ? entry.focusTitle : "",
     externalEvidenceCriterion: typeof entry.externalEvidenceCriterion === "string" ? entry.externalEvidenceCriterion : "",
-    lifeAreas: Array.isArray(entry.lifeAreas) ? entry.lifeAreas : [],
+    lifeAreas: Array.isArray(entry.lifeAreas) ? entry.lifeAreas.filter((area): area is LifeAreaId => typeof area === "string") : [],
     lifeAreasRecorded: typeof entry.lifeAreasRecorded === "boolean" ? entry.lifeAreasRecorded : Array.isArray(entry.lifeAreas) && entry.lifeAreas.length > 0,
     stateContext: typeof entry.stateContext === "string" ? entry.stateContext : "",
-    eveningFactors: Array.isArray(entry.eveningFactors) ? entry.eveningFactors : [],
+    eveningFactors: Array.isArray(entry.eveningFactors) ? entry.eveningFactors.filter((factor): factor is EveningFactorId => typeof factor === "string") : [],
     eveningFactorsRecorded: typeof entry.eveningFactorsRecorded === "boolean" ? entry.eveningFactorsRecorded : Array.isArray(entry.eveningFactors) && entry.eveningFactors.length > 0,
     eveningFactorNote: typeof entry.eveningFactorNote === "string" ? entry.eveningFactorNote : "",
-    specialDay: typeof entry.specialDay === "string" ? entry.specialDay : null,
+    specialDay: typeof entry.specialDay === "string" && specialDayOptions.some((option) => option.id === entry.specialDay) ? entry.specialDay : null,
     specialDayNote: typeof entry.specialDayNote === "string" ? entry.specialDayNote : "",
     importantFact: typeof entry.importantFact === "string" ? entry.importantFact : "",
+    experimentCompleted: typeof entry.experimentCompleted === "boolean" ? entry.experimentCompleted : null,
+    updatedAt: typeof entry.updatedAt === "string" ? entry.updatedAt : "",
   };
 }
 
 export function normalizeLifeEvent(event: Partial<LifeEventRecord> & { date: string; title: string }): LifeEventRecord {
+  let type: LifeEventType = "other";
+  if (event.type === "milestone") type = "change";
+  else if (lifeEventTypeOptions.some((option) => option.id === event.type)) type = event.type as LifeEventType;
   return {
     date: event.date,
-    type: event.type === "milestone" ? "change" : typeof event.type === "string" ? event.type : "event",
+    type,
     title: typeof event.title === "string" ? event.title : "",
     note: typeof event.note === "string" ? event.note : "",
-    createdAt: typeof event.createdAt === "string" ? event.createdAt : new Date().toISOString(),
+    createdAt: typeof event.createdAt === "string" ? event.createdAt : "",
     ...(typeof event.id === "number" ? { id: event.id } : {}),
   };
 }
@@ -402,7 +437,7 @@ export function normalizeWeeklyReview(review: Partial<WeeklyReview> & { weekStar
     ...review,
     previousPlanOutcome: typeof review.previousPlanOutcome === "string" ? review.previousPlanOutcome : "",
     updatedAt: typeof review.updatedAt === "string" ? review.updatedAt : "",
-    results: Array.isArray(review.results) ? review.results : ["", "", ""],
+    results: Array.isArray(review.results) ? review.results.filter((result): result is string => typeof result === "string") : ["", "", ""],
     support: typeof review.support === "string" ? review.support : "",
     obstacle: typeof review.obstacle === "string" ? review.obstacle : "",
     nextLever: typeof review.nextLever === "string" ? review.nextLever : "",

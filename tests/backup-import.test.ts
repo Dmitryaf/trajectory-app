@@ -106,4 +106,63 @@ describe('backup import', () => {
 
     expect(await db.dailyEntries.get('2026-07-21')).toMatchObject({ importantFact: 'Не удалять' });
   });
+
+  it('rejects malformed records before replacing current data', async () => {
+    const store = useAppStore();
+    await store.saveEntry({
+      ...emptyDailyEntry('2026-07-21'),
+      importantFact: 'Сохранить при ошибке',
+      updatedAt: ''
+    });
+
+    await expect(store.importData({
+      version: 3,
+      dailyEntries: [{ date: '2026-02-31' }],
+      results: [],
+      weeklyReviews: [],
+      settings: {}
+    })).rejects.toThrow('Некорректная дата в dailyEntries[0].date');
+
+    expect(await db.dailyEntries.get('2026-07-21')).toMatchObject({ importantFact: 'Сохранить при ошибке' });
+  });
+
+  it('normalizes unsafe scalar and enum values without inventing zeroes', async () => {
+    const store = useAppStore();
+    await store.importData({
+      version: 3,
+      exportedAt: '2026-07-22T10:00:00.000Z',
+      dailyEntries: [{
+        date: '2026-07-20',
+        bedtime: '29:70',
+        wakeTime: '07:30',
+        sleepMinutes: '480',
+        timeInBedMinutes: 2000,
+        sleepQuality: 8,
+        energy: 0,
+        activities: ['walk', 'unknown'],
+        specialDay: 'unknown',
+        weightKg: 999,
+        experimentCompleted: 'yes'
+      }],
+      results: [{ date: '2026-07-20', area: 'career', title: 'Итог', createdAt: '' }],
+      lifeEvents: [{ date: '2026-07-20', type: 'unknown', title: 'Событие', note: '', createdAt: '' }],
+      weeklyReviews: [],
+      monthlyReviews: [],
+      settings: {}
+    });
+
+    expect(store.dailyEntries[0]).toMatchObject({
+      bedtime: '',
+      wakeTime: '07:30',
+      sleepMinutes: null,
+      timeInBedMinutes: null,
+      sleepQuality: null,
+      energy: null,
+      activities: ['walk'],
+      specialDay: null,
+      weightKg: null,
+      experimentCompleted: null
+    });
+    expect(store.lifeEvents[0].type).toBe('other');
+  });
 });

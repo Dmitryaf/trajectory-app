@@ -6,7 +6,7 @@ import 'vue-sonner/style.css';
 import AuthGate from './components/AuthGate.vue';
 import { getCloudSyncMeta, loadCloudSnapshot, markCloudSyncConflict, markCloudSyncSynced } from './services/cloudSync';
 import { notifyInfo, notifyUnknownError } from './services/notifications';
-import { useAppStore, type ExportPayload } from './stores/app';
+import { useAppStore } from './stores/app';
 import { useAuthStore } from './stores/auth';
 
 const store = useAppStore();
@@ -67,7 +67,7 @@ async function reconcileCloudSnapshotOnStartup() {
     }
 
     if (!hasLocalData()) {
-      await store.importData(snapshot.payload as ExportPayload, { syncCloud: false });
+      await store.importData(snapshot.payload, { syncCloud: false });
       markCloudSyncSynced(userId, snapshot.updatedAt);
       store.setCloudSyncState('synced', `Загружена облачная копия: ${new Date(snapshot.updatedAt).toLocaleString('ru-RU')}`, { updatedAt: snapshot.updatedAt });
       return;
@@ -80,7 +80,7 @@ async function reconcileCloudSnapshotOnStartup() {
     }
 
     if (meta.lastCloudUpdatedAt && !meta.pending && !meta.conflict) {
-      await store.importData(snapshot.payload as ExportPayload, { syncCloud: false });
+      await store.importData(snapshot.payload, { syncCloud: false });
       markCloudSyncSynced(userId, snapshot.updatedAt);
       store.setCloudSyncState('synced', `Загружена более свежая облачная копия: ${new Date(snapshot.updatedAt).toLocaleString('ru-RU')}`, { updatedAt: snapshot.updatedAt });
       return;
