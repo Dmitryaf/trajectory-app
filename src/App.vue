@@ -13,6 +13,7 @@ const store = useAppStore();
 const auth = useAuthStore();
 const canOpenApp = computed(() => auth.initialized && auth.isAuthenticated);
 const localOwnerKey = 'trajectory:local-owner-id';
+let appDataLoadPromise: Promise<void> | null = null;
 
 onMounted(async () => {
   await auth.init();
@@ -28,14 +29,27 @@ watch(canOpenApp, async (allowed) => {
 });
 
 async function loadAppData() {
-  if (store.loaded) return;
-  try {
-    await prepareLocalCacheOwner();
-    await store.load();
-    await reconcileCloudSnapshotOnStartup();
-  } catch (error) {
-    console.error('Не удалось загрузить локальные данные', error);
-  }
+  if (store.loaded && !store.loadError) return;
+  if (appDataLoadPromise) return appDataLoadPromise;
+
+  appDataLoadPromise = (async () => {
+    try {
+      await prepareLocalCacheOwner();
+      await store.load();
+      await reconcileCloudSnapshotOnStartup();
+    } catch (error) {
+      console.error('Не удалось загрузить локальные данные', error);
+    } finally {
+      appDataLoadPromise = null;
+    }
+  })();
+
+  return appDataLoadPromise;
+}
+
+async function retryLoadAppData() {
+  store.unload();
+  await loadAppData();
 }
 
 async function reconcileCloudSnapshotOnStartup() {
@@ -156,7 +170,7 @@ const navItems = [
           <p class="eyebrow">Локальное хранилище недоступно</p>
           <h1>Записи пока не открылись</h1>
           <p>{{ store.loadError }}</p>
-          <button class="primary-button" type="button" @click="store.load()">Повторить</button>
+          <button class="primary-button" type="button" @click="retryLoadAppData">Повторить</button>
         </div>
       </section>
       <template v-else>

@@ -195,6 +195,8 @@ export const useAppStore = defineStore('app', {
         return;
       }
 
+      const userId = useAuthStore().session?.user.id;
+      if (userId) markCloudSyncPending(userId, 'Локальные изменения ожидают синхронизации');
       this.setCloudSyncState('syncing', 'Сохраняю облачную копию…');
       do {
         this.cloudSyncQueued = false;
@@ -203,7 +205,6 @@ export const useAppStore = defineStore('app', {
           this.setCloudSyncState('synced', `Облако обновлено: ${new Date(updatedAt).toLocaleString('ru-RU')}`, { updatedAt });
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Не удалось сохранить облачную копию';
-          const userId = useAuthStore().session?.user.id;
           if (userId) markCloudSyncPending(userId, message);
           this.setCloudSyncState('pending', 'Изменения сохранены локально. Облако обновится после повторной синхронизации.', { error: message });
           return;
