@@ -1,7 +1,7 @@
 import { reactive } from 'vue';
 import { describe, expect, it } from 'vitest';
 import { buildCoverageSeries, buildEventComparison, buildObservations, buildRangeReviewCues, buildReviewCues, dataCoverageLevel, entriesForPeriod, entriesForWeek, factorSummaries, summarize, weekSummaryText } from '../src/services/analytics';
-import { buildAiReportPayload, buildAiReportRangePayload } from '../src/services/aiReport';
+import { buildAiReportPayload, buildAiReportPrompt, buildAiReportRangePayload } from '../src/services/aiReport';
 import { addMonths, monthsBetween } from '../src/services/dates';
 import { defaultSettings, emptyDailyEntry, experimentAppliesToDate, normalizeDailyEntry, normalizeLifeEvent, normalizeMonthlyReview, normalizeSettings, normalizeWeeklyReview, type DailyEntry } from '../src/types';
 
@@ -135,6 +135,15 @@ describe('analytics', () => {
     expect(payload.factorSummaries[0].label).toBe('Душ');
     expect(payload.settingsSnapshot.experiment.conclusion).toBe('unclear');
     expect(payload.previousWeeklyReview?.nextLever).toBe('Ложиться раньше');
+
+    const prompt = buildAiReportPrompt(payload, settings);
+    expect(prompt).toContain('ДАННЫЕ ДЛЯ АНАЛИЗА');
+    expect(prompt).toContain('Душ');
+    expect(prompt).toContain('Ложиться раньше');
+    expect(prompt).not.toContain('Данные JSON');
+    expect(prompt).not.toContain('custom:evening:shower');
+    expect(prompt).not.toContain('"generatedAt"');
+    expect(prompt.length).toBeLessThan(JSON.stringify(payload, null, 2).length);
   });
 
   it('builds an analysis package from reactive application settings', () => {

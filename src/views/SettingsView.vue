@@ -377,7 +377,7 @@ async function clearAll() {
     </article>
 
     <article class="settings-card settings-card--analysis">
-      <div class="form-card__heading"><span class="section-icon section-icon--green">↗</span><div><h2>Данные для внешнего анализа</h2><p>Скопируй готовый промпт или скачай JSON, чтобы вручную передать его выбранной нейросети. Приложение само ничего не отправляет.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--green">↗</span><div><h2>Данные для внешнего анализа</h2><p>Промпт содержит читаемую сводку, а отдельный JSON — полную копию данных выбранного периода. Приложение само ничего не отправляет.</p></div></div>
       <div class="ai-actions">
         <button class="secondary-button" type="button" @click="copyAnalysisPrompt('week')">Промпт недели</button>
         <button class="secondary-button" type="button" @click="copyAnalysisPrompt('month')">Промпт месяца</button>

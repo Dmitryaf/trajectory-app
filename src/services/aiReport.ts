@@ -1,5 +1,5 @@
 import { buildObservations, entriesForPeriod, factorSummaries, resultsForPeriod, summarize, weekSummaryText } from './analytics';
-import { addDays, addMonths, endOfMonth, endOfWeek, formatDate, startOfMonth, startOfWeek, todayKey } from './dates';
+import { addDays, addMonths, endOfMonth, endOfWeek, formatDate, formatMinutes, startOfMonth, startOfWeek, todayKey } from './dates';
 import {
   actionDirectionOptions,
   activityOptions,
@@ -143,6 +143,8 @@ export function buildAiReportPrompt(payload: AiReportPayload, settings: AppSetti
       ? `месяц ${formatDate(payload.start, { month: 'long', year: 'numeric' })}`
       : `${payload.rangeMonths ?? 'несколько'} месяцев: ${formatDate(payload.start, { month: 'short', year: 'numeric' })} — ${formatDate(payload.end, { month: 'short', year: 'numeric' })}`;
 
+  const sections = buildReadableSections(payload);
+
   return [
     `Проанализируй данные личного трекера «Траектория» за ${periodTitle}. Фактические данные доступны по ${formatDate(payload.dataThrough, { day: 'numeric', month: 'long', year: 'numeric' })}.`,
     '',
@@ -153,13 +155,12 @@ export function buildAiReportPrompt(payload: AiReportPayload, settings: AppSetti
     '1. Короткая фактическая сводка с числом наблюдений.',
     '2. Что помогало сохранять состояние и выполнять намеченные действия.',
     '3. Что могло мешать; называй это связью, а не причиной.',
-    '4. Какие действия дали внешний результат, а где преобладала подготовка.',
+    '4. Какие действия привели к заметному результату или обратной связи, а где преобладала подготовка.',
     '5. Одно главное изменение и короткий план «если — то».',
     '6. Ограничения данных: пропуски, малая выборка, особые дни и неполный период.',
     '7. Если есть прошлый обзор, сопоставь его решение с последующими фактами.',
     '',
     'Правила:',
-    '- технические идентификаторы расшифровывай через объект labels;',
     '- пропуск не считай нулём или ответом «нет»;',
     '- особые дни не используй как обычную базу сравнения;',
     '- вечерний фактор сравнивай с отмеченными днями без него;',
@@ -168,7 +169,166 @@ export function buildAiReportPrompt(payload: AiReportPayload, settings: AppSetti
     '',
     summaryText ? `Локальная сводка приложения: ${summaryText}` : '',
     '',
-    'Данные JSON:',
-    JSON.stringify(payload, null, 2),
+    'ДАННЫЕ ДЛЯ АНАЛИЗА',
+    ...sections,
   ].filter(Boolean).join('\n');
+}
+
+function buildReadableSections(payload: AiReportPayload): string[] {
+  const lines: string[] = [];
+  const summary = payload.summary;
+
+  appendSection(lines, 'Сводка', [
+    `Записей с данными: ${summary.coveredEntriesCount}; обычных дней: ${summary.ordinaryCoveredEntriesCount}; необычных дней: ${summary.specialDays}.`,
+    metricLine('Сон', summary.averageSleep === null ? null : formatMinutes(Math.round(summary.averageSleep)), summary.sleepSamples),
+    metricLine('Время в кровати', summary.averageTimeInBed === null ? null : formatMinutes(Math.round(summary.averageTimeInBed)), summary.timeInBedSamples),
+    metricLine('Энергия', formatDecimal(summary.averageEnergy), summary.energySamples, '/ 5'),
+    metricLine('Качество сна', formatDecimal(summary.averageSleepQuality), summary.sleepQualitySamples, '/ 5'),
+    `Карьера отмечена в ${summary.careerDays} дн.; отклик, разговор или результат — в ${summary.externalSteps} дн.`,
+    `Физическая активность: ${summary.movementDays} из ${summary.movementSamples} отмеченных дней.`,
+    `Питание: соответствовало правилам — ${summary.nutritionSupportDays}, мешало — ${summary.nutritionBlockDays}, всего отметок — ${summary.nutritionSamples}.`,
+    `Действия по цели: конкретное действие — ${summary.externalActionDays}, подготовка — ${summary.preparationDays}, занимался другим — ${summary.driftDays}; всего отметок — ${summary.actionDirectionSamples}.`,
+    metricLine('Вес', formatDecimal(summary.averageWeightKg), summary.weightSamples, 'кг'),
+  ]);
+
+  appendSection(lines, 'Текущие определения', [
+    payload.settingsSnapshot.activeFocusTitle ? `Текущая цель: ${cleanText(payload.settingsSnapshot.activeFocusTitle)}.` : '',
+    payload.settingsSnapshot.externalEvidenceCriterion ? `Что считается конкретным действием: ${cleanText(payload.settingsSnapshot.externalEvidenceCriterion)}.` : '',
+    payload.settingsSnapshot.nutritionGoalCriterion ? `Правила питания: ${cleanText(payload.settingsSnapshot.nutritionGoalCriterion)}.` : '',
+    formatExperiment(payload.settingsSnapshot.experiment),
+  ]);
+
+  appendSection(lines, 'Автоматические наблюдения приложения', payload.observations.map((item) => `${item.title}: ${item.text}`));
+  appendSection(lines, 'Повторяющиеся вечерние факторы', payload.factorSummaries.map(formatFactorSummary));
+  appendSection(lines, 'Записи по дням', payload.entries.map((entry) => formatEntry(entry, payload)));
+  appendSection(lines, 'Завершённые итоги', payload.results.map((result) => {
+    return `${result.date} — ${labelFor(payload.labels.resultAreas, result.area)}: ${cleanText(result.title)}`;
+  }));
+  appendSection(lines, 'События и инсайты', payload.lifeEvents.map((event) => {
+    const note = cleanText(event.note);
+    return `${event.date} — ${labelFor(payload.labels.eventTypes, event.type)}: ${cleanText(event.title)}${note ? `; ${note}` : ''}`;
+  }));
+  appendSection(lines, 'Сохранённые обзоры', reviewLines(payload));
+
+  return lines;
+}
+
+function appendSection(target: string[], title: string, values: string[]) {
+  const present = values.filter(Boolean);
+  target.push('', `${title}:`);
+  target.push(...(present.length ? present.map((value) => `- ${value}`) : ['- Нет данных.']));
+}
+
+function metricLine(label: string, value: string | null, samples: number, suffix = ''): string {
+  if (value === null || samples === 0) return '';
+  return `${label}: ${value}${suffix ? ` ${suffix}` : ''} (${samples} ${sampleWord(samples)}).`;
+}
+
+function sampleWord(value: number): string {
+  const mod100 = value % 100;
+  const mod10 = value % 10;
+  if (mod100 >= 11 && mod100 <= 14) return 'измерений';
+  if (mod10 === 1) return 'измерение';
+  if (mod10 >= 2 && mod10 <= 4) return 'измерения';
+  return 'измерений';
+}
+
+function formatDecimal(value: number | null): string | null {
+  return value === null ? null : value.toLocaleString('ru-RU', { maximumFractionDigits: 1 });
+}
+
+function cleanText(value: string): string {
+  return value.trim().replace(/\s+/g, ' ');
+}
+
+function labelFor(options: Array<{ id: string; label: string }>, id: string): string {
+  return options.find((option) => option.id === id)?.label ?? 'Неизвестное значение';
+}
+
+function formatEntry(entry: DailyEntry, payload: AiReportPayload): string {
+  const values: string[] = [];
+  if (entry.bedtime) values.push(`лёг ${entry.bedtime}`);
+  if (entry.wakeTime) values.push(`встал ${entry.wakeTime}`);
+  if (entry.sleepMinutes !== null) values.push(`сон ${formatMinutes(entry.sleepMinutes)}`);
+  if (entry.timeInBedMinutes !== null) values.push(`в кровати ${formatMinutes(entry.timeInBedMinutes)}`);
+  if (entry.sleepQuality !== null) values.push(`качество сна ${entry.sleepQuality}/5`);
+  if (entry.energy !== null) values.push(`энергия ${entry.energy}/5`);
+  if (cleanText(entry.stateContext)) values.push(`что влияло: ${cleanText(entry.stateContext)}`);
+  if (entry.eveningFactorsRecorded) {
+    const factors = entry.eveningFactors.map((id) => labelFor(payload.labels.eveningFactors, id));
+    values.push(`перед сном: ${factors.length ? factors.join(', ') : 'ничего из списка'}`);
+  }
+  if (cleanText(entry.eveningFactorNote)) values.push(`уточнение: ${cleanText(entry.eveningFactorNote)}`);
+  if (entry.specialDay) values.push(`необычный день: ${labelFor(payload.labels.specialDays, entry.specialDay)}${entry.specialDayNote ? ` (${cleanText(entry.specialDayNote)})` : ''}`);
+  const careerStates = entry.careerStates.length ? entry.careerStates : entry.careerState ? [entry.careerState] : [];
+  if (careerStates.length) values.push(`карьера: ${careerStates.map((id) => labelFor(payload.labels.career, id)).join(', ')}`);
+  if (entry.actionDirection) values.push(`по цели: ${labelFor(payload.labels.actionDirections, entry.actionDirection)}${entry.actionNote ? ` (${cleanText(entry.actionNote)})` : ''}`);
+  if (entry.activitiesRecorded) {
+    const activities = entry.activities.map((id) => labelFor(payload.labels.activities, id));
+    values.push(`активность: ${activities.length ? activities.join(', ') : 'не было'}`);
+  }
+  if (entry.nutritionState) values.push(`питание: ${labelFor(payload.labels.nutrition, entry.nutritionState)}${entry.nutritionNote ? ` (${cleanText(entry.nutritionNote)})` : ''}`);
+  if (entry.weightKg !== null) values.push(`вес ${formatDecimal(entry.weightKg)} кг`);
+  if (entry.lifeAreasRecorded) {
+    const areas = entry.lifeAreas.map((id) => labelFor(payload.labels.lifeAreas, id));
+    values.push(`области жизни: ${areas.length ? areas.join(', ') : 'ничего не отмечено'}`);
+  }
+  if (cleanText(entry.importantFact)) values.push(`факт дня: ${cleanText(entry.importantFact)}`);
+  if (entry.experimentCompleted !== null) values.push(`условие эксперимента: ${entry.experimentCompleted ? 'выполнено' : 'не выполнено'}`);
+  return `${entry.date} — ${values.length ? values.join('; ') : 'есть запись без заполненных показателей'}.`;
+}
+
+function formatFactorSummary(factor: AiReportPayload['factorSummaries'][number]): string {
+  const values = [`${factor.label}: ${factor.count} дн.`];
+  if (factor.sleepSamples || factor.sleepSamplesWithout) {
+    values.push(`сон с фактором ${factor.averageSleep === null ? 'нет данных' : formatMinutes(Math.round(factor.averageSleep))} (${factor.sleepSamples}), без него ${factor.averageSleepWithout === null ? 'нет данных' : formatMinutes(Math.round(factor.averageSleepWithout))} (${factor.sleepSamplesWithout})`);
+  }
+  if (factor.energySamples || factor.energySamplesWithout) {
+    values.push(`энергия с фактором ${formatDecimal(factor.averageEnergy) ?? 'нет данных'} (${factor.energySamples}), без него ${formatDecimal(factor.averageEnergyWithout) ?? 'нет данных'} (${factor.energySamplesWithout})`);
+  }
+  return values.join('; ');
+}
+
+function formatExperiment(experiment: AppSettings['experiment']): string {
+  if (!experiment.active && !cleanText(experiment.title)) return '';
+  const values = [cleanText(experiment.title) || 'без названия'];
+  if (cleanText(experiment.hypothesis)) values.push(`гипотеза: ${cleanText(experiment.hypothesis)}`);
+  if (cleanText(experiment.targetMetric)) values.push(`показатель: ${cleanText(experiment.targetMetric)}`);
+  if (experiment.startDate || experiment.endDate) values.push(`даты: ${experiment.startDate || 'не указано'} — ${experiment.endDate || 'не указано'}`);
+  if (cleanText(experiment.conclusion)) values.push(`итог: ${cleanText(experiment.conclusion)}`);
+  return `Эксперимент: ${values.join('; ')}.`;
+}
+
+function reviewLines(payload: AiReportPayload): string[] {
+  const lines: string[] = [];
+  if (payload.previousWeeklyReview) lines.push(formatWeeklyReview('Предыдущая неделя', payload.previousWeeklyReview));
+  if (payload.weeklyReview) lines.push(formatWeeklyReview('Текущая неделя', payload.weeklyReview));
+  if (payload.previousMonthlyReview) lines.push(formatMonthlyReview('Предыдущий месяц', payload.previousMonthlyReview));
+  if (payload.monthlyReview) lines.push(formatMonthlyReview('Текущий месяц', payload.monthlyReview));
+  for (const review of payload.monthlyReviews ?? []) lines.push(formatMonthlyReview(review.monthStart, review));
+  return lines;
+}
+
+function formatWeeklyReview(label: string, review: WeeklyReview): string {
+  const values = [
+    review.previousPlanOutcome && `проверка прошлого решения: ${cleanText(review.previousPlanOutcome)}`,
+    review.results.filter(Boolean).length && `итоги: ${review.results.filter(Boolean).map(cleanText).join('; ')}`,
+    review.support && `помогало: ${cleanText(review.support)}`,
+    review.obstacle && `мешало: ${cleanText(review.obstacle)}`,
+    review.nextLever && `следующее изменение: ${cleanText(review.nextLever)}`,
+    review.ifThenPlan && `план если-то: ${cleanText(review.ifThenPlan)}`,
+  ].filter(Boolean);
+  return `${label} (${review.weekStart}): ${values.length ? values.join('; ') : 'обзор сохранён без текста'}.`;
+}
+
+function formatMonthlyReview(label: string, review: MonthlyReview): string {
+  const values = [
+    review.mainPattern && `повторялось: ${cleanText(review.mainPattern)}`,
+    review.support && `помогало: ${cleanText(review.support)}`,
+    review.obstacle && `мешало: ${cleanText(review.obstacle)}`,
+    review.courseChange && `изменило месяц: ${cleanText(review.courseChange)}`,
+    review.nextFocus && `следующая цель: ${cleanText(review.nextFocus)}`,
+    review.ifThenPlan && `план если-то: ${cleanText(review.ifThenPlan)}`,
+  ].filter(Boolean);
+  return `${label} (${review.monthStart}): ${values.length ? values.join('; ') : 'обзор сохранён без текста'}.`;
 }
