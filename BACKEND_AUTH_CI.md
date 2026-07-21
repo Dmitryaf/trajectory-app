@@ -57,24 +57,26 @@ Never put `service_role` in the frontend or in `VITE_*` variables.
 
 ## Vercel
 
-After adding environment variables, redeploy production. Vercel is already connected to GitHub, so pushes to `main` create production deployments.
+After adding environment variables, redeploy the target environment. Vercel is connected to GitHub: `main` creates production deployments, while pull requests and non-production branches create Preview deployments. The persistent `develop` staging branch must use a separate Supabase project and branch-specific Preview variables.
 
 The app also has `vercel.json` so Vue history routes like `/week`, `/month`, and `/trends` resolve to `index.html`.
 
 ## CI/CD
 
-GitHub Actions runs on pull requests and pushes to `main`:
+GitHub Actions runs on pull requests to `develop` or `main` and on pushes to those protected branches:
 
 ```text
 npm ci
-npm test -- --run
-npm run build
+npm run check
 ```
 
 Vercel handles CD:
 
 - Pull requests get preview deployments.
-- Merges or pushes to `main` get production deployments.
+- `develop` provides persistent staging with isolated Preview variables.
+- Merges to `main` get production deployments.
+
+The full branch, protection, staging, release and hotfix procedure is documented in [docs/DELIVERY.md](./docs/DELIVERY.md).
 
 ## Operational rule
 

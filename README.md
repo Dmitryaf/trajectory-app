@@ -68,7 +68,7 @@ JSON-экспорт в настройках остаётся ручной стр
 
 ## Веб и PWA
 
-План backend, авторизации, Supabase RLS и CI/CD описан в [BACKEND_AUTH_CI.md](./BACKEND_AUTH_CI.md).
+План backend, авторизации и Supabase RLS описан в [BACKEND_AUTH_CI.md](./BACKEND_AUTH_CI.md). Ветки, CI, staging и выпуск в production описаны в [docs/DELIVERY.md](./docs/DELIVERY.md).
 
 Правила развития продукта, научной осторожности и добавления новых полей описаны в [docs/PRODUCT_RULES.md](./docs/PRODUCT_RULES.md).
 
