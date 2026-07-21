@@ -129,6 +129,28 @@ describe('daily entry scenario', () => {
 });
 
 describe('journal scenarios', () => {
+  it('uses bounded pages and resets pagination when archive filters change', async () => {
+    const { pinia, store } = createStore();
+    store.results = Array.from({ length: 9 }, (_, index) => ({
+      id: index + 1,
+      date: '2026-07-21',
+      area: 'career' as const,
+      title: `Итог ${index + 1}`,
+      createdAt: `2026-07-21T${String(index + 10).padStart(2, '0')}:00:00.000Z`
+    }));
+    const wrapper = mount(ResultsView, { global: { plugins: [pinia] } });
+
+    expect(wrapper.get('[aria-label="Страницы итогов"]').text()).toContain('1 из 2');
+    expect(wrapper.text()).not.toContain('Итог 9');
+    await wrapper.get('[aria-label="Страницы итогов"] button:last-child').trigger('click');
+    expect(wrapper.get('[aria-label="Страницы итогов"]').text()).toContain('2 из 2');
+    expect(wrapper.text()).toContain('Итог 9');
+
+    await wrapper.get('[aria-label="Поиск по итогам"]').setValue('Итог 1');
+    expect(wrapper.text()).toContain('Итог 1');
+    expect(wrapper.find('[aria-label="Страницы итогов"]').exists()).toBe(false);
+  });
+
   it('adds an outcome and filters the existing archive by text', async () => {
     const { pinia, store } = createStore();
     store.results = [
@@ -145,9 +167,13 @@ describe('journal scenarios', () => {
     expect(wrapper.text()).toContain('Сегодняшний итог');
     expect(wrapper.text()).not.toContain('Дочитал книгу');
     await wrapper.get('[aria-label="Конечная дата итогов"]').setValue('2026-07-21');
-    await wrapper.get('.archive-date-filter__state button').trigger('click');
+    const allTimeButton = wrapper.get('.archive-filter__all-time');
+    expect(allTimeButton.attributes('disabled')).toBeUndefined();
+    await allTimeButton.trigger('click');
     expect(wrapper.get('[aria-label="Начальная дата итогов"]').element).toHaveProperty('value', '');
     expect(wrapper.get('[aria-label="Конечная дата итогов"]').element).toHaveProperty('value', '');
+    expect(wrapper.get('.archive-date-filter__state').text()).toBe('Показаны записи за всё время');
+    expect(wrapper.get('.archive-filter__all-time').attributes('disabled')).toBeDefined();
     await wrapper.get('[aria-label="Поиск по итогам"]').setValue('книгу');
     expect(wrapper.text()).toContain('Дочитал книгу');
     expect(wrapper.text()).not.toContain('Получил ответ');
@@ -186,7 +212,7 @@ describe('journal scenarios', () => {
     await longNoteToggle.trigger('click');
     expect(wrapper.get('.timeline-item__note').classes()).not.toContain('timeline-item__note--clamped');
     expect(longNoteToggle.text()).toBe('Свернуть');
-    await wrapper.get('.archive-date-filter__state button').trigger('click');
+    await wrapper.get('.archive-filter__all-time').trigger('click');
     await wrapper.get('[aria-label="Поиск по событиям"]').setValue('прогулки');
     expect(wrapper.text()).toContain('Наблюдение');
     expect(wrapper.text()).not.toContain('Встреча');

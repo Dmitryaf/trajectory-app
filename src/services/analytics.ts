@@ -1,45 +1,11 @@
-import type { ActionDirectionId, DailyEntry, EveningFactorId, LifeAreaId, LifeEventRecord, Option, ResultRecord } from '../types';
+import type { DailyEntry, EveningFactorId, LifeAreaId, LifeEventRecord, Option, ResultRecord } from '../types';
 import { actionDirectionOptions, activityOptions, careerOptions, eveningFactorOptions, externalCareerStates, lifeAreaOptions, specialDayOptions } from '../types';
+import { buildCoverageSeries, dataCoverageLevel, type DataCoverageLevel } from '../features/analytics/coverage';
+import { careerStatesForEntry, entriesForPeriod, hasMovement, resultsForPeriod, summarize, type PeriodSummary } from '../features/analytics/periodSummary';
 import { addDays, dateRange, endOfMonth, endOfWeek, formatMinutes, startOfMonth, startOfWeek, todayKey } from './dates';
 
-export type PeriodSummary = {
-  entriesCount: number;
-  ordinaryEntriesCount: number;
-  coveredEntriesCount: number;
-  ordinaryCoveredEntriesCount: number;
-  ordinaryCoreEntriesCount: number;
-  sleepSamples: number;
-  timeInBedSamples: number;
-  energySamples: number;
-  sleepQualitySamples: number;
-  weightSamples: number;
-  nutritionSamples: number;
-  actionDirectionSamples: number;
-  experimentMarkedDays: number;
-  experimentCompletedDays: number;
-  sleepTimingSamples: number;
-  averageSleep: number | null;
-  averageTimeInBed: number | null;
-  averageSleepEfficiency: number | null;
-  averageEnergy: number | null;
-  averageSleepQuality: number | null;
-  careerDays: number;
-  externalSteps: number;
-  movementDays: number;
-  movementSamples: number;
-  nutritionSupportDays: number;
-  nutritionBlockDays: number;
-  averageWeightKg: number | null;
-  actionDirectionCounts: Record<ActionDirectionId, number>;
-  externalActionDays: number;
-  preparationDays: number;
-  driftDays: number;
-  specialDays: number;
-  bedtimeVariationMinutes: number | null;
-  wakeTimeVariationMinutes: number | null;
-  areaCounts: Record<string, number>;
-  lifeAreaSamples: number;
-};
+export { buildCoverageSeries, dataCoverageLevel, type DataCoverageLevel } from '../features/analytics/coverage';
+export { careerStatesForEntry, entriesForMonth, entriesForPeriod, entriesForWeek, hasMovement, resultsForPeriod, summarize, type PeriodSummary } from '../features/analytics/periodSummary';
 
 export type Observation = {
   id: string;
@@ -68,8 +34,6 @@ export type ReviewCue = {
   text: string;
   tone: 'good' | 'warning' | 'neutral';
 };
-
-export type DataCoverageLevel = 0 | 1 | 2;
 
 export type EventComparisonMetric = {
   id: 'sleep' | 'energy' | 'weight' | 'external' | 'nutrition' | 'results';
@@ -100,108 +64,6 @@ function average(values: Array<number | null>): number | null {
 
 function sampleCount(values: Array<number | null>): number {
   return values.filter((value) => value !== null).length;
-}
-
-export function summarize(entries: DailyEntry[], externalCareerIds: string[] = externalCareerStates): PeriodSummary {
-  const ordinaryEntries = entries.filter((entry) => entry.specialDay === null);
-  const coveredEntries = entries.filter((entry) => dataCoverageLevel(entry) > 0);
-  const ordinaryCoveredEntries = ordinaryEntries.filter((entry) => dataCoverageLevel(entry) > 0);
-  const areaCounts = Object.fromEntries(lifeAreaOptions.map(({ id }) => [id, 0])) as Record<string, number>;
-  const actionDirectionCounts = Object.fromEntries(actionDirectionOptions.map(({ id }) => [id, 0])) as Record<ActionDirectionId, number>;
-  for (const entry of entries) {
-    for (const area of entry.lifeAreas) areaCounts[area] = (areaCounts[area] ?? 0) + 1;
-    if (entry.actionDirection) actionDirectionCounts[entry.actionDirection] += 1;
-  }
-
-  return {
-    entriesCount: entries.length,
-    ordinaryEntriesCount: ordinaryEntries.length,
-    coveredEntriesCount: coveredEntries.length,
-    ordinaryCoveredEntriesCount: ordinaryCoveredEntries.length,
-    ordinaryCoreEntriesCount: ordinaryEntries.filter((entry) => dataCoverageLevel(entry) === 2).length,
-    sleepSamples: sampleCount(ordinaryEntries.map((entry) => entry.sleepMinutes)),
-    timeInBedSamples: sampleCount(ordinaryEntries.map((entry) => entry.timeInBedMinutes)),
-    energySamples: sampleCount(ordinaryEntries.map((entry) => entry.energy)),
-    sleepQualitySamples: sampleCount(ordinaryEntries.map((entry) => entry.sleepQuality)),
-    weightSamples: sampleCount(ordinaryEntries.map((entry) => entry.weightKg)),
-    nutritionSamples: entries.filter((entry) => entry.nutritionState !== null).length,
-    actionDirectionSamples: entries.filter((entry) => entry.actionDirection !== null).length,
-    experimentMarkedDays: entries.filter((entry) => entry.experimentCompleted !== null).length,
-    experimentCompletedDays: entries.filter((entry) => entry.experimentCompleted === true).length,
-    sleepTimingSamples: ordinaryEntries.filter((entry) => clockMinutes(entry.bedtime, true) !== null && clockMinutes(entry.wakeTime, false) !== null).length,
-    averageSleep: average(ordinaryEntries.map((entry) => entry.sleepMinutes)),
-    averageTimeInBed: average(ordinaryEntries.map((entry) => entry.timeInBedMinutes)),
-    averageSleepEfficiency: average(ordinaryEntries.map((entry) => sleepEfficiency(entry))),
-    averageEnergy: average(ordinaryEntries.map((entry) => entry.energy)),
-    averageSleepQuality: average(ordinaryEntries.map((entry) => entry.sleepQuality)),
-    careerDays: entries.filter((entry) => careerStatesForEntry(entry).length > 0).length,
-    externalSteps: entries.filter((entry) => careerStatesForEntry(entry).some((state) => externalCareerIds.includes(state))).length,
-    movementDays: entries.filter(hasMovement).length,
-    movementSamples: entries.filter((entry) => entry.activitiesRecorded).length,
-    nutritionSupportDays: entries.filter((entry) => entry.nutritionState === 'supports_goal').length,
-    nutritionBlockDays: entries.filter((entry) => entry.nutritionState === 'blocks_goal').length,
-    averageWeightKg: average(ordinaryEntries.map((entry) => entry.weightKg)),
-    actionDirectionCounts,
-    externalActionDays: actionDirectionCounts.external,
-    preparationDays: actionDirectionCounts.preparation,
-    driftDays: actionDirectionCounts.drift,
-    specialDays: entries.filter((entry) => entry.specialDay !== null).length,
-    bedtimeVariationMinutes: clockVariation(ordinaryEntries.map((entry) => clockMinutes(entry.bedtime, true))),
-    wakeTimeVariationMinutes: clockVariation(ordinaryEntries.map((entry) => clockMinutes(entry.wakeTime, false))),
-    areaCounts,
-    lifeAreaSamples: entries.filter((entry) => entry.lifeAreasRecorded).length,
-  };
-}
-
-export function entriesForWeek(entries: DailyEntry[], anchor: string): DailyEntry[] {
-  const start = startOfWeek(anchor);
-  const end = endOfWeek(anchor);
-  return entries.filter((entry) => entry.date >= start && entry.date <= end);
-}
-
-export function entriesForMonth(entries: DailyEntry[], anchor: string): DailyEntry[] {
-  const start = startOfMonth(anchor);
-  const end = endOfMonth(anchor);
-  return entries.filter((entry) => entry.date >= start && entry.date <= end);
-}
-
-export function entriesForPeriod(entries: DailyEntry[], start: string, end: string): DailyEntry[] {
-  return entries.filter((entry) => entry.date >= start && entry.date <= end);
-}
-
-export function resultsForPeriod(results: ResultRecord[], start: string, end: string): ResultRecord[] {
-  return results.filter((result) => result.date >= start && result.date <= end).sort((a, b) => b.date.localeCompare(a.date));
-}
-
-export function dataCoverageLevel(entry: DailyEntry): DataCoverageLevel {
-  const hasState = entry.sleepMinutes !== null
-    || entry.timeInBedMinutes !== null
-    || entry.energy !== null
-    || entry.sleepQuality !== null
-    || entry.bedtime.length > 0
-    || entry.wakeTime.length > 0;
-  const hasAction = entry.actionDirection !== null
-    || careerStatesForEntry(entry).length > 0
-    || entry.activitiesRecorded
-    || entry.lifeAreasRecorded
-    || entry.importantFact.trim().length > 0;
-  const hasNutrition = entry.nutritionState !== null || entry.weightKg !== null;
-  const coreDomains = [hasState, hasAction, hasNutrition].filter(Boolean).length;
-  if (coreDomains >= 2) return 2;
-
-  const hasContext = entry.specialDay !== null
-    || entry.eveningFactors.length > 0
-    || entry.stateContext.trim().length > 0
-    || entry.eveningFactorNote.trim().length > 0;
-  return coreDomains === 1 || hasContext ? 1 : 0;
-}
-
-export function buildCoverageSeries(entries: DailyEntry[], start: string, end: string): Array<[string, DataCoverageLevel]> {
-  const entriesByDate = new Map(entries.map((entry) => [entry.date, entry]));
-  return dateRange(start, end).map((date) => {
-    const entry = entriesByDate.get(date);
-    return [date, entry ? dataCoverageLevel(entry) : 0];
-  });
 }
 
 export function buildEventComparison(
@@ -279,14 +141,6 @@ export function hasArea(entry: DailyEntry | undefined, area: string): boolean {
   if (area === 'career') return careerStatesForEntry(entry).length > 0;
   if (area === 'sport') return entry.activities.some((activity) => activity !== 'recovery');
   return entry.lifeAreas.includes(area as LifeAreaId);
-}
-
-export function careerStatesForEntry(entry: DailyEntry): string[] {
-  return entry.careerStates.length ? entry.careerStates : entry.careerState ? [entry.careerState] : [];
-}
-
-export function hasMovement(entry: DailyEntry): boolean {
-  return entry.activities.some((activity) => activity !== 'recovery');
 }
 
 export function buildObservations(entries: DailyEntry[], factorOptions: Option<EveningFactorId>[] = eveningFactorOptions): Observation[] {
@@ -551,11 +405,6 @@ export function buildRangeReviewCues(rangeMonths: number, entries: DailyEntry[],
   return limitCues(cues, ['coverage', 'results', 'context']);
 }
 
-function sleepEfficiency(entry: DailyEntry): number | null {
-  if (entry.sleepMinutes === null || entry.timeInBedMinutes === null || entry.timeInBedMinutes <= 0) return null;
-  return Math.min(100, (entry.sleepMinutes / entry.timeInBedMinutes) * 100);
-}
-
 export function ratioPercent(value: number, total: number): number | null {
   return total > 0 ? Math.round((value / total) * 100) : null;
 }
@@ -570,22 +419,6 @@ function comparisonMetric(
   afterSamples: number | null,
 ): EventComparisonMetric {
   return { id, label, format, before, after, beforeSamples, afterSamples };
-}
-
-function clockMinutes(value: string, shiftMorning: boolean): number | null {
-  if (!/^\d{2}:\d{2}$/.test(value)) return null;
-  const [hours, minutes] = value.split(':').map(Number);
-  if (hours > 23 || minutes > 59) return null;
-  const total = hours * 60 + minutes;
-  return shiftMorning && total < 12 * 60 ? total + 24 * 60 : total;
-}
-
-function clockVariation(values: Array<number | null>): number | null {
-  const valid = values.filter((value): value is number => value !== null);
-  if (valid.length < 2) return null;
-  const mean = valid.reduce((sum, value) => sum + value, 0) / valid.length;
-  const variance = valid.reduce((sum, value) => sum + (value - mean) ** 2, 0) / valid.length;
-  return Math.round(Math.sqrt(variance));
 }
 
 function signedMinutes(value: number): string {

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import ChipGroup from '../components/ChipGroup.vue';
 import ArchiveDateRange from '../features/journal/ArchiveDateRange.vue';
+import ArchivePagination from '../features/journal/ArchivePagination.vue';
+import { useArchiveList } from '../features/journal/useArchiveList';
 import { formatDate, todayKey } from '../services/dates';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
-import { pageCount as countPages, pageItems } from '../services/pagination';
 import { useAppStore } from '../stores/app';
 import { resultAreaOptions, type ResultRecord } from '../types';
 
@@ -15,26 +16,22 @@ const area = ref<ResultRecord['area']>('career');
 const editingId = ref<number | null>(null);
 const editingCreatedAt = ref('');
 const saving = ref(false);
-const filterText = ref('');
-const filterArea = ref('all');
-const dateFrom = ref(todayKey());
-const dateTo = ref('');
-const currentPage = ref(1);
-const pageSize = 8;
 const recentResults = computed(() => [...store.results].sort((a, b) => b.date.localeCompare(a.date)));
 const resultOptions = computed(() => [...resultAreaOptions, ...store.settings.customLifeAreaOptions]);
 const resultEntryOptions = computed(() => [...resultAreaOptions, ...store.settings.customLifeAreaOptions.filter((option) => !option.archived)]);
-const filteredResults = computed(() => recentResults.value.filter((result) => {
-  const query = filterText.value.trim().toLocaleLowerCase('ru-RU');
-  return (!query || result.title.toLocaleLowerCase('ru-RU').includes(query))
-    && (filterArea.value === 'all' || result.area === filterArea.value)
-    && (!dateFrom.value || result.date >= dateFrom.value)
-    && (!dateTo.value || result.date <= dateTo.value);
-}));
-const pageCount = computed(() => countPages(filteredResults.value.length, pageSize));
-const visibleResults = computed(() => pageItems(filteredResults.value, currentPage.value, pageSize));
-watch([filterText, filterArea, dateFrom, dateTo], () => { currentPage.value = 1; });
-watch(pageCount, (count) => { currentPage.value = Math.min(currentPage.value, count); });
+const {
+  filterText,
+  filterCategory: filterArea,
+  dateFrom,
+  dateTo,
+  currentPage,
+  filteredItems: filteredResults,
+  pageCount,
+  visibleItems: visibleResults
+} = useArchiveList(recentResults, {
+  getSearchText: (result) => result.title,
+  getCategory: (result) => result.area
+});
 
 async function saveResult() {
   const clean = title.value.trim();
@@ -118,11 +115,7 @@ function areaMeta(value: ResultRecord['area']) {
             <button class="ghost-button ghost-button--danger" type="button" aria-label="Удалить итог" @click="remove(result.id)">×</button>
           </div>
         </article>
-        <nav v-if="pageCount > 1" class="archive-pagination" aria-label="Страницы итогов">
-          <button class="secondary-button" type="button" :disabled="currentPage === 1" @click="currentPage -= 1">Назад</button>
-          <span>{{ currentPage }} из {{ pageCount }}</span>
-          <button class="secondary-button" type="button" :disabled="currentPage === pageCount" @click="currentPage += 1">Дальше</button>
-        </nav>
+        <ArchivePagination v-model:page="currentPage" :page-count="pageCount" context-label="итогов" />
       </div>
       <div v-else class="empty-state"><span>✓</span><h3>{{ recentResults.length ? 'Ничего не найдено' : 'Итогов пока нет' }}</h3><p>{{ recentResults.length ? 'Измени фильтры или диапазон дат.' : 'Добавь первое завершённое дело или полученный результат.' }}</p></div>
     </section>
