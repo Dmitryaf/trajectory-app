@@ -12,7 +12,8 @@ describe('test user fixture', () => {
   it('uses the current import schema and normalized settings', () => {
     expect(fixture.version).toBe(3);
     const settings = normalizeSettings(fixture.settings);
-    expect(settings.settingsVersion).toBe(2);
+    expect(settings.settingsVersion).toBe(3);
+    expect(settings.activeDailyBlocks).toEqual(['sleep', 'career', 'movement', 'nutrition']);
     expect(settings.activeLifeAreas).not.toContain('spiritual');
     expect(settings.customEveningFactorOptions.some((option) => !option.archived)).toBe(true);
   });

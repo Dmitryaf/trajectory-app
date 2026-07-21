@@ -31,6 +31,7 @@ export type BaseLifeAreaId =
   | "friends"
   | "english";
 export type LifeAreaId = BaseLifeAreaId | string;
+export type DailyBlockId = "sleep" | "career" | "movement" | "nutrition";
 
 export type DailyEntry = {
   date: string;
@@ -117,6 +118,7 @@ export type Experiment = {
 export type AppSettings = {
   id: "main";
   settingsVersion: number;
+  activeDailyBlocks: DailyBlockId[];
   activeLifeAreas: LifeAreaId[];
   customCareerOptions: Option<CareerState>[];
   customLifeAreaOptions: Option<LifeAreaId>[];
@@ -214,9 +216,17 @@ export const resultAreaOptions: Option<ResultRecord["area"]>[] = [
   ...lifeAreaOptions,
 ];
 
+export const dailyBlockOptions: Option<DailyBlockId>[] = [
+  { id: "sleep", label: "Сон и состояние", icon: "◒" },
+  { id: "career", label: "Карьера", icon: "↗" },
+  { id: "movement", label: "Физическая активность", icon: "△" },
+  { id: "nutrition", label: "Питание и вес", icon: "◐" },
+];
+
 export const defaultSettings: AppSettings = {
   id: "main",
-  settingsVersion: 2,
+  settingsVersion: 3,
+  activeDailyBlocks: dailyBlockOptions.map((option) => option.id),
   activeLifeAreas: ["family", "reading", "creativity", "rest"],
   customCareerOptions: [],
   customLifeAreaOptions: [],
@@ -238,12 +248,16 @@ export function normalizeSettings(settings: Partial<AppSettings> | null | undefi
   const activeLifeAreas = Array.isArray(source.activeLifeAreas)
     ? source.activeLifeAreas.filter((area): area is LifeAreaId => typeof area === "string")
     : defaultSettings.activeLifeAreas;
+  const activeDailyBlocks = Array.isArray(source.activeDailyBlocks)
+    ? source.activeDailyBlocks.filter((block): block is DailyBlockId => dailyBlockOptions.some((option) => option.id === block))
+    : defaultSettings.activeDailyBlocks;
 
   return {
     ...structuredClone(defaultSettings),
     ...source,
     id: "main",
     settingsVersion: defaultSettings.settingsVersion,
+    activeDailyBlocks,
     activeLifeAreas: (source.settingsVersion ?? 1) < 2 ? activeLifeAreas.filter((area) => area !== "spiritual") : activeLifeAreas,
     customCareerOptions,
     customLifeAreaOptions,

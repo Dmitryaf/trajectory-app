@@ -2020,7 +2020,13 @@
   ],
   "settings": {
     "id": "main",
-    "settingsVersion": 2,
+    "settingsVersion": 3,
+    "activeDailyBlocks": [
+      "sleep",
+      "career",
+      "movement",
+      "nutrition"
+    ],
     "activeLifeAreas": [
       "family",
       "reading",

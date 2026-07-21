@@ -189,7 +189,8 @@ const payload = {
   monthlyReviews,
   settings: {
     id: 'main',
-    settingsVersion: 2,
+    settingsVersion: 3,
+    activeDailyBlocks: ['sleep', 'career', 'movement', 'nutrition'],
     activeLifeAreas: ['family', 'reading', 'creativity', 'rest', 'friends', 'english', 'custom:life:personal-projects'],
     customCareerOptions: [
       { id: 'custom:career:responses', label: 'Адресные отклики', icon: '+', custom: true, countsAsExternal: true, archived: false },

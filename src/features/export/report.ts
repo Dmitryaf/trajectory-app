@@ -4,6 +4,7 @@ import {
   actionDirectionOptions,
   activityOptions,
   careerOptions,
+  dailyBlockOptions,
   eveningFactorOptions,
   lifeAreaOptions,
   lifeEventTypeOptions,
@@ -42,6 +43,7 @@ export type AiReportPayload = {
   monthlyReviews?: MonthlyReview[];
   labels: ReturnType<typeof buildLabelDictionary>;
   settingsSnapshot: {
+    activeDailyBlocks: AppSettings['activeDailyBlocks'];
     activeLifeAreas: string[];
     activeFocusTitle: string;
     externalEvidenceCriterion: string;
@@ -109,6 +111,7 @@ function buildPayload(
     lifeEvents: source.lifeEvents.filter((event) => event.date >= start && event.date <= dataThrough).sort((a, b) => b.date.localeCompare(a.date)),
     labels: buildLabelDictionary(source.settings),
     settingsSnapshot: {
+      activeDailyBlocks: source.settings.activeDailyBlocks,
       activeLifeAreas: source.settings.activeLifeAreas,
       activeFocusTitle: source.settings.activeFocusTitle,
       externalEvidenceCriterion: source.settings.externalEvidenceCriterion,
@@ -192,6 +195,7 @@ function buildReadableSections(payload: AiReportPayload): string[] {
   ]);
 
   appendSection(lines, 'Текущие определения', [
+    `Блоки, доступные в ежедневной записи: ${payload.settingsSnapshot.activeDailyBlocks.length ? payload.settingsSnapshot.activeDailyBlocks.map((id) => labelFor(dailyBlockOptions, id)).join(', ') : 'все необязательные блоки скрыты'}.`,
     payload.settingsSnapshot.activeFocusTitle ? `Текущая цель: ${cleanText(payload.settingsSnapshot.activeFocusTitle)}.` : '',
     payload.settingsSnapshot.externalEvidenceCriterion ? `Что считается конкретным действием: ${cleanText(payload.settingsSnapshot.externalEvidenceCriterion)}.` : '',
     payload.settingsSnapshot.nutritionGoalCriterion ? `Правила питания: ${cleanText(payload.settingsSnapshot.nutritionGoalCriterion)}.` : '',

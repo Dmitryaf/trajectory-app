@@ -9,7 +9,7 @@ import { loadCloudSnapshot, markCloudSyncSynced } from '../services/cloudSync';
 import { todayKey } from '../services/dates';
 import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { plainCopy } from '../services/plain';
-import { careerOptions, createCustomOption, eveningFactorOptions, lifeAreaOptions, type AppSettings, type CareerState, type EveningFactorId, type LifeAreaId, type Option } from '../types';
+import { careerOptions, createCustomOption, dailyBlockOptions, eveningFactorOptions, lifeAreaOptions, type AppSettings, type CareerState, type DailyBlockId, type EveningFactorId, type LifeAreaId, type Option } from '../types';
 
 const store = useAppStore();
 const settings = reactive<AppSettings>(plainCopy(store.settings));
@@ -241,6 +241,13 @@ async function clearAll() {
 <template>
   <section class="page page--settings">
     <div class="page-heading"><div><span class="eyebrow">Настройка приложения</span><h1>Настройки</h1><p>Выбери, что отмечать каждый день, и управляй экспериментом и копиями данных.</p></div></div>
+
+    <article class="settings-card settings-card--daily-blocks">
+      <div class="form-card__heading"><span class="section-icon section-icon--blue">☷</span><div><h2>Блоки ежедневной записи</h2><p>Скрой то, что сейчас не нужно заполнять. Старые записи и их данные останутся в обзорах и выгрузке.</p></div></div>
+      <ChipGroup v-model="settings.activeDailyBlocks as DailyBlockId[]" :options="dailyBlockOptions" multiple />
+      <p v-if="!settings.activeDailyBlocks.length" class="data-note">Останутся общие блоки: действия по текущей цели, области жизни, необычный день и факт дня.</p>
+      <button class="primary-button" type="button" @click="save('Блоки ежедневной записи сохранены')">Сохранить блоки</button>
+    </article>
 
     <article class="settings-card settings-card--areas">
       <div class="form-card__heading"><span class="section-icon section-icon--amber">✦</span><div><h2>Области жизни</h2><p>То, что важно замечать в обычные дни: семья, отдых, чтение или свои пункты.</p></div></div>

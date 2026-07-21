@@ -105,6 +105,7 @@ describe('analytics', () => {
     const settings = normalizeSettings({ activeLifeAreas: ['family', 'spiritual'], customEveningFactorOptions: [{ id: 'custom:evening:test', label: 'Душ', archived: true }] });
     const event = normalizeLifeEvent({ date: '2026-07-10', title: 'Старая веха', type: 'milestone' });
     expect(settings.activeLifeAreas).toEqual(['family']);
+    expect(settings.activeDailyBlocks).toEqual(['sleep', 'career', 'movement', 'nutrition']);
     expect(settings.customEveningFactorOptions[0].archived).toBe(true);
     expect(event.type).toBe('change');
   });

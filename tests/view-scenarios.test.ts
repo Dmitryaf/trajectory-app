@@ -5,9 +5,10 @@ import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import EventsView from '../src/views/EventsView.vue';
 import ResultsView from '../src/views/ResultsView.vue';
+import SettingsView from '../src/views/SettingsView.vue';
 import TodayView from '../src/views/TodayView.vue';
 import { useAppStore } from '../src/stores/app';
-import { defaultSettings } from '../src/types';
+import { defaultSettings, emptyDailyEntry } from '../src/types';
 
 vi.mock('../src/services/notifications', () => ({
   notifyError: vi.fn(),
@@ -86,6 +87,45 @@ describe('daily entry scenario', () => {
       nutritionCriterion: 'Обычный режим питания'
     });
   });
+
+  it('hides inactive blocks while preserving values in an existing entry', async () => {
+    const { pinia, store } = createStore();
+    store.settings.activeDailyBlocks = [];
+    store.dailyEntries = [{
+      ...emptyDailyEntry('2026-07-21'),
+      bedtime: '23:40',
+      wakeTime: '07:30',
+      sleepMinutes: 600,
+      timeInBedMinutes: 470,
+      nutritionState: 'supports_goal'
+    }];
+    const saveEntry = vi.spyOn(store, 'saveEntry').mockImplementation(async (entry) => {
+      store.dailyEntries = [entry];
+    });
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } }
+    });
+
+    const headings = wrapper.findAll('.form-card h2').map((heading) => heading.text());
+    expect(headings).not.toContain('Сон и состояние');
+    expect(headings).not.toContain('Карьера');
+    expect(headings).not.toContain('Физическая активность');
+    expect(headings).not.toContain('Питание');
+    expect(headings).toContain('Факт дня');
+
+    const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Факт дня');
+    await factCard!.get('textarea').setValue('Обновил только общий факт');
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+
+    expect(saveEntry).toHaveBeenCalledWith(expect.objectContaining({
+      bedtime: '23:40',
+      sleepMinutes: 600,
+      timeInBedMinutes: 470,
+      nutritionState: 'supports_goal',
+      importantFact: 'Обновил только общий факт'
+    }));
+  });
 });
 
 describe('journal scenarios', () => {
@@ -144,5 +184,24 @@ describe('journal scenarios', () => {
       title: 'Понял причину усталости',
       note: 'Нужно проверить это наблюдение на нескольких днях'
     });
+  });
+});
+
+describe('settings scenarios', () => {
+  it('saves the selected daily entry blocks', async () => {
+    const { pinia, store } = createStore();
+    const saveSettings = vi.spyOn(store, 'saveSettings').mockResolvedValue(undefined);
+    const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
+    const blockCard = wrapper.get('.settings-card--daily-blocks');
+    const careerChip = blockCard.findAll('.chip').find((chip) => chip.text().includes('Карьера'));
+
+    expect(careerChip?.attributes('aria-pressed')).toBe('true');
+    await careerChip!.trigger('click');
+    await blockCard.get('.primary-button').trigger('click');
+    await flushPromises();
+
+    expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({
+      activeDailyBlocks: ['sleep', 'movement', 'nutrition']
+    }));
   });
 });
