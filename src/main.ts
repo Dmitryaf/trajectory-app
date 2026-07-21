@@ -5,6 +5,15 @@ import { registerSW } from 'virtual:pwa-register';
 import App from './App.vue';
 import './style.css';
 
+const preloadRecoveryKey = 'trajectory:preload-recovery';
+
+window.addEventListener('vite:preloadError', (event) => {
+  event.preventDefault();
+  if (window.sessionStorage.getItem(preloadRecoveryKey)) return;
+  window.sessionStorage.setItem(preloadRecoveryKey, '1');
+  window.location.reload();
+});
+
 registerSW({ immediate: true });
 
 const router = createRouter({
@@ -25,5 +34,7 @@ router.afterEach((to) => {
   document.title = `${String(to.meta.title)} · Траектория`;
   window.scrollTo({ top: 0 });
 });
+
+router.isReady().then(() => window.sessionStorage.removeItem(preloadRecoveryKey));
 
 createApp(App).use(createPinia()).use(router).mount('#app');
