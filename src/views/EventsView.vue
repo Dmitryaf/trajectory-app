@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import AutoGrowTextarea from '../components/AutoGrowTextarea.vue';
 import ChipGroup from '../components/ChipGroup.vue';
 import ArchiveDateRange from '../features/journal/ArchiveDateRange.vue';
 import { formatDate, todayKey } from '../services/dates';
@@ -21,6 +22,7 @@ const filterType = ref('all');
 const dateFrom = ref(todayKey());
 const dateTo = ref('');
 const currentPage = ref(1);
+const expandedNotes = ref<string[]>([]);
 const pageSize = 8;
 
 const recentEvents = computed(() => [...store.lifeEvents].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)));
@@ -85,6 +87,21 @@ async function remove(id?: number) {
 function eventMeta(value: LifeEventRecord['type']) {
   return lifeEventTypeOptions.find((option) => option.id === value) ?? lifeEventTypeOptions[0];
 }
+
+function eventKey(event: LifeEventRecord) {
+  return String(event.id ?? event.createdAt);
+}
+
+function noteIsExpanded(event: LifeEventRecord) {
+  return expandedNotes.value.includes(eventKey(event));
+}
+
+function toggleNote(event: LifeEventRecord) {
+  const key = eventKey(event);
+  expandedNotes.value = expandedNotes.value.includes(key)
+    ? expandedNotes.value.filter((item) => item !== key)
+    : [...expandedNotes.value, key];
+}
 </script>
 
 <template>
@@ -100,7 +117,7 @@ function eventMeta(value: LifeEventRecord['type']) {
         <input v-model="title" type="text" maxlength="140" placeholder="Например: принял важное решение или заметил новое" @keyup.enter="saveEvent" />
         <input v-model="date" class="date-input" type="date" aria-label="Дата события" />
       </div>
-      <textarea v-model="note" rows="2" maxlength="360" placeholder="Что произошло или почему эта мысль важна" />
+      <AutoGrowTextarea v-model="note" :rows="4" :max-length="2000" placeholder="Что произошло, что ты понял и почему к этой записи стоит вернуться" />
       <button class="primary-button" type="button" :disabled="!title.trim() || saving" @click="saveEvent">{{ editingId === null ? 'Добавить запись' : 'Сохранить запись' }}</button>
       <button v-if="editingId !== null" class="secondary-button composer-cancel" type="button" @click="resetForm">Отменить редактирование</button>
     </article>
@@ -118,7 +135,8 @@ function eventMeta(value: LifeEventRecord['type']) {
           <div>
             <strong>{{ event.title }}</strong>
             <small>{{ eventMeta(event.type).label }} · {{ formatDate(event.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</small>
-            <p v-if="event.note">{{ event.note }}</p>
+            <p v-if="event.note" class="timeline-item__note" :class="{ 'timeline-item__note--clamped': event.note.length > 240 && !noteIsExpanded(event) }">{{ event.note }}</p>
+            <button v-if="event.note.length > 240" class="timeline-item__note-toggle" type="button" @click="toggleNote(event)">{{ noteIsExpanded(event) ? 'Свернуть' : 'Показать полностью' }}</button>
           </div>
           <div class="item-actions">
             <button class="ghost-button" type="button" aria-label="Редактировать событие" @click="edit(event)">✎</button>

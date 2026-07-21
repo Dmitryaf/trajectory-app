@@ -166,8 +166,10 @@ describe('journal scenarios', () => {
 
   it('adds an insight and finds an event by its note', async () => {
     const { pinia, store } = createStore();
+    const longNote = 'Длинная мысль может объединять несколько связанных тем без обязательного разбиения. '.repeat(8).trim();
     store.lifeEvents = [
       { id: 3, date: '2026-07-21', type: 'decision', title: 'Сегодняшнее решение', note: '', createdAt: '2026-07-21T10:00:00.000Z' },
+      { id: 4, date: '2026-07-21', type: 'insight', title: 'Развёрнутый инсайт', note: longNote, createdAt: '2026-07-21T11:00:00.000Z' },
       { id: 1, date: '2026-07-20', type: 'insight', title: 'Наблюдение', note: 'Лучше думаю после прогулки', createdAt: '2026-07-20T10:00:00.000Z' },
       { id: 2, date: '2026-07-19', type: 'event', title: 'Встреча', note: 'Обсудили планы', createdAt: '2026-07-19T10:00:00.000Z' }
     ];
@@ -179,6 +181,11 @@ describe('journal scenarios', () => {
     expect(wrapper.get('[aria-label="Конечная дата событий"]').element).toHaveProperty('value', '');
     expect(wrapper.text()).toContain('Сегодняшнее решение');
     expect(wrapper.text()).not.toContain('Наблюдение');
+    const longNoteToggle = wrapper.get('.timeline-item__note-toggle');
+    expect(wrapper.get('.timeline-item__note').classes()).toContain('timeline-item__note--clamped');
+    await longNoteToggle.trigger('click');
+    expect(wrapper.get('.timeline-item__note').classes()).not.toContain('timeline-item__note--clamped');
+    expect(longNoteToggle.text()).toBe('Свернуть');
     await wrapper.get('.archive-date-filter__state button').trigger('click');
     await wrapper.get('[aria-label="Поиск по событиям"]').setValue('прогулки');
     expect(wrapper.text()).toContain('Наблюдение');
@@ -189,7 +196,7 @@ describe('journal scenarios', () => {
     expect(insightChoice).toBeDefined();
     await insightChoice!.trigger('click');
     await wrapper.get('.result-composer input[type="text"]').setValue('Понял причину усталости');
-    await wrapper.get('.result-composer textarea').setValue('Нужно проверить это наблюдение на нескольких днях');
+    await wrapper.get('.result-composer textarea').setValue(longNote);
     await wrapper.get('.result-composer .primary-button').trigger('click');
     await flushPromises();
 
@@ -197,7 +204,7 @@ describe('journal scenarios', () => {
       date: '2026-07-21',
       type: 'insight',
       title: 'Понял причину усталости',
-      note: 'Нужно проверить это наблюдение на нескольких днях'
+      note: longNote
     });
   });
 });
