@@ -5,12 +5,12 @@ import { useAppStore } from '../stores/app';
 import { useAuthStore } from '../stores/auth';
 import { copyText, downloadJson } from '../features/export/browser';
 import { buildAiReportPayload, buildAiReportPrompt, type AiReportPeriod } from '../features/export/report';
-import { buildExperimentComparison } from '../features/analytics/experimentComparison';
+import { createExperimentRecord, emptyExperiment, experimentDecisionOptions, experimentPeriodsOverlap } from '../features/experiments/model';
 import { loadCloudSnapshot, markCloudSyncSynced } from '../services/cloudSync';
-import { formatDate, formatMinutes, todayKey } from '../services/dates';
+import { todayKey } from '../services/dates';
 import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { plainCopy } from '../services/plain';
-import { careerOptions, contextFactorOptions, createCustomOption, dailyBlockOptions, experimentMetricOptions, lifeAreaOptions, type AppSettings, type CareerState, type ContextFactorId, type DailyBlockId, type ExperimentDirection, type LifeAreaId, type Option } from '../types';
+import { careerOptions, contextFactorOptions, createCustomOption, dailyBlockOptions, lifeAreaOptions, type AppSettings, type CareerState, type ContextFactorId, type DailyBlockId, type LifeAreaId, type Option } from '../types';
 
 const store = useAppStore();
 const settings = reactive<AppSettings>(plainCopy(store.settings));
@@ -41,18 +41,7 @@ const cloudStatusTitle = computed(() => {
   return 'Статус облака';
 });
 const cloudStatusText = computed(() => store.cloudSyncMessage || 'Синхронизация готова.');
-const experimentConclusionOptions = [
-  { id: 'helped', label: 'Помогло', icon: '✓' },
-  { id: 'unclear', label: 'Пока неясно', icon: '·' },
-  { id: 'not_helped', label: 'Не помогло', icon: '×' },
-];
-const experimentDirectionOptions: Option<ExperimentDirection>[] = [
-  { id: 'increase', label: 'Увеличение', icon: '↑' },
-  { id: 'decrease', label: 'Снижение', icon: '↓' },
-];
-const selectedExperimentMetric = computed(() => experimentMetricOptions.find((option) => option.id === settings.experiment.targetMetricId) ?? null);
-const experimentComparison = computed(() => buildExperimentComparison(store.dailyEntries, settings.experiment));
-const experimentCanConclude = computed(() => Boolean(settings.experiment.endDate && settings.experiment.endDate < todayKey()));
+const experimentCanConclude = computed(() => Boolean(settings.experiment.endDate && settings.experiment.endDate <= todayKey()));
 
 async function save(message = 'Настройки сохранены') {
   await store.saveSettings(plainCopy(settings));
@@ -65,14 +54,6 @@ async function saveExperiment() {
     notifyError('Укажи условие эксперимента');
     return;
   }
-  if (experiment.active && !experiment.hypothesis.trim()) {
-    notifyError('Сформулируй гипотезу до начала эксперимента');
-    return;
-  }
-  if (experiment.active && !experiment.targetMetricId) {
-    notifyError('Выбери один показатель из ежедневной записи');
-    return;
-  }
   if (experiment.active && (!experiment.startDate || !experiment.endDate)) {
     notifyError('Укажи даты начала и окончания эксперимента');
     return;
@@ -81,34 +62,44 @@ async function saveExperiment() {
     notifyError('Дата окончания эксперимента должна быть не раньше даты начала');
     return;
   }
-  if (experiment.active && (experiment.minimumMeaningfulChange === null || experiment.minimumMeaningfulChange <= 0)) {
-    notifyError('Укажи минимальное заметное изменение больше нуля');
-    return;
-  }
-  const requiredBlock = experiment.targetMetricId === 'weightKg' ? 'nutrition' : experiment.targetMetricId ? 'sleep' : null;
-  if (experiment.active && requiredBlock && !settings.activeDailyBlocks.includes(requiredBlock)) {
-    notifyError(`Включи блок «${requiredBlock === 'sleep' ? 'Сон и состояние' : 'Питание и вес'}», чтобы собирать выбранный показатель`);
+  if (experiment.active && settings.experimentHistory.some((record) => experimentPeriodsOverlap(experiment, record))) {
+    notifyError('Период пересекается с завершённым экспериментом');
     return;
   }
   await save('Эксперимент сохранён');
 }
 
-watch(() => settings.experiment.targetMetricId, (metricId) => {
-  const metric = experimentMetricOptions.find((option) => option.id === metricId);
-  settings.experiment.targetMetric = metric?.label ?? '';
-  if (!metric) {
-    settings.experiment.minimumMeaningfulChange = null;
+async function completeExperiment() {
+  const experiment = settings.experiment;
+  if (!experiment.title.trim() || !experiment.startDate || !experiment.endDate) {
+    notifyError('Укажи условие и даты эксперимента');
     return;
   }
-  settings.experiment.minimumMeaningfulChange = metric.defaultMinimumChange;
-});
-
-function formatExperimentAverage(value: number | null): string {
-  if (value === null || !selectedExperimentMetric.value) return 'нет данных';
-  if (selectedExperimentMetric.value.id === 'sleepMinutes' || selectedExperimentMetric.value.id === 'timeInBedMinutes') {
-    return formatMinutes(Math.round(value));
+  if (experiment.startDate > experiment.endDate) {
+    notifyError('Дата окончания эксперимента должна быть не раньше даты начала');
+    return;
   }
-  return `${value.toLocaleString('ru-RU', { maximumFractionDigits: 1 })} ${selectedExperimentMetric.value.unit}`;
+  if (!experimentCanConclude.value) {
+    notifyError('Эксперимент ещё не завершён');
+    return;
+  }
+  if (!experiment.conclusion.trim()) {
+    notifyError('Запиши, что заметил по итогам эксперимента');
+    return;
+  }
+  if (settings.experimentHistory.some((record) => experimentPeriodsOverlap(experiment, record))) {
+    notifyError('Период пересекается с завершённым экспериментом');
+    return;
+  }
+  settings.experimentHistory.unshift(createExperimentRecord(experiment));
+  settings.experiment = emptyExperiment();
+  await save('Эксперимент добавлен в историю');
+}
+
+async function removeExperimentRecord(id: string) {
+  if (!window.confirm('Удалить завершённый эксперимент из истории? Дневные отметки останутся без изменений.')) return;
+  settings.experimentHistory = settings.experimentHistory.filter((record) => record.id !== id);
+  await save('Эксперимент удалён из истории');
 }
 
 async function addCareerOption() {
@@ -409,44 +400,34 @@ async function clearAll() {
     </article>
 
     <article class="settings-card settings-card--experiment">
-      <div class="form-card__heading"><span class="section-icon section-icon--orange">⌁</span><div><h2>Временный эксперимент</h2><p>Например: не читать новости после 22:00 в течение двух недель.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--orange">⌁</span><div><h2>Личный эксперимент</h2><p>Задай временное условие, отмечай его выполнение и сформулируй собственный вывод.</p></div></div>
       <label class="toggle-row"><span><strong>Включить эксперимент</strong><small>В ежедневной записи появится один дополнительный вопрос.</small></span><input v-model="settings.experiment.active" type="checkbox" /></label>
       <label class="field-label" for="experiment-title">Условие эксперимента</label>
       <input id="experiment-title" v-model="settings.experiment.title" type="text" maxlength="140" placeholder="Не читать новости после 22:00" />
-      <label class="field-label" for="experiment-hypothesis">Гипотеза</label>
-      <textarea id="experiment-hypothesis" v-model="settings.experiment.hypothesis" rows="2" maxlength="220" placeholder="Если не читать новости поздно вечером, засыпать будет легче, а энергия утром станет выше"></textarea>
-      <label class="field-label" for="experiment-metric">Один показатель</label>
-      <select id="experiment-metric" v-model="settings.experiment.targetMetricId">
-        <option :value="null">Выбрать показатель</option>
-        <option v-for="metric in experimentMetricOptions" :key="metric.id" :value="metric.id">{{ metric.label }}</option>
-      </select>
-      <template v-if="selectedExperimentMetric">
-        <label class="field-label">Какое изменение ожидается</label>
-        <ChipGroup v-model="settings.experiment.targetDirection" :options="experimentDirectionOptions" />
-        <label class="field-label" for="experiment-threshold">Минимальное заметное изменение</label>
-        <div class="number-field">
-          <input id="experiment-threshold" v-model.number="settings.experiment.minimumMeaningfulChange" type="number" min="0.1" :step="selectedExperimentMetric.step" inputmode="decimal" />
-          <span>{{ selectedExperimentMetric.unit }}</span>
-        </div>
-        <p class="field-hint">Сравниваются средние значения за эксперимент и за такой же по длине период непосредственно перед ним.</p>
-      </template>
+      <label class="field-label" for="experiment-hypothesis">Что хочешь проверить <span class="field-optional">необязательно</span></label>
+      <textarea id="experiment-hypothesis" v-model="settings.experiment.hypothesis" rows="2" maxlength="300" placeholder="Например: станет ли проще засыпать и сохранять энергию утром"></textarea>
       <div class="form-row">
         <label class="form-control"><span class="field-label">Начало</span><input v-model="settings.experiment.startDate" type="date" /></label>
         <label class="form-control"><span class="field-label">Окончание</span><input v-model="settings.experiment.endDate" type="date" /></label>
       </div>
       <template v-if="experimentCanConclude">
-        <label class="field-label" for="experiment-conclusion">Итог после завершения</label>
-        <ChipGroup v-model="settings.experiment.conclusion" :options="experimentConclusionOptions" allow-clear />
+        <label class="field-label" for="experiment-conclusion">Что заметил по итогам</label>
+        <textarea id="experiment-conclusion" v-model="settings.experiment.conclusion" rows="3" maxlength="800" placeholder="Опиши наблюдения своими словами. Совпадение показателей не обязательно означает влияние эксперимента."></textarea>
+        <label class="field-label">Что делать дальше <span class="field-optional">необязательно</span></label>
+        <ChipGroup v-model="settings.experiment.decision" :options="experimentDecisionOptions" allow-clear />
       </template>
-      <p v-else-if="settings.experiment.endDate" class="field-hint">Итог можно отметить после окончания выбранного периода.</p>
-      <div v-if="experimentComparison" class="data-note">
-        <strong>Сравнение одинаковых периодов</strong>
-        <p>Исходный период: {{ formatDate(experimentComparison.baselineStart) }} — {{ formatDate(experimentComparison.baselineEnd) }}; {{ formatExperimentAverage(experimentComparison.baselineAverage) }} по {{ experimentComparison.baselineSamples }} измерениям.</p>
-        <p>Эксперимент: {{ formatDate(experimentComparison.experimentStart) }} — {{ formatDate(experimentComparison.experimentEnd) }}; {{ formatExperimentAverage(experimentComparison.experimentAverage) }} по {{ experimentComparison.experimentSamples }} измерениям.</p>
-        <p v-if="experimentComparison.thresholdMet === null">Для осторожного сравнения нужно хотя бы по 4 измерения в каждом периоде.</p>
-        <p v-else>{{ experimentComparison.thresholdMet ? 'Заранее заданный порог достигнут.' : 'Заранее заданный порог пока не достигнут.' }} Это сравнение периодов, а не доказательство влияния условия.</p>
-      </div>
+      <p v-else-if="settings.experiment.endDate" class="field-hint">После окончания периода здесь можно записать вывод и сохранить эксперимент в общей истории.</p>
       <button class="primary-button" type="button" @click="saveExperiment">Сохранить настройки</button>
+      <button v-if="experimentCanConclude" class="secondary-button" type="button" @click="completeExperiment">Завершить и добавить в историю</button>
+      <details v-if="settings.experimentHistory.length" class="settings-history">
+        <summary>Завершённые эксперименты · {{ settings.experimentHistory.length }}</summary>
+        <div class="custom-list">
+          <div v-for="record in settings.experimentHistory" :key="record.id" class="custom-list__item">
+            <span><i>✓</i>{{ record.title }}<small>{{ record.startDate }} — {{ record.endDate }}</small></span>
+            <button class="ghost-button ghost-button--danger" type="button" :aria-label="`Удалить эксперимент ${record.title}`" @click="removeExperimentRecord(record.id)">×</button>
+          </div>
+        </div>
+      </details>
     </article>
 
     <article class="settings-card settings-card--backup">

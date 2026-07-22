@@ -6,9 +6,11 @@ import MetricCard from '../components/MetricCard.vue';
 import { buildCoverageSeries, buildEventComparison, buildRangeReviewCues, entriesForPeriod, factorSummaries, ratioPercent, resultsForPeriod, summarize, type EventComparisonMetric } from '../services/analytics';
 import { addMonths, dateRange, endOfMonth, endOfWeek, formatDate, formatMinutes, monthsBetween, startOfMonth, toDateKey, todayKey } from '../services/dates';
 import { buildRangePackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../features/export/browser';
+import { buildExperimentSummary } from '../features/analytics/experimentComparison';
+import { experimentDecisionLabel } from '../features/experiments/model';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { useAppStore } from '../stores/app';
-import { contextFactorOptions } from '../types';
+import { contextFactorOptions, type ExperimentMetricId, type ExperimentRecord } from '../types';
 
 type RangeMonths = 3 | 6 | 12;
 
@@ -165,6 +167,27 @@ function savedDate(updatedAt: string, fallback: string): string {
   return Number.isNaN(date.getTime()) ? fallback : toDateKey(date);
 }
 
+function experimentMetricValue(metricId: ExperimentMetricId, value: number): string {
+  if (metricId === 'sleepMinutes' || metricId === 'timeInBedMinutes') return formatMinutes(Math.round(value));
+  if (metricId === 'sleepQuality' || metricId === 'energy') return `${value.toLocaleString('ru-RU', { maximumFractionDigits: 1 })}/5`;
+  return `${value.toLocaleString('ru-RU', { maximumFractionDigits: 1 })} кг`;
+}
+
+function experimentTimelineDetail(record: ExperimentRecord): string {
+  const summary = buildExperimentSummary(store.dailyEntries, record);
+  const parts = [`Вывод: ${record.conclusion}`];
+  const decision = experimentDecisionLabel(record.decision);
+  if (decision) parts.push(`Дальше: ${decision.toLocaleLowerCase('ru-RU')}`);
+  if (summary) {
+    parts.push(`Условие выполнено в ${summary.adherenceCompletedDays} из ${summary.adherenceMarkedDays} отмеченных дней; без отметки — ${summary.adherenceUnmarkedDays}`);
+    const metrics = summary.metrics.flatMap((metric) => metric.baselineAverage === null || metric.experimentAverage === null ? [] : [
+      `${metric.label.toLocaleLowerCase('ru-RU')} ${experimentMetricValue(metric.id, metric.baselineAverage)} → ${experimentMetricValue(metric.id, metric.experimentAverage)} (${metric.baselineSamples}/${metric.experimentSamples} изм.)`,
+    ]);
+    if (metrics.length) parts.push(`До → во время: ${metrics.join(', ')}`);
+  }
+  return parts.join('. ');
+}
+
 const decisionTimeline = computed(() => [
   ...lifeEvents.value.map((event) => ({ date: event.date, type: 'Событие', tone: 'event', title: event.title, detail: event.note })),
   ...results.value.map((result) => ({ date: result.date, type: 'Итог', tone: 'result', title: result.title, detail: '' })),
@@ -182,6 +205,13 @@ const decisionTimeline = computed(() => [
     title: review.nextFocus || review.courseChange || review.mainPattern || 'Обзор месяца',
     detail: review.ifThenPlan,
   })),
+  ...store.settings.experimentHistory.map((record) => ({
+    date: record.endDate,
+    type: 'Эксперимент',
+    tone: 'experiment',
+    title: record.title,
+    detail: experimentTimelineDetail(record),
+  })),
 ].filter((item) => item.date >= start.value && item.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)));
 const displayedDecisionTimeline = computed(() => timelineExpanded.value ? decisionTimeline.value : decisionTimeline.value.slice(0, 8));
 const timelineSummary = computed(() => [
@@ -189,6 +219,7 @@ const timelineSummary = computed(() => [
   { tone: 'result', label: 'Итоги', count: decisionTimeline.value.filter((item) => item.tone === 'result').length },
   { tone: 'decision', label: 'Решения', count: decisionTimeline.value.filter((item) => item.tone === 'decision').length },
   { tone: 'outcome', label: 'Проверки', count: decisionTimeline.value.filter((item) => item.tone === 'outcome').length },
+  { tone: 'experiment', label: 'Эксперименты', count: decisionTimeline.value.filter((item) => item.tone === 'experiment').length },
 ].filter((item) => item.count > 0));
 const weightOption = computed<EChartsCoreOption>(() => ({
   color: ['#d9952f'],

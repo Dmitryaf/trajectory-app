@@ -1,80 +1,73 @@
 import { addDays, dateRange } from '../../services/dates';
-import {
-  experimentMetricOptions,
-  type DailyEntry,
-  type Experiment,
-  type ExperimentMetricId,
-} from '../../types';
+import { experimentMetricOptions, type DailyEntry, type ExperimentMetricId } from '../../types';
 
-export type ExperimentComparison = {
-  metricId: ExperimentMetricId;
-  metricLabel: string;
+type ExperimentPeriod = {
+  startDate: string;
+  endDate: string;
+};
+
+export type ExperimentMetricComparison = {
+  id: ExperimentMetricId;
+  label: string;
   unit: string;
-  direction: Experiment['targetDirection'];
-  minimumMeaningfulChange: number;
-  baselineStart: string;
-  baselineEnd: string;
-  experimentStart: string;
-  experimentEnd: string;
   baselineAverage: number | null;
   experimentAverage: number | null;
   baselineSamples: number;
   experimentSamples: number;
-  adherenceMarkedDays: number;
-  adherenceCompletedDays: number;
-  rawDifference: number | null;
-  improvement: number | null;
-  thresholdMet: boolean | null;
+  difference: number | null;
 };
 
-export function buildExperimentComparison(entries: DailyEntry[], experiment: Experiment): ExperimentComparison | null {
-  if (!experiment.targetMetricId
-    || !experiment.startDate
-    || !experiment.endDate
-    || experiment.startDate > experiment.endDate
-    || experiment.minimumMeaningfulChange === null
-    || experiment.minimumMeaningfulChange <= 0) return null;
+export type ExperimentSummary = {
+  baselineStart: string;
+  baselineEnd: string;
+  experimentStart: string;
+  experimentEnd: string;
+  plannedDays: number;
+  adherenceMarkedDays: number;
+  adherenceCompletedDays: number;
+  adherenceNotCompletedDays: number;
+  adherenceUnmarkedDays: number;
+  metrics: ExperimentMetricComparison[];
+};
 
-  const metric = experimentMetricOptions.find((option) => option.id === experiment.targetMetricId);
-  if (!metric) return null;
+export function buildExperimentSummary(entries: DailyEntry[], experiment: ExperimentPeriod): ExperimentSummary | null {
+  if (!experiment.startDate || !experiment.endDate || experiment.startDate > experiment.endDate) return null;
 
-  const periodDays = dateRange(experiment.startDate, experiment.endDate).length;
+  const plannedDays = dateRange(experiment.startDate, experiment.endDate).length;
   const baselineEnd = addDays(experiment.startDate, -1);
-  const baselineStart = addDays(experiment.startDate, -periodDays);
+  const baselineStart = addDays(experiment.startDate, -plannedDays);
   const baselineEntries = ordinaryEntriesInRange(entries, baselineStart, baselineEnd);
   const experimentEntries = ordinaryEntriesInRange(entries, experiment.startDate, experiment.endDate);
   const plannedExperimentEntries = entries.filter((entry) => entry.date >= experiment.startDate && entry.date <= experiment.endDate);
-  const baselineValues = metricValues(baselineEntries, metric.id);
-  const experimentValues = metricValues(experimentEntries, metric.id);
-  const baselineAverage = average(baselineValues);
-  const experimentAverage = average(experimentValues);
-  const rawDifference = baselineAverage === null || experimentAverage === null
-    ? null
-    : experimentAverage - baselineAverage;
-  const improvement = rawDifference === null
-    ? null
-    : experiment.targetDirection === 'increase' ? rawDifference : -rawDifference;
-  const enoughData = baselineValues.length >= 4 && experimentValues.length >= 4;
+  const markedDays = plannedExperimentEntries.filter((entry) => entry.experimentCompleted !== null);
 
   return {
-    metricId: metric.id,
-    metricLabel: metric.label,
-    unit: metric.unit,
-    direction: experiment.targetDirection,
-    minimumMeaningfulChange: experiment.minimumMeaningfulChange,
     baselineStart,
     baselineEnd,
     experimentStart: experiment.startDate,
     experimentEnd: experiment.endDate,
-    baselineAverage,
-    experimentAverage,
-    baselineSamples: baselineValues.length,
-    experimentSamples: experimentValues.length,
-    adherenceMarkedDays: plannedExperimentEntries.filter((entry) => entry.experimentCompleted !== null).length,
-    adherenceCompletedDays: plannedExperimentEntries.filter((entry) => entry.experimentCompleted === true).length,
-    rawDifference,
-    improvement,
-    thresholdMet: enoughData && improvement !== null ? improvement >= experiment.minimumMeaningfulChange : null,
+    plannedDays,
+    adherenceMarkedDays: markedDays.length,
+    adherenceCompletedDays: markedDays.filter((entry) => entry.experimentCompleted === true).length,
+    adherenceNotCompletedDays: markedDays.filter((entry) => entry.experimentCompleted === false).length,
+    adherenceUnmarkedDays: Math.max(0, plannedDays - markedDays.length),
+    metrics: experimentMetricOptions.flatMap((metric) => {
+      const baselineValues = metricValues(baselineEntries, metric.id);
+      const experimentValues = metricValues(experimentEntries, metric.id);
+      if (!baselineValues.length && !experimentValues.length) return [];
+      const baselineAverage = average(baselineValues);
+      const experimentAverage = average(experimentValues);
+      return [{
+        id: metric.id,
+        label: metric.label,
+        unit: metric.unit,
+        baselineAverage,
+        experimentAverage,
+        baselineSamples: baselineValues.length,
+        experimentSamples: experimentValues.length,
+        difference: baselineAverage === null || experimentAverage === null ? null : experimentAverage - baselineAverage,
+      }];
+    }),
   };
 }
 

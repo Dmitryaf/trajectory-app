@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 5,
   "exportedAt": "2026-07-20T18:00:00.000Z",
   "dailyEntries": [
     {
@@ -725,7 +725,7 @@
       "date": "2026-06-10",
       "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
-      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "actionNote"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "actionNote", "experimentCompleted"],
       "bedtime": "23:30",
       "wakeTime": "07:35",
       "sleepMinutes": 440,
@@ -764,14 +764,14 @@
       ],
       "lifeAreasRecorded": true,
       "importantFact": "Созвонился с близкими",
-      "experimentCompleted": null,
+      "experimentCompleted": true,
       "updatedAt": "2026-06-10T21:00:00.000Z"
     },
     {
       "date": "2026-06-12",
       "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
-      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "specialDay"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "specialDay", "experimentCompleted"],
       "bedtime": "00:35",
       "wakeTime": "06:20",
       "sleepMinutes": 365,
@@ -808,14 +808,14 @@
       ],
       "lifeAreasRecorded": true,
       "importantFact": "Провёл тренировку по плану",
-      "experimentCompleted": null,
+      "experimentCompleted": false,
       "updatedAt": "2026-06-12T21:00:00.000Z"
     },
     {
       "date": "2026-06-15",
       "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
-      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "weightKg"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "weightKg", "experimentCompleted"],
       "bedtime": "23:10",
       "wakeTime": "07:20",
       "sleepMinutes": 460,
@@ -853,7 +853,7 @@
       ],
       "lifeAreasRecorded": true,
       "importantFact": "Отправил отклик и записал следующий шаг",
-      "experimentCompleted": null,
+      "experimentCompleted": true,
       "updatedAt": "2026-06-15T21:00:00.000Z"
     },
     {
@@ -2172,7 +2172,7 @@
   ],
   "settings": {
     "id": "main",
-    "settingsVersion": 8,
+    "settingsVersion": 9,
     "activeDailyBlocks": [
       "sleep",
       "context",
@@ -2226,14 +2226,31 @@
     "experiment": {
       "active": true,
       "title": "Спокойное завершение вечера",
-      "hypothesis": "Если завершать работу и экран до 22:30, энергия на следующий день станет выше.",
-      "targetMetricId": "energy",
-      "targetMetric": "Энергия за день",
+      "hypothesis": "Станет ли проще засыпать и сохранять энергию утром.",
+      "targetMetricId": null,
+      "targetMetric": "",
       "targetDirection": "increase",
-      "minimumMeaningfulChange": 0.5,
+      "minimumMeaningfulChange": null,
       "startDate": "2026-07-13",
       "endDate": "2026-07-26",
-      "conclusion": ""
-    }
+      "conclusion": "",
+      "decision": null
+    },
+    "experimentHistory": [
+      {
+        "id": "experiment-2026-06-reading",
+        "title": "Чтение вместо ленты перед сном",
+        "hypothesis": "Поможет ли спокойное чтение легче завершать день.",
+        "targetMetricId": null,
+        "targetMetric": "",
+        "targetDirection": "increase",
+        "minimumMeaningfulChange": null,
+        "startDate": "2026-06-10",
+        "endDate": "2026-06-16",
+        "conclusion": "Вечером было проще переключаться, но отметок пока мало для уверенного решения.",
+        "decision": "more_data",
+        "completedAt": "2026-06-16T20:00:00.000Z"
+      }
+    ]
   }
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildExperimentComparison } from '../src/features/analytics/experimentComparison';
+import { buildExperimentSummary } from '../src/features/analytics/experimentComparison';
+import { createExperimentRecord, emptyExperiment, experimentPeriodsOverlap } from '../src/features/experiments/model';
 import { buildAiReportPayload, buildAiReportPrompt } from '../src/features/export/report';
 import { defaultSettings, emptyDailyEntry, type DailyEntry, type Experiment } from '../src/types';
 
@@ -9,70 +10,67 @@ function entry(date: string, patch: Partial<DailyEntry>): DailyEntry {
 
 function experiment(patch: Partial<Experiment> = {}): Experiment {
   return {
-    ...defaultSettings.experiment,
+    ...emptyExperiment(),
     active: true,
     title: 'Спокойный вечер',
-    hypothesis: 'Энергия станет выше',
-    targetMetricId: 'energy',
-    targetMetric: 'Энергия за день',
-    targetDirection: 'increase',
-    minimumMeaningfulChange: 0.5,
+    hypothesis: 'Станет ли проще завершать день',
     startDate: '2026-07-05',
     endDate: '2026-07-08',
     ...patch,
   };
 }
 
-describe('experiment comparison', () => {
-  it('compares an equally long preceding window and excludes special days', () => {
+describe('experiment summary', () => {
+  it('summarizes adherence and all available metrics without choosing a target', () => {
     const entries = [
-      entry('2026-07-01', { energy: 2 }),
-      entry('2026-07-02', { energy: 2 }),
-      entry('2026-07-03', { energy: 5, specialDay: 'travel' }),
-      entry('2026-07-04', { energy: 2 }),
-      entry('2026-07-05', { energy: 3, experimentCompleted: true }),
-      entry('2026-07-06', { energy: 3, experimentCompleted: true }),
-      entry('2026-07-07', { energy: 3, experimentCompleted: false }),
-      entry('2026-07-08', { energy: 3, experimentCompleted: true }),
+      entry('2026-07-01', { energy: 2, sleepMinutes: 390 }),
+      entry('2026-07-02', { energy: 2, sleepMinutes: 400 }),
+      entry('2026-07-03', { energy: 5, sleepMinutes: 300, specialDay: 'travel' }),
+      entry('2026-07-04', { energy: 2, sleepMinutes: 410 }),
+      entry('2026-07-05', { energy: 3, sleepMinutes: 430, experimentCompleted: true }),
+      entry('2026-07-06', { energy: 3, sleepMinutes: 440, experimentCompleted: true }),
+      entry('2026-07-07', { energy: 3, sleepMinutes: 450, experimentCompleted: false }),
     ];
 
-    const comparison = buildExperimentComparison(entries, experiment());
+    const summary = buildExperimentSummary(entries, experiment());
+    const energy = summary?.metrics.find((metric) => metric.id === 'energy');
 
-    expect(comparison).toMatchObject({
+    expect(summary).toMatchObject({
       baselineStart: '2026-07-01',
       baselineEnd: '2026-07-04',
-      baselineAverage: 2,
-      baselineSamples: 3,
-      experimentAverage: 3,
-      experimentSamples: 4,
-      adherenceMarkedDays: 4,
-      adherenceCompletedDays: 3,
-      thresholdMet: null,
+      plannedDays: 4,
+      adherenceMarkedDays: 3,
+      adherenceCompletedDays: 2,
+      adherenceNotCompletedDays: 1,
+      adherenceUnmarkedDays: 1,
     });
+    expect(energy).toMatchObject({ baselineAverage: 2, baselineSamples: 3, experimentAverage: 3, experimentSamples: 3, difference: 1 });
+    expect(summary?.metrics.map((metric) => metric.id)).toEqual(['sleepMinutes', 'energy']);
   });
 
-  it('evaluates the predeclared threshold only with enough samples', () => {
-    const entries = Array.from({ length: 8 }, (_, index) => entry(
-      `2026-07-${String(index + 1).padStart(2, '0')}`,
-      { energy: index < 4 ? 2 : 3 },
-    ));
+  it('requires only a valid period and preserves a free-form completed record', () => {
+    expect(buildExperimentSummary([], experiment({ startDate: '', endDate: '' }))).toBeNull();
+    const record = createExperimentRecord(experiment({ conclusion: 'Стало спокойнее', decision: 'continue' }), '2026-07-08T20:00:00.000Z');
 
-    expect(buildExperimentComparison(entries, experiment())?.thresholdMet).toBe(true);
-    expect(buildExperimentComparison(entries, experiment({ minimumMeaningfulChange: 1.5 }))?.thresholdMet).toBe(false);
-    expect(buildExperimentComparison(entries, experiment({ targetDirection: 'decrease' }))?.improvement).toBe(-1);
+    expect(record).toMatchObject({
+      title: 'Спокойный вечер',
+      conclusion: 'Стало спокойнее',
+      decision: 'continue',
+      completedAt: '2026-07-08T20:00:00.000Z',
+    });
+    expect(record).not.toHaveProperty('active');
+    expect(experimentPeriodsOverlap(record, { startDate: '2026-07-08', endDate: '2026-07-10' })).toBe(true);
+    expect(experimentPeriodsOverlap(record, { startDate: '2026-07-09', endDate: '2026-07-10' })).toBe(false);
   });
 
-  it('does not build a comparison from a free-text legacy metric', () => {
-    expect(buildExperimentComparison([], experiment({ targetMetricId: null, targetMetric: 'Энергия и сон' }))).toBeNull();
-  });
-
-  it('includes the cautious period comparison in the manual analysis package', () => {
+  it('includes user conclusions and a factual summary in the manual analysis package', () => {
     const entries = Array.from({ length: 8 }, (_, index) => entry(
       `2026-07-${String(index + 1).padStart(2, '0')}`,
       { energy: index < 4 ? 2 : 3, experimentCompleted: index < 4 ? null : true },
     ));
     const settings = structuredClone(defaultSettings);
-    settings.experiment = experiment();
+    const completed = experiment({ active: false, conclusion: 'Утром было немного легче', decision: 'more_data' });
+    settings.experimentHistory = [createExperimentRecord(completed, '2026-07-08T20:00:00.000Z')];
     const payload = buildAiReportPayload('month', '2026-07-08', {
       entries,
       results: [],
@@ -82,8 +80,11 @@ describe('experiment comparison', () => {
       settings,
     });
 
-    expect(payload.version).toBe(8);
-    expect(payload.experimentComparison?.thresholdMet).toBe(true);
-    expect(buildAiReportPrompt(payload, settings)).toContain('Это сравнение периодов, а не доказательство влияния условия.');
+    expect(payload.version).toBe(9);
+    expect(payload.experimentHistory).toHaveLength(1);
+    const prompt = buildAiReportPrompt(payload, settings);
+    expect(prompt).toContain('вывод пользователя: Утром было немного легче');
+    expect(prompt).toContain('Это фактическая сводка, а не автоматический вывод');
+    expect(prompt).not.toContain('порог');
   });
 });

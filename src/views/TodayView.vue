@@ -308,13 +308,12 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
           <span class="section-icon section-icon--orange">⌁</span>
           <div><h2>Текущий эксперимент</h2><p>{{ store.settings.experiment.title }}</p></div>
         </div>
-        <p v-if="store.settings.experiment.hypothesis" class="form-context">Гипотеза: {{ store.settings.experiment.hypothesis }}</p>
-        <p v-if="store.settings.experiment.targetMetric" class="form-context">Проверяем: {{ store.settings.experiment.targetMetric }}</p>
+        <p v-if="store.settings.experiment.hypothesis" class="form-context">Что проверяю: {{ store.settings.experiment.hypothesis }}</p>
         <label class="field-label">Условие эксперимента сегодня выполнено?</label>
         <div class="binary-choice">
-          <button type="button" :class="{ selected: form.experimentCompleted === true }" @click="form.experimentCompleted = true">Выполнено</button>
-          <button type="button" :class="{ selected: form.experimentCompleted === false }" @click="form.experimentCompleted = false">Не выполнено</button>
-          <button type="button" :class="{ selected: form.experimentCompleted === null }" @click="form.experimentCompleted = null">Не отмечать</button>
+          <button type="button" :class="{ selected: form.experimentCompleted === true }" @click="form.experimentCompleted = true">Да</button>
+          <button type="button" :class="{ selected: form.experimentCompleted === false }" @click="form.experimentCompleted = false">Нет</button>
+          <button type="button" :class="{ selected: form.experimentCompleted === null }" @click="form.experimentCompleted = null">Нет отметки</button>
         </div>
       </article>
 

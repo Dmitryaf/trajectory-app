@@ -7,6 +7,7 @@ import PeriodNavigator from '../components/PeriodNavigator.vue';
 import { actionDirectionLabel, buildReviewCues, buildReviewQuestions, careerStatesForEntry, contextFactorLabel, entriesForWeek, hasArea, resultsForPeriod, specialDayLabel, summarize, weekSummaryText } from '../services/analytics';
 import { addDays, endOfWeek, formatDate, formatMinutes, startOfWeek, todayKey } from '../services/dates';
 import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../features/export/browser';
+import { experimentDecisionLabel } from '../features/experiments/model';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { plainCopy } from '../services/plain';
 import { useAppStore } from '../stores/app';
@@ -25,6 +26,21 @@ const externalCareerIds = computed(() => ['external', 'interview', 'result', ...
 const summary = computed(() => summarize(entries.value, externalCareerIds.value));
 const results = computed(() => resultsForPeriod(store.results, start.value, end.value));
 const lifeEvents = computed(() => store.lifeEvents.filter((event) => event.date >= start.value && event.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)));
+const activeExperimentWeek = computed(() => {
+  const experiment = store.settings.experiment;
+  if (!experiment.active || !experiment.startDate || !experiment.endDate || experiment.startDate > end.value || experiment.endDate < start.value) return null;
+  const experimentDays = days.value.filter((day) => day >= experiment.startDate && day <= experiment.endDate);
+  const experimentEntries = entries.value.filter((entry) => entry.date >= experiment.startDate && entry.date <= experiment.endDate);
+  const marked = experimentEntries.filter((entry) => entry.experimentCompleted !== null);
+  return {
+    experiment,
+    plannedDays: experimentDays.length,
+    completedDays: marked.filter((entry) => entry.experimentCompleted === true).length,
+    notCompletedDays: marked.filter((entry) => entry.experimentCompleted === false).length,
+    unmarkedDays: Math.max(0, experimentDays.length - marked.length),
+  };
+});
+const completedExperiments = computed(() => store.settings.experimentHistory.filter((experiment) => experiment.endDate >= start.value && experiment.endDate <= end.value));
 const reviewCues = computed(() => buildReviewCues('week', entries.value, results.value, lifeEvents.value, externalCareerIds.value, contextFactorItems.value));
 const reviewQuestions = buildReviewQuestions('week');
 const previousReview = computed(() => store.reviewByWeek(addDays(start.value, -7)));
@@ -206,6 +222,26 @@ function downloadJson() {
       <ol class="review-question-list">
         <li v-for="question in reviewQuestions" :key="question">{{ question }}</li>
       </ol>
+    </article>
+
+    <article v-if="activeExperimentWeek || completedExperiments.length" class="dashboard-card">
+      <div class="section-heading"><div><span class="eyebrow">Личные проверки</span><h2>Эксперименты недели</h2></div><span class="count-badge">{{ (activeExperimentWeek ? 1 : 0) + completedExperiments.length }}</span></div>
+      <div v-if="activeExperimentWeek" class="previous-plan">
+        <span class="eyebrow">Идёт сейчас</span>
+        <p><strong>{{ activeExperimentWeek.experiment.title }}</strong></p>
+        <p v-if="activeExperimentWeek.experiment.hypothesis">Что проверяю: {{ activeExperimentWeek.experiment.hypothesis }}</p>
+        <div class="comparison-periods">
+          <span>Выполнено: {{ activeExperimentWeek.completedDays }}</span>
+          <span>Не выполнено: {{ activeExperimentWeek.notCompletedDays }}</span>
+          <span>Без отметки: {{ activeExperimentWeek.unmarkedDays }} из {{ activeExperimentWeek.plannedDays }}</span>
+        </div>
+      </div>
+      <div v-if="completedExperiments.length" class="note-list">
+        <article v-for="experiment in completedExperiments" :key="experiment.id" class="note-item">
+          <time>{{ formatDate(experiment.endDate, { weekday: 'short', day: 'numeric' }) }}</time>
+          <p><strong>{{ experiment.title }}</strong><br />{{ experiment.conclusion }}<span v-if="experiment.decision"><br />Дальше: {{ experimentDecisionLabel(experiment.decision).toLocaleLowerCase('ru-RU') }}</span></p>
+        </article>
+      </div>
     </article>
 
     <article v-if="actionNotes.length" class="dashboard-card">

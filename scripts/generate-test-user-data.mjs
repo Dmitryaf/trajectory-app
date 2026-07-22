@@ -64,7 +64,9 @@ const dailyEntries = trackedDates.map((date, index) => {
   const sleepMinutes = special?.[0] === 'travel' ? 365 : late ? 390 : 440 + (index % 4) * 10;
   const experimentCompleted = date >= '2026-07-13' && date <= dataThrough
     ? !['2026-07-15', '2026-07-19'].includes(date)
-    : null;
+    : date >= '2026-06-10' && date <= '2026-06-16'
+      ? date !== '2026-06-12'
+      : null;
 
   return {
     date,
@@ -196,7 +198,7 @@ const monthlyReviews = [
 ];
 
 const payload = {
-  version: 4,
+  version: 5,
   exportedAt: '2026-07-20T18:00:00.000Z',
   dailyEntries,
   results,
@@ -205,7 +207,7 @@ const payload = {
   monthlyReviews,
   settings: {
     id: 'main',
-    settingsVersion: 8,
+    settingsVersion: 9,
     activeDailyBlocks: ['sleep', 'context', 'career', 'movement', 'nutrition'],
     activeLifeAreas: ['family', 'reading', 'creativity', 'rest', 'friends', 'english', 'custom:life:personal-projects'],
     customCareerOptions: [
@@ -226,15 +228,30 @@ const payload = {
     experiment: {
       active: true,
       title: 'Спокойное завершение вечера',
-      hypothesis: 'Если завершать работу и экран до 22:30, энергия на следующий день станет выше.',
-      targetMetricId: 'energy',
-      targetMetric: 'Энергия за день',
+      hypothesis: 'Станет ли проще засыпать и сохранять энергию утром.',
+      targetMetricId: null,
+      targetMetric: '',
       targetDirection: 'increase',
-      minimumMeaningfulChange: 0.5,
+      minimumMeaningfulChange: null,
       startDate: '2026-07-13',
       endDate: '2026-07-26',
       conclusion: '',
+      decision: null,
     },
+    experimentHistory: [{
+      id: 'experiment-2026-06-reading',
+      title: 'Чтение вместо ленты перед сном',
+      hypothesis: 'Поможет ли спокойное чтение легче завершать день.',
+      targetMetricId: null,
+      targetMetric: '',
+      targetDirection: 'increase',
+      minimumMeaningfulChange: null,
+      startDate: '2026-06-10',
+      endDate: '2026-06-16',
+      conclusion: 'Вечером было проще переключаться, но отметок пока мало для уверенного решения.',
+      decision: 'more_data',
+      completedAt: '2026-06-16T20:00:00.000Z',
+    }],
   },
 };
 

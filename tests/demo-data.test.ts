@@ -10,12 +10,14 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as ExportPayload;
 
 describe('test user fixture', () => {
   it('uses the current import schema and normalized settings', () => {
-    expect(fixture.version).toBe(4);
+    expect(fixture.version).toBe(5);
     const settings = normalizeSettings(fixture.settings);
-    expect(settings.settingsVersion).toBe(8);
+    expect(settings.settingsVersion).toBe(9);
     expect(settings.focusOutcomeCriterion).not.toBe('');
     expect(settings.focusReviewDate).toBe('2026-08-15');
-    expect(settings.experiment).toMatchObject({ targetMetricId: 'energy', targetDirection: 'increase', minimumMeaningfulChange: 0.5 });
+    expect(settings.experiment).toMatchObject({ targetMetricId: null, minimumMeaningfulChange: null });
+    expect(settings.experimentHistory).toHaveLength(1);
+    expect(settings.experimentHistory[0]).toMatchObject({ decision: 'more_data', endDate: '2026-06-16' });
     expect(settings.activeDailyBlocks).toEqual(['sleep', 'context', 'career', 'movement', 'nutrition']);
     expect(settings.activeLifeAreas).not.toContain('spiritual');
     expect(settings.customCareerOptions.some((option) => option.label === 'Адресные отклики')).toBe(false);

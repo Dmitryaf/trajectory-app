@@ -144,6 +144,10 @@ textarea { resize: vertical; min-height: 64px; }
 .sleep-field-grid { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
 .sleep-field-grid > div { flex: 0 1 185px; }
 .form-context { margin: 0 0 12px; color: #667187; font-size: 13px; line-height: 1.5; }
+.field-optional { color: #8993a5; font-size: 11px; font-weight: 650; text-transform: none; }
+.settings-history { margin-top: 12px; }
+.settings-history > summary { cursor: pointer; color: #667187; font-size: 12px; font-weight: 750; }
+.settings-history .custom-list { margin-top: 10px; }
 .field-error { margin: 8px 0 0; color: #a9483c; font-size: 12px; font-weight: 700; }
 .number-field { display: flex; align-items: center; width: 185px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: white; }
 .number-field input { border: 0; box-shadow: none; border-radius: 0; font-size: 22px; font-weight: 750; padding: 10px 4px 10px 14px; }
@@ -498,6 +502,7 @@ textarea { resize: vertical; min-height: 64px; }
 .decision-timeline__summary-item--result i { background: #2eaa7f; }
 .decision-timeline__summary-item--decision i { background: #1d5148; }
 .decision-timeline__summary-item--outcome i { background: #e7a43b; }
+.decision-timeline__summary-item--experiment i { background: #df6d53; }
 .decision-timeline__item { position: relative; display: grid; grid-template-columns: 105px 120px 1fr; gap: 14px; align-items: start; margin-left: 5px; padding: 14px 16px 14px 20px; border: 1px solid #e6ece9; border-left: 2px solid #dce7e2; border-radius: 0 14px 14px 0; background: #fff; }
 .decision-timeline__item + .decision-timeline__item { margin-top: 7px; }
 .decision-timeline__item::before { content: ""; position: absolute; left: -6px; top: 18px; width: 10px; height: 10px; border: 2px solid #fff; border-radius: 50%; background: #7f8ba1; box-shadow: 0 0 0 1px #dfe4ed; }
@@ -505,6 +510,7 @@ textarea { resize: vertical; min-height: 64px; }
 .decision-timeline__item--decision::before { background: #1d5148; }
 .decision-timeline__item--result::before { background: #2eaa7f; }
 .decision-timeline__item--outcome::before { background: #e7a43b; }
+.decision-timeline__item--experiment::before { background: #df6d53; }
 .decision-timeline__item time { color: #7b8598; font-size: 11px; font-weight: 750; }
 .decision-timeline__item > span { color: #697489; font-size: 11px; font-weight: 800; text-transform: uppercase; }
 .decision-timeline__item strong { display: block; color: #344055; font-size: 13px; }

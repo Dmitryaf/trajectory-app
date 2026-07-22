@@ -426,7 +426,7 @@ describe('settings scenarios', () => {
     expect(saveSettings).toHaveBeenLastCalledWith(expect.objectContaining({ hiddenContextFactorIds: [] }));
   });
 
-  it('requires a linked metric and saves a minimal experiment contract', async () => {
+  it('saves a free-form experiment and completes it into history', async () => {
     const { pinia, store } = createStore();
     const saveSettings = vi.spyOn(store, 'saveSettings').mockResolvedValue(undefined);
     const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
@@ -435,25 +435,32 @@ describe('settings scenarios', () => {
     await card.get('input[type="checkbox"]').setValue(true);
     await card.get('#experiment-title').setValue('Спокойный вечер');
     await card.get('.primary-button').trigger('click');
-    expect(notifyError).toHaveBeenCalledWith('Сформулируй гипотезу до начала эксперимента');
+    expect(notifyError).toHaveBeenCalledWith('Укажи даты начала и окончания эксперимента');
     expect(saveSettings).not.toHaveBeenCalled();
 
-    await card.get('#experiment-hypothesis').setValue('Энергия на следующий день станет выше');
-    await card.get('#experiment-metric').setValue('energy');
-    await card.findAll('input[type="date"]')[0]!.setValue('2026-07-22');
-    await card.findAll('input[type="date"]')[1]!.setValue('2026-07-28');
+    await card.findAll('input[type="date"]')[0]!.setValue('2026-07-15');
+    await card.findAll('input[type="date"]')[1]!.setValue('2026-07-21');
     await card.get('.primary-button').trigger('click');
     await flushPromises();
 
     expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({
       experiment: expect.objectContaining({
-        targetMetricId: 'energy',
-        targetMetric: 'Энергия за день',
-        targetDirection: 'increase',
-        minimumMeaningfulChange: 0.5,
-        startDate: '2026-07-22',
-        endDate: '2026-07-28',
+        title: 'Спокойный вечер',
+        targetMetricId: null,
+        minimumMeaningfulChange: null,
+        startDate: '2026-07-15',
+        endDate: '2026-07-21',
       }),
+    }));
+
+    await card.get('#experiment-conclusion').setValue('Вечером было спокойнее');
+    const completeButton = card.findAll('button').find((button) => button.text().includes('Завершить и добавить'));
+    await completeButton!.trigger('click');
+    await flushPromises();
+
+    expect(saveSettings).toHaveBeenLastCalledWith(expect.objectContaining({
+      experiment: expect.objectContaining({ active: false, title: '' }),
+      experimentHistory: [expect.objectContaining({ title: 'Спокойный вечер', conclusion: 'Вечером было спокойнее' })],
     }));
   });
 });

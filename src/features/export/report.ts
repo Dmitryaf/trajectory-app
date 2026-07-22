@@ -1,5 +1,6 @@
 import { buildObservations, entriesForPeriod, factorSummaries, resultsForPeriod, summarize, weekSummaryText } from '../../services/analytics';
-import { buildExperimentComparison, type ExperimentComparison } from '../analytics/experimentComparison';
+import { buildExperimentSummary, type ExperimentSummary } from '../analytics/experimentComparison';
+import { experimentDecisionLabel } from '../experiments/model';
 import { addDays, addMonths, endOfMonth, endOfWeek, formatDate, formatMinutes, startOfMonth, startOfWeek, todayKey } from '../../services/dates';
 import {
   actionDirectionOptions,
@@ -7,7 +8,6 @@ import {
   careerOptions,
   dailyFieldWasRecorded,
   dailyBlockOptions,
-  experimentMetricOptions,
   contextFactorOptions,
   lifeAreaOptions,
   lifeEventTypeOptions,
@@ -16,6 +16,8 @@ import {
   specialDayOptions,
   type AppSettings,
   type DailyEntry,
+  type ExperimentMetricId,
+  type ExperimentRecord,
   type LifeEventRecord,
   type MonthlyReview,
   type ResultRecord,
@@ -26,7 +28,7 @@ export type AiReportPeriod = 'week' | 'month' | 'range';
 
 export type AiReportPayload = {
   app: 'trajectory';
-  version: 8;
+  version: 9;
   period: AiReportPeriod;
   rangeMonths?: number;
   start: string;
@@ -36,7 +38,8 @@ export type AiReportPayload = {
   summary: ReturnType<typeof summarize>;
   observations: ReturnType<typeof buildObservations>;
   factorSummaries: ReturnType<typeof factorSummaries>;
-  experimentComparison: ExperimentComparison | null;
+  experimentSummary: ExperimentSummary | null;
+  experimentHistory: Array<{ record: ExperimentRecord; summary: ExperimentSummary | null }>;
   entries: DailyEntry[];
   results: ResultRecord[];
   lifeEvents: LifeEventRecord[];
@@ -103,7 +106,7 @@ function buildPayload(
 
   return {
     app: 'trajectory',
-    version: 8,
+    version: 9,
     period,
     start,
     end,
@@ -112,7 +115,10 @@ function buildPayload(
     summary: summarize(entries, externalCareerIds),
     observations: buildObservations(entries, factorItems),
     factorSummaries: factorSummaries(entries, factorItems),
-    experimentComparison: buildExperimentComparison(source.entries, source.settings.experiment),
+    experimentSummary: buildExperimentSummary(source.entries, source.settings.experiment),
+    experimentHistory: source.settings.experimentHistory
+      .filter((record) => record.endDate >= start && record.endDate <= dataThrough)
+      .map((record) => ({ record: { ...record }, summary: buildExperimentSummary(source.entries, record) })),
     entries,
     results: dataThrough >= start ? resultsForPeriod(source.results, start, dataThrough) : [],
     lifeEvents: source.lifeEvents.filter((event) => event.date >= start && event.date <= dataThrough).sort((a, b) => b.date.localeCompare(a.date)),
@@ -212,7 +218,7 @@ function buildReadableSections(payload: AiReportPayload): string[] {
     payload.settingsSnapshot.externalEvidenceCriterion ? `Что считается конкретным действием: ${cleanText(payload.settingsSnapshot.externalEvidenceCriterion)}.` : '',
     payload.settingsSnapshot.nutritionGoalCriterion ? `Правила питания: ${cleanText(payload.settingsSnapshot.nutritionGoalCriterion)}.` : '',
     formatExperiment(payload.settingsSnapshot.experiment),
-    formatExperimentComparison(payload.experimentComparison),
+    formatExperimentSummary(payload.experimentSummary),
   ]);
 
   appendSection(lines, 'Автоматические наблюдения приложения', payload.observations.map((item) => `${item.title}: ${item.text}`));
@@ -225,6 +231,7 @@ function buildReadableSections(payload: AiReportPayload): string[] {
     const note = cleanText(event.note);
     return `${event.date} — ${labelFor(payload.labels.eventTypes, event.type)}: ${cleanText(event.title)}${note ? `; ${note}` : ''}`;
   }));
+  appendSection(lines, 'Завершённые эксперименты', payload.experimentHistory.map(({ record, summary }) => formatCompletedExperiment(record, summary)));
   appendSection(lines, 'Сохранённые обзоры', reviewLines(payload));
 
   return lines;
@@ -327,33 +334,34 @@ function formatFactorSummary(factor: AiReportPayload['factorSummaries'][number])
 function formatExperiment(experiment: AppSettings['experiment']): string {
   if (!experiment.active && !cleanText(experiment.title)) return '';
   const values = [cleanText(experiment.title) || 'без названия'];
-  if (cleanText(experiment.hypothesis)) values.push(`гипотеза: ${cleanText(experiment.hypothesis)}`);
-  if (cleanText(experiment.targetMetric)) values.push(`показатель: ${cleanText(experiment.targetMetric)}`);
-  if (experiment.targetMetricId && experiment.minimumMeaningfulChange !== null) {
-    const metric = experimentMetricOptions.find((option) => option.id === experiment.targetMetricId);
-    values.push(`ожидается ${experiment.targetDirection === 'increase' ? 'увеличение' : 'снижение'} минимум на ${formatDecimal(experiment.minimumMeaningfulChange)}${metric ? ` ${metric.unit}` : ''}`);
-  }
+  if (cleanText(experiment.hypothesis)) values.push(`что пользователь хочет проверить: ${cleanText(experiment.hypothesis)}`);
   if (experiment.startDate || experiment.endDate) values.push(`даты: ${experiment.startDate || 'не указано'} — ${experiment.endDate || 'не указано'}`);
   if (cleanText(experiment.conclusion)) values.push(`итог: ${cleanText(experiment.conclusion)}`);
   return `Эксперимент: ${values.join('; ')}.`;
 }
 
-function formatExperimentComparison(comparison: ExperimentComparison | null): string {
-  if (!comparison) return '';
-  const baseline = formatExperimentMetricValue(comparison.baselineAverage, comparison.metricId, comparison.unit);
-  const experiment = formatExperimentMetricValue(comparison.experimentAverage, comparison.metricId, comparison.unit);
-  const status = comparison.thresholdMet === null
-    ? 'данных недостаточно: нужно хотя бы по 4 измерения в каждом периоде'
-    : comparison.thresholdMet
-      ? 'заранее заданный порог достигнут'
-      : 'заранее заданный порог не достигнут';
-  return `Сравнение эксперимента: исходный период ${comparison.baselineStart} — ${comparison.baselineEnd}: ${baseline} (${comparison.baselineSamples}); период эксперимента ${comparison.experimentStart} — ${comparison.experimentEnd}: ${experiment} (${comparison.experimentSamples}); условие выполнено в ${comparison.adherenceCompletedDays} из ${comparison.adherenceMarkedDays} отмеченных дней; ${status}. Это сравнение периодов, а не доказательство влияния условия.`;
+function formatExperimentSummary(summary: ExperimentSummary | null): string {
+  if (!summary) return '';
+  const metrics = summary.metrics.map((metric) => `${metric.label}: до ${formatExperimentMetricValue(metric.baselineAverage, metric.id)} (${metric.baselineSamples}), во время ${formatExperimentMetricValue(metric.experimentAverage, metric.id)} (${metric.experimentSamples})`);
+  return `Сводка эксперимента: условие выполнено в ${summary.adherenceCompletedDays} из ${summary.adherenceMarkedDays} отмеченных дней, не выполнено в ${summary.adherenceNotCompletedDays}, без отметки — ${summary.adherenceUnmarkedDays}; ${metrics.length ? metrics.join('; ') : 'сопоставимых числовых данных нет'}. Это фактическая сводка, а не автоматический вывод о результате или причине.`;
 }
 
-function formatExperimentMetricValue(value: number | null, metricId: ExperimentComparison['metricId'], unit: string): string {
+function formatExperimentMetricValue(value: number | null, metricId: ExperimentMetricId): string {
   if (value === null) return 'нет данных';
   if (metricId === 'sleepMinutes' || metricId === 'timeInBedMinutes') return formatMinutes(Math.round(value));
-  return `${formatDecimal(value)} ${unit}`;
+  if (metricId === 'sleepQuality' || metricId === 'energy') return `${formatDecimal(value)}/5`;
+  return `${formatDecimal(value)} кг`;
+}
+
+function formatCompletedExperiment(record: ExperimentRecord, summary: ExperimentSummary | null): string {
+  const values = [
+    `${record.startDate} — ${record.endDate}: ${cleanText(record.title)}`,
+    record.hypothesis && `проверял: ${cleanText(record.hypothesis)}`,
+    `вывод пользователя: ${cleanText(record.conclusion)}`,
+    record.decision && `решение: ${experimentDecisionLabel(record.decision).toLocaleLowerCase('ru-RU')}`,
+    formatExperimentSummary(summary),
+  ].filter(Boolean);
+  return values.join('; ');
 }
 
 function reviewLines(payload: AiReportPayload): string[] {

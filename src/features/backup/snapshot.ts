@@ -14,7 +14,7 @@ import {
 } from '../../types';
 
 export type ExportPayload = {
-  version: 1 | 2 | 3 | 4;
+  version: 1 | 2 | 3 | 4 | 5;
   exportedAt: string;
   dailyEntries: DailyEntry[];
   results: ResultRecord[];
@@ -29,7 +29,7 @@ type UnknownRecord = Record<string, unknown>;
 export function normalizeSnapshot(input: unknown): ExportPayload {
   const source = requireRecord(input, 'резервная копия');
   const version = source.version;
-  if (version !== 1 && version !== 2 && version !== 3 && version !== 4) {
+  if (version !== 1 && version !== 2 && version !== 3 && version !== 4 && version !== 5) {
     throw new Error('Неподдерживаемый формат резервной копии');
   }
 

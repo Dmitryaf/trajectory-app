@@ -15,7 +15,7 @@ describe('settings migrations', () => {
     });
 
     expect(settings.customCareerOptions).toEqual([]);
-    expect(settings.settingsVersion).toBe(8);
+    expect(settings.settingsVersion).toBe(9);
     expect(settings.activeDailyBlocks).toContain('context');
     expect(settings.customContextFactorOptions).toEqual([]);
     expect(settings.hiddenContextFactorIds).toEqual([]);

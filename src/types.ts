@@ -56,6 +56,7 @@ export type DailyRecordedFieldId =
 export const currentDailyEntrySchemaVersion = 2;
 export type ExperimentMetricId = "sleepMinutes" | "timeInBedMinutes" | "sleepQuality" | "energy" | "weightKg";
 export type ExperimentDirection = "increase" | "decrease";
+export type ExperimentDecision = "continue" | "adjust" | "stop" | "more_data";
 
 const removedDemoCareerOptionId = "custom:career:responses";
 const removedDemoContextFactorId = "custom:evening:shower";
@@ -147,6 +148,12 @@ export type Experiment = {
   startDate: string;
   endDate: string;
   conclusion: string;
+  decision: ExperimentDecision | null;
+};
+
+export type ExperimentRecord = Omit<Experiment, "active"> & {
+  id: string;
+  completedAt: string;
 };
 
 export type AppSettings = {
@@ -164,6 +171,7 @@ export type AppSettings = {
   externalEvidenceCriterion: string;
   nutritionGoalCriterion: string;
   experiment: Experiment;
+  experimentHistory: ExperimentRecord[];
 };
 
 export type Option<T extends string = string> = {
@@ -286,7 +294,7 @@ const dailyRecordedFieldIds: DailyRecordedFieldId[] = [
 
 export const defaultSettings: AppSettings = {
   id: "main",
-  settingsVersion: 8,
+  settingsVersion: 9,
   activeDailyBlocks: dailyBlockOptions.map((option) => option.id),
   activeLifeAreas: ["family", "reading", "creativity", "rest"],
   customCareerOptions: [],
@@ -309,7 +317,9 @@ export const defaultSettings: AppSettings = {
     startDate: "",
     endDate: "",
     conclusion: "",
+    decision: null,
   },
+  experimentHistory: [],
 };
 
 export const externalCareerStates: CareerState[] = ["external", "interview", "result"];
@@ -363,6 +373,7 @@ export function normalizeSettings(settings: LegacyAppSettings | null | undefined
     externalEvidenceCriterion: typeof source.externalEvidenceCriterion === "string" ? source.externalEvidenceCriterion : "",
     nutritionGoalCriterion: typeof source.nutritionGoalCriterion === "string" ? source.nutritionGoalCriterion : "",
     experiment: normalizeExperiment(source.experiment),
+    experimentHistory: normalizeExperimentHistory(source.experimentHistory),
   };
 }
 
@@ -388,7 +399,32 @@ function normalizeExperiment(value: unknown): Experiment {
     startDate: typeof source.startDate === "string" ? source.startDate : "",
     endDate: typeof source.endDate === "string" ? source.endDate : "",
     conclusion: typeof source.conclusion === "string" ? source.conclusion : "",
+    decision: isExperimentDecision(source.decision) ? source.decision : null,
   };
+}
+
+function normalizeExperimentHistory(value: unknown): ExperimentRecord[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  return value.flatMap((item, index) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+    const source = item as Partial<ExperimentRecord>;
+    const experiment = normalizeExperiment(source);
+    if (!experiment.title.trim() || !experiment.startDate || !experiment.endDate || experiment.startDate > experiment.endDate) return [];
+    const id = typeof source.id === "string" && source.id.trim() ? source.id : `legacy-experiment-${index}-${experiment.startDate}`;
+    if (seen.has(id)) return [];
+    seen.add(id);
+    const { active: _active, ...snapshot } = experiment;
+    return [{
+      ...snapshot,
+      id,
+      completedAt: typeof source.completedAt === "string" ? source.completedAt : "",
+    }];
+  });
+}
+
+function isExperimentDecision(value: unknown): value is ExperimentDecision {
+  return value === "continue" || value === "adjust" || value === "stop" || value === "more_data";
 }
 
 function isExperimentMetricId(value: unknown): value is ExperimentMetricId {

@@ -145,7 +145,7 @@ describe('analytics', () => {
       settings,
     });
 
-    expect(payload.version).toBe(8);
+    expect(payload.version).toBe(9);
     expect(payload.dataThrough).toBe('2026-07-19');
     expect(payload.labels.contextFactors).toContainEqual(expect.objectContaining({ id: 'custom:context:rain', label: 'Шум за окном' }));
     expect(payload.factorSummaries[0].label).toBe('Шум за окном');
