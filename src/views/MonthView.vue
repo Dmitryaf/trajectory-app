@@ -213,7 +213,10 @@ function shiftMonth(offset: number) {
 
 <template>
   <section class="page page--review page--month">
-    <div class="page-heading"><div><span class="eyebrow">Месячная сводка</span><h1>Месяц</h1><p>Итоги, состояние и контекст месяца без общей оценки.</p></div></div>
+    <div class="page-heading">
+      <div><span class="eyebrow">Месячная сводка</span><h1>Месяц</h1><p>Итоги, состояние и контекст месяца без общей оценки.</p></div>
+      <a class="review-jump" href="#month-review">К итогу <span aria-hidden="true">↓</span></a>
+    </div>
     <PeriodNavigator
       :title="formatDate(start, { month: 'long', year: 'numeric' })"
       :subtitle="start === startOfMonth(todayKey()) ? 'Текущий месяц' : ''"
@@ -268,7 +271,7 @@ function shiftMonth(offset: number) {
       </div>
     </article>
 
-    <article class="review-card">
+    <article id="month-review" class="review-card">
       <div class="section-heading"><div><span class="eyebrow">Сохранить вывод</span><h2>Итог месяца</h2></div><small>{{ formatDate(end, { day: 'numeric', month: 'long' }) }}</small></div>
       <label class="field-label">Что чаще всего повторялось?</label><textarea v-model="review.mainPattern" rows="2" placeholder="Повторяющееся действие, состояние или условие"></textarea>
       <label class="field-label">Что поддерживало?</label><textarea v-model="review.support" rows="2" placeholder="Условия, решения или люди, которые помогали"></textarea>

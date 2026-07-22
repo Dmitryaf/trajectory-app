@@ -162,7 +162,10 @@ function downloadJson() {
 
 <template>
   <section class="page page--review page--week">
-    <div class="page-heading"><div><span class="eyebrow">Недельная сводка</span><h1>Неделя</h1><p>Факты недели без общего балла.</p></div></div>
+    <div class="page-heading">
+      <div><span class="eyebrow">Недельная сводка</span><h1>Неделя</h1><p>Факты недели без общего балла.</p></div>
+      <a class="review-jump" href="#week-review">К обзору <span aria-hidden="true">↓</span></a>
+    </div>
     <PeriodNavigator
       :title="`${formatDate(start, { day: 'numeric', month: 'short' })} — ${formatDate(end, { day: 'numeric', month: 'short' })}`"
       :subtitle="start === startOfWeek(todayKey()) ? 'Текущая неделя' : ''"
@@ -266,7 +269,7 @@ function downloadJson() {
       </div>
     </article>
 
-    <article class="review-card">
+    <article id="week-review" class="review-card">
       <div class="section-heading">
         <div><span class="eyebrow">Обзор недели</span><h2>Короткий обзор</h2></div>
         <span class="period-pill">До {{ formatDate(end, { day: 'numeric', month: 'long', year: 'numeric' }) }}</span>

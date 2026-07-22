@@ -5,10 +5,12 @@ import { createPinia, setActivePinia } from 'pinia';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import EventsView from '../src/views/EventsView.vue';
+import MonthView from '../src/views/MonthView.vue';
 import ResultsView from '../src/views/ResultsView.vue';
 import SettingsView from '../src/views/SettingsView.vue';
 import TodayView from '../src/views/TodayView.vue';
 import TrendsView from '../src/views/TrendsView.vue';
+import WeekView from '../src/views/WeekView.vue';
 import { notifySaved, notifyUnknownError } from '../src/services/notifications';
 import { useAppStore } from '../src/stores/app';
 import { defaultSettings, emptyDailyEntry } from '../src/types';
@@ -413,5 +415,19 @@ describe('trends scenarios', () => {
     await toggle.trigger('click');
     expect(wrapper.findAll('.decision-timeline__item')).toHaveLength(10);
     expect(toggle.attributes('aria-expanded')).toBe('true');
+  });
+});
+
+describe('period review navigation', () => {
+  it('links the week and month summaries to their review forms', () => {
+    const { pinia } = createStore();
+    const global = { plugins: [pinia], stubs: { EChartPanel: true } };
+    const week = mount(WeekView, { global });
+    const month = mount(MonthView, { global });
+
+    expect(week.get('.review-jump').attributes('href')).toBe('#week-review');
+    expect(week.get('#week-review').classes()).toContain('review-card');
+    expect(month.get('.review-jump').attributes('href')).toBe('#month-review');
+    expect(month.get('#month-review').classes()).toContain('review-card');
   });
 });
