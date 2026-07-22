@@ -4,6 +4,7 @@ import { onBeforeRouteLeave } from 'vue-router';
 import ChipGroup from '../components/ChipGroup.vue';
 import DurationInput from '../components/DurationInput.vue';
 import ScalePicker from '../components/ScalePicker.vue';
+import { prepareDailyEntryForSave, snapshotDailyEntry, timeBetween, validateDailyEntryMetrics, type DailyEntryMetrics } from '../features/daily-entry/model';
 import { useAppStore } from '../stores/app';
 import { addDays, endOfMonth, endOfWeek, formatDate, formatMinutes, startOfMonth, startOfWeek, todayKey } from '../services/dates';
 import { buildObservations, entriesForPeriod, entriesForWeek, summarize } from '../services/analytics';
@@ -95,17 +96,19 @@ function blockIsActive(block: DailyBlockId) {
 }
 
 function snapshotEntry(entry: DailyEntry) {
-  const entryForSnapshot = { ...plainCopy(entry), updatedAt: '' };
-  return JSON.stringify({
-    ...entryForSnapshot,
+  return snapshotDailyEntry(entry, {
     sleepMinutes: sleepDurationMinutes.value,
     timeInBedMinutes: timeInBedDurationMinutes.value,
-    weightKg: normalizeWeight(weightKg.value)
+    weightKg: weightKg.value,
   });
 }
 
-function normalizeWeight(value: number | null) {
-  return typeof value === 'number' && Number.isFinite(value) ? Math.round(value * 10) / 10 : null;
+function currentMetrics(): DailyEntryMetrics {
+  return {
+    sleepMinutes: sleepDurationMinutes.value,
+    timeInBedMinutes: timeInBedDurationMinutes.value,
+    weightKg: weightKg.value,
+  };
 }
 
 function loadEntry(date: string) {
@@ -124,15 +127,6 @@ watch(() => [form.bedtime, form.wakeTime], ([bedtime, wakeTime]) => {
   const duration = timeBetween(String(bedtime), String(wakeTime));
   if (duration !== null) timeInBedDurationMinutes.value = duration;
 });
-
-function timeBetween(start: string, end: string): number | null {
-  if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end)) return null;
-  const [startHours, startMinutes] = start.split(':').map(Number);
-  const [endHours, endMinutes] = end.split(':').map(Number);
-  let duration = endHours * 60 + endMinutes - (startHours * 60 + startMinutes);
-  if (duration <= 0) duration += 24 * 60;
-  return duration <= 18 * 60 ? duration : null;
-}
 
 function confirmDiscardChanges(): boolean {
   return !isDirty.value || window.confirm('Есть несохранённые изменения. Отбросить их и продолжить?');
@@ -165,18 +159,16 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', handleBeforeUnl
 async function save() {
   if (saving.value) return;
   validationMessage.value = '';
-  if (blockIsActive('sleep') && sleepDurationMinutes.value !== null && timeInBedDurationMinutes.value !== null && sleepDurationMinutes.value > timeInBedDurationMinutes.value) {
-    validationMessage.value = 'Время сна не может быть больше времени в кровати.';
+  validationMessage.value = validateDailyEntryMetrics(currentMetrics(), blockIsActive('sleep'));
+  if (validationMessage.value) {
     notifyError(validationMessage.value);
     return;
   }
-  const entry = plainCopy(form);
-  entry.sleepMinutes = sleepDurationMinutes.value;
-  entry.timeInBedMinutes = timeInBedDurationMinutes.value;
-  entry.weightKg = normalizeWeight(weightKg.value);
-  if (!hasSavedEntry.value && !entry.focusTitle.trim()) entry.focusTitle = store.settings.activeFocusTitle.trim();
-  if (!hasSavedEntry.value && !entry.externalEvidenceCriterion.trim()) entry.externalEvidenceCriterion = store.settings.externalEvidenceCriterion.trim();
-  if (!hasSavedEntry.value && !entry.nutritionCriterion.trim()) entry.nutritionCriterion = store.settings.nutritionGoalCriterion.trim();
+  const entry = prepareDailyEntryForSave(form, currentMetrics(), {
+    focusTitle: store.settings.activeFocusTitle,
+    externalEvidenceCriterion: store.settings.externalEvidenceCriterion,
+    nutritionCriterion: store.settings.nutritionGoalCriterion,
+  }, !hasSavedEntry.value);
   const wasExistingEntry = hasSavedEntry.value;
   saving.value = true;
   try {
