@@ -58,8 +58,14 @@ npm run storybook
 Проверка:
 
 ```bash
-npm test
-npm run build
+npm run check
+```
+
+Первый запуск реальных браузерных сценариев требует локального Chromium Playwright:
+
+```bash
+npx playwright install chromium
+npm run test:e2e
 ```
 
 Для разработки используется Node.js 22. После `npm install` Husky подключает проверки: перед коммитом запускаются тесты и сборка, а сообщение коммита проверяется по Conventional Commits (`feat: ...`, `fix: ...`, `docs: ...`). Полные правила находятся в [docs/agent/QUALITY.md](./docs/agent/QUALITY.md).

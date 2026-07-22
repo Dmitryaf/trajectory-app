@@ -23,7 +23,7 @@ Workflow `.github/workflows/ci.yml` запускается:
 - для pull request в `develop` и `main`;
 - для push в `develop` и `main`.
 
-CI использует версию Node.js из `.nvmrc`, устанавливает точные зависимости через `npm ci` и запускает `npm run check` — тесты, production-сборку, smoke-проверку и статическую сборку Storybook.
+CI использует версию Node.js из `.nvmrc`, устанавливает точные зависимости через `npm ci` и запускает `npm run check` — тесты, production-сборку, smoke-проверку и статическую сборку Storybook. После этого CI устанавливает Chromium Playwright и выполняет отдельные браузерные сценарии через `npm run test:e2e`.
 
 ## Первичная настройка GitHub
 

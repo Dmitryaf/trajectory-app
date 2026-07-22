@@ -21,6 +21,8 @@ git diff --check
 git status --short
 ```
 
+Если менялись Clipboard/Download API, маршруты, вход или облачная сверка, дополнительно выполнить `npm run test:e2e`. Первый локальный запуск требует `npx playwright install chromium`; CI устанавливает браузер отдельно.
+
 Затем проверить diff на:
 
 - случайные файлы сборки и секреты;
