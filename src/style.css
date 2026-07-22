@@ -557,6 +557,8 @@ textarea { resize: vertical; min-height: 64px; }
 .restore-option { display: inline-flex; align-items: center; gap: 6px; padding: 8px 11px; border: 1px dashed #bdcec6; border-radius: 999px; background: #f8fbf9; color: #537066; cursor: pointer; font-size: 12px; font-weight: 750; }
 .restore-option:hover { border-color: #76b69d; background: #eef8f4; color: #1b644e; }
 .restore-option span { color: #258869; font-size: 15px; line-height: 1; }
+.hide-option-button { flex: 0 0 auto; width: 28px; height: 28px; border: 1px solid #dbe5e0; border-radius: 9px; background: #f7faf8; color: #71817a; cursor: pointer; font-size: 17px; line-height: 1; transition: border-color var(--motion-fast), background-color var(--motion-fast), color var(--motion-fast); }
+.hide-option-button:hover { border-color: #b9d3c8; background: #edf6f2; color: #286a54; }
 .data-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .cloud-sync-note {
   padding: 14px 16px;

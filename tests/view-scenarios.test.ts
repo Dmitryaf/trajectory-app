@@ -385,10 +385,11 @@ describe('settings scenarios', () => {
     const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
     const contextCard = wrapper.get('.settings-card--context');
 
-    await contextCard.get('[aria-label="Скрыть Экранное время"]').trigger('click');
+    await contextCard.get('[aria-label="Убрать Экранное время из ежедневной записи"]').trigger('click');
     await flushPromises();
     expect(saveSettings).toHaveBeenLastCalledWith(expect.objectContaining({ hiddenContextFactorIds: ['screen'] }));
-    expect(contextCard.text()).toContain('Скрытые факторы');
+    expect(contextCard.text()).toContain('Убраны из ежедневной записи');
+    expect(contextCard.text()).toContain('Прежние отметки остаются в истории, графиках и выгрузке.');
 
     const restoreButton = contextCard.findAll('.restore-option').find((button) => button.text().includes('Экранное время'));
     await restoreButton!.trigger('click');

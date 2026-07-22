@@ -136,7 +136,7 @@ async function removeContextFactor(id: ContextFactorId) {
   const option = settings.customContextFactorOptions.find((item) => item.id === id);
   if (option) option.archived = true;
   else if (!settings.hiddenContextFactorIds.includes(id)) settings.hiddenContextFactorIds.push(id);
-  await save('Фактор скрыт из ежедневной записи');
+  await save('Фактор убран из ежедневной записи');
 }
 
 async function restoreContextFactor(id: ContextFactorId) {
@@ -300,22 +300,22 @@ async function clearAll() {
       <div class="custom-list context-factor-list">
         <div v-for="option in activeContextFactorOptions" :key="option.id" class="custom-list__item">
           <span><i v-if="option.icon">{{ option.icon }}</i>{{ option.label }}</span>
-          <button class="ghost-button ghost-button--danger" type="button" :aria-label="`Скрыть ${option.label}`" @click="removeContextFactor(option.id)">×</button>
+          <button class="hide-option-button" type="button" :aria-label="`Убрать ${option.label} из ежедневной записи`" title="Убрать из ежедневной записи" @click="removeContextFactor(option.id)">−</button>
         </div>
       </div>
       <div class="custom-options">
-        <label class="field-label" for="new-context-factor">Свой фактор</label>
+        <label class="field-label" for="new-context-factor">Добавить свой фактор</label>
         <div class="inline-add">
-          <input id="new-context-factor" v-model="newContextFactorLabel" type="text" maxlength="40" placeholder="Например: шум за окном" @keyup.enter="addContextFactor" />
+          <input id="new-context-factor" v-model="newContextFactorLabel" type="text" maxlength="40" placeholder="Например: долгая дорога" @keyup.enter="addContextFactor" />
           <button class="secondary-button" type="button" :disabled="!newContextFactorLabel.trim()" @click="addContextFactor">Добавить</button>
         </div>
         <div v-if="hiddenContextFactorOptions.length" class="hidden-options">
-          <span class="field-label">Скрытые факторы</span>
+          <span class="field-label">Убраны из ежедневной записи</span>
           <div class="hidden-options__list">
-            <button v-for="option in hiddenContextFactorOptions" :key="option.id" class="restore-option" type="button" @click="restoreContextFactor(option.id)"><span>+</span>{{ option.label }}</button>
+            <button v-for="option in hiddenContextFactorOptions" :key="option.id" class="restore-option" type="button" :aria-label="`Вернуть ${option.label} в ежедневную запись`" @click="restoreContextFactor(option.id)"><span>+</span>{{ option.label }}</button>
           </div>
         </div>
-        <p class="data-note">Скрытый фактор исчезает из новых записей, но остаётся подписанным в истории.</p>
+        <p class="data-note">Минус убирает вариант из ежедневной записи. Прежние отметки остаются в истории, графиках и выгрузке.</p>
       </div>
     </article>
 
