@@ -142,7 +142,7 @@ function setLifeAreas(value: string | string[] | null) {
     </section>
 
     <form class="checkin-grid" @submit.prevent="save">
-      <article v-if="blockIsActive('sleep')" class="form-card form-card--sleep">
+      <article v-if="blockIsActive('sleep')" class="form-card form-card--sleep form-card--wide">
         <div class="form-card__heading">
           <span class="section-icon section-icon--purple">◒</span>
           <div><h2>Сон и состояние</h2><p>Ночь перед выбранной датой и состояние следующего дня.</p></div>
@@ -172,7 +172,7 @@ function setLifeAreas(value: string | string[] | null) {
         <p v-if="validationMessage" class="field-error" role="alert">{{ validationMessage }}</p>
       </article>
 
-      <article v-if="blockIsActive('context')" class="form-card form-card--context">
+      <article v-if="blockIsActive('context')" class="form-card form-card--context form-card--wide">
         <div class="form-card__heading">
           <span class="section-icon section-icon--orange">⌁</span>
           <div><h2>Контекст дня</h2><p>Отметь условия, которые могли быть связаны с самочувствием или ходом дня.</p></div>
@@ -209,7 +209,7 @@ function setLifeAreas(value: string | string[] | null) {
         <ChipGroup v-model="form.careerStates as CareerState[]" :options="careerItems" multiple />
       </article>
 
-      <article class="form-card form-card--direction">
+      <article class="form-card form-card--direction form-card--wide">
         <div class="form-card__heading">
           <span class="section-icon section-icon--blue">⌁</span>
           <div><h2>Действия по текущей цели</h2><p>{{ form.focusTitle || store.settings.activeFocusTitle ? `Текущая цель: ${form.focusTitle || store.settings.activeFocusTitle}` : 'Выбери, что лучше всего описывает этот день относительно твоей цели.' }}</p></div>

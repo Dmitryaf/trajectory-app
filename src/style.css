@@ -615,6 +615,8 @@ textarea { resize: vertical; min-height: 64px; }
   .bottom-nav__item { min-width: 60px; padding: 8px 6px; }
   .bottom-nav__item small { font-size: 9px; }
   .app-main { padding-bottom: 54px; }
+  .checkin-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: row dense; align-items: start; gap: 16px; }
+  .checkin-grid > .form-card--wide, .checkin-grid > .primary-button--save { grid-column: 1 / -1; }
 }
 
 @media (max-width: 720px) {
