@@ -11,7 +11,7 @@ import { buildWeightSeries } from '../features/analytics/weightSeries';
 import { useAppStore } from '../stores/app';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { plainCopy } from '../services/plain';
-import { emptyMonthlyReview, eveningFactorOptions, lifeAreaOptions, type MonthlyReview } from '../types';
+import { contextFactorOptions, emptyMonthlyReview, lifeAreaOptions, type MonthlyReview } from '../types';
 
 const store = useAppStore();
 const anchor = ref(todayKey());
@@ -20,14 +20,14 @@ const end = computed(() => endOfMonth(anchor.value));
 const entries = computed(() => entriesForMonth(store.dailyEntries, anchor.value));
 const externalCareerIds = computed(() => ['external', 'interview', 'result', ...store.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id)]);
 const summary = computed(() => summarize(entries.value, externalCareerIds.value));
-const eveningFactorItems = computed(() => [...eveningFactorOptions, ...store.settings.customEveningFactorOptions]);
-const observations = computed(() => buildObservations(entries.value, eveningFactorItems.value));
-const factors = computed(() => factorSummaries(entries.value, eveningFactorItems.value));
+const contextFactorItems = computed(() => [...contextFactorOptions, ...store.settings.customContextFactorOptions]);
+const observations = computed(() => buildObservations(entries.value, contextFactorItems.value));
+const factors = computed(() => factorSummaries(entries.value, contextFactorItems.value));
 const results = computed(() => resultsForPeriod(store.results, start.value, end.value));
 const showAllResults = ref(false);
 const displayedResults = computed(() => showAllResults.value ? results.value : results.value.slice(0, 5));
 const lifeEvents = computed(() => store.lifeEvents.filter((event) => event.date >= start.value && event.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)));
-const reviewCues = computed(() => buildReviewCues('month', entries.value, results.value, lifeEvents.value, externalCareerIds.value, eveningFactorItems.value));
+const reviewCues = computed(() => buildReviewCues('month', entries.value, results.value, lifeEvents.value, externalCareerIds.value, contextFactorItems.value));
 const reviewQuestions = buildReviewQuestions('month');
 const monthDates = computed(() => dateRange(start.value, end.value));
 const chartDates = computed(() => monthDates.value.filter((date) => date <= todayKey()));
@@ -80,7 +80,7 @@ const weightOption = computed<EChartsCoreOption>(() => {
     ]
   };
 });
-const stateNotes = computed(() => entries.value.filter((entry) => entry.stateContext.trim()).sort((a, b) => b.date.localeCompare(a.date)));
+const contextNotes = computed(() => entries.value.filter((entry) => entry.contextNote.trim()).sort((a, b) => b.date.localeCompare(a.date)));
 const actionNotes = computed(() => entries.value.filter((entry) => entry.actionDirection !== null).sort((a, b) => b.date.localeCompare(a.date)));
 const specialDays = computed(() => entries.value.filter((entry) => entry.specialDay !== null).sort((a, b) => b.date.localeCompare(a.date)));
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
@@ -320,7 +320,7 @@ function shiftMonth(offset: number) {
     </article>
 
     <article v-if="factors.length" class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Факторы состояния</span><h2>Что повторялось перед сном</h2></div><span class="count-badge">{{ factors.length }}</span></div>
+      <div class="section-heading"><div><span class="eyebrow">Факторы состояния</span><h2>Что повторялось в течение дня</h2></div><span class="count-badge">{{ factors.length }}</span></div>
       <div class="factor-summary-head">
         <span>фактор</span><span>дни</span><span>сон: с / без</span><span>энергия: с / без</span>
       </div>
@@ -374,12 +374,12 @@ function shiftMonth(offset: number) {
       </div>
     </article>
 
-    <article v-if="stateNotes.length" class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Контекст состояния</span><h2>Сон и энергия</h2></div><span class="count-badge">{{ stateNotes.length }}</span></div>
+    <article v-if="contextNotes.length" class="dashboard-card">
+      <div class="section-heading"><div><span class="eyebrow">Контекст дня</span><h2>Заметки за месяц</h2></div><span class="count-badge">{{ contextNotes.length }}</span></div>
       <div class="note-list note-list--columns">
-        <article v-for="entry in stateNotes" :key="entry.date" class="note-item">
+        <article v-for="entry in contextNotes" :key="entry.date" class="note-item">
           <time>{{ formatDate(entry.date, { day: 'numeric', month: 'short' }) }}</time>
-          <p>{{ entry.stateContext }}</p>
+          <p>{{ entry.contextNote }}</p>
         </article>
       </div>
     </article>

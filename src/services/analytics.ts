@@ -1,5 +1,5 @@
-import type { DailyEntry, EveningFactorId, LifeAreaId, LifeEventRecord, Option, ResultRecord } from '../types';
-import { actionDirectionOptions, activityOptions, careerOptions, eveningFactorOptions, externalCareerStates, lifeAreaOptions, specialDayOptions } from '../types';
+import type { ContextFactorId, DailyEntry, LifeAreaId, LifeEventRecord, Option, ResultRecord } from '../types';
+import { actionDirectionOptions, activityOptions, careerOptions, contextFactorOptions, externalCareerStates, lifeAreaOptions, specialDayOptions } from '../types';
 import { buildCoverageSeries, dataCoverageLevel, type DataCoverageLevel } from '../features/analytics/coverage';
 import { careerStatesForEntry, entriesForPeriod, hasMovement, resultsForPeriod, summarize, type PeriodSummary } from '../features/analytics/periodSummary';
 import { addDays, dateRange, endOfMonth, endOfWeek, formatMinutes, startOfMonth, startOfWeek, todayKey } from './dates';
@@ -14,7 +14,7 @@ export type Observation = {
 };
 
 export type FactorSummary = {
-  id: EveningFactorId;
+  id: ContextFactorId;
   label: string;
   icon?: string;
   count: number;
@@ -143,7 +143,7 @@ export function hasArea(entry: DailyEntry | undefined, area: string): boolean {
   return entry.lifeAreas.includes(area as LifeAreaId);
 }
 
-export function buildObservations(entries: DailyEntry[], factorOptions: Option<EveningFactorId>[] = eveningFactorOptions): Observation[] {
+export function buildObservations(entries: DailyEntry[], factorOptions: Option<ContextFactorId>[] = contextFactorOptions): Observation[] {
   const observations: Observation[] = [];
   const ordinaryEntries = entries.filter((entry) => entry.specialDay === null);
   const energyEntries = ordinaryEntries.filter((entry) => entry.energy !== null);
@@ -188,7 +188,7 @@ export function buildObservations(entries: DailyEntry[], factorOptions: Option<E
   if (leadingFactor && leadingFactor.count >= 2) {
     const details = factorComparisonText(leadingFactor);
     observations.push({
-      id: 'evening-factor',
+      id: 'context-factor',
       title: 'Повторяющийся фактор',
       text: `${leadingFactor.label} отмечался ${leadingFactor.count} ${plural(leadingFactor.count, 'раз', 'раза', 'раз')}.${details ? ` ${details}` : ' Для сравнения пока мало обычных дней.'}`,
     });
@@ -197,12 +197,12 @@ export function buildObservations(entries: DailyEntry[], factorOptions: Option<E
   return observations;
 }
 
-export function factorSummaries(entries: DailyEntry[], factorOptions: Option<EveningFactorId>[] = eveningFactorOptions): FactorSummary[] {
+export function factorSummaries(entries: DailyEntry[], factorOptions: Option<ContextFactorId>[] = contextFactorOptions): FactorSummary[] {
   const ordinaryEntries = entries.filter((entry) => entry.specialDay === null);
   return factorOptions
     .map((option) => {
-      const matching = ordinaryEntries.filter((entry) => entry.eveningFactors.includes(option.id));
-      const other = ordinaryEntries.filter((entry) => entry.eveningFactorsRecorded && !entry.eveningFactors.includes(option.id));
+      const matching = ordinaryEntries.filter((entry) => entry.contextFactors.includes(option.id));
+      const other = ordinaryEntries.filter((entry) => entry.contextFactorsRecorded && !entry.contextFactors.includes(option.id));
       return {
         id: option.id,
         label: option.label,
@@ -222,7 +222,7 @@ export function factorSummaries(entries: DailyEntry[], factorOptions: Option<Eve
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 }
 
-export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[], results: ResultRecord[], lifeEvents: LifeEventRecord[], externalCareerIds: string[] = externalCareerStates, factorOptions: Option<EveningFactorId>[] = eveningFactorOptions): ReviewCue[] {
+export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[], results: ResultRecord[], lifeEvents: LifeEventRecord[], externalCareerIds: string[] = externalCareerStates, factorOptions: Option<ContextFactorId>[] = contextFactorOptions): ReviewCue[] {
   const summary = summarize(entries, externalCareerIds);
   const factors = factorSummaries(entries, factorOptions);
   const cues: ReviewCue[] = [];
@@ -353,7 +353,7 @@ export function buildReviewCues(period: 'week' | 'month', entries: DailyEntry[],
   return limitCues(cues, ['coverage', 'results', 'context']);
 }
 
-export function buildRangeReviewCues(rangeMonths: number, entries: DailyEntry[], results: ResultRecord[], lifeEvents: LifeEventRecord[], externalCareerIds: string[] = externalCareerStates, factorOptions: Option<EveningFactorId>[] = eveningFactorOptions): ReviewCue[] {
+export function buildRangeReviewCues(rangeMonths: number, entries: DailyEntry[], results: ResultRecord[], lifeEvents: LifeEventRecord[], externalCareerIds: string[] = externalCareerStates, factorOptions: Option<ContextFactorId>[] = contextFactorOptions): ReviewCue[] {
   const summary = summarize(entries, externalCareerIds);
   const cues: ReviewCue[] = [];
   const coveredEntries = entries.filter((entry) => dataCoverageLevel(entry) > 0);
@@ -374,7 +374,7 @@ export function buildRangeReviewCues(rangeMonths: number, entries: DailyEntry[],
     const comparison = factorComparisonText(factor);
     cues.push({
       id: 'factor',
-      title: 'Устойчивый вечерний фактор',
+      title: 'Устойчивый фактор дня',
       text: `${factor.label} отмечался ${factor.count} ${plural(factor.count, 'раз', 'раза', 'раз')}.${comparison ? ` ${comparison}` : ' Сравнительных данных пока мало.'}`,
       tone: 'neutral',
     });
@@ -496,7 +496,7 @@ export function specialDayLabel(value: string | null): string {
   return specialDayOptions.find((option) => option.id === value)?.label ?? 'Особый день';
 }
 
-export function eveningFactorLabel(value: string, factorOptions: Option<EveningFactorId>[] = eveningFactorOptions): string {
+export function contextFactorLabel(value: string, factorOptions: Option<ContextFactorId>[] = contextFactorOptions): string {
   if (value === 'porn') return 'Другое';
   return factorOptions.find((option) => option.id === value)?.label ?? value;
 }

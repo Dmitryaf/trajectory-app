@@ -10,7 +10,7 @@ export type NutritionState = "supports_goal" | "neutral" | "blocks_goal";
 export type ActionDirectionId = "external" | "preparation" | "maintenance" | "recovery" | "drift";
 export type SpecialDayId = "sick" | "travel" | "overload" | "event" | "recovery" | "other";
 export type LifeEventType = "change" | "milestone" | "decision" | "event" | "insight" | "other";
-export type BaseEveningFactorId =
+export type BaseContextFactorId =
   | "late_bedtime"
   | "screen"
   | "news"
@@ -21,7 +21,7 @@ export type BaseEveningFactorId =
   | "caffeine_alcohol"
   | "anxiety_overload"
   | "other";
-export type EveningFactorId = BaseEveningFactorId | string;
+export type ContextFactorId = BaseContextFactorId | string;
 export type BaseLifeAreaId =
   | "family"
   | "reading"
@@ -31,10 +31,10 @@ export type BaseLifeAreaId =
   | "friends"
   | "english";
 export type LifeAreaId = BaseLifeAreaId | string;
-export type DailyBlockId = "sleep" | "career" | "movement" | "nutrition";
+export type DailyBlockId = "sleep" | "context" | "career" | "movement" | "nutrition";
 
 const removedDemoCareerOptionId = "custom:career:responses";
-const removedDemoEveningFactorId = "custom:evening:shower";
+const removedDemoContextFactorId = "custom:evening:shower";
 
 export type DailyEntry = {
   date: string;
@@ -44,10 +44,9 @@ export type DailyEntry = {
   timeInBedMinutes: number | null;
   sleepQuality: number | null;
   energy: number | null;
-  stateContext: string;
-  eveningFactors: EveningFactorId[];
-  eveningFactorsRecorded: boolean;
-  eveningFactorNote: string;
+  contextFactors: ContextFactorId[];
+  contextFactorsRecorded: boolean;
+  contextNote: string;
   specialDay: SpecialDayId | null;
   specialDayNote: string;
   careerState: CareerState | null;
@@ -125,7 +124,7 @@ export type AppSettings = {
   activeLifeAreas: LifeAreaId[];
   customCareerOptions: Option<CareerState>[];
   customLifeAreaOptions: Option<LifeAreaId>[];
-  customEveningFactorOptions: Option<EveningFactorId>[];
+  customContextFactorOptions: Option<ContextFactorId>[];
   activeFocusTitle: string;
   externalEvidenceCriterion: string;
   nutritionGoalCriterion: string;
@@ -188,7 +187,7 @@ export const lifeEventTypeOptions: Option<LifeEventType>[] = [
   { id: "other", label: "Другое", icon: "·" },
 ];
 
-export const eveningFactorOptions: Option<BaseEveningFactorId>[] = [
+export const contextFactorOptions: Option<BaseContextFactorId>[] = [
   { id: "late_bedtime", label: "Поздно лёг", icon: "◷" },
   { id: "screen", label: "Экран перед сном", icon: "▣" },
   { id: "news", label: "Новости", icon: "!" },
@@ -221,6 +220,7 @@ export const resultAreaOptions: Option<ResultRecord["area"]>[] = [
 
 export const dailyBlockOptions: Option<DailyBlockId>[] = [
   { id: "sleep", label: "Сон и состояние", icon: "◒" },
+  { id: "context", label: "Контекст дня", icon: "⌁" },
   { id: "career", label: "Карьера", icon: "↗" },
   { id: "movement", label: "Физическая активность", icon: "△" },
   { id: "nutrition", label: "Питание и вес", icon: "◐" },
@@ -228,12 +228,12 @@ export const dailyBlockOptions: Option<DailyBlockId>[] = [
 
 export const defaultSettings: AppSettings = {
   id: "main",
-  settingsVersion: 4,
+  settingsVersion: 5,
   activeDailyBlocks: dailyBlockOptions.map((option) => option.id),
   activeLifeAreas: ["family", "reading", "creativity", "rest"],
   customCareerOptions: [],
   customLifeAreaOptions: [],
-  customEveningFactorOptions: [],
+  customContextFactorOptions: [],
   activeFocusTitle: "",
   externalEvidenceCriterion: "",
   nutritionGoalCriterion: "",
@@ -242,31 +242,37 @@ export const defaultSettings: AppSettings = {
 
 export const externalCareerStates: CareerState[] = ["external", "interview", "result"];
 
-export function normalizeSettings(settings: Partial<AppSettings> | null | undefined): AppSettings {
+type LegacyAppSettings = Partial<AppSettings> & {
+  customEveningFactorOptions?: unknown;
+};
+
+export function normalizeSettings(settings: LegacyAppSettings | null | undefined): AppSettings {
   const source = settings ?? {};
   const customCareerOptions = sanitizeOptions(source.customCareerOptions)
     .filter((option) => option.id !== removedDemoCareerOptionId);
   const customLifeAreaOptions = sanitizeOptions(source.customLifeAreaOptions);
-  const customEveningFactorOptions = sanitizeOptions(source.customEveningFactorOptions)
-    .filter((option) => option.id !== removedDemoEveningFactorId);
+  const customContextFactorOptions = sanitizeOptions(source.customContextFactorOptions ?? source.customEveningFactorOptions)
+    .filter((option) => option.id !== removedDemoContextFactorId);
 
   const activeLifeAreas = Array.isArray(source.activeLifeAreas)
     ? source.activeLifeAreas.filter((area): area is LifeAreaId => typeof area === "string")
     : defaultSettings.activeLifeAreas;
-  const activeDailyBlocks = Array.isArray(source.activeDailyBlocks)
+  const parsedDailyBlocks = Array.isArray(source.activeDailyBlocks)
     ? source.activeDailyBlocks.filter((block): block is DailyBlockId => dailyBlockOptions.some((option) => option.id === block))
     : defaultSettings.activeDailyBlocks;
+  const activeDailyBlocks = (source.settingsVersion ?? 1) < 5 && !parsedDailyBlocks.includes("context")
+    ? [...parsedDailyBlocks, "context" as const]
+    : parsedDailyBlocks;
 
   return {
     ...structuredClone(defaultSettings),
-    ...source,
     id: "main",
     settingsVersion: defaultSettings.settingsVersion,
     activeDailyBlocks,
     activeLifeAreas: (source.settingsVersion ?? 1) < 2 ? activeLifeAreas.filter((area) => area !== "spiritual") : activeLifeAreas,
     customCareerOptions,
     customLifeAreaOptions,
-    customEveningFactorOptions,
+    customContextFactorOptions,
     activeFocusTitle: typeof source.activeFocusTitle === "string" ? source.activeFocusTitle : "",
     externalEvidenceCriterion: typeof source.externalEvidenceCriterion === "string" ? source.externalEvidenceCriterion : "",
     nutritionGoalCriterion: typeof source.nutritionGoalCriterion === "string" ? source.nutritionGoalCriterion : "",
@@ -287,7 +293,7 @@ function normalizeExperiment(value: unknown): Experiment {
   };
 }
 
-export function createCustomOption(label: string, prefix: "career" | "life" | "evening"): Option<string> {
+export function createCustomOption(label: string, prefix: "career" | "life" | "context"): Option<string> {
   const suffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   return { id: `custom:${prefix}:${suffix}`, label: label.trim(), icon: "+", custom: true };
 }
@@ -340,10 +346,9 @@ export function emptyDailyEntry(date: string): DailyEntry {
     timeInBedMinutes: null,
     sleepQuality: null,
     energy: null,
-    stateContext: "",
-    eveningFactors: [],
-    eveningFactorsRecorded: false,
-    eveningFactorNote: "",
+    contextFactors: [],
+    contextFactorsRecorded: false,
+    contextNote: "",
     specialDay: null,
     specialDayNote: "",
     careerState: null,
@@ -366,7 +371,14 @@ export function emptyDailyEntry(date: string): DailyEntry {
   };
 }
 
-export function normalizeDailyEntry(entry: Partial<DailyEntry> & { date: string }): DailyEntry {
+type LegacyDailyEntry = Partial<DailyEntry> & {
+  stateContext?: unknown;
+  eveningFactors?: unknown;
+  eveningFactorsRecorded?: unknown;
+  eveningFactorNote?: unknown;
+};
+
+export function normalizeDailyEntry(entry: LegacyDailyEntry & { date: string }): DailyEntry {
   const sourceCareerStates = Array.isArray(entry.careerStates)
     ? Array.from(new Set(entry.careerStates.filter((state): state is CareerState => typeof state === "string")))
     : typeof entry.careerState === "string" ? [entry.careerState] : [];
@@ -376,10 +388,19 @@ export function normalizeDailyEntry(entry: Partial<DailyEntry> & { date: string 
   const activities = Array.isArray(entry.activities)
     ? entry.activities.filter((activity): activity is ActivityId => activityOptions.some((option) => option.id === activity))
     : [];
+  const sourceContextFactors = Array.isArray(entry.contextFactors)
+    ? entry.contextFactors
+    : Array.isArray(entry.eveningFactors) ? entry.eveningFactors : [];
+  const contextFactors = sourceContextFactors
+    .filter((factor): factor is ContextFactorId => typeof factor === "string" && factor !== removedDemoContextFactorId);
+  const contextNote = typeof entry.contextNote === "string"
+    ? entry.contextNote
+    : [entry.stateContext, entry.eveningFactorNote]
+        .filter((note): note is string => typeof note === "string" && note.trim().length > 0)
+        .join("\n");
 
   return {
     ...emptyDailyEntry(entry.date),
-    ...entry,
     bedtime: validTime(entry.bedtime),
     wakeTime: validTime(entry.wakeTime),
     sleepMinutes: nullableNumber(entry.sleepMinutes, 0, 24 * 60, true),
@@ -400,12 +421,11 @@ export function normalizeDailyEntry(entry: Partial<DailyEntry> & { date: string 
     externalEvidenceCriterion: typeof entry.externalEvidenceCriterion === "string" ? entry.externalEvidenceCriterion : "",
     lifeAreas: Array.isArray(entry.lifeAreas) ? entry.lifeAreas.filter((area): area is LifeAreaId => typeof area === "string") : [],
     lifeAreasRecorded: typeof entry.lifeAreasRecorded === "boolean" ? entry.lifeAreasRecorded : Array.isArray(entry.lifeAreas) && entry.lifeAreas.length > 0,
-    stateContext: typeof entry.stateContext === "string" ? entry.stateContext : "",
-    eveningFactors: Array.isArray(entry.eveningFactors)
-      ? entry.eveningFactors.filter((factor): factor is EveningFactorId => typeof factor === "string" && factor !== removedDemoEveningFactorId)
-      : [],
-    eveningFactorsRecorded: typeof entry.eveningFactorsRecorded === "boolean" ? entry.eveningFactorsRecorded : Array.isArray(entry.eveningFactors) && entry.eveningFactors.length > 0,
-    eveningFactorNote: typeof entry.eveningFactorNote === "string" ? entry.eveningFactorNote : "",
+    contextFactors,
+    contextFactorsRecorded: typeof entry.contextFactorsRecorded === "boolean"
+      ? entry.contextFactorsRecorded
+      : typeof entry.eveningFactorsRecorded === "boolean" ? entry.eveningFactorsRecorded : sourceContextFactors.length > 0,
+    contextNote,
     specialDay: typeof entry.specialDay === "string" && specialDayOptions.some((option) => option.id === entry.specialDay) ? entry.specialDay : null,
     specialDayNote: typeof entry.specialDayNote === "string" ? entry.specialDayNote : "",
     importantFact: typeof entry.importantFact === "string" ? entry.importantFact : "",

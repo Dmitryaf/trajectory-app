@@ -126,6 +126,19 @@ describe('daily entry scenario', () => {
       importantFact: 'Обновил только общий факт'
     }));
   });
+
+  it('shows context independently when the sleep block is hidden', () => {
+    const { pinia, store } = createStore();
+    store.settings.activeDailyBlocks = ['context'];
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } }
+    });
+
+    const headings = wrapper.findAll('.form-card h2').map((heading) => heading.text());
+    expect(headings).toContain('Контекст дня');
+    expect(headings).not.toContain('Сон и состояние');
+    expect(wrapper.text()).toContain('Необычный день');
+  });
 });
 
 describe('journal scenarios', () => {
@@ -249,7 +262,7 @@ describe('settings scenarios', () => {
     await flushPromises();
 
     expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({
-      activeDailyBlocks: ['sleep', 'movement', 'nutrition']
+      activeDailyBlocks: ['sleep', 'context', 'movement', 'nutrition']
     }));
   });
 });

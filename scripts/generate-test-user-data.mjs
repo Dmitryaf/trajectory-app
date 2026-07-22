@@ -74,10 +74,11 @@ const dailyEntries = trackedDates.map((date, index) => {
     timeInBedMinutes: sleepMinutes + 25,
     sleepQuality: special ? 2 : late ? 3 : 4 + (index % 2),
     energy: special?.[0] === 'overload' ? 2 : late ? 3 : 4 + (index % 2),
-    stateContext: special ? special[1] : index % 6 === 0 ? 'День с большим количеством встреч' : '',
-    eveningFactors: factors,
-    eveningFactorsRecorded: true,
-    eveningFactorNote: factors.includes('anxiety_overload') ? 'Вечером было сложно переключиться после насыщенного дня' : '',
+    contextFactors: factors,
+    contextFactorsRecorded: true,
+    contextNote: factors.includes('anxiety_overload')
+      ? 'Было сложно переключиться после насыщенного дня'
+      : !special && index % 6 === 0 ? 'День с большим количеством встреч' : '',
     specialDay: special?.[0] ?? null,
     specialDayNote: special?.[1] ?? '',
     careerState: careerStates[0],
@@ -189,8 +190,8 @@ const payload = {
   monthlyReviews,
   settings: {
     id: 'main',
-    settingsVersion: 4,
-    activeDailyBlocks: ['sleep', 'career', 'movement', 'nutrition'],
+    settingsVersion: 5,
+    activeDailyBlocks: ['sleep', 'context', 'career', 'movement', 'nutrition'],
     activeLifeAreas: ['family', 'reading', 'creativity', 'rest', 'friends', 'english', 'custom:life:personal-projects'],
     customCareerOptions: [
       { id: 'custom:career:course', label: 'Учебный курс', icon: '+', custom: true, countsAsExternal: false, archived: true },
@@ -198,8 +199,8 @@ const payload = {
     customLifeAreaOptions: [
       { id: 'custom:life:personal-projects', label: 'Личные проекты', icon: '+', custom: true, archived: false },
     ],
-    customEveningFactorOptions: [
-      { id: 'custom:evening:music', label: 'Музыка перед сном', icon: '+', custom: true, archived: true },
+    customContextFactorOptions: [
+      { id: 'custom:context:noise', label: 'Шум за окном', icon: '+', custom: true, archived: true },
     ],
     activeFocusTitle: 'Найти устойчивый ритм поиска работы и личного проекта',
     externalEvidenceCriterion: 'Отправленный отклик, назначенный разговор или опубликованный результат',

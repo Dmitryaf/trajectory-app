@@ -8,7 +8,7 @@ import { addMonths, dateRange, endOfMonth, endOfWeek, formatDate, formatMinutes,
 import { buildRangePackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../features/export/browser';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { useAppStore } from '../stores/app';
-import { eveningFactorOptions } from '../types';
+import { contextFactorOptions } from '../types';
 
 type RangeMonths = 3 | 6 | 12;
 
@@ -26,12 +26,12 @@ const externalCareerIds = computed(() => ['external', 'interview', 'result', ...
 const end = computed(() => todayKey());
 const start = computed(() => startOfMonth(addMonths(todayKey(), -(range.value - 1))));
 const entries = computed(() => entriesForPeriod(store.dailyEntries, start.value, end.value));
-const eveningFactorItems = computed(() => [...eveningFactorOptions, ...store.settings.customEveningFactorOptions]);
+const contextFactorItems = computed(() => [...contextFactorOptions, ...store.settings.customContextFactorOptions]);
 const results = computed(() => resultsForPeriod(store.results, start.value, end.value));
 const lifeEvents = computed(() => store.lifeEvents.filter((event) => event.date >= start.value && event.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)));
 const summary = computed(() => summarize(entries.value, externalCareerIds.value));
-const factors = computed(() => factorSummaries(entries.value, eveningFactorItems.value).slice(0, 5));
-const cues = computed(() => buildRangeReviewCues(range.value, entries.value, results.value, lifeEvents.value, externalCareerIds.value, eveningFactorItems.value));
+const factors = computed(() => factorSummaries(entries.value, contextFactorItems.value).slice(0, 5));
+const cues = computed(() => buildRangeReviewCues(range.value, entries.value, results.value, lifeEvents.value, externalCareerIds.value, contextFactorItems.value));
 
 function eventKey(event: (typeof store.lifeEvents)[number]): string {
   return `${event.date}|${event.createdAt}`;
@@ -430,7 +430,7 @@ function downloadJson() {
     </article>
 
     <article v-if="factors.length" class="dashboard-card dashboard-card--factors">
-      <div class="section-heading"><div><span class="eyebrow">Повторяемость</span><h2>Главные вечерние факторы</h2></div></div>
+      <div class="section-heading"><div><span class="eyebrow">Повторяемость</span><h2>Главные факторы дня</h2></div></div>
       <div class="factor-summary-list">
         <article v-for="factor in factors" :key="factor.id" class="factor-summary-item">
           <span class="factor-summary-item__name"><i>{{ factor.icon }}</i>{{ factor.label }}</span>

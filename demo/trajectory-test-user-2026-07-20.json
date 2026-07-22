@@ -10,10 +10,9 @@
       "timeInBedMinutes": 465,
       "sleepQuality": 4,
       "energy": 4,
-      "stateContext": "День с большим количеством встреч",
-      "eveningFactors": [],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactors": [],
+      "contextFactorsRecorded": true,
+      "contextNote": "День с большим количеством встреч",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -50,12 +49,11 @@
       "timeInBedMinutes": 475,
       "sleepQuality": 5,
       "energy": 5,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "screen"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -91,13 +89,12 @@
       "timeInBedMinutes": 415,
       "sleepQuality": 3,
       "energy": 3,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "work_code",
         "late_bedtime"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -131,12 +128,11 @@
       "timeInBedMinutes": 495,
       "sleepQuality": 5,
       "energy": 5,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "anxiety_overload"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "Вечером было сложно переключиться после насыщенного дня",
+      "contextFactorsRecorded": true,
+      "contextNote": "Было сложно переключиться после насыщенного дня",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "project",
@@ -172,13 +168,12 @@
       "timeInBedMinutes": 465,
       "sleepQuality": 4,
       "energy": 4,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "late_food",
         "screen"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -215,10 +210,9 @@
       "timeInBedMinutes": 475,
       "sleepQuality": 5,
       "energy": 5,
-      "stateContext": "",
-      "eveningFactors": [],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactors": [],
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "project",
@@ -255,12 +249,11 @@
       "timeInBedMinutes": 485,
       "sleepQuality": 4,
       "energy": 4,
-      "stateContext": "День с большим количеством встреч",
-      "eveningFactors": [
+      "contextFactors": [
         "screen"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "День с большим количеством встреч",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "project",
@@ -296,13 +289,12 @@
       "timeInBedMinutes": 415,
       "sleepQuality": 3,
       "energy": 3,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "work_code",
         "late_bedtime"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -336,12 +328,11 @@
       "timeInBedMinutes": 465,
       "sleepQuality": 4,
       "energy": 4,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "anxiety_overload"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "Вечером было сложно переключиться после насыщенного дня",
+      "contextFactorsRecorded": true,
+      "contextNote": "Было сложно переключиться после насыщенного дня",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -378,13 +369,12 @@
       "timeInBedMinutes": 475,
       "sleepQuality": 2,
       "energy": 2,
-      "stateContext": "Срочная задача заняла большую часть дня",
-      "eveningFactors": [
+      "contextFactors": [
         "late_food",
         "screen"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": "overload",
       "specialDayNote": "Срочная задача заняла большую часть дня",
       "careerState": "project",
@@ -420,10 +410,9 @@
       "timeInBedMinutes": 485,
       "sleepQuality": 4,
       "energy": 4,
-      "stateContext": "",
-      "eveningFactors": [],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactors": [],
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "project",
@@ -460,12 +449,11 @@
       "timeInBedMinutes": 495,
       "sleepQuality": 5,
       "energy": 5,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "screen"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -501,13 +489,12 @@
       "timeInBedMinutes": 415,
       "sleepQuality": 3,
       "energy": 3,
-      "stateContext": "День с большим количеством встреч",
-      "eveningFactors": [
+      "contextFactors": [
         "work_code",
         "late_bedtime"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "День с большим количеством встреч",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -542,12 +529,11 @@
       "timeInBedMinutes": 475,
       "sleepQuality": 5,
       "energy": 5,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "anxiety_overload"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "Вечером было сложно переключиться после насыщенного дня",
+      "contextFactorsRecorded": true,
+      "contextNote": "Было сложно переключиться после насыщенного дня",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -583,13 +569,12 @@
       "timeInBedMinutes": 485,
       "sleepQuality": 4,
       "energy": 4,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "late_food",
         "screen"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -625,10 +610,9 @@
       "timeInBedMinutes": 495,
       "sleepQuality": 5,
       "energy": 5,
-      "stateContext": "",
-      "eveningFactors": [],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactors": [],
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "project",
@@ -665,12 +649,11 @@
       "timeInBedMinutes": 465,
       "sleepQuality": 4,
       "energy": 4,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "screen"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -707,13 +690,12 @@
       "timeInBedMinutes": 390,
       "sleepQuality": 2,
       "energy": 3,
-      "stateContext": "Дорога и смена привычного режима",
-      "eveningFactors": [
+      "contextFactors": [
         "work_code",
         "late_bedtime"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": "travel",
       "specialDayNote": "Дорога и смена привычного режима",
       "careerState": "preparation",
@@ -747,12 +729,11 @@
       "timeInBedMinutes": 485,
       "sleepQuality": 4,
       "energy": 4,
-      "stateContext": "День с большим количеством встреч",
-      "eveningFactors": [
+      "contextFactors": [
         "anxiety_overload"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "Вечером было сложно переключиться после насыщенного дня",
+      "contextFactorsRecorded": true,
+      "contextNote": "Было сложно переключиться после насыщенного дня",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "project",
@@ -788,13 +769,12 @@
       "timeInBedMinutes": 495,
       "sleepQuality": 5,
       "energy": 5,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "late_food",
         "screen"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -830,10 +810,9 @@
       "timeInBedMinutes": 465,
       "sleepQuality": 4,
       "energy": 4,
-      "stateContext": "",
-      "eveningFactors": [],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactors": [],
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -870,12 +849,11 @@
       "timeInBedMinutes": 475,
       "sleepQuality": 5,
       "energy": 5,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "screen"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "project",
@@ -911,13 +889,12 @@
       "timeInBedMinutes": 415,
       "sleepQuality": 3,
       "energy": 3,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "work_code",
         "late_bedtime"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -951,12 +928,11 @@
       "timeInBedMinutes": 495,
       "sleepQuality": 5,
       "energy": 5,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "anxiety_overload"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "Вечером было сложно переключиться после насыщенного дня",
+      "contextFactorsRecorded": true,
+      "contextNote": "Было сложно переключиться после насыщенного дня",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -992,13 +968,12 @@
       "timeInBedMinutes": 465,
       "sleepQuality": 4,
       "energy": 4,
-      "stateContext": "День с большим количеством встреч",
-      "eveningFactors": [
+      "contextFactors": [
         "late_food",
         "screen"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "День с большим количеством встреч",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -1035,10 +1010,9 @@
       "timeInBedMinutes": 475,
       "sleepQuality": 5,
       "energy": 5,
-      "stateContext": "",
-      "eveningFactors": [],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactors": [],
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "project",
@@ -1075,12 +1049,11 @@
       "timeInBedMinutes": 485,
       "sleepQuality": 4,
       "energy": 4,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "screen"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -1116,13 +1089,12 @@
       "timeInBedMinutes": 415,
       "sleepQuality": 3,
       "energy": 3,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "work_code",
         "late_bedtime"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "project",
@@ -1156,12 +1128,11 @@
       "timeInBedMinutes": 465,
       "sleepQuality": 4,
       "energy": 4,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "anxiety_overload"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "Вечером было сложно переключиться после насыщенного дня",
+      "contextFactorsRecorded": true,
+      "contextNote": "Было сложно переключиться после насыщенного дня",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -1198,13 +1169,12 @@
       "timeInBedMinutes": 475,
       "sleepQuality": 5,
       "energy": 5,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "late_food",
         "screen"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -1240,10 +1210,9 @@
       "timeInBedMinutes": 485,
       "sleepQuality": 4,
       "energy": 4,
-      "stateContext": "День с большим количеством встреч",
-      "eveningFactors": [],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactors": [],
+      "contextFactorsRecorded": true,
+      "contextNote": "День с большим количеством встреч",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "project",
@@ -1280,12 +1249,11 @@
       "timeInBedMinutes": 495,
       "sleepQuality": 5,
       "energy": 5,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "screen"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -1321,13 +1289,12 @@
       "timeInBedMinutes": 415,
       "sleepQuality": 3,
       "energy": 3,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "work_code",
         "late_bedtime"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -1362,12 +1329,11 @@
       "timeInBedMinutes": 475,
       "sleepQuality": 5,
       "energy": 5,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "anxiety_overload"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "Вечером было сложно переключиться после насыщенного дня",
+      "contextFactorsRecorded": true,
+      "contextNote": "Было сложно переключиться после насыщенного дня",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "project",
@@ -1403,13 +1369,12 @@
       "timeInBedMinutes": 485,
       "sleepQuality": 4,
       "energy": 4,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "late_food",
         "screen"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -1445,10 +1410,9 @@
       "timeInBedMinutes": 495,
       "sleepQuality": 5,
       "energy": 5,
-      "stateContext": "",
-      "eveningFactors": [],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactors": [],
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "project",
@@ -1485,12 +1449,11 @@
       "timeInBedMinutes": 465,
       "sleepQuality": 4,
       "energy": 4,
-      "stateContext": "День с большим количеством встреч",
-      "eveningFactors": [
+      "contextFactors": [
         "screen"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "День с большим количеством встреч",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -1527,13 +1490,12 @@
       "timeInBedMinutes": 415,
       "sleepQuality": 3,
       "energy": 3,
-      "stateContext": "",
-      "eveningFactors": [
+      "contextFactors": [
         "work_code",
         "late_bedtime"
       ],
-      "eveningFactorsRecorded": true,
-      "eveningFactorNote": "",
+      "contextFactorsRecorded": true,
+      "contextNote": "",
       "specialDay": null,
       "specialDayNote": "",
       "careerState": "preparation",
@@ -2020,9 +1982,10 @@
   ],
   "settings": {
     "id": "main",
-    "settingsVersion": 4,
+    "settingsVersion": 5,
     "activeDailyBlocks": [
       "sleep",
+      "context",
       "career",
       "movement",
       "nutrition"
@@ -2055,10 +2018,10 @@
         "archived": false
       }
     ],
-    "customEveningFactorOptions": [
+    "customContextFactorOptions": [
       {
-        "id": "custom:evening:music",
-        "label": "Музыка перед сном",
+        "id": "custom:context:noise",
+        "label": "Шум за окном",
         "icon": "+",
         "custom": true,
         "archived": true

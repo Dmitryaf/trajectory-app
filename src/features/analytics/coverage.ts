@@ -25,9 +25,8 @@ export function dataCoverageLevel(entry: DailyEntry): DataCoverageLevel {
   if (coreDomains >= 2) return 2;
 
   const hasContext = entry.specialDay !== null
-    || entry.eveningFactors.length > 0
-    || entry.stateContext.trim().length > 0
-    || entry.eveningFactorNote.trim().length > 0;
+    || entry.contextFactors.length > 0
+    || entry.contextNote.trim().length > 0;
   return coreDomains === 1 || hasContext ? 1 : 0;
 }
 

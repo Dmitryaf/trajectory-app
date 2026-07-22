@@ -14,7 +14,7 @@ import {
   careerOptions,
   emptyDailyEntry,
   experimentAppliesToDate,
-  eveningFactorOptions,
+  contextFactorOptions,
   lifeAreaOptions,
   nutritionOptions,
   specialDayOptions,
@@ -38,7 +38,7 @@ const originalEntrySnapshot = ref('');
 const form = reactive<DailyEntry>(emptyDailyEntry(selectedDate.value));
 
 const careerItems = computed(() => [...careerOptions, ...store.settings.customCareerOptions.filter((option) => !option.archived)]);
-const eveningFactorItems = computed(() => [...eveningFactorOptions, ...store.settings.customEveningFactorOptions.filter((option) => !option.archived)]);
+const contextFactorItems = computed(() => [...contextFactorOptions, ...store.settings.customContextFactorOptions.filter((option) => !option.archived)]);
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
 const activeLifeOptions = computed(() => lifeAreaItems.value.filter((option) => store.settings.activeLifeAreas.includes(option.id)));
 const activeDailyBlocks = computed(() => new Set(store.settings.activeDailyBlocks));
@@ -47,7 +47,7 @@ const weekEntryCount = computed(() => entriesForWeek(store.dailyEntries, selecte
 const currentWeekEntries = computed(() => entriesForWeek(store.dailyEntries, todayKey()));
 const externalCareerIds = computed(() => ['external', 'interview', 'result', ...store.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id)]);
 const currentWeekSummary = computed(() => summarize(currentWeekEntries.value, externalCareerIds.value));
-const currentWeekObservation = computed(() => buildObservations(currentWeekEntries.value, eveningFactorItems.value)[0]);
+const currentWeekObservation = computed(() => buildObservations(currentWeekEntries.value, contextFactorItems.value)[0]);
 const currentMonthEntries = computed(() => entriesForPeriod(store.dailyEntries, startOfMonth(todayKey()), endOfMonth(todayKey())));
 const currentMonthSummary = computed(() => summarize(currentMonthEntries.value, externalCareerIds.value));
 const isWeekReviewWindow = computed(() => isToday.value && todayKey() >= addDays(endOfWeek(todayKey()), -1));
@@ -152,9 +152,9 @@ function fillYesterday() {
   selectedDate.value = yesterday.value;
 }
 
-function setEveningFactors(value: string | string[] | null) {
-  form.eveningFactors = Array.isArray(value) ? value as DailyEntry['eveningFactors'] : [];
-  form.eveningFactorsRecorded = true;
+function setContextFactors(value: string | string[] | null) {
+  form.contextFactors = Array.isArray(value) ? value as DailyEntry['contextFactors'] : [];
+  form.contextFactorsRecorded = true;
 }
 
 function setActivities(value: string | string[] | null) {
@@ -241,25 +241,34 @@ function setLifeAreas(value: string | string[] | null) {
           <div class="form-control"><label class="field-label">Энергия за день</label><ScalePicker v-model="form.energy" low-label="нет сил" high-label="много сил" /></div>
         </div>
         <p v-if="validationMessage" class="field-error" role="alert">{{ validationMessage }}</p>
-        <label class="field-label" for="state-context">Что мешало или влияло</label>
-        <textarea
-          id="state-context"
-          v-model="form.stateContext"
-          rows="2"
-          maxlength="220"
-          placeholder="Например: поздний кофе, тревога, шум, перегруз, просыпался ночью"
-        ></textarea>
+      </article>
+
+      <article v-if="blockIsActive('context')" class="form-card form-card--context">
+        <div class="form-card__heading">
+          <span class="section-icon section-icon--orange">⌁</span>
+          <div><h2>Контекст дня</h2><p>Отметь условия, которые могли быть связаны с самочувствием или ходом дня.</p></div>
+        </div>
         <div class="factor-block">
-          <label class="field-label">Факторы перед этим сном</label>
-          <ChipGroup :model-value="form.eveningFactors" :options="eveningFactorItems" multiple @update:model-value="setEveningFactors" />
-          <button class="none-option" :class="{ selected: form.eveningFactorsRecorded && !form.eveningFactors.length }" type="button" @click="form.eveningFactors = []; form.eveningFactorsRecorded = true">Ничего из списка</button>
-          <textarea
-            v-if="form.eveningFactors.length"
-            v-model="form.eveningFactorNote"
-            rows="2"
-            maxlength="180"
-            placeholder="Короткое уточнение, если нужно."
-          ></textarea>
+          <label class="field-label">Повторяющиеся условия</label>
+          <ChipGroup :model-value="form.contextFactors" :options="contextFactorItems" multiple @update:model-value="setContextFactors" />
+          <button class="none-option" :class="{ selected: form.contextFactorsRecorded && !form.contextFactors.length }" type="button" @click="form.contextFactors = []; form.contextFactorsRecorded = true">Ничего из списка</button>
+        </div>
+        <label class="field-label" for="context-note">Короткое пояснение</label>
+        <textarea
+          id="context-note"
+          v-model="form.contextNote"
+          rows="3"
+          maxlength="400"
+          placeholder="Например: поздний кофе, тревога, шум, перегруз или частые пробуждения"
+        ></textarea>
+        <div class="context-special-day">
+          <label class="field-label">Необычный день</label>
+          <p class="field-hint">Эта отметка помогает не смешивать особые обстоятельства с обычными днями.</p>
+          <ChipGroup v-model="form.specialDay" :options="specialDayOptions" allow-clear />
+          <template v-if="form.specialDay">
+            <label class="field-label" for="special-day-note">Короткое уточнение</label>
+            <input id="special-day-note" v-model="form.specialDayNote" type="text" maxlength="120" placeholder="Например: перелёт, простуда, дедлайн или семейное событие" />
+          </template>
         </div>
       </article>
 
@@ -321,18 +330,6 @@ function setLifeAreas(value: string | string[] | null) {
         </div>
         <ChipGroup :model-value="form.lifeAreas as LifeAreaId[]" :options="activeLifeOptions" multiple @update:model-value="setLifeAreas" />
         <button class="none-option" :class="{ selected: form.lifeAreasRecorded && !form.lifeAreas.length }" type="button" @click="form.lifeAreas = []; form.lifeAreasRecorded = true">Ничего не отмечаю</button>
-      </article>
-
-      <article class="form-card form-card--special">
-        <div class="form-card__heading">
-          <span class="section-icon section-icon--orange">!</span>
-          <div><h2>Необычный день</h2><p>Эта отметка поможет отделить его от обычных дней в обзорах.</p></div>
-        </div>
-        <ChipGroup v-model="form.specialDay" :options="specialDayOptions" allow-clear />
-        <template v-if="form.specialDay">
-          <label class="field-label" for="special-day-note">Короткое уточнение</label>
-          <input id="special-day-note" v-model="form.specialDayNote" type="text" maxlength="120" placeholder="Например: перелёт, простуда, дедлайн, семейное событие" />
-        </template>
       </article>
 
       <article v-if="experimentAppliesToSelectedDate" class="form-card form-card--experiment">

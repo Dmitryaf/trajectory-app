@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { emptyDailyEntry, normalizeDailyEntry, normalizeSettings } from '../src/types';
+import { normalizeDailyEntry, normalizeSettings } from '../src/types';
 
 describe('settings migrations', () => {
   it('removes obsolete demo options while preserving old response entries', () => {
@@ -9,14 +9,28 @@ describe('settings migrations', () => {
       customEveningFactorOptions: [{ id: 'custom:evening:shower', label: 'Спокойный душ' }],
     });
     const normalized = normalizeDailyEntry({
-      ...emptyDailyEntry('2026-07-13'),
+      date: '2026-07-13',
       careerStates: ['preparation', 'custom:career:responses'],
       eveningFactors: ['screen', 'custom:evening:shower'],
     });
 
     expect(settings.customCareerOptions).toEqual([]);
-    expect(settings.customEveningFactorOptions).toEqual([]);
+    expect(settings.settingsVersion).toBe(5);
+    expect(settings.activeDailyBlocks).toContain('context');
+    expect(settings.customContextFactorOptions).toEqual([]);
+    expect(settings).not.toHaveProperty('customEveningFactorOptions');
     expect(normalized.careerStates).toEqual(['preparation', 'external']);
-    expect(normalized.eveningFactors).toEqual(['screen']);
+    expect(normalized.contextFactors).toEqual(['screen']);
+    expect(normalized).not.toHaveProperty('eveningFactors');
+  });
+
+  it('combines old context notes without dropping either value', () => {
+    const normalized = normalizeDailyEntry({
+      date: '2026-07-14',
+      stateContext: 'Шум за окном',
+      eveningFactorNote: 'Поздно выпил кофе',
+    });
+
+    expect(normalized.contextNote).toBe('Шум за окном\nПоздно выпил кофе');
   });
 });

@@ -5,7 +5,7 @@ import {
   activityOptions,
   careerOptions,
   dailyBlockOptions,
-  eveningFactorOptions,
+  contextFactorOptions,
   lifeAreaOptions,
   lifeEventTypeOptions,
   nutritionOptions,
@@ -23,7 +23,7 @@ export type AiReportPeriod = 'week' | 'month' | 'range';
 
 export type AiReportPayload = {
   app: 'trajectory';
-  version: 4;
+  version: 5;
   period: AiReportPeriod;
   rangeMonths?: number;
   start: string;
@@ -92,12 +92,12 @@ function buildPayload(
 ): AiReportPayload {
   const entries = dataThrough >= start ? entriesForPeriod(source.entries, start, dataThrough) : [];
   const careerItems = [...careerOptions, ...source.settings.customCareerOptions];
-  const factorItems = [...eveningFactorOptions, ...source.settings.customEveningFactorOptions];
+  const factorItems = [...contextFactorOptions, ...source.settings.customContextFactorOptions];
   const externalCareerIds = careerItems.filter((option) => option.countsAsExternal || ['external', 'interview', 'result'].includes(option.id)).map((option) => option.id);
 
   return {
     app: 'trajectory',
-    version: 4,
+    version: 5,
     period,
     start,
     end,
@@ -127,7 +127,7 @@ function buildLabelDictionary(settings: AppSettings) {
   return {
     career: copyOptions([...careerOptions, ...settings.customCareerOptions]),
     lifeAreas: copyOptions([...lifeAreaOptions, ...settings.customLifeAreaOptions]),
-    eveningFactors: copyOptions([...eveningFactorOptions, ...settings.customEveningFactorOptions]),
+    contextFactors: copyOptions([...contextFactorOptions, ...settings.customContextFactorOptions]),
     activities: copyOptions(activityOptions),
     actionDirections: copyOptions(actionDirectionOptions),
     nutrition: copyOptions(nutritionOptions),
@@ -166,7 +166,7 @@ export function buildAiReportPrompt(payload: AiReportPayload, settings: AppSetti
     'Правила:',
     '- пропуск не считай нулём или ответом «нет»;',
     '- особые дни не используй как обычную базу сравнения;',
-    '- вечерний фактор сравнивай с отмеченными днями без него;',
+    '- фактор дня сравнивай с отмеченными днями без него;',
     '- не обсуждай карьеру, вес или эксперимент, если соответствующих данных нет;',
     '- не продолжай данные в будущее и не выдавай сглаживание за прогноз;',
     '',
@@ -203,7 +203,7 @@ function buildReadableSections(payload: AiReportPayload): string[] {
   ]);
 
   appendSection(lines, 'Автоматические наблюдения приложения', payload.observations.map((item) => `${item.title}: ${item.text}`));
-  appendSection(lines, 'Повторяющиеся вечерние факторы', payload.factorSummaries.map(formatFactorSummary));
+  appendSection(lines, 'Повторяющиеся факторы дня', payload.factorSummaries.map(formatFactorSummary));
   appendSection(lines, 'Записи по дням', payload.entries.map((entry) => formatEntry(entry, payload)));
   appendSection(lines, 'Завершённые итоги', payload.results.map((result) => {
     return `${result.date} — ${labelFor(payload.labels.resultAreas, result.area)}: ${cleanText(result.title)}`;
@@ -257,12 +257,11 @@ function formatEntry(entry: DailyEntry, payload: AiReportPayload): string {
   if (entry.timeInBedMinutes !== null) values.push(`в кровати ${formatMinutes(entry.timeInBedMinutes)}`);
   if (entry.sleepQuality !== null) values.push(`качество сна ${entry.sleepQuality}/5`);
   if (entry.energy !== null) values.push(`энергия ${entry.energy}/5`);
-  if (cleanText(entry.stateContext)) values.push(`что влияло: ${cleanText(entry.stateContext)}`);
-  if (entry.eveningFactorsRecorded) {
-    const factors = entry.eveningFactors.map((id) => labelFor(payload.labels.eveningFactors, id));
-    values.push(`перед сном: ${factors.length ? factors.join(', ') : 'ничего из списка'}`);
+  if (entry.contextFactorsRecorded) {
+    const factors = entry.contextFactors.map((id) => labelFor(payload.labels.contextFactors, id));
+    values.push(`условия дня: ${factors.length ? factors.join(', ') : 'ничего из списка'}`);
   }
-  if (cleanText(entry.eveningFactorNote)) values.push(`уточнение: ${cleanText(entry.eveningFactorNote)}`);
+  if (cleanText(entry.contextNote)) values.push(`контекст: ${cleanText(entry.contextNote)}`);
   if (entry.specialDay) values.push(`необычный день: ${labelFor(payload.labels.specialDays, entry.specialDay)}${entry.specialDayNote ? ` (${cleanText(entry.specialDayNote)})` : ''}`);
   const careerStates = entry.careerStates.length ? entry.careerStates : entry.careerState ? [entry.careerState] : [];
   if (careerStates.length) values.push(`карьера: ${careerStates.map((id) => labelFor(payload.labels.career, id)).join(', ')}`);

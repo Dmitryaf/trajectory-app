@@ -9,7 +9,7 @@ import { loadCloudSnapshot, markCloudSyncSynced } from '../services/cloudSync';
 import { todayKey } from '../services/dates';
 import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { plainCopy } from '../services/plain';
-import { careerOptions, createCustomOption, dailyBlockOptions, eveningFactorOptions, lifeAreaOptions, type AppSettings, type CareerState, type DailyBlockId, type EveningFactorId, type LifeAreaId, type Option } from '../types';
+import { careerOptions, contextFactorOptions, createCustomOption, dailyBlockOptions, lifeAreaOptions, type AppSettings, type CareerState, type ContextFactorId, type DailyBlockId, type LifeAreaId, type Option } from '../types';
 
 const store = useAppStore();
 const settings = reactive<AppSettings>(plainCopy(store.settings));
@@ -17,11 +17,11 @@ const importInput = ref<HTMLInputElement>();
 const newCareerLabel = ref('');
 const newCareerCountsAsExternal = ref(true);
 const newLifeAreaLabel = ref('');
-const newEveningFactorLabel = ref('');
+const newContextFactorLabel = ref('');
 const auth = useAuthStore();
 const allCareerOptions = computed(() => [...careerOptions, ...settings.customCareerOptions.filter((option) => !option.archived)]);
 const allLifeAreaOptions = computed(() => [...lifeAreaOptions, ...settings.customLifeAreaOptions.filter((option) => !option.archived)]);
-const allEveningFactorOptions = computed(() => [...eveningFactorOptions, ...settings.customEveningFactorOptions.filter((option) => !option.archived)]);
+const allContextFactorOptions = computed(() => [...contextFactorOptions, ...settings.customContextFactorOptions.filter((option) => !option.archived)]);
 const cloudSession = computed(() => auth.session);
 const cloudUserEmail = computed(() => auth.userEmail);
 const cloudStatusTitle = computed(() => {
@@ -107,18 +107,18 @@ async function removeLifeArea(id: LifeAreaId) {
   await save();
 }
 
-async function addEveningFactor() {
-  const label = newEveningFactorLabel.value.trim();
-  if (!label || hasOption(eveningFactorOptions, label)) return;
-  const archived = findArchived(settings.customEveningFactorOptions, label);
+async function addContextFactor() {
+  const label = newContextFactorLabel.value.trim();
+  if (!label || hasOption(contextFactorOptions, label)) return;
+  const archived = findArchived(settings.customContextFactorOptions, label);
   if (archived) archived.archived = false;
-  else if (!hasOption(settings.customEveningFactorOptions, label)) settings.customEveningFactorOptions.push(createCustomOption(label, 'evening'));
-  newEveningFactorLabel.value = '';
-  await save('Факторы перед сном сохранены');
+  else if (!hasOption(settings.customContextFactorOptions, label)) settings.customContextFactorOptions.push(createCustomOption(label, 'context'));
+  newContextFactorLabel.value = '';
+  await save('Факторы дня сохранены');
 }
 
-async function removeEveningFactor(id: EveningFactorId) {
-  const option = settings.customEveningFactorOptions.find((item) => item.id === id);
+async function removeContextFactor(id: ContextFactorId) {
+  const option = settings.customContextFactorOptions.find((item) => item.id === id);
   if (option) option.archived = true;
   await save('Фактор скрыт из ежедневной записи');
 }
@@ -245,7 +245,7 @@ async function clearAll() {
     <article class="settings-card settings-card--daily-blocks">
       <div class="form-card__heading"><span class="section-icon section-icon--blue">☷</span><div><h2>Блоки ежедневной записи</h2><p>Скрой то, что сейчас не нужно заполнять. Старые записи и их данные останутся в обзорах и выгрузке.</p></div></div>
       <ChipGroup v-model="settings.activeDailyBlocks as DailyBlockId[]" :options="dailyBlockOptions" multiple />
-      <p v-if="!settings.activeDailyBlocks.length" class="data-note">Останутся общие блоки: действия по текущей цели, области жизни, необычный день и факт дня.</p>
+      <p v-if="!settings.activeDailyBlocks.length" class="data-note">Останутся общие блоки: действия по текущей цели, области жизни и факт дня.</p>
       <button class="primary-button" type="button" @click="save('Блоки ежедневной записи сохранены')">Сохранить блоки</button>
     </article>
 
@@ -268,21 +268,21 @@ async function clearAll() {
       <button class="primary-button" type="button" @click="save('Области сохранены')">Сохранить области</button>
     </article>
 
-    <article class="settings-card settings-card--sleep">
-      <div class="form-card__heading"><span class="section-icon section-icon--violet">◒</span><div><h2>Факторы перед сном</h2><p>Добавляй только повторяющиеся условия, которые пригодятся в недельном или месячном разборе.</p></div></div>
+    <article class="settings-card settings-card--context">
+      <div class="form-card__heading"><span class="section-icon section-icon--orange">⌁</span><div><h2>Факторы дня</h2><p>Добавляй повторяющиеся условия, которые могут пригодиться в недельном или месячном разборе.</p></div></div>
       <div class="option-preview">
-        <span v-for="option in allEveningFactorOptions" :key="option.id" class="option-pill"><i v-if="option.icon">{{ option.icon }}</i>{{ option.label }}</span>
+        <span v-for="option in allContextFactorOptions" :key="option.id" class="option-pill"><i v-if="option.icon">{{ option.icon }}</i>{{ option.label }}</span>
       </div>
       <div class="custom-options">
-        <label class="field-label" for="new-evening-factor">Свой фактор</label>
+        <label class="field-label" for="new-context-factor">Свой фактор</label>
         <div class="inline-add">
-          <input id="new-evening-factor" v-model="newEveningFactorLabel" type="text" maxlength="40" placeholder="Например: душ перед сном" @keyup.enter="addEveningFactor" />
-          <button class="secondary-button" type="button" :disabled="!newEveningFactorLabel.trim()" @click="addEveningFactor">Добавить</button>
+          <input id="new-context-factor" v-model="newContextFactorLabel" type="text" maxlength="40" placeholder="Например: шум за окном" @keyup.enter="addContextFactor" />
+          <button class="secondary-button" type="button" :disabled="!newContextFactorLabel.trim()" @click="addContextFactor">Добавить</button>
         </div>
-        <div v-if="settings.customEveningFactorOptions.some((option) => !option.archived)" class="custom-list">
-          <div v-for="option in settings.customEveningFactorOptions.filter((item) => !item.archived)" :key="option.id" class="custom-list__item">
+        <div v-if="settings.customContextFactorOptions.some((option) => !option.archived)" class="custom-list">
+          <div v-for="option in settings.customContextFactorOptions.filter((item) => !item.archived)" :key="option.id" class="custom-list__item">
             <span><i>{{ option.icon }}</i>{{ option.label }}</span>
-            <button class="ghost-button ghost-button--danger" type="button" :aria-label="`Скрыть ${option.label}`" @click="removeEveningFactor(option.id)">×</button>
+            <button class="ghost-button ghost-button--danger" type="button" :aria-label="`Скрыть ${option.label}`" @click="removeContextFactor(option.id)">×</button>
           </div>
         </div>
         <p class="data-note">Скрытый фактор исчезает из новых записей, но остаётся подписанным в истории.</p>

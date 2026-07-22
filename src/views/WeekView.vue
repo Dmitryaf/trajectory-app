@@ -4,13 +4,13 @@ import type { EChartsCoreOption } from 'echarts/core';
 import EChartPanel from '../components/charts/EChartPanel.vue';
 import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
-import { actionDirectionLabel, buildReviewCues, buildReviewQuestions, careerStatesForEntry, entriesForWeek, eveningFactorLabel, hasArea, resultsForPeriod, specialDayLabel, summarize, weekSummaryText } from '../services/analytics';
+import { actionDirectionLabel, buildReviewCues, buildReviewQuestions, careerStatesForEntry, contextFactorLabel, entriesForWeek, hasArea, resultsForPeriod, specialDayLabel, summarize, weekSummaryText } from '../services/analytics';
 import { addDays, endOfWeek, formatDate, formatMinutes, startOfWeek, todayKey } from '../services/dates';
 import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../features/export/browser';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { plainCopy } from '../services/plain';
 import { useAppStore } from '../stores/app';
-import { emptyWeeklyReview, eveningFactorOptions, lifeAreaOptions, type WeeklyReview } from '../types';
+import { contextFactorOptions, emptyWeeklyReview, lifeAreaOptions, type WeeklyReview } from '../types';
 
 const store = useAppStore();
 const anchor = ref(todayKey());
@@ -20,12 +20,12 @@ const days = computed(() => Array.from({ length: 7 }, (_, index) => addDays(star
 const entries = computed(() => entriesForWeek(store.dailyEntries, anchor.value));
 const entriesByDate = computed(() => new Map(entries.value.map((entry) => [entry.date, entry])));
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
-const eveningFactorItems = computed(() => [...eveningFactorOptions, ...store.settings.customEveningFactorOptions]);
+const contextFactorItems = computed(() => [...contextFactorOptions, ...store.settings.customContextFactorOptions]);
 const externalCareerIds = computed(() => ['external', 'interview', 'result', ...store.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id)]);
 const summary = computed(() => summarize(entries.value, externalCareerIds.value));
 const results = computed(() => resultsForPeriod(store.results, start.value, end.value));
 const lifeEvents = computed(() => store.lifeEvents.filter((event) => event.date >= start.value && event.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)));
-const reviewCues = computed(() => buildReviewCues('week', entries.value, results.value, lifeEvents.value, externalCareerIds.value, eveningFactorItems.value));
+const reviewCues = computed(() => buildReviewCues('week', entries.value, results.value, lifeEvents.value, externalCareerIds.value, contextFactorItems.value));
 const reviewQuestions = buildReviewQuestions('week');
 const previousReview = computed(() => store.reviewByWeek(addDays(start.value, -7)));
 const rows = computed(() => [
@@ -34,8 +34,9 @@ const rows = computed(() => [
   ...lifeAreaItems.value.filter((option) => store.settings.activeLifeAreas.includes(option.id))
 ]);
 const summaryText = computed(() => weekSummaryText(summary.value, store.settings.activeLifeAreas, lifeAreaItems.value));
-const stateNotes = computed(() => entries.value.filter((entry) => entry.stateContext.trim()).sort((a, b) => a.date.localeCompare(b.date)));
-const factorNotes = computed(() => entries.value.filter((entry) => entry.eveningFactors.length).sort((a, b) => a.date.localeCompare(b.date)));
+const contextNotes = computed(() => entries.value
+  .filter((entry) => entry.contextFactors.length || entry.contextNote.trim())
+  .sort((a, b) => a.date.localeCompare(b.date)));
 const actionNotes = computed(() => entries.value.filter((entry) => entry.actionDirection !== null).sort((a, b) => a.date.localeCompare(b.date)));
 const specialDays = computed(() => entries.value.filter((entry) => entry.specialDay !== null).sort((a, b) => a.date.localeCompare(b.date)));
 const rhythmDays = computed(() => days.value.map((day) => {
@@ -225,24 +226,14 @@ function downloadJson() {
       </div>
     </article>
 
-    <article v-if="stateNotes.length" class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Контекст состояния</span><h2>Что влияло на сон и энергию</h2></div><span class="count-badge">{{ stateNotes.length }}</span></div>
-      <div class="note-list">
-        <article v-for="entry in stateNotes" :key="entry.date" class="note-item">
-          <time>{{ formatDate(entry.date, { weekday: 'short', day: 'numeric' }) }}</time>
-          <p>{{ entry.stateContext }}</p>
-        </article>
-      </div>
-    </article>
-
-    <article v-if="factorNotes.length" class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Вечерние факторы</span><h2>Что могло влиять</h2></div><span class="count-badge">{{ factorNotes.length }}</span></div>
+    <article v-if="contextNotes.length" class="dashboard-card">
+      <div class="section-heading"><div><span class="eyebrow">Контекст дня</span><h2>Повторяющиеся условия и заметки</h2></div><span class="count-badge">{{ contextNotes.length }}</span></div>
       <div class="factor-note-list">
-        <article v-for="entry in factorNotes" :key="entry.date" class="factor-note-item">
+        <article v-for="entry in contextNotes" :key="entry.date" class="factor-note-item">
           <time>{{ formatDate(entry.date, { weekday: 'short', day: 'numeric' }) }}</time>
           <div>
-            <span v-for="factor in entry.eveningFactors" :key="factor" class="mini-pill">{{ eveningFactorLabel(factor, eveningFactorItems) }}</span>
-            <p v-if="entry.eveningFactorNote">{{ entry.eveningFactorNote }}</p>
+            <span v-for="factor in entry.contextFactors" :key="factor" class="mini-pill">{{ contextFactorLabel(factor, contextFactorItems) }}</span>
+            <p v-if="entry.contextNote">{{ entry.contextNote }}</p>
           </div>
         </article>
       </div>

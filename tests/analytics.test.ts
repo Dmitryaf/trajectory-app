@@ -12,7 +12,7 @@ function entry(date: string, patch: Partial<DailyEntry>): DailyEntry {
     ...emptyDailyEntry(date),
     ...patch,
     activitiesRecorded: patch.activitiesRecorded ?? Object.prototype.hasOwnProperty.call(patch, 'activities'),
-    eveningFactorsRecorded: patch.eveningFactorsRecorded ?? Object.prototype.hasOwnProperty.call(patch, 'eveningFactors'),
+    contextFactorsRecorded: patch.contextFactorsRecorded ?? Object.prototype.hasOwnProperty.call(patch, 'contextFactors'),
     lifeAreasRecorded: patch.lifeAreasRecorded ?? Object.prototype.hasOwnProperty.call(patch, 'lifeAreas'),
   };
 }
@@ -104,27 +104,27 @@ describe('analytics', () => {
   });
 
   it('migrates old settings and event terminology without losing history', () => {
-    const settings = normalizeSettings({ activeLifeAreas: ['family', 'spiritual'], customEveningFactorOptions: [{ id: 'custom:evening:test', label: 'Душ', archived: true }] });
+    const settings = normalizeSettings({ activeLifeAreas: ['family', 'spiritual'], customContextFactorOptions: [{ id: 'custom:context:test', label: 'Шум', archived: true }] });
     const event = normalizeLifeEvent({ date: '2026-07-10', title: 'Старая веха', type: 'milestone' });
     expect(settings.activeLifeAreas).toEqual(['family']);
-    expect(settings.activeDailyBlocks).toEqual(['sleep', 'career', 'movement', 'nutrition']);
-    expect(settings.customEveningFactorOptions[0].archived).toBe(true);
+    expect(settings.activeDailyBlocks).toEqual(['sleep', 'context', 'career', 'movement', 'nutrition']);
+    expect(settings.customContextFactorOptions[0].archived).toBe(true);
     expect(event.type).toBe('change');
   });
 
   it('uses custom factor labels in summaries', () => {
     const factors = factorSummaries([
-      entry('2026-07-13', { eveningFactors: ['custom:evening:rain'] })
-    ], [{ id: 'custom:evening:rain', label: 'Шум за окном', icon: '+' }]);
+      entry('2026-07-13', { contextFactors: ['custom:context:rain'] })
+    ], [{ id: 'custom:context:rain', label: 'Шум за окном', icon: '+' }]);
     expect(factors[0].label).toBe('Шум за окном');
   });
 
   it('builds a manual analysis package with labels and experiment context', () => {
     const settings = structuredClone(defaultSettings);
-    settings.customEveningFactorOptions = [{ id: 'custom:evening:rain', label: 'Шум за окном', custom: true }];
+    settings.customContextFactorOptions = [{ id: 'custom:context:rain', label: 'Шум за окном', custom: true }];
     settings.experiment = { ...settings.experiment, active: true, title: 'Без новостей', startDate: '2026-07-13', endDate: '2026-07-19', conclusion: 'unclear' };
     const payload = buildAiReportPayload('week', '2026-07-16', {
-      entries: [entry('2026-07-13', { eveningFactors: ['custom:evening:rain'] })],
+      entries: [entry('2026-07-13', { contextFactors: ['custom:context:rain'] })],
       results: [],
       lifeEvents: [],
       reviews: [{ ...normalizeWeeklyReview({ weekStart: '2026-07-06' }), nextLever: 'Ложиться раньше' }],
@@ -132,9 +132,9 @@ describe('analytics', () => {
       settings,
     });
 
-    expect(payload.version).toBe(4);
+    expect(payload.version).toBe(5);
     expect(payload.dataThrough).toBe('2026-07-19');
-    expect(payload.labels.eveningFactors).toContainEqual(expect.objectContaining({ id: 'custom:evening:rain', label: 'Шум за окном' }));
+    expect(payload.labels.contextFactors).toContainEqual(expect.objectContaining({ id: 'custom:context:rain', label: 'Шум за окном' }));
     expect(payload.factorSummaries[0].label).toBe('Шум за окном');
     expect(payload.settingsSnapshot.experiment.conclusion).toBe('unclear');
     expect(payload.previousWeeklyReview?.nextLever).toBe('Ложиться раньше');
@@ -144,7 +144,7 @@ describe('analytics', () => {
     expect(prompt).toContain('Шум за окном');
     expect(prompt).toContain('Ложиться раньше');
     expect(prompt).not.toContain('Данные JSON');
-    expect(prompt).not.toContain('custom:evening:rain');
+    expect(prompt).not.toContain('custom:context:rain');
     expect(prompt).not.toContain('"generatedAt"');
     expect(prompt.length).toBeLessThan(JSON.stringify(payload, null, 2).length);
   });
@@ -238,20 +238,20 @@ describe('analytics', () => {
       entry('2026-07-19', { sleepMinutes: 350, energy: 2, activities: [] }),
       entry('2026-07-20', { sleepMinutes: 380, energy: 2, activities: [] }),
       entry('2026-07-21', { specialDay: 'travel' }),
-      entry('2026-07-22', { eveningFactors: ['news'] }),
-      entry('2026-07-23', { eveningFactors: ['news'] })
+      entry('2026-07-22', { contextFactors: ['news'] }),
+      entry('2026-07-23', { contextFactors: ['news'] })
     ]);
 
     expect(observations.map((item) => item.id)).toContain('movement-energy');
     expect(observations.map((item) => item.id)).toContain('sleep-energy');
     expect(observations.map((item) => item.id)).toContain('special-days');
-    expect(observations.map((item) => item.id)).toContain('evening-factor');
+    expect(observations.map((item) => item.id)).toContain('context-factor');
   });
 
-  it('summarizes evening factors without scoring them', () => {
+  it('summarizes context factors without scoring them', () => {
     const factors = factorSummaries([
-      entry('2026-07-13', { sleepMinutes: 360, energy: 2, eveningFactors: ['news', 'screen'] }),
-      entry('2026-07-14', { sleepMinutes: 420, energy: 3, eveningFactors: ['news'] })
+      entry('2026-07-13', { sleepMinutes: 360, energy: 2, contextFactors: ['news', 'screen'] }),
+      entry('2026-07-14', { sleepMinutes: 420, energy: 3, contextFactors: ['news'] })
     ]);
 
     expect(factors[0].id).toBe('news');
@@ -262,8 +262,8 @@ describe('analytics', () => {
 
   it('builds local review cues from factual period data', () => {
     const cues = buildReviewCues('week', [
-      entry('2026-07-13', { sleepMinutes: 360, eveningFactors: ['news'], careerState: 'external' }),
-      entry('2026-07-14', { sleepMinutes: 390, eveningFactors: ['news'], actionDirection: 'preparation' }),
+      entry('2026-07-13', { sleepMinutes: 360, contextFactors: ['news'], careerState: 'external' }),
+      entry('2026-07-14', { sleepMinutes: 390, contextFactors: ['news'], actionDirection: 'preparation' }),
       entry('2026-07-15', { sleepMinutes: 480 }),
       entry('2026-07-16', { sleepMinutes: 450 })
     ], [
@@ -291,8 +291,8 @@ describe('analytics', () => {
 
   it('keeps completed results visible when review cues are crowded', () => {
     const cues = buildReviewCues('week', [
-      entry('2026-07-13', { sleepMinutes: 360, eveningFactors: ['news'], careerState: 'external', nutritionState: 'blocks_goal', specialDay: 'overload' }),
-      entry('2026-07-14', { sleepMinutes: 390, eveningFactors: ['news'], nutritionState: 'blocks_goal' }),
+      entry('2026-07-13', { sleepMinutes: 360, contextFactors: ['news'], careerState: 'external', nutritionState: 'blocks_goal', specialDay: 'overload' }),
+      entry('2026-07-14', { sleepMinutes: 390, contextFactors: ['news'], nutritionState: 'blocks_goal' }),
       entry('2026-07-15', { sleepMinutes: 480 }),
       entry('2026-07-16', { sleepMinutes: 450 })
     ], [
@@ -345,11 +345,11 @@ describe('analytics', () => {
 
   it('compares repeated factors with ordinary days without the factor', () => {
     const factors = factorSummaries([
-      entry('2026-07-13', { sleepMinutes: 360, energy: 2, eveningFactors: ['news'] }),
-      entry('2026-07-14', { sleepMinutes: 420, energy: 3, eveningFactors: ['news'] }),
-      entry('2026-07-15', { sleepMinutes: 480, energy: 4, eveningFactors: [] }),
-      entry('2026-07-16', { sleepMinutes: 540, energy: 5, eveningFactors: [] }),
-      entry('2026-07-17', { sleepMinutes: 120, energy: 1, eveningFactors: ['news'], specialDay: 'sick' })
+      entry('2026-07-13', { sleepMinutes: 360, energy: 2, contextFactors: ['news'] }),
+      entry('2026-07-14', { sleepMinutes: 420, energy: 3, contextFactors: ['news'] }),
+      entry('2026-07-15', { sleepMinutes: 480, energy: 4, contextFactors: [] }),
+      entry('2026-07-16', { sleepMinutes: 540, energy: 5, contextFactors: [] }),
+      entry('2026-07-17', { sleepMinutes: 120, energy: 1, contextFactors: ['news'], specialDay: 'sick' })
     ]);
 
     expect(factors[0].count).toBe(2);
@@ -391,7 +391,7 @@ describe('analytics', () => {
 
   it('does not treat skipped multi-select blocks as explicit zeroes', () => {
     const skipped = entry('2026-07-13', {});
-    const explicitNone = entry('2026-07-14', { activities: [], eveningFactors: [], lifeAreas: [] });
+    const explicitNone = entry('2026-07-14', { activities: [], contextFactors: [], lifeAreas: [] });
     const summary = summarize([skipped, explicitNone]);
 
     expect(summary.movementSamples).toBe(1);

@@ -73,7 +73,7 @@ describe('backup import', () => {
       careerStates: ['external'],
       activitiesRecorded: true,
       lifeAreasRecorded: true,
-      eveningFactorsRecorded: false,
+      contextFactorsRecorded: false,
       timeInBedMinutes: null,
       importantFact: 'Старая запись сохранена'
     });
@@ -81,8 +81,8 @@ describe('backup import', () => {
     expect(store.lifeEvents).toEqual([]);
     expect(store.monthlyReviews).toEqual([]);
     expect(store.weeklyReviews[0].ifThenPlan).toBe('');
-    expect(store.settings.settingsVersion).toBe(4);
-    expect(store.settings.activeDailyBlocks).toEqual(['sleep', 'career', 'movement', 'nutrition']);
+    expect(store.settings.settingsVersion).toBe(5);
+    expect(store.settings.activeDailyBlocks).toEqual(['sleep', 'context', 'career', 'movement', 'nutrition']);
     expect(store.settings.activeLifeAreas).toEqual(['family']);
 
     const storedDates = await db.dailyEntries.toCollection().primaryKeys();
