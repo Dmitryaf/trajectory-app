@@ -81,6 +81,8 @@ describe('daily entry scenario', () => {
     expect(saveEntry).not.toHaveBeenCalled();
 
     await wrapper.get('#sleep-hours').setValue('7');
+    expect(wrapper.text()).toContain('Ожидаемый результат: Получить проверяемый результат');
+    expect(wrapper.text()).toContain('Пересмотреть цель: 1 августа 2026 г.');
     const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Факт дня');
     expect(factCard).toBeDefined();
     await factCard!.get('textarea').setValue('Завершил важный разговор');

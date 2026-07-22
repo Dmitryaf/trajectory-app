@@ -252,6 +252,8 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
           <span class="section-icon section-icon--blue">⌁</span>
           <div><h2>Действия по текущей цели</h2><p>{{ form.focusTitle || store.settings.activeFocusTitle ? `Текущая цель: ${form.focusTitle || store.settings.activeFocusTitle}` : 'Выбери, что лучше всего описывает этот день относительно твоей цели.' }}</p></div>
         </div>
+        <p v-if="form.focusOutcomeCriterion || store.settings.focusOutcomeCriterion" class="form-context">Ожидаемый результат: {{ form.focusOutcomeCriterion || store.settings.focusOutcomeCriterion }}</p>
+        <p v-if="form.focusReviewDate || store.settings.focusReviewDate" class="form-context">Пересмотреть цель: {{ formatDate(form.focusReviewDate || store.settings.focusReviewDate, { day: 'numeric', month: 'long', year: 'numeric' }) }}</p>
         <p v-if="form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion" class="form-context">Конкретное действие: {{ form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion }}</p>
         <ChipGroup :model-value="form.actionDirection as ActionDirectionId | null" :options="actionDirectionItems" allow-clear @update:model-value="setActionDirection" />
         <button class="none-option" :class="{ selected: form.recordedFields.includes('actionDirection') && form.actionDirection === null }" type="button" @click="setNoActionDirection">Действий по цели не было</button>
