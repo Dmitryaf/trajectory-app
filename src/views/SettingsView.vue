@@ -96,12 +96,6 @@ async function completeExperiment() {
   await save('Эксперимент добавлен в историю');
 }
 
-async function removeExperimentRecord(id: string) {
-  if (!window.confirm('Удалить завершённый эксперимент из истории? Дневные отметки останутся без изменений.')) return;
-  settings.experimentHistory = settings.experimentHistory.filter((record) => record.id !== id);
-  await save('Эксперимент удалён из истории');
-}
-
 async function addCareerOption() {
   const label = newCareerLabel.value.trim();
   if (!label || hasOption(careerOptions, label)) return;
@@ -419,15 +413,7 @@ async function clearAll() {
       <p v-else-if="settings.experiment.endDate" class="field-hint">После окончания периода здесь можно записать вывод и сохранить эксперимент в общей истории.</p>
       <button class="primary-button" type="button" @click="saveExperiment">Сохранить настройки</button>
       <button v-if="experimentCanConclude" class="secondary-button" type="button" @click="completeExperiment">Завершить и добавить в историю</button>
-      <details v-if="settings.experimentHistory.length" class="settings-history">
-        <summary>Завершённые эксперименты · {{ settings.experimentHistory.length }}</summary>
-        <div class="custom-list">
-          <div v-for="record in settings.experimentHistory" :key="record.id" class="custom-list__item">
-            <span><i>✓</i>{{ record.title }}<small>{{ record.startDate }} — {{ record.endDate }}</small></span>
-            <button class="ghost-button ghost-button--danger" type="button" :aria-label="`Удалить эксперимент ${record.title}`" @click="removeExperimentRecord(record.id)">×</button>
-          </div>
-        </div>
-      </details>
+      <p v-if="settings.experimentHistory.length" class="data-note">Завершённые эксперименты находятся в общей истории изменений: {{ settings.experimentHistory.length }}.</p>
     </article>
 
     <article class="settings-card settings-card--backup">

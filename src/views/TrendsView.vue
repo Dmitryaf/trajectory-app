@@ -13,6 +13,14 @@ import { useAppStore } from '../stores/app';
 import { contextFactorOptions, type ExperimentMetricId, type ExperimentRecord } from '../types';
 
 type RangeMonths = 3 | 6 | 12;
+type DecisionTimelineItem = {
+  date: string;
+  type: string;
+  tone: 'event' | 'result' | 'decision' | 'outcome' | 'experiment';
+  title: string;
+  detail: string;
+  extra?: string;
+};
 
 const store = useAppStore();
 const range = ref<RangeMonths>(3);
@@ -173,7 +181,7 @@ function experimentMetricValue(metricId: ExperimentMetricId, value: number): str
   return `${value.toLocaleString('ru-RU', { maximumFractionDigits: 1 })} кг`;
 }
 
-function experimentTimelineDetail(record: ExperimentRecord): string {
+function experimentTimelineContent(record: ExperimentRecord): Pick<DecisionTimelineItem, 'detail' | 'extra'> {
   const summary = buildExperimentSummary(store.dailyEntries, record);
   const parts = [`Вывод: ${record.conclusion}`];
   const decision = experimentDecisionLabel(record.decision);
@@ -183,12 +191,12 @@ function experimentTimelineDetail(record: ExperimentRecord): string {
     const metrics = summary.metrics.flatMap((metric) => metric.baselineAverage === null || metric.experimentAverage === null ? [] : [
       `${metric.label.toLocaleLowerCase('ru-RU')} ${experimentMetricValue(metric.id, metric.baselineAverage)} → ${experimentMetricValue(metric.id, metric.experimentAverage)} (${metric.baselineSamples}/${metric.experimentSamples} изм.)`,
     ]);
-    if (metrics.length) parts.push(`До → во время: ${metrics.join(', ')}`);
+    return { detail: parts.join('. '), extra: metrics.length ? `До → во время: ${metrics.join(', ')}` : undefined };
   }
-  return parts.join('. ');
+  return { detail: parts.join('. ') };
 }
 
-const decisionTimeline = computed(() => [
+const decisionTimeline = computed<DecisionTimelineItem[]>(() => ([
   ...lifeEvents.value.map((event) => ({ date: event.date, type: 'Событие', tone: 'event', title: event.title, detail: event.note })),
   ...results.value.map((result) => ({ date: result.date, type: 'Итог', tone: 'result', title: result.title, detail: '' })),
   ...store.weeklyReviews.flatMap((review) => {
@@ -210,9 +218,9 @@ const decisionTimeline = computed(() => [
     type: 'Эксперимент',
     tone: 'experiment',
     title: record.title,
-    detail: experimentTimelineDetail(record),
+    ...experimentTimelineContent(record),
   })),
-].filter((item) => item.date >= start.value && item.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)));
+] as DecisionTimelineItem[]).filter((item) => item.date >= start.value && item.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)));
 const displayedDecisionTimeline = computed(() => timelineExpanded.value ? decisionTimeline.value : decisionTimeline.value.slice(0, 8));
 const timelineSummary = computed(() => [
   { tone: 'event', label: 'События', count: decisionTimeline.value.filter((item) => item.tone === 'event').length },
@@ -491,7 +499,14 @@ function downloadJson() {
         <article v-for="(item, index) in displayedDecisionTimeline" :key="`${item.date}-${item.type}-${item.title}-${index}`" class="decision-timeline__item" :class="`decision-timeline__item--${item.tone}`">
           <time>{{ formatDate(item.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</time>
           <span>{{ item.type }}</span>
-          <div><strong>{{ item.title }}</strong><p v-if="item.detail">{{ item.detail }}</p></div>
+          <div>
+            <strong>{{ item.title }}</strong>
+            <p v-if="item.detail">{{ item.detail }}</p>
+            <details v-if="item.extra" class="decision-timeline__details">
+              <summary>Показать сравнение показателей</summary>
+              <p>{{ item.extra }}</p>
+            </details>
+          </div>
         </article>
       </TransitionGroup>
       <button v-if="decisionTimeline.length > 8" class="secondary-button load-more timeline-toggle" type="button" :aria-expanded="timelineExpanded" @click="timelineExpanded = !timelineExpanded">{{ timelineExpanded ? 'Свернуть историю' : `Показать всю историю (${decisionTimeline.length})` }}</button>

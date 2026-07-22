@@ -71,4 +71,22 @@ describe('settings migrations', () => {
     expect(energy.experiment).toMatchObject({ targetMetricId: 'energy', minimumMeaningfulChange: 0.5 });
     expect(combined.experiment.targetMetricId).toBeNull();
   });
+
+  it('discards invalid experiment dates and incomplete history records', () => {
+    const defaultExperiment = normalizeSettings(undefined).experiment;
+    const { active: _active, ...defaultRecord } = defaultExperiment;
+    const settings = normalizeSettings({
+      experiment: { ...defaultExperiment, title: 'Режим', startDate: '22.07.2026', endDate: '2026-07-29' },
+      experimentHistory: [
+        { ...defaultRecord, id: 'invalid', title: 'Старая запись', startDate: '2026-07-30', endDate: '2026-07-20', completedAt: '' },
+        { ...defaultRecord, id: 'valid', title: 'Спокойный вечер', startDate: '2026-07-01', endDate: '2026-07-07', conclusion: 'Стало легче завершать день', completedAt: '' },
+      ],
+    });
+
+    expect(settings.experiment.startDate).toBe('');
+    expect(settings.experiment.endDate).toBe('2026-07-29');
+    expect(settings.experimentHistory).toEqual([
+      expect.objectContaining({ id: 'valid', title: 'Спокойный вечер' }),
+    ]);
+  });
 });

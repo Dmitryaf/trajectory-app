@@ -396,8 +396,8 @@ function normalizeExperiment(value: unknown): Experiment {
       && source.minimumMeaningfulChange > 0
       ? source.minimumMeaningfulChange
       : targetMetricId ? metricOption?.defaultMinimumChange ?? null : null,
-    startDate: typeof source.startDate === "string" ? source.startDate : "",
-    endDate: typeof source.endDate === "string" ? source.endDate : "",
+    startDate: validDate(source.startDate),
+    endDate: validDate(source.endDate),
     conclusion: typeof source.conclusion === "string" ? source.conclusion : "",
     decision: isExperimentDecision(source.decision) ? source.decision : null,
   };
