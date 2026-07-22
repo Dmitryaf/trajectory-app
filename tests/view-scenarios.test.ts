@@ -1,13 +1,15 @@
 // @vitest-environment happy-dom
 
-import { flushPromises, mount } from '@vue/test-utils';
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
+import { createMemoryHistory, createRouter } from 'vue-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import EventsView from '../src/views/EventsView.vue';
 import ResultsView from '../src/views/ResultsView.vue';
 import SettingsView from '../src/views/SettingsView.vue';
 import TodayView from '../src/views/TodayView.vue';
 import TrendsView from '../src/views/TrendsView.vue';
+import { notifySaved, notifyUnknownError } from '../src/services/notifications';
 import { useAppStore } from '../src/stores/app';
 import { defaultSettings, emptyDailyEntry } from '../src/types';
 
@@ -17,6 +19,8 @@ vi.mock('../src/services/notifications', () => ({
   notifySaved: vi.fn(),
   notifyUnknownError: vi.fn()
 }));
+
+enableAutoUnmount(afterEach);
 
 const routerLinkStub = {
   props: ['to'],
@@ -50,6 +54,7 @@ describe('daily entry scenario', () => {
     store.settings.nutritionGoalCriterion = 'Обычный режим питания';
     const saveEntry = vi.spyOn(store, 'saveEntry').mockImplementation(async (entry) => {
       store.dailyEntries = [entry];
+      return entry;
     });
     const wrapper = mount(TodayView, {
       global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } }
@@ -104,6 +109,7 @@ describe('daily entry scenario', () => {
     }];
     const saveEntry = vi.spyOn(store, 'saveEntry').mockImplementation(async (entry) => {
       store.dailyEntries = [entry];
+      return entry;
     });
     const wrapper = mount(TodayView, {
       global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } }
@@ -141,6 +147,82 @@ describe('daily entry scenario', () => {
     expect(headings).toContain('Контекст дня');
     expect(headings).not.toContain('Сон и состояние');
     expect(wrapper.text()).toContain('Необычный день');
+  });
+
+  it('keeps a dirty entry until the user confirms changing the date', async () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [{
+      ...emptyDailyEntry('2026-07-20'),
+      importantFact: 'Сохранённый факт за вчера',
+    }];
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+    const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Факт дня');
+    await factCard!.get('textarea').setValue('Несохранённый факт');
+
+    const unloadEvent = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(unloadEvent);
+    expect(unloadEvent.defaultPrevented).toBe(true);
+
+    const dateInput = wrapper.get('[aria-label="Дата записи"]');
+    await dateInput.setValue('2026-07-20');
+    expect(confirm).toHaveBeenCalledOnce();
+    expect((dateInput.element as HTMLInputElement).value).toBe('2026-07-21');
+    expect(factCard!.get('textarea').element).toHaveProperty('value', 'Несохранённый факт');
+
+    confirm.mockReturnValue(true);
+    await dateInput.setValue('2026-07-20');
+    expect((dateInput.element as HTMLInputElement).value).toBe('2026-07-20');
+    expect(factCard!.get('textarea').element).toHaveProperty('value', 'Сохранённый факт за вчера');
+  });
+
+  it('reports a local save error and allows retrying', async () => {
+    const { pinia, store } = createStore();
+    const saveEntry = vi.spyOn(store, 'saveEntry').mockRejectedValue(new Error('IndexedDB unavailable'));
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+    const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Факт дня');
+    await factCard!.get('textarea').setValue('Не потерять эту запись');
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+
+    expect(saveEntry).toHaveBeenCalledOnce();
+    expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось сохранить день');
+    expect(notifySaved).not.toHaveBeenCalled();
+    expect(wrapper.get('.primary-button--save').attributes('disabled')).toBeUndefined();
+    expect(factCard!.get('textarea').element).toHaveProperty('value', 'Не потерять эту запись');
+  });
+
+  it('blocks route navigation while the daily entry is dirty', async () => {
+    const { pinia } = createStore();
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', component: TodayView },
+        { path: '/next', component: { template: '<div>Следующая страница</div>' } },
+      ],
+    });
+    await router.push('/');
+    await router.isReady();
+    const wrapper = mount(
+      { template: '<RouterView />' },
+      { global: { plugins: [pinia, router], stubs: { RouterLink: routerLinkStub } } },
+    );
+    const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Факт дня');
+    await factCard!.get('textarea').setValue('Несохранённая запись');
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    await router.push('/next');
+    expect(router.currentRoute.value.path).toBe('/');
+    expect(confirm).toHaveBeenCalledOnce();
+
+    confirm.mockReturnValue(true);
+    await router.push('/next');
+    expect(router.currentRoute.value.path).toBe('/next');
+    expect(wrapper.text()).toContain('Следующая страница');
   });
 });
 

@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { onBeforeRouteLeave } from 'vue-router';
 import ChipGroup from '../components/ChipGroup.vue';
 import DurationInput from '../components/DurationInput.vue';
 import ScalePicker from '../components/ScalePicker.vue';
 import { useAppStore } from '../stores/app';
 import { addDays, endOfMonth, endOfWeek, formatDate, formatMinutes, startOfMonth, startOfWeek, todayKey } from '../services/dates';
 import { buildObservations, entriesForPeriod, entriesForWeek, summarize } from '../services/analytics';
-import { notifyError, notifySaved } from '../services/notifications';
+import { notifyError, notifySaved, notifyUnknownError } from '../services/notifications';
 import { plainCopy } from '../services/plain';
 import {
   actionDirectionEntryOptions,
@@ -33,6 +34,7 @@ const sleepDurationMinutes = ref<number | null>(null);
 const timeInBedDurationMinutes = ref<number | null>(null);
 const weightKg = ref<number | null>(null);
 const saved = ref(false);
+const saving = ref(false);
 const validationMessage = ref('');
 const originalEntrySnapshot = ref('');
 const form = reactive<DailyEntry>(emptyDailyEntry(selectedDate.value));
@@ -68,11 +70,12 @@ const entryChangeNotice = computed(() => {
   return '';
 });
 const saveButtonText = computed(() => {
+  if (saving.value) return 'Сохраняю…';
   if (hasSavedEntry.value && isDirty.value) return 'Сохранить изменения';
   if (hasSavedEntry.value) return 'Запись сохранена';
   return 'Сохранить день';
 });
-const saveButtonDisabled = computed(() => hasSavedEntry.value && !isDirty.value && !saved.value);
+const saveButtonDisabled = computed(() => saving.value || (hasSavedEntry.value && !isDirty.value && !saved.value));
 const experimentAppliesToSelectedDate = computed(() => {
   return experimentAppliesToDate(store.settings.experiment, selectedDate.value);
 });
@@ -131,7 +134,36 @@ function timeBetween(start: string, end: string): number | null {
   return duration <= 18 * 60 ? duration : null;
 }
 
+function confirmDiscardChanges(): boolean {
+  return !isDirty.value || window.confirm('Есть несохранённые изменения. Отбросить их и продолжить?');
+}
+
+function changeSelectedDate(date: string): boolean {
+  if (!date || date === selectedDate.value) return true;
+  if (!confirmDiscardChanges()) return false;
+  selectedDate.value = date;
+  return true;
+}
+
+function selectDate(event: Event) {
+  const input = event.currentTarget as HTMLInputElement;
+  if (!changeSelectedDate(input.value)) input.value = selectedDate.value;
+}
+
+function handleBeforeUnload(event: BeforeUnloadEvent) {
+  if (!isDirty.value) return;
+  event.preventDefault();
+  event.returnValue = '';
+}
+
+if (getCurrentInstance()?.appContext.config.globalProperties.$router) {
+  onBeforeRouteLeave(() => confirmDiscardChanges());
+}
+onMounted(() => window.addEventListener('beforeunload', handleBeforeUnload));
+onBeforeUnmount(() => window.removeEventListener('beforeunload', handleBeforeUnload));
+
 async function save() {
+  if (saving.value) return;
   validationMessage.value = '';
   if (blockIsActive('sleep') && sleepDurationMinutes.value !== null && timeInBedDurationMinutes.value !== null && sleepDurationMinutes.value > timeInBedDurationMinutes.value) {
     validationMessage.value = 'Время сна не может быть больше времени в кровати.';
@@ -146,16 +178,26 @@ async function save() {
   if (!hasSavedEntry.value && !entry.externalEvidenceCriterion.trim()) entry.externalEvidenceCriterion = store.settings.externalEvidenceCriterion.trim();
   if (!hasSavedEntry.value && !entry.nutritionCriterion.trim()) entry.nutritionCriterion = store.settings.nutritionGoalCriterion.trim();
   const wasExistingEntry = hasSavedEntry.value;
-  await store.saveEntry(entry);
-  Object.assign(form, entry);
-  originalEntrySnapshot.value = snapshotEntry(form);
-  saved.value = true;
-  notifySaved(wasExistingEntry ? `Запись за ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })} обновлена` : 'День сохранён');
-  window.setTimeout(() => (saved.value = false), 2200);
+  saving.value = true;
+  try {
+    const savedEntry = await store.saveEntry(entry);
+    Object.assign(form, plainCopy(savedEntry));
+    sleepDurationMinutes.value = savedEntry.sleepMinutes;
+    timeInBedDurationMinutes.value = savedEntry.timeInBedMinutes;
+    weightKg.value = savedEntry.weightKg;
+    originalEntrySnapshot.value = snapshotEntry(form);
+    saved.value = true;
+    notifySaved(wasExistingEntry ? `Запись за ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })} обновлена` : 'День сохранён');
+    window.setTimeout(() => (saved.value = false), 2200);
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось сохранить день');
+  } finally {
+    saving.value = false;
+  }
 }
 
 function fillYesterday() {
-  selectedDate.value = yesterday.value;
+  changeSelectedDate(yesterday.value);
 }
 
 function setContextFactors(value: string | string[] | null) {
@@ -181,7 +223,7 @@ function setLifeAreas(value: string | string[] | null) {
         <span class="eyebrow">Ежедневная запись</span>
         <h1>{{ isToday ? 'Сегодня' : formatDate(selectedDate, { day: 'numeric', month: 'long', weekday: 'long' }) }}</h1>
       </div>
-      <input v-model="selectedDate" class="date-input" type="date" :max="todayKey()" aria-label="Дата записи" />
+      <input :value="selectedDate" class="date-input" type="date" :max="todayKey()" aria-label="Дата записи" @change="selectDate" />
     </div>
 
     <nav class="quick-capture" aria-label="Быстрые записи">

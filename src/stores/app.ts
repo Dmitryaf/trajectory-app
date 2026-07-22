@@ -65,6 +65,7 @@ export const useAppStore = defineStore('app', {
       if (index >= 0) this.dailyEntries[index] = saved;
       else this.dailyEntries.push(saved);
       void this.syncCloudSnapshot();
+      return saved;
     },
     async addResult(result: Omit<ResultRecord, 'id' | 'createdAt'>) {
       const record: ResultRecord = plainCopy({ ...result, createdAt: new Date().toISOString() });

@@ -16,6 +16,27 @@ afterAll(async () => {
 });
 
 describe('backup import', () => {
+  it('returns the normalized daily entry that was actually stored', async () => {
+    const store = useAppStore();
+    const saved = await store.saveEntry({
+      ...emptyDailyEntry('2026-07-21'),
+      careerState: 'preparation',
+      careerStates: ['external'],
+      sleepMinutes: 24 * 60 + 1,
+      updatedAt: '',
+    });
+
+    expect(saved).toMatchObject({
+      date: '2026-07-21',
+      careerState: 'external',
+      careerStates: ['external'],
+      sleepMinutes: null,
+    });
+    expect(saved.updatedAt).not.toBe('');
+    expect(store.entryByDate('2026-07-21')).toEqual(saved);
+    expect(await db.dailyEntries.get('2026-07-21')).toEqual(saved);
+  });
+
   it('replaces current data and migrates a version 1 backup to the current model', async () => {
     await db.dailyEntries.put({
       ...emptyDailyEntry('2026-07-21'),
