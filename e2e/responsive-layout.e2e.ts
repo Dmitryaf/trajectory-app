@@ -32,3 +32,14 @@ test('opens period review forms from the summary shortcuts', async ({ page }) =>
     await expect(page.locator(target)).toBeInViewport();
   }
 });
+
+test('keeps desktop navigation visible while the page scrolls', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/trends');
+  const navigation = page.locator('.bottom-nav');
+  await expect(navigation).toHaveCSS('position', 'fixed');
+  const initialTop = (await navigation.boundingBox())?.y;
+
+  await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight }));
+  await expect.poll(async () => (await navigation.boundingBox())?.y).toBe(initialTop);
+});
