@@ -34,6 +34,7 @@ const {
   validationMessage,
   form,
   hasSavedEntry,
+  isDirty,
   entryChangeNotice,
   saveButtonText,
   saveButtonDisabled,
@@ -141,7 +142,7 @@ function setLifeAreas(value: string | string[] | null) {
       <RouterLink class="secondary-button" :to="reminder.to">{{ reminder.label }}</RouterLink>
     </section>
 
-    <form class="checkin-grid" @submit.prevent="save">
+    <form class="checkin-grid" :class="{ 'checkin-grid--dirty': isDirty }" @submit.prevent="save">
       <article v-if="blockIsActive('sleep')" class="form-card form-card--sleep form-card--wide">
         <div class="form-card__heading">
           <span class="section-icon section-icon--purple">◒</span>
@@ -288,6 +289,11 @@ function setLifeAreas(value: string | string[] | null) {
       <button class="primary-button primary-button--save" type="submit" :disabled="saveButtonDisabled">
         <span>{{ saveButtonText }}</span><span>{{ saved ? '✓' : '→' }}</span>
       </button>
+      <Transition name="mobile-save">
+        <button v-if="isDirty" class="primary-button mobile-save-button" type="submit" :disabled="saveButtonDisabled">
+          <span>{{ saveButtonText }}</span><span aria-hidden="true">→</span>
+        </button>
+      </Transition>
     </form>
   </section>
 </template>

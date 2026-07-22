@@ -69,7 +69,7 @@ textarea { resize: vertical; min-height: 64px; }
 .account-strip__logout:disabled { opacity: .58; cursor: not-allowed; }
 .app-main { max-width: 980px; margin: 0 auto; padding: 22px 24px 120px; }
 .page { min-width: 0; animation: page-in .25s ease-out; }
-@keyframes page-in { from { opacity: 0; transform: translateY(5px); } }
+@keyframes page-in { from { opacity: 0; } }
 .page-heading { display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; margin: 14px 0 30px; }
 .page-heading p { margin-bottom: 0; max-width: 610px; }
 .eyebrow { display: block; margin-bottom: 9px; color: var(--accent-dark); font-weight: 850; text-transform: uppercase; letter-spacing: .15em; font-size: 10px; }
@@ -185,6 +185,7 @@ textarea { resize: vertical; min-height: 64px; }
 .secondary-button:hover { background: #e4e8f0; }
 .primary-button:disabled, .secondary-button:disabled { opacity: .45; cursor: not-allowed; box-shadow: 0 8px 18px rgba(17,24,43,.1); }
 .primary-button--save { position: static; min-height: 56px; display: flex; justify-content: space-between; align-items: center; margin-top: 2px; font-size: 15px; }
+.mobile-save-button { display: none; }
 .secondary-button { color: var(--navy); background: #e9eeea; }
 .danger-button { color: #a6392c; background: #fdebe8; }
 
@@ -653,6 +654,14 @@ textarea { resize: vertical; min-height: 64px; }
   .storage-error__mark { width: 44px; height: 44px; border-radius: 14px; font-size: 19px; }
   .storage-error h1 { font-size: 34px; }
   .today-pulse > p { max-width: none; }
+  .checkin-grid--dirty { padding-bottom: 64px; }
+  .mobile-save-button {
+    position: fixed; left: 50%; bottom: 76px; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); z-index: 19; transform: translateX(-50%);
+    width: calc(100% - 28px); max-width: 680px; min-height: 50px; display: flex; justify-content: space-between; align-items: center;
+    border: 1px solid rgba(140,225,191,.28); box-shadow: 0 14px 34px rgba(16,45,44,.28);
+  }
+  .mobile-save-enter-active, .mobile-save-leave-active { transition: opacity var(--motion-fast) var(--motion-ease), transform var(--motion-fast) var(--motion-ease); }
+  .mobile-save-enter-from, .mobile-save-leave-to { opacity: 0; transform: translate(-50%, 6px); }
   .form-card, .result-composer, .dashboard-card, .review-card, .settings-card { padding: 18px; border-radius: 18px; }
   .section-heading:has(.period-actions) { align-items: flex-start; flex-direction: column; }
   .period-actions { width: 100%; justify-content: stretch; }

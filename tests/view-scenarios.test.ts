@@ -70,6 +70,7 @@ describe('daily entry scenario', () => {
     await wrapper.get('#wake-time').setValue('07:30');
     await wrapper.get('#sleep-hours').setValue('9');
     await flushPromises();
+    expect(wrapper.get('.mobile-save-button').text()).toContain('Сохранить день');
     await wrapper.get('form').trigger('submit');
 
     expect(wrapper.get('[role="alert"]').text()).toBe('Время сна не может быть больше времени в кровати.');
@@ -94,6 +95,7 @@ describe('daily entry scenario', () => {
       externalEvidenceCriterion: 'Получен ответ извне',
       nutritionCriterion: 'Обычный режим питания'
     });
+    expect(wrapper.find('.mobile-save-button').exists()).toBe(false);
   });
 
   it('hides inactive blocks while preserving values in an existing entry', async () => {
@@ -186,6 +188,7 @@ describe('daily entry scenario', () => {
     });
     const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Факт дня');
     await factCard!.get('textarea').setValue('Не потерять эту запись');
+    expect(wrapper.find('.mobile-save-button').exists()).toBe(true);
     await wrapper.get('form').trigger('submit');
     await flushPromises();
 
@@ -193,6 +196,7 @@ describe('daily entry scenario', () => {
     expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось сохранить день');
     expect(notifySaved).not.toHaveBeenCalled();
     expect(wrapper.get('.primary-button--save').attributes('disabled')).toBeUndefined();
+    expect(wrapper.find('.mobile-save-button').exists()).toBe(true);
     expect(factCard!.get('textarea').element).toHaveProperty('value', 'Не потерять эту запись');
   });
 
