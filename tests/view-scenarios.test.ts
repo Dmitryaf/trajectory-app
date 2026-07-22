@@ -7,6 +7,7 @@ import EventsView from '../src/views/EventsView.vue';
 import ResultsView from '../src/views/ResultsView.vue';
 import SettingsView from '../src/views/SettingsView.vue';
 import TodayView from '../src/views/TodayView.vue';
+import TrendsView from '../src/views/TrendsView.vue';
 import { useAppStore } from '../src/stores/app';
 import { defaultSettings, emptyDailyEntry } from '../src/types';
 
@@ -286,5 +287,26 @@ describe('settings scenarios', () => {
     await restoreButton!.trigger('click');
     await flushPromises();
     expect(saveSettings).toHaveBeenLastCalledWith(expect.objectContaining({ hiddenContextFactorIds: [] }));
+  });
+});
+
+describe('trends scenarios', () => {
+  it('keeps the change history compact until the user expands it', async () => {
+    const { pinia, store } = createStore();
+    store.results = Array.from({ length: 10 }, (_, index) => ({
+      id: index + 1,
+      date: `2026-07-${String(21 - index).padStart(2, '0')}`,
+      area: 'career' as const,
+      title: `Итог ${index + 1}`,
+      createdAt: `2026-07-${String(21 - index).padStart(2, '0')}T12:00:00.000Z`,
+    }));
+    const wrapper = mount(TrendsView, { global: { plugins: [pinia], stubs: { EChartPanel: true } } });
+
+    expect(wrapper.findAll('.decision-timeline__item')).toHaveLength(8);
+    const toggle = wrapper.get('.timeline-toggle');
+    expect(toggle.attributes('aria-expanded')).toBe('false');
+    await toggle.trigger('click');
+    expect(wrapper.findAll('.decision-timeline__item')).toHaveLength(10);
+    expect(toggle.attributes('aria-expanded')).toBe('true');
   });
 });

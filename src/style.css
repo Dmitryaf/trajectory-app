@@ -486,8 +486,16 @@ textarea { resize: vertical; min-height: 64px; }
 .comparison-table__row small { display: block; margin-top: 3px; color: #929bad; font-size: 10px; font-weight: 650; }
 .empty-copy { margin: 0; color: var(--muted); }
 .decision-timeline { display: grid; }
-.decision-timeline__item { position: relative; display: grid; grid-template-columns: 105px 120px 1fr; gap: 14px; align-items: start; padding: 14px 14px 14px 20px; border-left: 2px solid #dce7e2; border-radius: 0 13px 13px 0; }
-.decision-timeline__item:nth-child(odd) { background: #f6faf8; }
+.decision-timeline__summary { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
+.decision-timeline__summary > span { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border: 1px solid #e0e8e4; border-radius: 999px; background: #f8fbf9; color: #65736e; font-size: 11px; font-weight: 750; }
+.decision-timeline__summary i { width: 8px; height: 8px; border-radius: 50%; background: #7f8ba1; }
+.decision-timeline__summary strong { color: var(--navy); }
+.decision-timeline__summary-item--event i { background: #eb7458; }
+.decision-timeline__summary-item--result i { background: #2eaa7f; }
+.decision-timeline__summary-item--decision i { background: #1d5148; }
+.decision-timeline__summary-item--outcome i { background: #e7a43b; }
+.decision-timeline__item { position: relative; display: grid; grid-template-columns: 105px 120px 1fr; gap: 14px; align-items: start; margin-left: 5px; padding: 14px 16px 14px 20px; border: 1px solid #e6ece9; border-left: 2px solid #dce7e2; border-radius: 0 14px 14px 0; background: #fff; }
+.decision-timeline__item + .decision-timeline__item { margin-top: 7px; }
 .decision-timeline__item::before { content: ""; position: absolute; left: -6px; top: 18px; width: 10px; height: 10px; border: 2px solid #fff; border-radius: 50%; background: #7f8ba1; box-shadow: 0 0 0 1px #dfe4ed; }
 .decision-timeline__item--event::before { background: #eb7458; }
 .decision-timeline__item--decision::before { background: #1d5148; }
@@ -497,6 +505,7 @@ textarea { resize: vertical; min-height: 64px; }
 .decision-timeline__item > span { color: #697489; font-size: 11px; font-weight: 800; text-transform: uppercase; }
 .decision-timeline__item strong { display: block; color: #344055; font-size: 13px; }
 .decision-timeline__item p { margin: 4px 0 0; color: #697489; font-size: 12px; line-height: 1.45; }
+.timeline-toggle { margin-top: 12px; }
 .month-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
 .coverage-list { display: grid; gap: 13px; }
 .coverage-row { display: grid; grid-template-columns: 135px 1fr 48px; gap: 10px; align-items: center; }
@@ -538,6 +547,12 @@ textarea { resize: vertical; min-height: 64px; }
 .custom-list__item span { display: flex; align-items: center; gap: 7px; color: #4d586e; font-weight: 700; font-size: 13px; }
 .custom-list__item i { font-style: normal; color: var(--accent-dark); font-weight: 900; }
 .custom-list__item small { color: var(--muted); font-size: 11px; font-weight: 600; }
+.context-factor-list { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0 0 16px; }
+.hidden-options { margin-top: 16px; padding-top: 14px; border-top: 1px solid #e7edea; }
+.hidden-options__list { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
+.restore-option { display: inline-flex; align-items: center; gap: 6px; padding: 8px 11px; border: 1px dashed #bdcec6; border-radius: 999px; background: #f8fbf9; color: #537066; cursor: pointer; font-size: 12px; font-weight: 750; }
+.restore-option:hover { border-color: #76b69d; background: #eef8f4; color: #1b644e; }
+.restore-option span { color: #258869; font-size: 15px; line-height: 1; }
 .data-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .cloud-sync-note {
   padding: 14px 16px;
@@ -645,6 +660,7 @@ textarea { resize: vertical; min-height: 64px; }
   .result-composer__fields { grid-template-columns: 1fr; }
   .event-composer__fields { grid-template-columns: 1fr; }
   .inline-add { grid-template-columns: 1fr; }
+  .context-factor-list { grid-template-columns: 1fr; }
   .cloud-auth-grid { grid-template-columns: 1fr; }
   .cloud-session { align-items: flex-start; flex-direction: column; }
   .cloud-actions .primary-button, .cloud-actions .secondary-button { flex: 1; }

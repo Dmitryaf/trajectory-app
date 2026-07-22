@@ -14,6 +14,7 @@ type RangeMonths = 3 | 6 | 12;
 
 const store = useAppStore();
 const range = ref<RangeMonths>(3);
+const timelineExpanded = ref(false);
 const selectedEventKey = ref('');
 const eventPicker = ref<HTMLDetailsElement>();
 const rangeOptions: Array<{ value: RangeMonths; label: string }> = [
@@ -42,6 +43,7 @@ watch(lifeEvents, (events) => {
     selectedEventKey.value = events[0] ? eventKey(events[0]) : '';
   }
 }, { immediate: true });
+watch(range, () => { timelineExpanded.value = false; });
 
 const selectedEvent = computed(() => lifeEvents.value.find((event) => eventKey(event) === selectedEventKey.value) ?? null);
 const eventComparison = computed(() => selectedEvent.value
@@ -180,7 +182,14 @@ const decisionTimeline = computed(() => [
     title: review.nextFocus || review.courseChange || review.mainPattern || 'Обзор месяца',
     detail: review.ifThenPlan,
   })),
-].filter((item) => item.date >= start.value && item.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30));
+].filter((item) => item.date >= start.value && item.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)));
+const displayedDecisionTimeline = computed(() => timelineExpanded.value ? decisionTimeline.value : decisionTimeline.value.slice(0, 8));
+const timelineSummary = computed(() => [
+  { tone: 'event', label: 'События', count: decisionTimeline.value.filter((item) => item.tone === 'event').length },
+  { tone: 'result', label: 'Итоги', count: decisionTimeline.value.filter((item) => item.tone === 'result').length },
+  { tone: 'decision', label: 'Решения', count: decisionTimeline.value.filter((item) => item.tone === 'decision').length },
+  { tone: 'outcome', label: 'Проверки', count: decisionTimeline.value.filter((item) => item.tone === 'outcome').length },
+].filter((item) => item.count > 0));
 const weightOption = computed<EChartsCoreOption>(() => ({
   color: ['#d9952f'],
   tooltip: { trigger: 'axis' },
@@ -444,13 +453,17 @@ function downloadJson() {
 
     <article v-if="decisionTimeline.length" class="dashboard-card dashboard-card--timeline">
       <div class="section-heading"><div><span class="eyebrow">История изменений</span><h2>События, решения и итоги</h2></div><span class="count-badge">{{ decisionTimeline.length }}</span></div>
-      <div class="decision-timeline">
-        <article v-for="(item, index) in decisionTimeline" :key="`${item.date}-${item.type}-${index}`" class="decision-timeline__item" :class="`decision-timeline__item--${item.tone}`">
+      <div class="decision-timeline__summary" aria-label="Состав истории">
+        <span v-for="item in timelineSummary" :key="item.tone" :class="`decision-timeline__summary-item--${item.tone}`"><i></i>{{ item.label }} <strong>{{ item.count }}</strong></span>
+      </div>
+      <TransitionGroup name="reveal-list" tag="div" class="decision-timeline">
+        <article v-for="(item, index) in displayedDecisionTimeline" :key="`${item.date}-${item.type}-${item.title}-${index}`" class="decision-timeline__item" :class="`decision-timeline__item--${item.tone}`">
           <time>{{ formatDate(item.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</time>
           <span>{{ item.type }}</span>
           <div><strong>{{ item.title }}</strong><p v-if="item.detail">{{ item.detail }}</p></div>
         </article>
-      </div>
+      </TransitionGroup>
+      <button v-if="decisionTimeline.length > 8" class="secondary-button load-more timeline-toggle" type="button" :aria-expanded="timelineExpanded" @click="timelineExpanded = !timelineExpanded">{{ timelineExpanded ? 'Свернуть историю' : `Показать всю историю (${decisionTimeline.length})` }}</button>
     </article>
   </section>
 </template>
