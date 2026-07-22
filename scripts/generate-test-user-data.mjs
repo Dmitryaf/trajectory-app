@@ -190,7 +190,7 @@ const payload = {
   monthlyReviews,
   settings: {
     id: 'main',
-    settingsVersion: 5,
+    settingsVersion: 6,
     activeDailyBlocks: ['sleep', 'context', 'career', 'movement', 'nutrition'],
     activeLifeAreas: ['family', 'reading', 'creativity', 'rest', 'friends', 'english', 'custom:life:personal-projects'],
     customCareerOptions: [
@@ -202,6 +202,7 @@ const payload = {
     customContextFactorOptions: [
       { id: 'custom:context:noise', label: 'Шум за окном', icon: '+', custom: true, archived: true },
     ],
+    hiddenContextFactorIds: [],
     activeFocusTitle: 'Найти устойчивый ритм поиска работы и личного проекта',
     externalEvidenceCriterion: 'Отправленный отклик, назначенный разговор или опубликованный результат',
     nutritionGoalCriterion: 'Регулярные приёмы пищи без позднего переедания',

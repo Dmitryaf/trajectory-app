@@ -1982,7 +1982,7 @@
   ],
   "settings": {
     "id": "main",
-    "settingsVersion": 5,
+    "settingsVersion": 6,
     "activeDailyBlocks": [
       "sleep",
       "context",
@@ -2027,6 +2027,7 @@
         "archived": true
       }
     ],
+    "hiddenContextFactorIds": [],
     "activeFocusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
     "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
     "nutritionGoalCriterion": "Регулярные приёмы пищи без позднего переедания",

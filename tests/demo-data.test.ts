@@ -12,7 +12,7 @@ describe('test user fixture', () => {
   it('uses the current import schema and normalized settings', () => {
     expect(fixture.version).toBe(3);
     const settings = normalizeSettings(fixture.settings);
-    expect(settings.settingsVersion).toBe(5);
+    expect(settings.settingsVersion).toBe(6);
     expect(settings.activeDailyBlocks).toEqual(['sleep', 'context', 'career', 'movement', 'nutrition']);
     expect(settings.activeLifeAreas).not.toContain('spiritual');
     expect(settings.customCareerOptions.some((option) => option.label === 'Адресные отклики')).toBe(false);

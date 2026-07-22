@@ -9,7 +9,7 @@ import { buildObservations, entriesForPeriod, entriesForWeek, summarize } from '
 import { notifyError, notifySaved } from '../services/notifications';
 import { plainCopy } from '../services/plain';
 import {
-  actionDirectionOptions,
+  actionDirectionEntryOptions,
   activityOptions,
   careerOptions,
   emptyDailyEntry,
@@ -38,7 +38,13 @@ const originalEntrySnapshot = ref('');
 const form = reactive<DailyEntry>(emptyDailyEntry(selectedDate.value));
 
 const careerItems = computed(() => [...careerOptions, ...store.settings.customCareerOptions.filter((option) => !option.archived)]);
-const contextFactorItems = computed(() => [...contextFactorOptions, ...store.settings.customContextFactorOptions.filter((option) => !option.archived)]);
+const contextFactorItems = computed(() => [
+  ...contextFactorOptions.filter((option) => !store.settings.hiddenContextFactorIds.includes(option.id)),
+  ...store.settings.customContextFactorOptions.filter((option) => !option.archived),
+]);
+const actionDirectionItems = computed(() => form.actionDirection === 'recovery'
+  ? [...actionDirectionEntryOptions, { id: 'recovery' as const, label: 'Восстановление (старая отметка)', icon: '◌' }]
+  : actionDirectionEntryOptions);
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
 const activeLifeOptions = computed(() => lifeAreaItems.value.filter((option) => store.settings.activeLifeAreas.includes(option.id)));
 const activeDailyBlocks = computed(() => new Set(store.settings.activeDailyBlocks));
@@ -286,7 +292,8 @@ function setLifeAreas(value: string | string[] | null) {
           <div><h2>Действия по текущей цели</h2><p>{{ form.focusTitle || store.settings.activeFocusTitle ? `Текущая цель: ${form.focusTitle || store.settings.activeFocusTitle}` : 'Выбери, что лучше всего описывает этот день относительно твоей цели.' }}</p></div>
         </div>
         <p v-if="form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion" class="form-context">Конкретное действие: {{ form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion }}</p>
-        <ChipGroup v-model="form.actionDirection as ActionDirectionId | null" :options="actionDirectionOptions" allow-clear />
+        <ChipGroup v-model="form.actionDirection as ActionDirectionId | null" :options="actionDirectionItems" allow-clear />
+        <p v-if="form.actionDirection === 'recovery'" class="data-note">Это значение сохранено из старой записи. Для новых дней восстановление отмечается в активности или контексте дня.</p>
         <textarea
           v-if="form.actionDirection"
           v-model="form.actionNote"

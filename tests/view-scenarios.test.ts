@@ -57,6 +57,8 @@ describe('daily entry scenario', () => {
     expect(wrapper.get('[aria-label="Дата записи"]').attributes('max')).toBe('2026-07-21');
     expect(wrapper.text()).toContain('Действия по текущей цели');
     expect(wrapper.text()).toContain('Физическая активность');
+    const directionCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Действия по текущей цели');
+    expect(directionCard?.findAll('.chip').map((chip) => chip.text())).not.toContain('Восстановление');
 
     await wrapper.get('#bedtime').setValue('23:40');
     await wrapper.get('#wake-time').setValue('07:30');
@@ -267,5 +269,22 @@ describe('settings scenarios', () => {
     expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({
       activeDailyBlocks: ['sleep', 'context', 'movement', 'nutrition']
     }));
+  });
+
+  it('hides and restores built-in context factors without deleting their definition', async () => {
+    const { pinia, store } = createStore();
+    const saveSettings = vi.spyOn(store, 'saveSettings').mockResolvedValue(undefined);
+    const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
+    const contextCard = wrapper.get('.settings-card--context');
+
+    await contextCard.get('[aria-label="Скрыть Экранное время"]').trigger('click');
+    await flushPromises();
+    expect(saveSettings).toHaveBeenLastCalledWith(expect.objectContaining({ hiddenContextFactorIds: ['screen'] }));
+    expect(contextCard.text()).toContain('Скрытые факторы');
+
+    const restoreButton = contextCard.findAll('.restore-option').find((button) => button.text().includes('Экранное время'));
+    await restoreButton!.trigger('click');
+    await flushPromises();
+    expect(saveSettings).toHaveBeenLastCalledWith(expect.objectContaining({ hiddenContextFactorIds: [] }));
   });
 });

@@ -125,6 +125,7 @@ export type AppSettings = {
   customCareerOptions: Option<CareerState>[];
   customLifeAreaOptions: Option<LifeAreaId>[];
   customContextFactorOptions: Option<ContextFactorId>[];
+  hiddenContextFactorIds: ContextFactorId[];
   activeFocusTitle: string;
   externalEvidenceCriterion: string;
   nutritionGoalCriterion: string;
@@ -170,6 +171,8 @@ export const actionDirectionOptions: Option<ActionDirectionId>[] = [
   { id: "drift", label: "Занимался другим", icon: "!" },
 ];
 
+export const actionDirectionEntryOptions = actionDirectionOptions.filter((option) => option.id !== "recovery");
+
 export const specialDayOptions: Option<SpecialDayId>[] = [
   { id: "sick", label: "Болел", icon: "+" },
   { id: "travel", label: "Поездка", icon: "→" },
@@ -188,14 +191,14 @@ export const lifeEventTypeOptions: Option<LifeEventType>[] = [
 ];
 
 export const contextFactorOptions: Option<BaseContextFactorId>[] = [
-  { id: "late_bedtime", label: "Поздно лёг", icon: "◷" },
-  { id: "screen", label: "Экран перед сном", icon: "▣" },
-  { id: "news", label: "Новости", icon: "!" },
-  { id: "series_video", label: "Сериалы/видео", icon: "▶" },
-  { id: "work_code", label: "Работа/код", icon: "◇" },
-  { id: "late_food", label: "Поздняя еда", icon: "+" },
-  { id: "caffeine_alcohol", label: "Кофеин/алкоголь", icon: "◌" },
-  { id: "anxiety_overload", label: "Тревога/перегруз", icon: "⌁" },
+  { id: "late_bedtime", label: "Изменившийся режим сна", icon: "◷" },
+  { id: "screen", label: "Экранное время", icon: "▣" },
+  { id: "news", label: "Новости и инфопоток", icon: "!" },
+  { id: "series_video", label: "Видео и сериалы", icon: "▶" },
+  { id: "work_code", label: "Рабочая нагрузка", icon: "◇" },
+  { id: "late_food", label: "Поздний приём пищи", icon: "+" },
+  { id: "caffeine_alcohol", label: "Кофеин или алкоголь", icon: "◌" },
+  { id: "anxiety_overload", label: "Эмоциональная нагрузка", icon: "⌁" },
   { id: "other", label: "Другое", icon: "…" },
 ];
 
@@ -228,12 +231,13 @@ export const dailyBlockOptions: Option<DailyBlockId>[] = [
 
 export const defaultSettings: AppSettings = {
   id: "main",
-  settingsVersion: 5,
+  settingsVersion: 6,
   activeDailyBlocks: dailyBlockOptions.map((option) => option.id),
   activeLifeAreas: ["family", "reading", "creativity", "rest"],
   customCareerOptions: [],
   customLifeAreaOptions: [],
   customContextFactorOptions: [],
+  hiddenContextFactorIds: [],
   activeFocusTitle: "",
   externalEvidenceCriterion: "",
   nutritionGoalCriterion: "",
@@ -253,6 +257,11 @@ export function normalizeSettings(settings: LegacyAppSettings | null | undefined
   const customLifeAreaOptions = sanitizeOptions(source.customLifeAreaOptions);
   const customContextFactorOptions = sanitizeOptions(source.customContextFactorOptions ?? source.customEveningFactorOptions)
     .filter((option) => option.id !== removedDemoContextFactorId);
+  const hiddenContextFactorIds = Array.isArray(source.hiddenContextFactorIds)
+    ? Array.from(new Set(source.hiddenContextFactorIds.filter((id): id is ContextFactorId => (
+        typeof id === "string" && contextFactorOptions.some((option) => option.id === id)
+      ))))
+    : [];
 
   const activeLifeAreas = Array.isArray(source.activeLifeAreas)
     ? source.activeLifeAreas.filter((area): area is LifeAreaId => typeof area === "string")
@@ -273,6 +282,7 @@ export function normalizeSettings(settings: LegacyAppSettings | null | undefined
     customCareerOptions,
     customLifeAreaOptions,
     customContextFactorOptions,
+    hiddenContextFactorIds,
     activeFocusTitle: typeof source.activeFocusTitle === "string" ? source.activeFocusTitle : "",
     externalEvidenceCriterion: typeof source.externalEvidenceCriterion === "string" ? source.externalEvidenceCriterion : "",
     nutritionGoalCriterion: typeof source.nutritionGoalCriterion === "string" ? source.nutritionGoalCriterion : "",

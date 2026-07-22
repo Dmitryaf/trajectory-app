@@ -21,7 +21,14 @@ const newContextFactorLabel = ref('');
 const auth = useAuthStore();
 const allCareerOptions = computed(() => [...careerOptions, ...settings.customCareerOptions.filter((option) => !option.archived)]);
 const allLifeAreaOptions = computed(() => [...lifeAreaOptions, ...settings.customLifeAreaOptions.filter((option) => !option.archived)]);
-const allContextFactorOptions = computed(() => [...contextFactorOptions, ...settings.customContextFactorOptions.filter((option) => !option.archived)]);
+const activeContextFactorOptions = computed(() => [
+  ...contextFactorOptions.filter((option) => !settings.hiddenContextFactorIds.includes(option.id)),
+  ...settings.customContextFactorOptions.filter((option) => !option.archived),
+]);
+const hiddenContextFactorOptions = computed(() => [
+  ...contextFactorOptions.filter((option) => settings.hiddenContextFactorIds.includes(option.id)),
+  ...settings.customContextFactorOptions.filter((option) => option.archived),
+]);
 const cloudSession = computed(() => auth.session);
 const cloudUserEmail = computed(() => auth.userEmail);
 const cloudStatusTitle = computed(() => {
@@ -109,7 +116,15 @@ async function removeLifeArea(id: LifeAreaId) {
 
 async function addContextFactor() {
   const label = newContextFactorLabel.value.trim();
-  if (!label || hasOption(contextFactorOptions, label)) return;
+  if (!label) return;
+  const hiddenBuiltIn = contextFactorOptions.find((option) => settings.hiddenContextFactorIds.includes(option.id) && sameLabel(option.label, label));
+  if (hiddenBuiltIn) {
+    settings.hiddenContextFactorIds = settings.hiddenContextFactorIds.filter((id) => id !== hiddenBuiltIn.id);
+    newContextFactorLabel.value = '';
+    await save('Фактор дня возвращён');
+    return;
+  }
+  if (hasOption(contextFactorOptions, label)) return;
   const archived = findArchived(settings.customContextFactorOptions, label);
   if (archived) archived.archived = false;
   else if (!hasOption(settings.customContextFactorOptions, label)) settings.customContextFactorOptions.push(createCustomOption(label, 'context'));
@@ -120,11 +135,23 @@ async function addContextFactor() {
 async function removeContextFactor(id: ContextFactorId) {
   const option = settings.customContextFactorOptions.find((item) => item.id === id);
   if (option) option.archived = true;
+  else if (!settings.hiddenContextFactorIds.includes(id)) settings.hiddenContextFactorIds.push(id);
   await save('Фактор скрыт из ежедневной записи');
 }
 
+async function restoreContextFactor(id: ContextFactorId) {
+  const option = settings.customContextFactorOptions.find((item) => item.id === id);
+  if (option) option.archived = false;
+  else settings.hiddenContextFactorIds = settings.hiddenContextFactorIds.filter((factorId) => factorId !== id);
+  await save('Фактор дня возвращён');
+}
+
 function hasOption(options: { label: string }[], label: string) {
-  return options.some((option) => option.label.trim().toLocaleLowerCase('ru-RU') === label.toLocaleLowerCase('ru-RU'));
+  return options.some((option) => sameLabel(option.label, label));
+}
+
+function sameLabel(left: string, right: string) {
+  return left.trim().toLocaleLowerCase('ru-RU') === right.trim().toLocaleLowerCase('ru-RU');
 }
 
 function findArchived<T extends string>(options: Option<T>[], label: string) {
@@ -270,8 +297,11 @@ async function clearAll() {
 
     <article class="settings-card settings-card--context">
       <div class="form-card__heading"><span class="section-icon section-icon--orange">⌁</span><div><h2>Факторы дня</h2><p>Добавляй повторяющиеся условия, которые могут пригодиться в недельном или месячном разборе.</p></div></div>
-      <div class="option-preview">
-        <span v-for="option in allContextFactorOptions" :key="option.id" class="option-pill"><i v-if="option.icon">{{ option.icon }}</i>{{ option.label }}</span>
+      <div class="custom-list context-factor-list">
+        <div v-for="option in activeContextFactorOptions" :key="option.id" class="custom-list__item">
+          <span><i v-if="option.icon">{{ option.icon }}</i>{{ option.label }}</span>
+          <button class="ghost-button ghost-button--danger" type="button" :aria-label="`Скрыть ${option.label}`" @click="removeContextFactor(option.id)">×</button>
+        </div>
       </div>
       <div class="custom-options">
         <label class="field-label" for="new-context-factor">Свой фактор</label>
@@ -279,10 +309,10 @@ async function clearAll() {
           <input id="new-context-factor" v-model="newContextFactorLabel" type="text" maxlength="40" placeholder="Например: шум за окном" @keyup.enter="addContextFactor" />
           <button class="secondary-button" type="button" :disabled="!newContextFactorLabel.trim()" @click="addContextFactor">Добавить</button>
         </div>
-        <div v-if="settings.customContextFactorOptions.some((option) => !option.archived)" class="custom-list">
-          <div v-for="option in settings.customContextFactorOptions.filter((item) => !item.archived)" :key="option.id" class="custom-list__item">
-            <span><i>{{ option.icon }}</i>{{ option.label }}</span>
-            <button class="ghost-button ghost-button--danger" type="button" :aria-label="`Скрыть ${option.label}`" @click="removeContextFactor(option.id)">×</button>
+        <div v-if="hiddenContextFactorOptions.length" class="hidden-options">
+          <span class="field-label">Скрытые факторы</span>
+          <div class="hidden-options__list">
+            <button v-for="option in hiddenContextFactorOptions" :key="option.id" class="restore-option" type="button" @click="restoreContextFactor(option.id)"><span>+</span>{{ option.label }}</button>
           </div>
         </div>
         <p class="data-note">Скрытый фактор исчезает из новых записей, но остаётся подписанным в истории.</p>

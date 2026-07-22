@@ -15,9 +15,10 @@ describe('settings migrations', () => {
     });
 
     expect(settings.customCareerOptions).toEqual([]);
-    expect(settings.settingsVersion).toBe(5);
+    expect(settings.settingsVersion).toBe(6);
     expect(settings.activeDailyBlocks).toContain('context');
     expect(settings.customContextFactorOptions).toEqual([]);
+    expect(settings.hiddenContextFactorIds).toEqual([]);
     expect(settings).not.toHaveProperty('customEveningFactorOptions');
     expect(normalized.careerStates).toEqual(['preparation', 'external']);
     expect(normalized.contextFactors).toEqual(['screen']);
