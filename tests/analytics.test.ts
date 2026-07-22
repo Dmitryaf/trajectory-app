@@ -1,8 +1,10 @@
 import { reactive } from 'vue';
 import { describe, expect, it } from 'vitest';
 import { buildCoverageSeries, dataCoverageLevel } from '../src/features/analytics/coverage';
+import { buildEventComparison } from '../src/features/analytics/eventComparison';
+import { buildObservations, factorSummaries } from '../src/features/analytics/observations';
 import { entriesForPeriod, entriesForWeek, summarize } from '../src/features/analytics/periodSummary';
-import { buildEventComparison, buildObservations, buildRangeReviewCues, buildReviewCues, factorSummaries, weekSummaryText } from '../src/services/analytics';
+import { buildRangeReviewCues, buildReviewCues, weekSummaryText } from '../src/services/analytics';
 import { buildAiReportPayload, buildAiReportPrompt, buildAiReportRangePayload } from '../src/features/export/report';
 import { addMonths, monthsBetween } from '../src/services/dates';
 import { defaultSettings, emptyDailyEntry, experimentAppliesToDate, normalizeDailyEntry, normalizeLifeEvent, normalizeMonthlyReview, normalizeSettings, normalizeWeeklyReview, type DailyEntry } from '../src/types';
