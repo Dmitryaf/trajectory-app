@@ -2201,6 +2201,13 @@
     ],
     "customLifeAreaOptions": [
       {
+        "id": "english",
+        "label": "Английский",
+        "icon": "A",
+        "custom": true,
+        "archived": false
+      },
+      {
         "id": "custom:life:personal-projects",
         "label": "Личные проекты",
         "icon": "+",

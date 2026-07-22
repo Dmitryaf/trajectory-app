@@ -89,4 +89,18 @@ describe('settings migrations', () => {
       expect.objectContaining({ id: 'valid', title: 'Спокойный вечер' }),
     ]);
   });
+
+  it('moves an active legacy personal area into user options', () => {
+    const settings = normalizeSettings({
+      activeLifeAreas: ['family', 'english'],
+      customLifeAreaOptions: [],
+    });
+
+    expect(settings.activeLifeAreas).toEqual(['family', 'english']);
+    expect(settings.customLifeAreaOptions).toContainEqual(expect.objectContaining({
+      id: 'english',
+      label: 'Английский',
+      custom: true,
+    }));
+  });
 });

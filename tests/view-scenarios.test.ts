@@ -69,6 +69,10 @@ describe('daily entry scenario', () => {
     expect(wrapper.text()).toContain('Физическая активность');
     const directionCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Действия по текущей цели');
     expect(directionCard?.findAll('.chip').map((chip) => chip.text())).not.toContain('Восстановление');
+    const movementCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Физическая активность');
+    expect(movementCard?.findAll('.chip').map((chip) => chip.text())).toEqual(['→ Прогулка', '△ Тренировка', '○ Восстановление']);
+    const lifeAreaCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Области жизни');
+    expect(lifeAreaCard?.text()).not.toContain('Английский');
 
     await wrapper.get('#bedtime').setValue('23:40');
     await wrapper.get('#wake-time').setValue('07:30');

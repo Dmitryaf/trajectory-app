@@ -214,6 +214,7 @@ const payload = {
       { id: 'custom:career:course', label: 'Учебный курс', icon: '+', custom: true, countsAsExternal: false, archived: true },
     ],
     customLifeAreaOptions: [
+      { id: 'english', label: 'Английский', icon: 'A', custom: true, archived: false },
       { id: 'custom:life:personal-projects', label: 'Личные проекты', icon: '+', custom: true, archived: false },
     ],
     customContextFactorOptions: [

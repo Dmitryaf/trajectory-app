@@ -20,6 +20,7 @@ describe('test user fixture', () => {
     expect(settings.experimentHistory[0]).toMatchObject({ decision: 'more_data', endDate: '2026-06-16' });
     expect(settings.activeDailyBlocks).toEqual(['sleep', 'context', 'career', 'movement', 'nutrition']);
     expect(settings.activeLifeAreas).not.toContain('spiritual');
+    expect(settings.customLifeAreaOptions).toContainEqual(expect.objectContaining({ id: 'english', label: 'Английский', custom: true }));
     expect(settings.customCareerOptions.some((option) => option.label === 'Адресные отклики')).toBe(false);
     expect(settings.customContextFactorOptions.some((option) => option.label === 'Спокойный душ')).toBe(false);
   });

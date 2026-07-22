@@ -198,12 +198,17 @@ export const careerOptions: Option<BaseCareerState>[] = [
 ];
 
 export const activityOptions: Option<ActivityId>[] = [
-  { id: "boxing", label: "Бокс", icon: "◈" },
-  { id: "bachata", label: "Бачата", icon: "♪" },
   { id: "walk", label: "Прогулка", icon: "→" },
   { id: "workout", label: "Тренировка", icon: "△" },
   { id: "recovery", label: "Восстановление", icon: "○" },
 ];
+
+export const legacyActivityOptions: Option<ActivityId>[] = [
+  { id: "boxing", label: "Бокс", icon: "◈" },
+  { id: "bachata", label: "Бачата", icon: "♪" },
+];
+
+export const knownActivityOptions: Option<ActivityId>[] = [...activityOptions, ...legacyActivityOptions];
 
 export const nutritionOptions: Option<NutritionState>[] = [
   { id: "supports_goal", label: "Поддержало цель", icon: "✓" },
@@ -257,6 +262,9 @@ export const lifeAreaOptions: Option<BaseLifeAreaId>[] = [
   { id: "spiritual", label: "Духовное", icon: "◎" },
   { id: "rest", label: "Отдых", icon: "☼" },
   { id: "friends", label: "Друзья", icon: "◌" },
+];
+
+export const legacyLifeAreaOptions: Option<BaseLifeAreaId>[] = [
   { id: "english", label: "Английский", icon: "A" },
 ];
 
@@ -338,7 +346,15 @@ export function normalizeSettings(settings: LegacyAppSettings | null | undefined
   const source = settings ?? {};
   const customCareerOptions = sanitizeOptions(source.customCareerOptions)
     .filter((option) => option.id !== removedDemoCareerOptionId);
+  const activeLifeAreas = Array.isArray(source.activeLifeAreas)
+    ? source.activeLifeAreas.filter((area): area is LifeAreaId => typeof area === "string")
+    : defaultSettings.activeLifeAreas;
   const customLifeAreaOptions = sanitizeOptions(source.customLifeAreaOptions);
+  for (const option of legacyLifeAreaOptions) {
+    if (activeLifeAreas.includes(option.id) && !customLifeAreaOptions.some((item) => item.id === option.id)) {
+      customLifeAreaOptions.push({ ...option, custom: true });
+    }
+  }
   const customContextFactorOptions = sanitizeOptions(source.customContextFactorOptions ?? source.customEveningFactorOptions)
     .filter((option) => option.id !== removedDemoContextFactorId);
   const hiddenContextFactorIds = Array.isArray(source.hiddenContextFactorIds)
@@ -347,9 +363,6 @@ export function normalizeSettings(settings: LegacyAppSettings | null | undefined
       ))))
     : [];
 
-  const activeLifeAreas = Array.isArray(source.activeLifeAreas)
-    ? source.activeLifeAreas.filter((area): area is LifeAreaId => typeof area === "string")
-    : defaultSettings.activeLifeAreas;
   const parsedDailyBlocks = Array.isArray(source.activeDailyBlocks)
     ? source.activeDailyBlocks.filter((block): block is DailyBlockId => dailyBlockOptions.some((option) => option.id === block))
     : defaultSettings.activeDailyBlocks;
@@ -543,7 +556,7 @@ export function normalizeDailyEntry(entry: LegacyDailyEntry & { date: string }):
     state === removedDemoCareerOptionId ? "external" : state
   ))));
   const activities = Array.isArray(entry.activities)
-    ? entry.activities.filter((activity): activity is ActivityId => activityOptions.some((option) => option.id === activity))
+    ? entry.activities.filter((activity): activity is ActivityId => knownActivityOptions.some((option) => option.id === activity))
     : [];
   const sourceContextFactors = Array.isArray(entry.contextFactors)
     ? entry.contextFactors
