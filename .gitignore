@@ -11,3 +11,5 @@ trajectory-app/
 
 .vercel
 storybook-static/
+playwright-report/
+test-results/
