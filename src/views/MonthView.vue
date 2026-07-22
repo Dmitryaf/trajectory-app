@@ -348,8 +348,8 @@ function shiftMonth(offset: number) {
 
       <article class="dashboard-card">
       <div class="section-heading"><div><span class="eyebrow">Завершённые факты</span><h2>Итоги месяца</h2></div><span class="count-badge">{{ results.length }}</span></div>
-        <ul v-if="results.length" class="compact-results"><li v-for="result in displayedResults" :key="result.id"><span>✓</span><div>{{ result.title }}<small>{{ formatDate(result.date, { day: 'numeric', month: 'short' }) }}</small></div></li></ul>
-        <button v-if="results.length > 5" class="secondary-button load-more" type="button" @click="showAllResults = !showAllResults">{{ showAllResults ? 'Свернуть' : `Показать все (${results.length})` }}</button>
+        <TransitionGroup v-if="results.length" name="reveal-list" tag="ul" class="compact-results"><li v-for="result in displayedResults" :key="result.id ?? result.createdAt"><span>✓</span><div>{{ result.title }}<small>{{ formatDate(result.date, { day: 'numeric', month: 'short' }) }}</small></div></li></TransitionGroup>
+        <button v-if="results.length > 5" class="secondary-button load-more" type="button" :aria-expanded="showAllResults" @click="showAllResults = !showAllResults">{{ showAllResults ? 'Свернуть' : `Показать все (${results.length})` }}</button>
         <div v-if="!results.length" class="empty-state empty-state--compact"><p>Пока нет зафиксированных итогов.</p></div>
       </article>
     </div>

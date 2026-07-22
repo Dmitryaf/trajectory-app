@@ -221,8 +221,11 @@ describe('journal scenarios', () => {
     expect(wrapper.text()).toContain('Сегодняшнее решение');
     expect(wrapper.text()).not.toContain('Наблюдение');
     const longNoteToggle = wrapper.get('.timeline-item__note-toggle');
+    expect(longNoteToggle.attributes('aria-expanded')).toBe('false');
+    expect(longNoteToggle.attributes('aria-controls')).toBe(wrapper.get('.timeline-item__note').attributes('id'));
     expect(wrapper.get('.timeline-item__note').classes()).toContain('timeline-item__note--clamped');
     await longNoteToggle.trigger('click');
+    expect(longNoteToggle.attributes('aria-expanded')).toBe('true');
     expect(wrapper.get('.timeline-item__note').classes()).not.toContain('timeline-item__note--clamped');
     expect(longNoteToggle.text()).toBe('Свернуть');
     await wrapper.get('.archive-filter__all-time').trigger('click');

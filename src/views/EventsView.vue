@@ -126,20 +126,22 @@ function toggleNote(event: LifeEventRecord) {
         <select v-model="filterType" aria-label="Тип события"><option value="all">Все типы</option><option v-for="option in lifeEventTypeOptions" :key="option.id" :value="option.id">{{ option.label }}</option></select>
         <ArchiveDateRange v-model:date-from="dateFrom" v-model:date-to="dateTo" context-label="событий" />
       </div>
-      <div v-if="visibleEvents.length" class="timeline-list">
-        <article v-for="event in visibleEvents" :key="event.id" class="timeline-item">
+      <div v-if="visibleEvents.length">
+        <TransitionGroup name="archive-list" tag="div" class="timeline-list">
+        <article v-for="event in visibleEvents" :key="eventKey(event)" class="timeline-item">
           <span class="timeline-item__icon">{{ eventMeta(event.type).icon }}</span>
           <div>
             <strong>{{ event.title }}</strong>
             <small>{{ eventMeta(event.type).label }} · {{ formatDate(event.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</small>
-            <p v-if="event.note" class="timeline-item__note" :class="{ 'timeline-item__note--clamped': event.note.length > 240 && !noteIsExpanded(event) }">{{ event.note }}</p>
-            <button v-if="event.note.length > 240" class="timeline-item__note-toggle" type="button" @click="toggleNote(event)">{{ noteIsExpanded(event) ? 'Свернуть' : 'Показать полностью' }}</button>
+            <p v-if="event.note" :id="`event-note-${eventKey(event)}`" class="timeline-item__note" :class="{ 'timeline-item__note--clamped': event.note.length > 240 && !noteIsExpanded(event) }">{{ event.note }}</p>
+            <button v-if="event.note.length > 240" class="timeline-item__note-toggle" type="button" :aria-expanded="noteIsExpanded(event)" :aria-controls="`event-note-${eventKey(event)}`" @click="toggleNote(event)">{{ noteIsExpanded(event) ? 'Свернуть' : 'Показать полностью' }}</button>
           </div>
           <div class="item-actions">
             <button class="ghost-button" type="button" aria-label="Редактировать событие" @click="edit(event)">✎</button>
             <button class="ghost-button ghost-button--danger" type="button" aria-label="Удалить событие" @click="remove(event.id)">×</button>
           </div>
         </article>
+        </TransitionGroup>
         <ArchivePagination v-model:page="currentPage" :page-count="pageCount" context-label="событий" />
       </div>
       <div v-else class="empty-state"><span>◆</span><h3>{{ recentEvents.length ? 'Ничего не найдено' : 'Записей пока нет' }}</h3><p>{{ recentEvents.length ? 'Измени фильтры или диапазон дат.' : 'Добавь событие или мысль, которую важно не потерять.' }}</p></div>

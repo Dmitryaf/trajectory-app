@@ -106,8 +106,9 @@ function areaMeta(value: ResultRecord['area']) {
         <select v-model="filterArea" aria-label="Область итога"><option value="all">Все области</option><option v-for="option in resultOptions" :key="option.id" :value="option.id">{{ option.label }}</option></select>
         <ArchiveDateRange v-model:date-from="dateFrom" v-model:date-to="dateTo" context-label="итогов" />
       </div>
-      <div v-if="visibleResults.length" class="results-list">
-        <article v-for="result in visibleResults" :key="result.id" class="result-item">
+      <div v-if="visibleResults.length">
+        <TransitionGroup name="archive-list" tag="div" class="results-list">
+        <article v-for="result in visibleResults" :key="result.id ?? result.createdAt" class="result-item">
           <span class="result-item__icon">{{ areaMeta(result.area).icon }}</span>
           <div><strong>{{ result.title }}</strong><small>{{ areaMeta(result.area).label }} · {{ formatDate(result.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</small></div>
           <div class="item-actions">
@@ -115,6 +116,7 @@ function areaMeta(value: ResultRecord['area']) {
             <button class="ghost-button ghost-button--danger" type="button" aria-label="Удалить итог" @click="remove(result.id)">×</button>
           </div>
         </article>
+        </TransitionGroup>
         <ArchivePagination v-model:page="currentPage" :page-count="pageCount" context-label="итогов" />
       </div>
       <div v-else class="empty-state"><span>✓</span><h3>{{ recentResults.length ? 'Ничего не найдено' : 'Итогов пока нет' }}</h3><p>{{ recentResults.length ? 'Измени фильтры или диапазон дат.' : 'Добавь первое завершённое дело или полученный результат.' }}</p></div>
