@@ -1,10 +1,13 @@
 import { buildObservations, entriesForPeriod, factorSummaries, resultsForPeriod, summarize, weekSummaryText } from '../../services/analytics';
+import { buildExperimentComparison, type ExperimentComparison } from '../analytics/experimentComparison';
 import { addDays, addMonths, endOfMonth, endOfWeek, formatDate, formatMinutes, startOfMonth, startOfWeek, todayKey } from '../../services/dates';
 import {
   actionDirectionOptions,
   activityOptions,
   careerOptions,
+  dailyFieldWasRecorded,
   dailyBlockOptions,
+  experimentMetricOptions,
   contextFactorOptions,
   lifeAreaOptions,
   lifeEventTypeOptions,
@@ -23,7 +26,7 @@ export type AiReportPeriod = 'week' | 'month' | 'range';
 
 export type AiReportPayload = {
   app: 'trajectory';
-  version: 5;
+  version: 7;
   period: AiReportPeriod;
   rangeMonths?: number;
   start: string;
@@ -33,6 +36,7 @@ export type AiReportPayload = {
   summary: ReturnType<typeof summarize>;
   observations: ReturnType<typeof buildObservations>;
   factorSummaries: ReturnType<typeof factorSummaries>;
+  experimentComparison: ExperimentComparison | null;
   entries: DailyEntry[];
   results: ResultRecord[];
   lifeEvents: LifeEventRecord[];
@@ -97,7 +101,7 @@ function buildPayload(
 
   return {
     app: 'trajectory',
-    version: 5,
+    version: 7,
     period,
     start,
     end,
@@ -106,6 +110,7 @@ function buildPayload(
     summary: summarize(entries, externalCareerIds),
     observations: buildObservations(entries, factorItems),
     factorSummaries: factorSummaries(entries, factorItems),
+    experimentComparison: buildExperimentComparison(source.entries, source.settings.experiment),
     entries,
     results: dataThrough >= start ? resultsForPeriod(source.results, start, dataThrough) : [],
     lifeEvents: source.lifeEvents.filter((event) => event.date >= start && event.date <= dataThrough).sort((a, b) => b.date.localeCompare(a.date)),
@@ -187,7 +192,8 @@ function buildReadableSections(payload: AiReportPayload): string[] {
     metricLine('Время в кровати', summary.averageTimeInBed === null ? null : formatMinutes(Math.round(summary.averageTimeInBed)), summary.timeInBedSamples),
     metricLine('Энергия', formatDecimal(summary.averageEnergy), summary.energySamples, '/ 5'),
     metricLine('Качество сна', formatDecimal(summary.averageSleepQuality), summary.sleepQualitySamples, '/ 5'),
-    `Карьера отмечена в ${summary.careerDays} дн.; отклик, разговор или результат — в ${summary.externalSteps} дн.`,
+    schemaCoverageLine(payload.entries),
+    `Карьера: действия были в ${summary.careerDays} из ${summary.careerSamples} отмеченных дней; отклик, разговор или результат — в ${summary.externalSteps} дн.`,
     `Физическая активность: ${summary.movementDays} из ${summary.movementSamples} отмеченных дней.`,
     `Питание: соответствовало правилам — ${summary.nutritionSupportDays}, мешало — ${summary.nutritionBlockDays}, всего отметок — ${summary.nutritionSamples}.`,
     `Действия по цели: конкретное действие — ${summary.externalActionDays}, подготовка — ${summary.preparationDays}, занимался другим — ${summary.driftDays}; всего отметок — ${summary.actionDirectionSamples}.`,
@@ -200,6 +206,7 @@ function buildReadableSections(payload: AiReportPayload): string[] {
     payload.settingsSnapshot.externalEvidenceCriterion ? `Что считается конкретным действием: ${cleanText(payload.settingsSnapshot.externalEvidenceCriterion)}.` : '',
     payload.settingsSnapshot.nutritionGoalCriterion ? `Правила питания: ${cleanText(payload.settingsSnapshot.nutritionGoalCriterion)}.` : '',
     formatExperiment(payload.settingsSnapshot.experiment),
+    formatExperimentComparison(payload.experimentComparison),
   ]);
 
   appendSection(lines, 'Автоматические наблюдения приложения', payload.observations.map((item) => `${item.title}: ${item.text}`));
@@ -226,6 +233,14 @@ function appendSection(target: string[], title: string, values: string[]) {
 function metricLine(label: string, value: string | null, samples: number, suffix = ''): string {
   if (value === null || samples === 0) return '';
   return `${label}: ${value}${suffix ? ` ${suffix}` : ''} (${samples} ${sampleWord(samples)}).`;
+}
+
+function schemaCoverageLine(entries: DailyEntry[]): string {
+  const known = entries.filter((entry) => entry.entrySchemaVersion !== null && entry.activeDailyBlocksSnapshot !== null);
+  const legacyCount = entries.length - known.length;
+  const parts = [`состав показанных блоков сохранён для ${known.length} из ${entries.length} записей`];
+  if (legacyCount) parts.push(`для ${legacyCount} старых записей он неизвестен`);
+  return `Контекст формы: ${parts.join('; ')}.`;
 }
 
 function sampleWord(value: number): string {
@@ -257,22 +272,24 @@ function formatEntry(entry: DailyEntry, payload: AiReportPayload): string {
   if (entry.timeInBedMinutes !== null) values.push(`в кровати ${formatMinutes(entry.timeInBedMinutes)}`);
   if (entry.sleepQuality !== null) values.push(`качество сна ${entry.sleepQuality}/5`);
   if (entry.energy !== null) values.push(`энергия ${entry.energy}/5`);
-  if (entry.contextFactorsRecorded) {
+  if (dailyFieldWasRecorded(entry, 'contextFactors')) {
     const factors = entry.contextFactors.map((id) => labelFor(payload.labels.contextFactors, id));
     values.push(`условия дня: ${factors.length ? factors.join(', ') : 'ничего из списка'}`);
   }
   if (cleanText(entry.contextNote)) values.push(`контекст: ${cleanText(entry.contextNote)}`);
   if (entry.specialDay) values.push(`необычный день: ${labelFor(payload.labels.specialDays, entry.specialDay)}${entry.specialDayNote ? ` (${cleanText(entry.specialDayNote)})` : ''}`);
   const careerStates = entry.careerStates.length ? entry.careerStates : entry.careerState ? [entry.careerState] : [];
-  if (careerStates.length) values.push(`карьера: ${careerStates.map((id) => labelFor(payload.labels.career, id)).join(', ')}`);
-  if (entry.actionDirection) values.push(`по цели: ${labelFor(payload.labels.actionDirections, entry.actionDirection)}${entry.actionNote ? ` (${cleanText(entry.actionNote)})` : ''}`);
-  if (entry.activitiesRecorded) {
+  if (dailyFieldWasRecorded(entry, 'careerStates')) values.push(`карьера: ${careerStates.length ? careerStates.map((id) => labelFor(payload.labels.career, id)).join(', ') : 'действий не было'}`);
+  if (dailyFieldWasRecorded(entry, 'actionDirection')) values.push(entry.actionDirection
+    ? `по цели: ${labelFor(payload.labels.actionDirections, entry.actionDirection)}${entry.actionNote ? ` (${cleanText(entry.actionNote)})` : ''}`
+    : 'по цели: действий не было');
+  if (dailyFieldWasRecorded(entry, 'activities')) {
     const activities = entry.activities.map((id) => labelFor(payload.labels.activities, id));
     values.push(`активность: ${activities.length ? activities.join(', ') : 'не было'}`);
   }
   if (entry.nutritionState) values.push(`питание: ${labelFor(payload.labels.nutrition, entry.nutritionState)}${entry.nutritionNote ? ` (${cleanText(entry.nutritionNote)})` : ''}`);
   if (entry.weightKg !== null) values.push(`вес ${formatDecimal(entry.weightKg)} кг`);
-  if (entry.lifeAreasRecorded) {
+  if (dailyFieldWasRecorded(entry, 'lifeAreas')) {
     const areas = entry.lifeAreas.map((id) => labelFor(payload.labels.lifeAreas, id));
     values.push(`области жизни: ${areas.length ? areas.join(', ') : 'ничего не отмечено'}`);
   }
@@ -297,9 +314,31 @@ function formatExperiment(experiment: AppSettings['experiment']): string {
   const values = [cleanText(experiment.title) || 'без названия'];
   if (cleanText(experiment.hypothesis)) values.push(`гипотеза: ${cleanText(experiment.hypothesis)}`);
   if (cleanText(experiment.targetMetric)) values.push(`показатель: ${cleanText(experiment.targetMetric)}`);
+  if (experiment.targetMetricId && experiment.minimumMeaningfulChange !== null) {
+    const metric = experimentMetricOptions.find((option) => option.id === experiment.targetMetricId);
+    values.push(`ожидается ${experiment.targetDirection === 'increase' ? 'увеличение' : 'снижение'} минимум на ${formatDecimal(experiment.minimumMeaningfulChange)}${metric ? ` ${metric.unit}` : ''}`);
+  }
   if (experiment.startDate || experiment.endDate) values.push(`даты: ${experiment.startDate || 'не указано'} — ${experiment.endDate || 'не указано'}`);
   if (cleanText(experiment.conclusion)) values.push(`итог: ${cleanText(experiment.conclusion)}`);
   return `Эксперимент: ${values.join('; ')}.`;
+}
+
+function formatExperimentComparison(comparison: ExperimentComparison | null): string {
+  if (!comparison) return '';
+  const baseline = formatExperimentMetricValue(comparison.baselineAverage, comparison.metricId, comparison.unit);
+  const experiment = formatExperimentMetricValue(comparison.experimentAverage, comparison.metricId, comparison.unit);
+  const status = comparison.thresholdMet === null
+    ? 'данных недостаточно: нужно хотя бы по 4 измерения в каждом периоде'
+    : comparison.thresholdMet
+      ? 'заранее заданный порог достигнут'
+      : 'заранее заданный порог не достигнут';
+  return `Сравнение эксперимента: исходный период ${comparison.baselineStart} — ${comparison.baselineEnd}: ${baseline} (${comparison.baselineSamples}); период эксперимента ${comparison.experimentStart} — ${comparison.experimentEnd}: ${experiment} (${comparison.experimentSamples}); условие выполнено в ${comparison.adherenceCompletedDays} из ${comparison.adherenceMarkedDays} отмеченных дней; ${status}. Это сравнение периодов, а не доказательство влияния условия.`;
+}
+
+function formatExperimentMetricValue(value: number | null, metricId: ExperimentComparison['metricId'], unit: string): string {
+  if (value === null) return 'нет данных';
+  if (metricId === 'sleepMinutes' || metricId === 'timeInBedMinutes') return formatMinutes(Math.round(value));
+  return `${formatDecimal(value)} ${unit}`;
 }
 
 function reviewLines(payload: AiReportPayload): string[] {

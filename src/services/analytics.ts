@@ -18,7 +18,7 @@ export function weekSummaryText(summary: PeriodSummary, activeAreas: LifeAreaId[
     ? activeAreas.filter((area) => (summary.areaCounts[area] ?? 0) === 0).map((area) => (labels.get(area) ?? area).toLowerCase())
     : [];
   const parts = [
-    `${summary.careerDays} карьерных ${plural(summary.careerDays, 'день', 'дня', 'дней')}`,
+    `${summary.careerDays} из ${summary.careerSamples} отмеченных дней с карьерными действиями`,
     `${summary.externalSteps} ${plural(summary.externalSteps, 'день', 'дня', 'дней')} с откликом, разговором или итогом`,
     `${summary.movementDays} ${plural(summary.movementDays, 'день с активностью', 'дня с активностью', 'дней с активностью')}`,
   ];

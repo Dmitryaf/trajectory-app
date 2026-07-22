@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeWeight, prepareDailyEntryForSave, snapshotDailyEntry, timeBetween, validateDailyEntryMetrics } from '../src/features/daily-entry/model';
-import { emptyDailyEntry } from '../src/types';
+import { emptyDailyEntry, type DailyBlockId } from '../src/types';
 
 describe('daily entry model', () => {
   it('calculates time in bed across midnight and rejects invalid ranges', () => {
@@ -24,6 +24,7 @@ describe('daily entry model', () => {
       focusTitle: ' Текущая цель ',
       externalEvidenceCriterion: ' Внешний результат ',
       nutritionCriterion: ' Обычный режим ',
+      activeDailyBlocks: ['sleep', 'context', 'movement'] as DailyBlockId[],
     };
 
     const prepared = prepareDailyEntryForSave(source, metrics, defaults, true);
@@ -34,6 +35,8 @@ describe('daily entry model', () => {
       focusTitle: 'Текущая цель',
       externalEvidenceCriterion: 'Внешний результат',
       nutritionCriterion: 'Обычный режим',
+      entrySchemaVersion: 1,
+      activeDailyBlocksSnapshot: ['sleep', 'context', 'movement'],
     });
     expect(source.focusTitle).toBe('');
 
@@ -41,6 +44,7 @@ describe('daily entry model', () => {
     expect(existing.focusTitle).toBe('');
     expect(existing.externalEvidenceCriterion).toBe('');
     expect(existing.nutritionCriterion).toBe('');
+    expect(existing.activeDailyBlocksSnapshot).toBeNull();
   });
 
   it('builds a stable dirty snapshot and validates sleep duration', () => {

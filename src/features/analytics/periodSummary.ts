@@ -1,5 +1,5 @@
 import type { ActionDirectionId, DailyEntry, ResultRecord } from '../../types';
-import { actionDirectionOptions, externalCareerStates, lifeAreaOptions } from '../../types';
+import { actionDirectionOptions, dailyFieldWasRecorded, externalCareerStates, lifeAreaOptions } from '../../types';
 import { dataCoverageLevel } from './coverage';
 import { endOfMonth, endOfWeek, startOfMonth, startOfWeek } from '../../services/dates';
 
@@ -25,6 +25,7 @@ export type PeriodSummary = {
   averageEnergy: number | null;
   averageSleepQuality: number | null;
   careerDays: number;
+  careerSamples: number;
   externalSteps: number;
   movementDays: number;
   movementSamples: number;
@@ -65,7 +66,7 @@ export function summarize(entries: DailyEntry[], externalCareerIds: string[] = e
     sleepQualitySamples: sampleCount(ordinaryEntries.map((entry) => entry.sleepQuality)),
     weightSamples: sampleCount(ordinaryEntries.map((entry) => entry.weightKg)),
     nutritionSamples: entries.filter((entry) => entry.nutritionState !== null).length,
-    actionDirectionSamples: entries.filter((entry) => entry.actionDirection !== null).length,
+    actionDirectionSamples: entries.filter((entry) => dailyFieldWasRecorded(entry, 'actionDirection')).length,
     experimentMarkedDays: entries.filter((entry) => entry.experimentCompleted !== null).length,
     experimentCompletedDays: entries.filter((entry) => entry.experimentCompleted === true).length,
     sleepTimingSamples: ordinaryEntries.filter((entry) => clockMinutes(entry.bedtime, true) !== null && clockMinutes(entry.wakeTime, false) !== null).length,
@@ -75,9 +76,10 @@ export function summarize(entries: DailyEntry[], externalCareerIds: string[] = e
     averageEnergy: average(ordinaryEntries.map((entry) => entry.energy)),
     averageSleepQuality: average(ordinaryEntries.map((entry) => entry.sleepQuality)),
     careerDays: entries.filter((entry) => careerStatesForEntry(entry).length > 0).length,
+    careerSamples: entries.filter((entry) => dailyFieldWasRecorded(entry, 'careerStates')).length,
     externalSteps: entries.filter((entry) => careerStatesForEntry(entry).some((state) => externalCareerIds.includes(state))).length,
     movementDays: entries.filter(hasMovement).length,
-    movementSamples: entries.filter((entry) => entry.activitiesRecorded).length,
+    movementSamples: entries.filter((entry) => dailyFieldWasRecorded(entry, 'activities')).length,
     nutritionSupportDays: entries.filter((entry) => entry.nutritionState === 'supports_goal').length,
     nutritionBlockDays: entries.filter((entry) => entry.nutritionState === 'blocks_goal').length,
     averageWeightKg: average(ordinaryEntries.map((entry) => entry.weightKg)),
@@ -89,7 +91,7 @@ export function summarize(entries: DailyEntry[], externalCareerIds: string[] = e
     bedtimeVariationMinutes: clockVariation(ordinaryEntries.map((entry) => clockMinutes(entry.bedtime, true))),
     wakeTimeVariationMinutes: clockVariation(ordinaryEntries.map((entry) => clockMinutes(entry.wakeTime, false))),
     areaCounts,
-    lifeAreaSamples: entries.filter((entry) => entry.lifeAreasRecorded).length,
+    lifeAreaSamples: entries.filter((entry) => dailyFieldWasRecorded(entry, 'lifeAreas')).length,
   };
 }
 

@@ -74,7 +74,7 @@ export function buildReviewCues(
     cues.push({
       id: 'career',
       title: summary.externalSteps > 0 ? 'Были отклики, разговоры или итоги по карьере' : 'Карьера появлялась',
-      text: `${summary.careerDays} карьерных ${plural(summary.careerDays, 'день', 'дня', 'дней')}, из них ${summary.externalSteps} с откликом, разговором или итогом. Так проще сверить ощущение с фактами.`,
+      text: `${summary.careerDays} из ${summary.careerSamples} отмеченных дней содержат карьерные действия, из них ${summary.externalSteps} — отклик, разговор или итог. Так проще сверить ощущение с фактами.`,
       tone: summary.externalSteps > 0 ? 'good' : 'neutral',
     });
   }

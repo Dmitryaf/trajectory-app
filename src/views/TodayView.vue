@@ -20,6 +20,7 @@ import {
   type ActivityId,
   type CareerState,
   type DailyEntry,
+  type DailyRecordedFieldId,
   type LifeAreaId,
   type NutritionState
 } from '../types';
@@ -85,16 +86,51 @@ function fillYesterday() {
 function setContextFactors(value: string | string[] | null) {
   form.contextFactors = Array.isArray(value) ? value as DailyEntry['contextFactors'] : [];
   form.contextFactorsRecorded = true;
+  markRecorded('contextFactors');
 }
 
 function setActivities(value: string | string[] | null) {
   form.activities = Array.isArray(value) ? value as ActivityId[] : [];
   form.activitiesRecorded = true;
+  markRecorded('activities');
 }
 
 function setLifeAreas(value: string | string[] | null) {
   form.lifeAreas = Array.isArray(value) ? value as LifeAreaId[] : [];
   form.lifeAreasRecorded = true;
+  markRecorded('lifeAreas');
+}
+
+function setCareerStates(value: string | string[] | null) {
+  form.careerStates = Array.isArray(value) ? value as CareerState[] : [];
+  form.careerState = form.careerStates[0] ?? null;
+  markRecorded('careerStates');
+}
+
+function setActionDirection(value: string | string[] | null) {
+  form.actionDirection = typeof value === 'string' ? value as ActionDirectionId : null;
+  if (form.actionDirection) markRecorded('actionDirection');
+  else unmarkRecorded('actionDirection');
+}
+
+function setNoActionDirection() {
+  form.actionDirection = null;
+  form.actionNote = '';
+  markRecorded('actionDirection');
+}
+
+function setNutritionState(value: string | string[] | null) {
+  form.nutritionState = typeof value === 'string' ? value as NutritionState : null;
+  if (form.nutritionState) markRecorded('nutritionState');
+  else unmarkRecorded('nutritionState');
+}
+
+function markRecorded(field: DailyRecordedFieldId) {
+  if (!form.recordedFields.includes(field)) form.recordedFields.push(field);
+}
+
+function unmarkRecorded(field: DailyRecordedFieldId) {
+  form.recordedFields = form.recordedFields.filter((item) => item !== field);
 }
 </script>
 
@@ -181,7 +217,7 @@ function setLifeAreas(value: string | string[] | null) {
         <div class="factor-block">
           <label class="field-label">Повторяющиеся условия</label>
           <ChipGroup :model-value="form.contextFactors" :options="contextFactorItems" multiple @update:model-value="setContextFactors" />
-          <button class="none-option" :class="{ selected: form.contextFactorsRecorded && !form.contextFactors.length }" type="button" @click="form.contextFactors = []; form.contextFactorsRecorded = true">Ничего из списка</button>
+          <button class="none-option" :class="{ selected: form.contextFactorsRecorded && !form.contextFactors.length }" type="button" @click="setContextFactors([])">Ничего из списка</button>
         </div>
         <label class="field-label" for="context-note">Короткое пояснение</label>
         <textarea
@@ -207,7 +243,8 @@ function setLifeAreas(value: string | string[] | null) {
           <span class="section-icon section-icon--blue">↗</span>
           <div><h2>Карьера</h2><p>Отметь всё, что сегодня было связано с работой или её поиском.</p></div>
         </div>
-        <ChipGroup v-model="form.careerStates as CareerState[]" :options="careerItems" multiple />
+        <ChipGroup :model-value="form.careerStates as CareerState[]" :options="careerItems" multiple @update:model-value="setCareerStates" />
+        <button class="none-option" :class="{ selected: form.recordedFields.includes('careerStates') && !form.careerStates.length }" type="button" @click="setCareerStates([])">Без карьерных действий</button>
       </article>
 
       <article class="form-card form-card--direction form-card--wide">
@@ -216,7 +253,8 @@ function setLifeAreas(value: string | string[] | null) {
           <div><h2>Действия по текущей цели</h2><p>{{ form.focusTitle || store.settings.activeFocusTitle ? `Текущая цель: ${form.focusTitle || store.settings.activeFocusTitle}` : 'Выбери, что лучше всего описывает этот день относительно твоей цели.' }}</p></div>
         </div>
         <p v-if="form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion" class="form-context">Конкретное действие: {{ form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion }}</p>
-        <ChipGroup v-model="form.actionDirection as ActionDirectionId | null" :options="actionDirectionItems" allow-clear />
+        <ChipGroup :model-value="form.actionDirection as ActionDirectionId | null" :options="actionDirectionItems" allow-clear @update:model-value="setActionDirection" />
+        <button class="none-option" :class="{ selected: form.recordedFields.includes('actionDirection') && form.actionDirection === null }" type="button" @click="setNoActionDirection">Действий по цели не было</button>
         <p v-if="form.actionDirection === 'recovery'" class="data-note">Это значение сохранено из старой записи. Для новых дней восстановление отмечается в активности или контексте дня.</p>
         <textarea
           v-if="form.actionDirection"
@@ -233,7 +271,7 @@ function setLifeAreas(value: string | string[] | null) {
           <div><h2>Физическая активность</h2><p>Можно выбрать несколько вариантов.</p></div>
         </div>
         <ChipGroup :model-value="form.activities as ActivityId[]" :options="activityOptions" multiple @update:model-value="setActivities" />
-        <button class="none-option" :class="{ selected: form.activitiesRecorded && !form.activities.length }" type="button" @click="form.activities = []; form.activitiesRecorded = true">Без активности</button>
+        <button class="none-option" :class="{ selected: form.activitiesRecorded && !form.activities.length }" type="button" @click="setActivities([])">Без активности</button>
       </article>
 
       <article v-if="blockIsActive('nutrition')" class="form-card form-card--nutrition">
@@ -241,7 +279,7 @@ function setLifeAreas(value: string | string[] | null) {
           <span class="section-icon section-icon--green">◐</span>
           <div><h2>Питание</h2><p>{{ form.nutritionCriterion || store.settings.nutritionGoalCriterion || 'Отметь, соответствовало ли питание выбранным правилам.' }}</p></div>
         </div>
-        <ChipGroup v-model="form.nutritionState as NutritionState | null" :options="nutritionOptions" allow-clear />
+        <ChipGroup :model-value="form.nutritionState as NutritionState | null" :options="nutritionOptions" allow-clear @update:model-value="setNutritionState" />
         <div class="sleep-field-grid">
           <div>
             <label class="field-label" for="weight-kg">Вес</label>
@@ -260,7 +298,7 @@ function setLifeAreas(value: string | string[] | null) {
           <div><h2>Области жизни</h2><p>Отметь, что присутствовало сегодня.</p></div>
         </div>
         <ChipGroup :model-value="form.lifeAreas as LifeAreaId[]" :options="activeLifeOptions" multiple @update:model-value="setLifeAreas" />
-        <button class="none-option" :class="{ selected: form.lifeAreasRecorded && !form.lifeAreas.length }" type="button" @click="form.lifeAreas = []; form.lifeAreasRecorded = true">Ничего не отмечаю</button>
+        <button class="none-option" :class="{ selected: form.lifeAreasRecorded && !form.lifeAreas.length }" type="button" @click="setLifeAreas([])">Ничего не отмечаю</button>
       </article>
 
       <article v-if="experimentAppliesToSelectedDate" class="form-card form-card--experiment">

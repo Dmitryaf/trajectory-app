@@ -174,7 +174,7 @@ function downloadJson() {
 
     <div class="metrics-grid">
       <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="`${summary.sleepSamples} дн. без особых`" accent="#7467e8" />
-      <MetricCard label="Карьера" :value="summary.careerDays" :hint="`${summary.externalSteps} дн. с откликом или разговором`" accent="#3f82d5" />
+      <MetricCard label="Карьера" :value="`${summary.careerDays}/${summary.careerSamples}`" :hint="`${summary.externalSteps} дн. с откликом или разговором`" accent="#3f82d5" />
       <MetricCard label="Реальные шаги" :value="`${summary.externalActionDays}/${summary.preparationDays}`" :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`" accent="#1d5148" />
       <MetricCard label="Дней с активностью" :value="summary.movementDays" :hint="`${summary.movementSamples} дн. с отметкой`" accent="#2eaa7f" />
       <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="`поддержало / мешало · ${summary.nutritionSamples} дн.`" accent="#d9952f" />

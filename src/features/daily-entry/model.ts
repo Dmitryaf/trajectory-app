@@ -1,4 +1,4 @@
-import type { DailyEntry } from '../../types';
+import { currentDailyEntrySchemaVersion, type DailyBlockId, type DailyEntry } from '../../types';
 import { plainCopy } from '../../services/plain';
 
 export type DailyEntryMetrics = {
@@ -11,6 +11,7 @@ export type DailyEntryDefaults = {
   focusTitle: string;
   externalEvidenceCriterion: string;
   nutritionCriterion: string;
+  activeDailyBlocks: DailyBlockId[];
 };
 
 export function timeBetween(start: string, end: string): number | null {
@@ -46,9 +47,13 @@ export function prepareDailyEntryForSave(
   prepared.sleepMinutes = metrics.sleepMinutes;
   prepared.timeInBedMinutes = metrics.timeInBedMinutes;
   prepared.weightKg = normalizeWeight(metrics.weightKg);
-  if (isNew && !prepared.focusTitle.trim()) prepared.focusTitle = defaults.focusTitle.trim();
-  if (isNew && !prepared.externalEvidenceCriterion.trim()) prepared.externalEvidenceCriterion = defaults.externalEvidenceCriterion.trim();
-  if (isNew && !prepared.nutritionCriterion.trim()) prepared.nutritionCriterion = defaults.nutritionCriterion.trim();
+  if (isNew) {
+    prepared.entrySchemaVersion = currentDailyEntrySchemaVersion;
+    prepared.activeDailyBlocksSnapshot = [...defaults.activeDailyBlocks];
+    if (!prepared.focusTitle.trim()) prepared.focusTitle = defaults.focusTitle.trim();
+    if (!prepared.externalEvidenceCriterion.trim()) prepared.externalEvidenceCriterion = defaults.externalEvidenceCriterion.trim();
+    if (!prepared.nutritionCriterion.trim()) prepared.nutritionCriterion = defaults.nutritionCriterion.trim();
+  }
   return prepared;
 }
 

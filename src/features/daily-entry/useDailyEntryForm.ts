@@ -103,6 +103,7 @@ export function useDailyEntryForm(store: AppStore) {
       focusTitle: store.settings.activeFocusTitle,
       externalEvidenceCriterion: store.settings.externalEvidenceCriterion,
       nutritionCriterion: store.settings.nutritionGoalCriterion,
+      activeDailyBlocks: store.settings.activeDailyBlocks,
     }, !hasSavedEntry.value);
     const wasExistingEntry = hasSavedEntry.value;
     saving.value = true;

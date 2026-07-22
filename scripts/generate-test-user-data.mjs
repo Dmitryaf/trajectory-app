@@ -68,6 +68,19 @@ const dailyEntries = trackedDates.map((date, index) => {
 
   return {
     date,
+    entrySchemaVersion: 1,
+    activeDailyBlocksSnapshot: ['sleep', 'context', 'career', 'movement', 'nutrition'],
+    recordedFields: [
+      'bedtime', 'wakeTime', 'sleepMinutes', 'timeInBedMinutes', 'sleepQuality', 'energy',
+      'contextFactors', 'careerStates', 'activities', 'nutritionState', 'actionDirection',
+      'lifeAreas', 'importantFact',
+      ...(special ? ['specialDay'] : []),
+      ...(factors.includes('anxiety_overload') || (!special && index % 6 === 0) ? ['contextNote'] : []),
+      ...(index % 7 === 0 ? ['nutritionNote'] : []),
+      ...(new Date(`${date}T00:00:00Z`).getUTCDay() === 1 ? ['weightKg'] : []),
+      ...(careerStates.includes('external') ? ['actionNote'] : []),
+      ...(experimentCompleted !== null ? ['experimentCompleted'] : []),
+    ],
     bedtime: late ? '00:35' : ['23:10', '23:30', '23:50'][index % 3],
     wakeTime: special?.[0] === 'travel' ? '06:20' : ['07:20', '07:35', '07:50'][index % 3],
     sleepMinutes,
@@ -181,7 +194,7 @@ const monthlyReviews = [
 ];
 
 const payload = {
-  version: 3,
+  version: 4,
   exportedAt: '2026-07-20T18:00:00.000Z',
   dailyEntries,
   results,
@@ -190,7 +203,7 @@ const payload = {
   monthlyReviews,
   settings: {
     id: 'main',
-    settingsVersion: 6,
+    settingsVersion: 7,
     activeDailyBlocks: ['sleep', 'context', 'career', 'movement', 'nutrition'],
     activeLifeAreas: ['family', 'reading', 'creativity', 'rest', 'friends', 'english', 'custom:life:personal-projects'],
     customCareerOptions: [
@@ -209,8 +222,11 @@ const payload = {
     experiment: {
       active: true,
       title: 'Спокойное завершение вечера',
-      hypothesis: 'Если завершать работу и экран до 22:30, засыпание станет стабильнее.',
-      targetMetric: 'Время отхода ко сну, качество сна и энергия утром',
+      hypothesis: 'Если завершать работу и экран до 22:30, энергия на следующий день станет выше.',
+      targetMetricId: 'energy',
+      targetMetric: 'Энергия за день',
+      targetDirection: 'increase',
+      minimumMeaningfulChange: 0.5,
       startDate: '2026-07-13',
       endDate: '2026-07-26',
       conclusion: '',
@@ -219,5 +235,17 @@ const payload = {
 };
 
 await mkdir(path.dirname(outputPath), { recursive: true });
-await writeFile(outputPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+let serialized = JSON.stringify(payload, null, 2);
+for (const property of ['activeDailyBlocksSnapshot', 'recordedFields']) {
+  serialized = compactStringArrayProperty(serialized, property);
+}
+await writeFile(outputPath, `${serialized}\n`, 'utf8');
 console.log(`Generated ${path.relative(projectRoot, outputPath)}: ${dailyEntries.length} days, ${results.length} results, ${lifeEvents.length} events.`);
+
+function compactStringArrayProperty(json, property) {
+  const pattern = new RegExp(`("${property}": \\[)\\n((?:\\s+"[^"]+",?\\n)+)(\\s*\\])`, 'g');
+  return json.replace(pattern, (_, start, body) => {
+    const values = body.trim().split('\n').map((line) => line.trim()).join(' ');
+    return `${start}${values}]`;
+  });
+}

@@ -15,7 +15,7 @@ describe('settings migrations', () => {
     });
 
     expect(settings.customCareerOptions).toEqual([]);
-    expect(settings.settingsVersion).toBe(6);
+    expect(settings.settingsVersion).toBe(7);
     expect(settings.activeDailyBlocks).toContain('context');
     expect(settings.customContextFactorOptions).toEqual([]);
     expect(settings.hiddenContextFactorIds).toEqual([]);
@@ -33,5 +33,28 @@ describe('settings migrations', () => {
     });
 
     expect(normalized.contextNote).toBe('Шум за окном\nПоздно выпил кофе');
+  });
+
+  it('infers only evidenced legacy answers and keeps historical block visibility unknown', () => {
+    const normalized = normalizeDailyEntry({
+      date: '2026-07-15',
+      energy: 4,
+      careerStates: ['external'],
+      activities: [],
+      activitiesRecorded: true,
+    });
+
+    expect(normalized.entrySchemaVersion).toBeNull();
+    expect(normalized.activeDailyBlocksSnapshot).toBeNull();
+    expect(normalized.recordedFields).toEqual(expect.arrayContaining(['energy', 'careerStates', 'activities']));
+    expect(normalized.recordedFields).not.toContain('nutritionState');
+  });
+
+  it('links an unambiguous legacy experiment metric without guessing a combined metric', () => {
+    const energy = normalizeSettings({ experiment: { ...normalizeSettings(undefined).experiment, targetMetric: 'Энергия' } });
+    const combined = normalizeSettings({ experiment: { ...normalizeSettings(undefined).experiment, targetMetric: 'Энергия и качество сна' } });
+
+    expect(energy.experiment).toMatchObject({ targetMetricId: 'energy', minimumMeaningfulChange: 0.5 });
+    expect(combined.experiment.targetMetricId).toBeNull();
   });
 });

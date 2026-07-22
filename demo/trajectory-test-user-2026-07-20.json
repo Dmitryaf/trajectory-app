@@ -1,9 +1,12 @@
 {
-  "version": 3,
+  "version": 4,
   "exportedAt": "2026-07-20T18:00:00.000Z",
   "dailyEntries": [
     {
       "date": "2026-05-04",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "nutritionNote", "weightKg", "actionNote"],
       "bedtime": "23:10",
       "wakeTime": "07:20",
       "sleepMinutes": 440,
@@ -43,6 +46,9 @@
     },
     {
       "date": "2026-05-06",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact"],
       "bedtime": "23:30",
       "wakeTime": "07:35",
       "sleepMinutes": 450,
@@ -83,6 +89,9 @@
     },
     {
       "date": "2026-05-08",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact"],
       "bedtime": "00:35",
       "wakeTime": "07:50",
       "sleepMinutes": 390,
@@ -122,6 +131,9 @@
     },
     {
       "date": "2026-05-11",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "weightKg"],
       "bedtime": "23:10",
       "wakeTime": "07:20",
       "sleepMinutes": 470,
@@ -162,6 +174,9 @@
     },
     {
       "date": "2026-05-13",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "actionNote"],
       "bedtime": "23:30",
       "wakeTime": "07:35",
       "sleepMinutes": 440,
@@ -204,6 +219,9 @@
     },
     {
       "date": "2026-05-15",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "actionNote"],
       "bedtime": "23:50",
       "wakeTime": "07:50",
       "sleepMinutes": 450,
@@ -243,6 +261,9 @@
     },
     {
       "date": "2026-05-18",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "weightKg"],
       "bedtime": "23:10",
       "wakeTime": "07:20",
       "sleepMinutes": 460,
@@ -283,6 +304,9 @@
     },
     {
       "date": "2026-05-20",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "nutritionNote"],
       "bedtime": "00:35",
       "wakeTime": "07:35",
       "sleepMinutes": 390,
@@ -322,6 +346,9 @@
     },
     {
       "date": "2026-05-22",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "actionNote"],
       "bedtime": "23:50",
       "wakeTime": "07:50",
       "sleepMinutes": 440,
@@ -363,6 +390,9 @@
     },
     {
       "date": "2026-05-25",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "specialDay", "weightKg"],
       "bedtime": "23:10",
       "wakeTime": "07:20",
       "sleepMinutes": 450,
@@ -404,6 +434,9 @@
     },
     {
       "date": "2026-05-27",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "actionNote"],
       "bedtime": "23:30",
       "wakeTime": "07:35",
       "sleepMinutes": 460,
@@ -443,6 +476,9 @@
     },
     {
       "date": "2026-05-29",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact"],
       "bedtime": "23:50",
       "wakeTime": "07:50",
       "sleepMinutes": 470,
@@ -483,6 +519,9 @@
     },
     {
       "date": "2026-06-01",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "weightKg", "actionNote"],
       "bedtime": "00:35",
       "wakeTime": "07:20",
       "sleepMinutes": 390,
@@ -523,6 +562,9 @@
     },
     {
       "date": "2026-06-03",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote"],
       "bedtime": "23:30",
       "wakeTime": "07:35",
       "sleepMinutes": 450,
@@ -563,6 +605,9 @@
     },
     {
       "date": "2026-06-05",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "nutritionNote"],
       "bedtime": "23:50",
       "wakeTime": "07:50",
       "sleepMinutes": 460,
@@ -604,6 +649,9 @@
     },
     {
       "date": "2026-06-08",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "weightKg", "actionNote"],
       "bedtime": "23:10",
       "wakeTime": "07:20",
       "sleepMinutes": 470,
@@ -643,6 +691,9 @@
     },
     {
       "date": "2026-06-10",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "actionNote"],
       "bedtime": "23:30",
       "wakeTime": "07:35",
       "sleepMinutes": 440,
@@ -684,6 +735,9 @@
     },
     {
       "date": "2026-06-12",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "specialDay"],
       "bedtime": "00:35",
       "wakeTime": "06:20",
       "sleepMinutes": 365,
@@ -723,6 +777,9 @@
     },
     {
       "date": "2026-06-15",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "weightKg"],
       "bedtime": "23:10",
       "wakeTime": "07:20",
       "sleepMinutes": 460,
@@ -763,6 +820,9 @@
     },
     {
       "date": "2026-06-17",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact"],
       "bedtime": "23:30",
       "wakeTime": "07:35",
       "sleepMinutes": 470,
@@ -804,6 +864,9 @@
     },
     {
       "date": "2026-06-19",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "actionNote"],
       "bedtime": "23:50",
       "wakeTime": "07:50",
       "sleepMinutes": 440,
@@ -843,6 +906,9 @@
     },
     {
       "date": "2026-06-22",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "nutritionNote", "weightKg"],
       "bedtime": "23:10",
       "wakeTime": "07:20",
       "sleepMinutes": 450,
@@ -883,6 +949,9 @@
     },
     {
       "date": "2026-06-24",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact"],
       "bedtime": "00:35",
       "wakeTime": "07:35",
       "sleepMinutes": 390,
@@ -922,6 +991,9 @@
     },
     {
       "date": "2026-06-26",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote"],
       "bedtime": "23:50",
       "wakeTime": "07:50",
       "sleepMinutes": 470,
@@ -962,6 +1034,9 @@
     },
     {
       "date": "2026-06-29",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "weightKg", "actionNote"],
       "bedtime": "23:10",
       "wakeTime": "07:20",
       "sleepMinutes": 440,
@@ -1004,6 +1079,9 @@
     },
     {
       "date": "2026-07-01",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "actionNote"],
       "bedtime": "23:30",
       "wakeTime": "07:35",
       "sleepMinutes": 450,
@@ -1043,6 +1121,9 @@
     },
     {
       "date": "2026-07-03",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact"],
       "bedtime": "23:50",
       "wakeTime": "07:50",
       "sleepMinutes": 460,
@@ -1083,6 +1164,9 @@
     },
     {
       "date": "2026-07-06",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "weightKg"],
       "bedtime": "00:35",
       "wakeTime": "07:20",
       "sleepMinutes": 390,
@@ -1122,6 +1206,9 @@
     },
     {
       "date": "2026-07-08",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "nutritionNote", "actionNote"],
       "bedtime": "23:30",
       "wakeTime": "07:35",
       "sleepMinutes": 440,
@@ -1163,6 +1250,9 @@
     },
     {
       "date": "2026-07-10",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact"],
       "bedtime": "23:50",
       "wakeTime": "07:50",
       "sleepMinutes": 450,
@@ -1204,6 +1294,9 @@
     },
     {
       "date": "2026-07-13",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "weightKg", "actionNote", "experimentCompleted"],
       "bedtime": "23:10",
       "wakeTime": "07:20",
       "sleepMinutes": 460,
@@ -1243,6 +1336,9 @@
     },
     {
       "date": "2026-07-14",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "experimentCompleted"],
       "bedtime": "23:30",
       "wakeTime": "07:35",
       "sleepMinutes": 470,
@@ -1283,6 +1379,9 @@
     },
     {
       "date": "2026-07-15",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "actionNote", "experimentCompleted"],
       "bedtime": "00:35",
       "wakeTime": "07:50",
       "sleepMinutes": 390,
@@ -1323,6 +1422,9 @@
     },
     {
       "date": "2026-07-16",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "experimentCompleted"],
       "bedtime": "23:10",
       "wakeTime": "07:20",
       "sleepMinutes": 450,
@@ -1363,6 +1465,9 @@
     },
     {
       "date": "2026-07-17",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "experimentCompleted"],
       "bedtime": "23:30",
       "wakeTime": "07:35",
       "sleepMinutes": 460,
@@ -1404,6 +1509,9 @@
     },
     {
       "date": "2026-07-18",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "nutritionNote", "actionNote", "experimentCompleted"],
       "bedtime": "23:50",
       "wakeTime": "07:50",
       "sleepMinutes": 470,
@@ -1443,6 +1551,9 @@
     },
     {
       "date": "2026-07-19",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "actionNote", "experimentCompleted"],
       "bedtime": "23:10",
       "wakeTime": "07:20",
       "sleepMinutes": 440,
@@ -1484,6 +1595,9 @@
     },
     {
       "date": "2026-07-20",
+      "entrySchemaVersion": 1,
+      "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
+      "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "weightKg", "experimentCompleted"],
       "bedtime": "00:35",
       "wakeTime": "07:35",
       "sleepMinutes": 390,
@@ -1982,7 +2096,7 @@
   ],
   "settings": {
     "id": "main",
-    "settingsVersion": 6,
+    "settingsVersion": 7,
     "activeDailyBlocks": [
       "sleep",
       "context",
@@ -2034,8 +2148,11 @@
     "experiment": {
       "active": true,
       "title": "Спокойное завершение вечера",
-      "hypothesis": "Если завершать работу и экран до 22:30, засыпание станет стабильнее.",
-      "targetMetric": "Время отхода ко сну, качество сна и энергия утром",
+      "hypothesis": "Если завершать работу и экран до 22:30, энергия на следующий день станет выше.",
+      "targetMetricId": "energy",
+      "targetMetric": "Энергия за день",
+      "targetDirection": "increase",
+      "minimumMeaningfulChange": 0.5,
       "startDate": "2026-07-13",
       "endDate": "2026-07-26",
       "conclusion": ""

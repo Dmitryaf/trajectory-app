@@ -32,12 +32,39 @@ export type BaseLifeAreaId =
   | "english";
 export type LifeAreaId = BaseLifeAreaId | string;
 export type DailyBlockId = "sleep" | "context" | "career" | "movement" | "nutrition";
+export type DailyRecordedFieldId =
+  | "bedtime"
+  | "wakeTime"
+  | "sleepMinutes"
+  | "timeInBedMinutes"
+  | "sleepQuality"
+  | "energy"
+  | "contextFactors"
+  | "contextNote"
+  | "specialDay"
+  | "careerStates"
+  | "activities"
+  | "nutritionState"
+  | "nutritionNote"
+  | "weightKg"
+  | "actionDirection"
+  | "actionNote"
+  | "lifeAreas"
+  | "importantFact"
+  | "experimentCompleted";
+
+export const currentDailyEntrySchemaVersion = 1;
+export type ExperimentMetricId = "sleepMinutes" | "timeInBedMinutes" | "sleepQuality" | "energy" | "weightKg";
+export type ExperimentDirection = "increase" | "decrease";
 
 const removedDemoCareerOptionId = "custom:career:responses";
 const removedDemoContextFactorId = "custom:evening:shower";
 
 export type DailyEntry = {
   date: string;
+  entrySchemaVersion: number | null;
+  activeDailyBlocksSnapshot: DailyBlockId[] | null;
+  recordedFields: DailyRecordedFieldId[];
   bedtime: string;
   wakeTime: string;
   sleepMinutes: number | null;
@@ -111,7 +138,10 @@ export type Experiment = {
   active: boolean;
   title: string;
   hypothesis: string;
+  targetMetricId: ExperimentMetricId | null;
   targetMetric: string;
+  targetDirection: ExperimentDirection;
+  minimumMeaningfulChange: number | null;
   startDate: string;
   endDate: string;
   conclusion: string;
@@ -139,6 +169,12 @@ export type Option<T extends string = string> = {
   custom?: boolean;
   countsAsExternal?: boolean;
   archived?: boolean;
+};
+
+export type ExperimentMetricOption = Option<ExperimentMetricId> & {
+  unit: string;
+  defaultMinimumChange: number;
+  step: number;
 };
 
 export const careerOptions: Option<BaseCareerState>[] = [
@@ -229,9 +265,24 @@ export const dailyBlockOptions: Option<DailyBlockId>[] = [
   { id: "nutrition", label: "Питание и вес", icon: "◐" },
 ];
 
+export const experimentMetricOptions: ExperimentMetricOption[] = [
+  { id: "sleepMinutes", label: "Продолжительность сна", unit: "мин", defaultMinimumChange: 30, step: 5 },
+  { id: "timeInBedMinutes", label: "Время в кровати", unit: "мин", defaultMinimumChange: 30, step: 5 },
+  { id: "sleepQuality", label: "Качество сна", unit: "балла", defaultMinimumChange: 0.5, step: 0.1 },
+  { id: "energy", label: "Энергия за день", unit: "балла", defaultMinimumChange: 0.5, step: 0.1 },
+  { id: "weightKg", label: "Вес", unit: "кг", defaultMinimumChange: 0.5, step: 0.1 },
+];
+
+const dailyRecordedFieldIds: DailyRecordedFieldId[] = [
+  "bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy",
+  "contextFactors", "contextNote", "specialDay", "careerStates", "activities",
+  "nutritionState", "nutritionNote", "weightKg", "actionDirection", "actionNote",
+  "lifeAreas", "importantFact", "experimentCompleted",
+];
+
 export const defaultSettings: AppSettings = {
   id: "main",
-  settingsVersion: 6,
+  settingsVersion: 7,
   activeDailyBlocks: dailyBlockOptions.map((option) => option.id),
   activeLifeAreas: ["family", "reading", "creativity", "rest"],
   customCareerOptions: [],
@@ -241,7 +292,18 @@ export const defaultSettings: AppSettings = {
   activeFocusTitle: "",
   externalEvidenceCriterion: "",
   nutritionGoalCriterion: "",
-  experiment: { active: false, title: "", hypothesis: "", targetMetric: "", startDate: "", endDate: "", conclusion: "" },
+  experiment: {
+    active: false,
+    title: "",
+    hypothesis: "",
+    targetMetricId: null,
+    targetMetric: "",
+    targetDirection: "increase",
+    minimumMeaningfulChange: null,
+    startDate: "",
+    endDate: "",
+    conclusion: "",
+  },
 };
 
 export const externalCareerStates: CareerState[] = ["external", "interview", "result"];
@@ -292,15 +354,45 @@ export function normalizeSettings(settings: LegacyAppSettings | null | undefined
 
 function normalizeExperiment(value: unknown): Experiment {
   const source = value && typeof value === "object" && !Array.isArray(value) ? value as Partial<Experiment> : {};
+  const targetMetric = typeof source.targetMetric === "string" ? source.targetMetric : "";
+  const targetMetricId = isExperimentMetricId(source.targetMetricId)
+    ? source.targetMetricId
+    : legacyExperimentMetricId(targetMetric);
+  const metricOption = experimentMetricOptions.find((option) => option.id === targetMetricId);
   return {
     active: typeof source.active === "boolean" ? source.active : false,
     title: typeof source.title === "string" ? source.title : "",
     hypothesis: typeof source.hypothesis === "string" ? source.hypothesis : "",
-    targetMetric: typeof source.targetMetric === "string" ? source.targetMetric : "",
+    targetMetricId,
+    targetMetric: metricOption?.label ?? targetMetric,
+    targetDirection: source.targetDirection === "decrease" ? "decrease" : "increase",
+    minimumMeaningfulChange: typeof source.minimumMeaningfulChange === "number"
+      && Number.isFinite(source.minimumMeaningfulChange)
+      && source.minimumMeaningfulChange > 0
+      ? source.minimumMeaningfulChange
+      : targetMetricId ? metricOption?.defaultMinimumChange ?? null : null,
     startDate: typeof source.startDate === "string" ? source.startDate : "",
     endDate: typeof source.endDate === "string" ? source.endDate : "",
     conclusion: typeof source.conclusion === "string" ? source.conclusion : "",
   };
+}
+
+function isExperimentMetricId(value: unknown): value is ExperimentMetricId {
+  return typeof value === "string" && experimentMetricOptions.some((option) => option.id === value);
+}
+
+function legacyExperimentMetricId(value: string): ExperimentMetricId | null {
+  const normalized = value.trim().toLocaleLowerCase("ru-RU");
+  const exactLabels: Record<string, ExperimentMetricId> = {
+    "продолжительность сна": "sleepMinutes",
+    "сон": "sleepMinutes",
+    "время в кровати": "timeInBedMinutes",
+    "качество сна": "sleepQuality",
+    "энергия": "energy",
+    "энергия за день": "energy",
+    "вес": "weightKg",
+  };
+  return exactLabels[normalized] ?? null;
 }
 
 export function createCustomOption(label: string, prefix: "career" | "life" | "context"): Option<string> {
@@ -350,6 +442,9 @@ function validTime(value: unknown): string {
 export function emptyDailyEntry(date: string): DailyEntry {
   return {
     date,
+    entrySchemaVersion: currentDailyEntrySchemaVersion,
+    activeDailyBlocksSnapshot: null,
+    recordedFields: [],
     bedtime: "",
     wakeTime: "",
     sleepMinutes: null,
@@ -408,40 +503,117 @@ export function normalizeDailyEntry(entry: LegacyDailyEntry & { date: string }):
     : [entry.stateContext, entry.eveningFactorNote]
         .filter((note): note is string => typeof note === "string" && note.trim().length > 0)
         .join("\n");
+  const specialDay = typeof entry.specialDay === "string" && specialDayOptions.some((option) => option.id === entry.specialDay)
+    ? entry.specialDay as SpecialDayId
+    : null;
+  const bedtime = validTime(entry.bedtime);
+  const wakeTime = validTime(entry.wakeTime);
+  const sleepMinutes = nullableNumber(entry.sleepMinutes, 0, 24 * 60, true);
+  const timeInBedMinutes = nullableNumber(entry.timeInBedMinutes, 0, 18 * 60, true);
+  const sleepQuality = nullableNumber(entry.sleepQuality, 1, 5, true);
+  const energy = nullableNumber(entry.energy, 1, 5, true);
+  const weightKg = nullableNumber(entry.weightKg, 30, 250);
+  const nutritionState = isNutritionState(entry.nutritionState) ? entry.nutritionState : null;
+  const nutritionNote = typeof entry.nutritionNote === "string" ? entry.nutritionNote : "";
+  const actionDirection = isActionDirection(entry.actionDirection) ? entry.actionDirection : null;
+  const actionNote = typeof entry.actionNote === "string" ? entry.actionNote : "";
+  const lifeAreas = Array.isArray(entry.lifeAreas) ? entry.lifeAreas.filter((area): area is LifeAreaId => typeof area === "string") : [];
+  const importantFact = typeof entry.importantFact === "string" ? entry.importantFact : "";
+  const experimentCompleted = typeof entry.experimentCompleted === "boolean" ? entry.experimentCompleted : null;
+  const activitiesRecorded = typeof entry.activitiesRecorded === "boolean" ? entry.activitiesRecorded : activities.length > 0;
+  const lifeAreasRecorded = typeof entry.lifeAreasRecorded === "boolean" ? entry.lifeAreasRecorded : lifeAreas.length > 0;
+  const contextFactorsRecorded = typeof entry.contextFactorsRecorded === "boolean"
+    ? entry.contextFactorsRecorded
+    : typeof entry.eveningFactorsRecorded === "boolean" ? entry.eveningFactorsRecorded : sourceContextFactors.length > 0;
+  const recordedFields = new Set<DailyRecordedFieldId>(
+    Array.isArray(entry.recordedFields)
+      ? entry.recordedFields.filter((field): field is DailyRecordedFieldId => dailyRecordedFieldIds.includes(field as DailyRecordedFieldId))
+      : [],
+  );
+  if (bedtime) recordedFields.add("bedtime");
+  if (wakeTime) recordedFields.add("wakeTime");
+  if (sleepMinutes !== null) recordedFields.add("sleepMinutes");
+  if (timeInBedMinutes !== null) recordedFields.add("timeInBedMinutes");
+  if (sleepQuality !== null) recordedFields.add("sleepQuality");
+  if (energy !== null) recordedFields.add("energy");
+  if (contextFactorsRecorded) recordedFields.add("contextFactors");
+  if (contextNote.trim()) recordedFields.add("contextNote");
+  if (specialDay) recordedFields.add("specialDay");
+  if (careerStates.length) recordedFields.add("careerStates");
+  if (activitiesRecorded) recordedFields.add("activities");
+  if (nutritionState !== null) recordedFields.add("nutritionState");
+  if (nutritionNote.trim()) recordedFields.add("nutritionNote");
+  if (weightKg !== null) recordedFields.add("weightKg");
+  if (actionDirection !== null) recordedFields.add("actionDirection");
+  if (actionNote.trim()) recordedFields.add("actionNote");
+  if (lifeAreasRecorded) recordedFields.add("lifeAreas");
+  if (importantFact.trim()) recordedFields.add("importantFact");
+  if (experimentCompleted !== null) recordedFields.add("experimentCompleted");
+  const activeDailyBlocksSnapshot = Array.isArray(entry.activeDailyBlocksSnapshot)
+    ? Array.from(new Set(entry.activeDailyBlocksSnapshot.filter((block): block is DailyBlockId => dailyBlockOptions.some((option) => option.id === block))))
+    : null;
 
   return {
     ...emptyDailyEntry(entry.date),
-    bedtime: validTime(entry.bedtime),
-    wakeTime: validTime(entry.wakeTime),
-    sleepMinutes: nullableNumber(entry.sleepMinutes, 0, 24 * 60, true),
-    timeInBedMinutes: nullableNumber(entry.timeInBedMinutes, 0, 18 * 60, true),
-    sleepQuality: nullableNumber(entry.sleepQuality, 1, 5, true),
-    energy: nullableNumber(entry.energy, 1, 5, true),
+    entrySchemaVersion: typeof entry.entrySchemaVersion === "number" && Number.isInteger(entry.entrySchemaVersion) && entry.entrySchemaVersion > 0
+      ? entry.entrySchemaVersion
+      : null,
+    activeDailyBlocksSnapshot,
+    recordedFields: Array.from(recordedFields),
+    bedtime,
+    wakeTime,
+    sleepMinutes,
+    timeInBedMinutes,
+    sleepQuality,
+    energy,
     careerState: careerStates[0] ?? null,
     careerStates,
-    weightKg: nullableNumber(entry.weightKg, 30, 250),
+    weightKg,
     activities,
-    activitiesRecorded: typeof entry.activitiesRecorded === "boolean" ? entry.activitiesRecorded : activities.length > 0,
-    nutritionState: isNutritionState(entry.nutritionState) ? entry.nutritionState : null,
-    nutritionNote: typeof entry.nutritionNote === "string" ? entry.nutritionNote : "",
+    activitiesRecorded: recordedFields.has("activities"),
+    nutritionState,
+    nutritionNote,
     nutritionCriterion: typeof entry.nutritionCriterion === "string" ? entry.nutritionCriterion : "",
-    actionDirection: isActionDirection(entry.actionDirection) ? entry.actionDirection : null,
-    actionNote: typeof entry.actionNote === "string" ? entry.actionNote : "",
+    actionDirection,
+    actionNote,
     focusTitle: typeof entry.focusTitle === "string" ? entry.focusTitle : "",
     externalEvidenceCriterion: typeof entry.externalEvidenceCriterion === "string" ? entry.externalEvidenceCriterion : "",
-    lifeAreas: Array.isArray(entry.lifeAreas) ? entry.lifeAreas.filter((area): area is LifeAreaId => typeof area === "string") : [],
-    lifeAreasRecorded: typeof entry.lifeAreasRecorded === "boolean" ? entry.lifeAreasRecorded : Array.isArray(entry.lifeAreas) && entry.lifeAreas.length > 0,
+    lifeAreas,
+    lifeAreasRecorded: recordedFields.has("lifeAreas"),
     contextFactors,
-    contextFactorsRecorded: typeof entry.contextFactorsRecorded === "boolean"
-      ? entry.contextFactorsRecorded
-      : typeof entry.eveningFactorsRecorded === "boolean" ? entry.eveningFactorsRecorded : sourceContextFactors.length > 0,
+    contextFactorsRecorded: recordedFields.has("contextFactors"),
     contextNote,
-    specialDay: typeof entry.specialDay === "string" && specialDayOptions.some((option) => option.id === entry.specialDay) ? entry.specialDay : null,
+    specialDay,
     specialDayNote: typeof entry.specialDayNote === "string" ? entry.specialDayNote : "",
-    importantFact: typeof entry.importantFact === "string" ? entry.importantFact : "",
-    experimentCompleted: typeof entry.experimentCompleted === "boolean" ? entry.experimentCompleted : null,
+    importantFact,
+    experimentCompleted,
     updatedAt: typeof entry.updatedAt === "string" ? entry.updatedAt : "",
   };
+}
+
+export function dailyFieldWasRecorded(entry: DailyEntry, field: DailyRecordedFieldId): boolean {
+  if (entry.recordedFields.includes(field)) return true;
+  switch (field) {
+    case "bedtime": return Boolean(entry.bedtime);
+    case "wakeTime": return Boolean(entry.wakeTime);
+    case "sleepMinutes": return entry.sleepMinutes !== null;
+    case "timeInBedMinutes": return entry.timeInBedMinutes !== null;
+    case "sleepQuality": return entry.sleepQuality !== null;
+    case "energy": return entry.energy !== null;
+    case "contextFactors": return entry.contextFactorsRecorded;
+    case "contextNote": return Boolean(entry.contextNote.trim());
+    case "specialDay": return entry.specialDay !== null;
+    case "careerStates": return entry.careerStates.length > 0 || entry.careerState !== null;
+    case "activities": return entry.activitiesRecorded;
+    case "nutritionState": return entry.nutritionState !== null;
+    case "nutritionNote": return Boolean(entry.nutritionNote.trim());
+    case "weightKg": return entry.weightKg !== null;
+    case "actionDirection": return entry.actionDirection !== null;
+    case "actionNote": return Boolean(entry.actionNote.trim());
+    case "lifeAreas": return entry.lifeAreasRecorded;
+    case "importantFact": return Boolean(entry.importantFact.trim());
+    case "experimentCompleted": return entry.experimentCompleted !== null;
+  }
 }
 
 export function normalizeLifeEvent(event: Partial<LifeEventRecord> & { date: string; title: string }): LifeEventRecord {

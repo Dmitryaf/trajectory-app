@@ -1,5 +1,5 @@
 import type { ContextFactorId, DailyEntry, Option } from '../../types';
-import { contextFactorOptions } from '../../types';
+import { contextFactorOptions, dailyFieldWasRecorded } from '../../types';
 import { formatMinutes } from '../../services/dates';
 import { hasMovement } from './periodSummary';
 
@@ -31,7 +31,7 @@ export function buildObservations(
   const observations: Observation[] = [];
   const ordinaryEntries = entries.filter((entry) => entry.specialDay === null);
   const energyEntries = ordinaryEntries.filter((entry) => entry.energy !== null);
-  const movementMarkedEntries = energyEntries.filter((entry) => entry.activitiesRecorded);
+  const movementMarkedEntries = energyEntries.filter((entry) => dailyFieldWasRecorded(entry, 'activities'));
   const movementEntries = movementMarkedEntries.filter(hasMovement);
   const stillEntries = movementMarkedEntries.filter((entry) => !hasMovement(entry));
   const restedEntries = energyEntries.filter((entry) => (entry.sleepMinutes ?? 0) >= 420);
@@ -89,7 +89,7 @@ export function factorSummaries(
   return factorOptions
     .map((option) => {
       const matching = ordinaryEntries.filter((entry) => entry.contextFactors.includes(option.id));
-      const other = ordinaryEntries.filter((entry) => entry.contextFactorsRecorded && !entry.contextFactors.includes(option.id));
+      const other = ordinaryEntries.filter((entry) => dailyFieldWasRecorded(entry, 'contextFactors') && !entry.contextFactors.includes(option.id));
       return {
         id: option.id,
         label: option.label,

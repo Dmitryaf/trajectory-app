@@ -1,4 +1,4 @@
-import type { DailyEntry } from '../../types';
+import { dailyFieldWasRecorded, type DailyEntry } from '../../types';
 import { dateRange } from '../../services/dates';
 
 export type DataCoverageLevel = 0 | 1 | 2;
@@ -17,15 +17,17 @@ export function dataCoverageLevel(entry: DailyEntry): DataCoverageLevel {
     || entry.wakeTime.length > 0;
   const hasAction = entry.actionDirection !== null
     || careerStates.length > 0
-    || entry.activitiesRecorded
-    || entry.lifeAreasRecorded
+    || dailyFieldWasRecorded(entry, 'actionDirection')
+    || dailyFieldWasRecorded(entry, 'careerStates')
+    || dailyFieldWasRecorded(entry, 'activities')
+    || dailyFieldWasRecorded(entry, 'lifeAreas')
     || entry.importantFact.trim().length > 0;
   const hasNutrition = entry.nutritionState !== null || entry.weightKg !== null;
   const coreDomains = [hasState, hasAction, hasNutrition].filter(Boolean).length;
   if (coreDomains >= 2) return 2;
 
   const hasContext = entry.specialDay !== null
-    || entry.contextFactors.length > 0
+    || dailyFieldWasRecorded(entry, 'contextFactors')
     || entry.contextNote.trim().length > 0;
   return coreDomains === 1 || hasContext ? 1 : 0;
 }

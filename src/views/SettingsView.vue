@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import ChipGroup from '../components/ChipGroup.vue';
 import { useAppStore } from '../stores/app';
 import { useAuthStore } from '../stores/auth';
 import { copyText, downloadJson } from '../features/export/browser';
 import { buildAiReportPayload, buildAiReportPrompt, type AiReportPeriod } from '../features/export/report';
+import { buildExperimentComparison } from '../features/analytics/experimentComparison';
 import { loadCloudSnapshot, markCloudSyncSynced } from '../services/cloudSync';
-import { todayKey } from '../services/dates';
+import { formatDate, formatMinutes, todayKey } from '../services/dates';
 import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { plainCopy } from '../services/plain';
-import { careerOptions, contextFactorOptions, createCustomOption, dailyBlockOptions, lifeAreaOptions, type AppSettings, type CareerState, type ContextFactorId, type DailyBlockId, type LifeAreaId, type Option } from '../types';
+import { careerOptions, contextFactorOptions, createCustomOption, dailyBlockOptions, experimentMetricOptions, lifeAreaOptions, type AppSettings, type CareerState, type ContextFactorId, type DailyBlockId, type ExperimentDirection, type LifeAreaId, type Option } from '../types';
 
 const store = useAppStore();
 const settings = reactive<AppSettings>(plainCopy(store.settings));
@@ -45,6 +46,13 @@ const experimentConclusionOptions = [
   { id: 'unclear', label: 'Пока неясно', icon: '·' },
   { id: 'not_helped', label: 'Не помогло', icon: '×' },
 ];
+const experimentDirectionOptions: Option<ExperimentDirection>[] = [
+  { id: 'increase', label: 'Увеличение', icon: '↑' },
+  { id: 'decrease', label: 'Снижение', icon: '↓' },
+];
+const selectedExperimentMetric = computed(() => experimentMetricOptions.find((option) => option.id === settings.experiment.targetMetricId) ?? null);
+const experimentComparison = computed(() => buildExperimentComparison(store.dailyEntries, settings.experiment));
+const experimentCanConclude = computed(() => Boolean(settings.experiment.endDate && settings.experiment.endDate < todayKey()));
 
 async function save(message = 'Настройки сохранены') {
   await store.saveSettings(plainCopy(settings));
@@ -57,11 +65,50 @@ async function saveExperiment() {
     notifyError('Укажи условие эксперимента');
     return;
   }
+  if (experiment.active && !experiment.hypothesis.trim()) {
+    notifyError('Сформулируй гипотезу до начала эксперимента');
+    return;
+  }
+  if (experiment.active && !experiment.targetMetricId) {
+    notifyError('Выбери один показатель из ежедневной записи');
+    return;
+  }
+  if (experiment.active && (!experiment.startDate || !experiment.endDate)) {
+    notifyError('Укажи даты начала и окончания эксперимента');
+    return;
+  }
   if (experiment.startDate && experiment.endDate && experiment.startDate > experiment.endDate) {
     notifyError('Дата окончания эксперимента должна быть не раньше даты начала');
     return;
   }
+  if (experiment.active && (experiment.minimumMeaningfulChange === null || experiment.minimumMeaningfulChange <= 0)) {
+    notifyError('Укажи минимальное заметное изменение больше нуля');
+    return;
+  }
+  const requiredBlock = experiment.targetMetricId === 'weightKg' ? 'nutrition' : experiment.targetMetricId ? 'sleep' : null;
+  if (experiment.active && requiredBlock && !settings.activeDailyBlocks.includes(requiredBlock)) {
+    notifyError(`Включи блок «${requiredBlock === 'sleep' ? 'Сон и состояние' : 'Питание и вес'}», чтобы собирать выбранный показатель`);
+    return;
+  }
   await save('Эксперимент сохранён');
+}
+
+watch(() => settings.experiment.targetMetricId, (metricId) => {
+  const metric = experimentMetricOptions.find((option) => option.id === metricId);
+  settings.experiment.targetMetric = metric?.label ?? '';
+  if (!metric) {
+    settings.experiment.minimumMeaningfulChange = null;
+    return;
+  }
+  settings.experiment.minimumMeaningfulChange = metric.defaultMinimumChange;
+});
+
+function formatExperimentAverage(value: number | null): string {
+  if (value === null || !selectedExperimentMetric.value) return 'нет данных';
+  if (selectedExperimentMetric.value.id === 'sleepMinutes' || selectedExperimentMetric.value.id === 'timeInBedMinutes') {
+    return formatMinutes(Math.round(value));
+  }
+  return `${value.toLocaleString('ru-RU', { maximumFractionDigits: 1 })} ${selectedExperimentMetric.value.unit}`;
 }
 
 async function addCareerOption() {
@@ -363,14 +410,37 @@ async function clearAll() {
       <input id="experiment-title" v-model="settings.experiment.title" type="text" maxlength="140" placeholder="Не читать новости после 22:00" />
       <label class="field-label" for="experiment-hypothesis">Гипотеза</label>
       <textarea id="experiment-hypothesis" v-model="settings.experiment.hypothesis" rows="2" maxlength="220" placeholder="Если не читать новости поздно вечером, засыпать будет легче, а энергия утром станет выше"></textarea>
-      <label class="field-label" for="experiment-metric">Что проверяем</label>
-      <input id="experiment-metric" v-model="settings.experiment.targetMetric" type="text" maxlength="120" placeholder="Энергия и качество сна" />
+      <label class="field-label" for="experiment-metric">Один показатель</label>
+      <select id="experiment-metric" v-model="settings.experiment.targetMetricId">
+        <option :value="null">Выбрать показатель</option>
+        <option v-for="metric in experimentMetricOptions" :key="metric.id" :value="metric.id">{{ metric.label }}</option>
+      </select>
+      <template v-if="selectedExperimentMetric">
+        <label class="field-label">Какое изменение ожидается</label>
+        <ChipGroup v-model="settings.experiment.targetDirection" :options="experimentDirectionOptions" />
+        <label class="field-label" for="experiment-threshold">Минимальное заметное изменение</label>
+        <div class="number-field">
+          <input id="experiment-threshold" v-model.number="settings.experiment.minimumMeaningfulChange" type="number" min="0.1" :step="selectedExperimentMetric.step" inputmode="decimal" />
+          <span>{{ selectedExperimentMetric.unit }}</span>
+        </div>
+        <p class="field-hint">Сравниваются средние значения за эксперимент и за такой же по длине период непосредственно перед ним.</p>
+      </template>
       <div class="form-row">
         <label class="form-control"><span class="field-label">Начало</span><input v-model="settings.experiment.startDate" type="date" /></label>
         <label class="form-control"><span class="field-label">Окончание</span><input v-model="settings.experiment.endDate" type="date" /></label>
       </div>
-      <label class="field-label" for="experiment-conclusion">Итог после завершения</label>
-      <ChipGroup v-model="settings.experiment.conclusion" :options="experimentConclusionOptions" allow-clear />
+      <template v-if="experimentCanConclude">
+        <label class="field-label" for="experiment-conclusion">Итог после завершения</label>
+        <ChipGroup v-model="settings.experiment.conclusion" :options="experimentConclusionOptions" allow-clear />
+      </template>
+      <p v-else-if="settings.experiment.endDate" class="field-hint">Итог можно отметить после окончания выбранного периода.</p>
+      <div v-if="experimentComparison" class="data-note">
+        <strong>Сравнение одинаковых периодов</strong>
+        <p>Исходный период: {{ formatDate(experimentComparison.baselineStart) }} — {{ formatDate(experimentComparison.baselineEnd) }}; {{ formatExperimentAverage(experimentComparison.baselineAverage) }} по {{ experimentComparison.baselineSamples }} измерениям.</p>
+        <p>Эксперимент: {{ formatDate(experimentComparison.experimentStart) }} — {{ formatDate(experimentComparison.experimentEnd) }}; {{ formatExperimentAverage(experimentComparison.experimentAverage) }} по {{ experimentComparison.experimentSamples }} измерениям.</p>
+        <p v-if="experimentComparison.thresholdMet === null">Для осторожного сравнения нужно хотя бы по 4 измерения в каждом периоде.</p>
+        <p v-else>{{ experimentComparison.thresholdMet ? 'Заранее заданный порог достигнут.' : 'Заранее заданный порог пока не достигнут.' }} Это сравнение периодов, а не доказательство влияния условия.</p>
+      </div>
       <button class="primary-button" type="button" @click="saveExperiment">Сохранить настройки</button>
     </article>
 

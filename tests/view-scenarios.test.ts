@@ -11,7 +11,7 @@ import SettingsView from '../src/views/SettingsView.vue';
 import TodayView from '../src/views/TodayView.vue';
 import TrendsView from '../src/views/TrendsView.vue';
 import WeekView from '../src/views/WeekView.vue';
-import { notifySaved, notifyUnknownError } from '../src/services/notifications';
+import { notifyError, notifySaved, notifyUnknownError } from '../src/services/notifications';
 import { useAppStore } from '../src/stores/app';
 import { defaultSettings, emptyDailyEntry } from '../src/types';
 
@@ -88,6 +88,8 @@ describe('daily entry scenario', () => {
     expect(saveEntry).toHaveBeenCalledTimes(1);
     expect(saveEntry.mock.calls[0][0]).toMatchObject({
       date: '2026-07-21',
+      entrySchemaVersion: 1,
+      activeDailyBlocksSnapshot: ['sleep', 'context', 'career', 'movement', 'nutrition'],
       bedtime: '23:40',
       wakeTime: '07:30',
       sleepMinutes: 420,
@@ -98,6 +100,27 @@ describe('daily entry scenario', () => {
       nutritionCriterion: 'Обычный режим питания'
     });
     expect(wrapper.find('.mobile-save-button').exists()).toBe(false);
+  });
+
+  it('saves explicit empty career and goal answers separately from skipped blocks', async () => {
+    const { pinia, store } = createStore();
+    const saveEntry = vi.spyOn(store, 'saveEntry').mockImplementation(async (entry) => entry);
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+
+    const careerNone = wrapper.findAll('button').find((button) => button.text() === 'Без карьерных действий');
+    const actionNone = wrapper.findAll('button').find((button) => button.text() === 'Действий по цели не было');
+    await careerNone!.trigger('click');
+    await actionNone!.trigger('click');
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+
+    expect(saveEntry).toHaveBeenCalledWith(expect.objectContaining({
+      careerStates: [],
+      actionDirection: null,
+      recordedFields: expect.arrayContaining(['careerStates', 'actionDirection']),
+    }));
   });
 
   it('hides inactive blocks while preserving values in an existing entry', async () => {
@@ -395,6 +418,37 @@ describe('settings scenarios', () => {
     await restoreButton!.trigger('click');
     await flushPromises();
     expect(saveSettings).toHaveBeenLastCalledWith(expect.objectContaining({ hiddenContextFactorIds: [] }));
+  });
+
+  it('requires a linked metric and saves a minimal experiment contract', async () => {
+    const { pinia, store } = createStore();
+    const saveSettings = vi.spyOn(store, 'saveSettings').mockResolvedValue(undefined);
+    const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
+    const card = wrapper.get('.settings-card--experiment');
+
+    await card.get('input[type="checkbox"]').setValue(true);
+    await card.get('#experiment-title').setValue('Спокойный вечер');
+    await card.get('.primary-button').trigger('click');
+    expect(notifyError).toHaveBeenCalledWith('Сформулируй гипотезу до начала эксперимента');
+    expect(saveSettings).not.toHaveBeenCalled();
+
+    await card.get('#experiment-hypothesis').setValue('Энергия на следующий день станет выше');
+    await card.get('#experiment-metric').setValue('energy');
+    await card.findAll('input[type="date"]')[0]!.setValue('2026-07-22');
+    await card.findAll('input[type="date"]')[1]!.setValue('2026-07-28');
+    await card.get('.primary-button').trigger('click');
+    await flushPromises();
+
+    expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({
+      experiment: expect.objectContaining({
+        targetMetricId: 'energy',
+        targetMetric: 'Энергия за день',
+        targetDirection: 'increase',
+        minimumMeaningfulChange: 0.5,
+        startDate: '2026-07-22',
+        endDate: '2026-07-28',
+      }),
+    }));
   });
 });
 

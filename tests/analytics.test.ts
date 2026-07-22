@@ -11,9 +11,16 @@ import { addMonths, monthsBetween } from '../src/services/dates';
 import { defaultSettings, emptyDailyEntry, experimentAppliesToDate, normalizeDailyEntry, normalizeLifeEvent, normalizeMonthlyReview, normalizeSettings, normalizeWeeklyReview, type DailyEntry } from '../src/types';
 
 function entry(date: string, patch: Partial<DailyEntry>): DailyEntry {
+  const recordedFields = new Set(patch.recordedFields ?? []);
+  if (Object.prototype.hasOwnProperty.call(patch, 'activities')) recordedFields.add('activities');
+  if (Object.prototype.hasOwnProperty.call(patch, 'contextFactors')) recordedFields.add('contextFactors');
+  if (Object.prototype.hasOwnProperty.call(patch, 'lifeAreas')) recordedFields.add('lifeAreas');
+  if (Object.prototype.hasOwnProperty.call(patch, 'careerStates') || Object.prototype.hasOwnProperty.call(patch, 'careerState')) recordedFields.add('careerStates');
+  if (Object.prototype.hasOwnProperty.call(patch, 'actionDirection')) recordedFields.add('actionDirection');
   return {
     ...emptyDailyEntry(date),
     ...patch,
+    recordedFields: Array.from(recordedFields),
     activitiesRecorded: patch.activitiesRecorded ?? Object.prototype.hasOwnProperty.call(patch, 'activities'),
     contextFactorsRecorded: patch.contextFactorsRecorded ?? Object.prototype.hasOwnProperty.call(patch, 'contextFactors'),
     lifeAreasRecorded: patch.lifeAreasRecorded ?? Object.prototype.hasOwnProperty.call(patch, 'lifeAreas'),
@@ -135,7 +142,7 @@ describe('analytics', () => {
       settings,
     });
 
-    expect(payload.version).toBe(5);
+    expect(payload.version).toBe(7);
     expect(payload.dataThrough).toBe('2026-07-19');
     expect(payload.labels.contextFactors).toContainEqual(expect.objectContaining({ id: 'custom:context:rain', label: 'Шум за окном' }));
     expect(payload.factorSummaries[0].label).toBe('Шум за окном');
@@ -214,7 +221,7 @@ describe('analytics', () => {
       entry('2026-07-13', { careerState: 'external', activities: ['boxing'], lifeAreas: ['family'] })
     ]);
     const text = weekSummaryText(summary, ['family', 'reading']);
-    expect(text).toContain('1 карьерных день');
+    expect(text).toContain('1 из 1 отмеченных дней с карьерными действиями');
     expect(text).toContain('Присутствовали: семья');
     expect(text).toContain('Не отмечались: чтение');
     expect(text).not.toContain('%');
@@ -400,6 +407,19 @@ describe('analytics', () => {
     expect(summary.movementSamples).toBe(1);
     expect(summary.lifeAreaSamples).toBe(1);
     expect(factorSummaries([skipped, explicitNone])).toEqual([]);
+  });
+
+  it('uses explicit empty career and goal answers in denominators without inventing actions', () => {
+    const skipped = entry('2026-07-13', {});
+    const explicitNone = entry('2026-07-14', { careerStates: [], actionDirection: null });
+    const action = entry('2026-07-15', { careerStates: ['external'], actionDirection: 'external' });
+    const summary = summarize([skipped, explicitNone, action]);
+
+    expect(summary.careerDays).toBe(1);
+    expect(summary.careerSamples).toBe(2);
+    expect(summary.externalActionDays).toBe(1);
+    expect(summary.actionDirectionSamples).toBe(2);
+    expect(dataCoverageLevel(explicitNone)).toBe(1);
   });
 
   it('does not call empty saved shells sufficient review data', () => {
