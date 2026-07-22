@@ -82,7 +82,7 @@ describe('experiment comparison', () => {
       settings,
     });
 
-    expect(payload.version).toBe(7);
+    expect(payload.version).toBe(8);
     expect(payload.experimentComparison?.thresholdMet).toBe(true);
     expect(buildAiReportPrompt(payload, settings)).toContain('Это сравнение периодов, а не доказательство влияния условия.');
   });

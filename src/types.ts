@@ -53,7 +53,7 @@ export type DailyRecordedFieldId =
   | "importantFact"
   | "experimentCompleted";
 
-export const currentDailyEntrySchemaVersion = 1;
+export const currentDailyEntrySchemaVersion = 2;
 export type ExperimentMetricId = "sleepMinutes" | "timeInBedMinutes" | "sleepQuality" | "energy" | "weightKg";
 export type ExperimentDirection = "increase" | "decrease";
 
@@ -87,6 +87,8 @@ export type DailyEntry = {
   actionDirection: ActionDirectionId | null;
   actionNote: string;
   focusTitle: string;
+  focusOutcomeCriterion: string;
+  focusReviewDate: string;
   externalEvidenceCriterion: string;
   lifeAreas: LifeAreaId[];
   lifeAreasRecorded: boolean;
@@ -157,6 +159,8 @@ export type AppSettings = {
   customContextFactorOptions: Option<ContextFactorId>[];
   hiddenContextFactorIds: ContextFactorId[];
   activeFocusTitle: string;
+  focusOutcomeCriterion: string;
+  focusReviewDate: string;
   externalEvidenceCriterion: string;
   nutritionGoalCriterion: string;
   experiment: Experiment;
@@ -282,7 +286,7 @@ const dailyRecordedFieldIds: DailyRecordedFieldId[] = [
 
 export const defaultSettings: AppSettings = {
   id: "main",
-  settingsVersion: 7,
+  settingsVersion: 8,
   activeDailyBlocks: dailyBlockOptions.map((option) => option.id),
   activeLifeAreas: ["family", "reading", "creativity", "rest"],
   customCareerOptions: [],
@@ -290,6 +294,8 @@ export const defaultSettings: AppSettings = {
   customContextFactorOptions: [],
   hiddenContextFactorIds: [],
   activeFocusTitle: "",
+  focusOutcomeCriterion: "",
+  focusReviewDate: "",
   externalEvidenceCriterion: "",
   nutritionGoalCriterion: "",
   experiment: {
@@ -311,6 +317,12 @@ export const externalCareerStates: CareerState[] = ["external", "interview", "re
 type LegacyAppSettings = Partial<AppSettings> & {
   customEveningFactorOptions?: unknown;
 };
+
+function validDate(value: unknown): string {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return "";
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value ? value : "";
+}
 
 export function normalizeSettings(settings: LegacyAppSettings | null | undefined): AppSettings {
   const source = settings ?? {};
@@ -346,6 +358,8 @@ export function normalizeSettings(settings: LegacyAppSettings | null | undefined
     customContextFactorOptions,
     hiddenContextFactorIds,
     activeFocusTitle: typeof source.activeFocusTitle === "string" ? source.activeFocusTitle : "",
+    focusOutcomeCriterion: typeof source.focusOutcomeCriterion === "string" ? source.focusOutcomeCriterion : "",
+    focusReviewDate: validDate(source.focusReviewDate),
     externalEvidenceCriterion: typeof source.externalEvidenceCriterion === "string" ? source.externalEvidenceCriterion : "",
     nutritionGoalCriterion: typeof source.nutritionGoalCriterion === "string" ? source.nutritionGoalCriterion : "",
     experiment: normalizeExperiment(source.experiment),
@@ -467,6 +481,8 @@ export function emptyDailyEntry(date: string): DailyEntry {
     actionDirection: null,
     actionNote: "",
     focusTitle: "",
+    focusOutcomeCriterion: "",
+    focusReviewDate: "",
     externalEvidenceCriterion: "",
     lifeAreas: [],
     lifeAreasRecorded: false,
@@ -577,6 +593,8 @@ export function normalizeDailyEntry(entry: LegacyDailyEntry & { date: string }):
     actionDirection,
     actionNote,
     focusTitle: typeof entry.focusTitle === "string" ? entry.focusTitle : "",
+    focusOutcomeCriterion: typeof entry.focusOutcomeCriterion === "string" ? entry.focusOutcomeCriterion : "",
+    focusReviewDate: validDate(entry.focusReviewDate),
     externalEvidenceCriterion: typeof entry.externalEvidenceCriterion === "string" ? entry.externalEvidenceCriterion : "",
     lifeAreas,
     lifeAreasRecorded: recordedFields.has("lifeAreas"),

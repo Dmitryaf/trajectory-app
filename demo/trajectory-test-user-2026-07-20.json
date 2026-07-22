@@ -4,7 +4,7 @@
   "dailyEntries": [
     {
       "date": "2026-05-04",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "nutritionNote", "weightKg", "actionNote"],
       "bedtime": "23:10",
@@ -34,6 +34,8 @@
       "actionDirection": "external",
       "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "reading",
@@ -46,7 +48,7 @@
     },
     {
       "date": "2026-05-06",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact"],
       "bedtime": "23:30",
@@ -77,6 +79,8 @@
       "actionDirection": "preparation",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "family",
@@ -89,7 +93,7 @@
     },
     {
       "date": "2026-05-08",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact"],
       "bedtime": "00:35",
@@ -119,6 +123,8 @@
       "actionDirection": "preparation",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "english",
@@ -131,7 +137,7 @@
     },
     {
       "date": "2026-05-11",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "weightKg"],
       "bedtime": "23:10",
@@ -162,6 +168,8 @@
       "actionDirection": "preparation",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "creativity",
@@ -174,7 +182,7 @@
     },
     {
       "date": "2026-05-13",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "actionNote"],
       "bedtime": "23:30",
@@ -207,6 +215,8 @@
       "actionDirection": "external",
       "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "reading",
@@ -219,7 +229,7 @@
     },
     {
       "date": "2026-05-15",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "actionNote"],
       "bedtime": "23:50",
@@ -249,6 +259,8 @@
       "actionDirection": "external",
       "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "family",
@@ -261,7 +273,7 @@
     },
     {
       "date": "2026-05-18",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "weightKg"],
       "bedtime": "23:10",
@@ -292,6 +304,8 @@
       "actionDirection": "recovery",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "english",
@@ -304,7 +318,7 @@
     },
     {
       "date": "2026-05-20",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "nutritionNote"],
       "bedtime": "00:35",
@@ -334,6 +348,8 @@
       "actionDirection": "preparation",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "creativity",
@@ -346,7 +362,7 @@
     },
     {
       "date": "2026-05-22",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "actionNote"],
       "bedtime": "23:50",
@@ -378,6 +394,8 @@
       "actionDirection": "external",
       "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "reading",
@@ -390,7 +408,7 @@
     },
     {
       "date": "2026-05-25",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "specialDay", "weightKg"],
       "bedtime": "23:10",
@@ -422,6 +440,8 @@
       "actionDirection": "preparation",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "family",
@@ -434,7 +454,7 @@
     },
     {
       "date": "2026-05-27",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "actionNote"],
       "bedtime": "23:30",
@@ -464,6 +484,8 @@
       "actionDirection": "external",
       "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "english",
@@ -476,7 +498,7 @@
     },
     {
       "date": "2026-05-29",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact"],
       "bedtime": "23:50",
@@ -507,6 +529,8 @@
       "actionDirection": "preparation",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "creativity",
@@ -519,7 +543,7 @@
     },
     {
       "date": "2026-06-01",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "weightKg", "actionNote"],
       "bedtime": "00:35",
@@ -550,6 +574,8 @@
       "actionDirection": "external",
       "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "reading",
@@ -562,7 +588,7 @@
     },
     {
       "date": "2026-06-03",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote"],
       "bedtime": "23:30",
@@ -593,6 +619,8 @@
       "actionDirection": "preparation",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "family",
@@ -605,7 +633,7 @@
     },
     {
       "date": "2026-06-05",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "nutritionNote"],
       "bedtime": "23:50",
@@ -637,6 +665,8 @@
       "actionDirection": "preparation",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "english",
@@ -649,7 +679,7 @@
     },
     {
       "date": "2026-06-08",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "weightKg", "actionNote"],
       "bedtime": "23:10",
@@ -679,6 +709,8 @@
       "actionDirection": "external",
       "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "creativity",
@@ -691,7 +723,7 @@
     },
     {
       "date": "2026-06-10",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "actionNote"],
       "bedtime": "23:30",
@@ -723,6 +755,8 @@
       "actionDirection": "external",
       "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "reading",
@@ -735,7 +769,7 @@
     },
     {
       "date": "2026-06-12",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "specialDay"],
       "bedtime": "00:35",
@@ -765,6 +799,8 @@
       "actionDirection": "preparation",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "family",
@@ -777,7 +813,7 @@
     },
     {
       "date": "2026-06-15",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "weightKg"],
       "bedtime": "23:10",
@@ -808,6 +844,8 @@
       "actionDirection": "recovery",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "english",
@@ -820,7 +858,7 @@
     },
     {
       "date": "2026-06-17",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact"],
       "bedtime": "23:30",
@@ -852,6 +890,8 @@
       "actionDirection": "preparation",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "creativity",
@@ -864,7 +904,7 @@
     },
     {
       "date": "2026-06-19",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "actionNote"],
       "bedtime": "23:50",
@@ -894,6 +934,8 @@
       "actionDirection": "external",
       "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "reading",
@@ -906,7 +948,7 @@
     },
     {
       "date": "2026-06-22",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "nutritionNote", "weightKg"],
       "bedtime": "23:10",
@@ -937,6 +979,8 @@
       "actionDirection": "preparation",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "family",
@@ -949,7 +993,7 @@
     },
     {
       "date": "2026-06-24",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact"],
       "bedtime": "00:35",
@@ -979,6 +1023,8 @@
       "actionDirection": "preparation",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "english",
@@ -991,7 +1037,7 @@
     },
     {
       "date": "2026-06-26",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote"],
       "bedtime": "23:50",
@@ -1022,6 +1068,8 @@
       "actionDirection": "preparation",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "creativity",
@@ -1034,7 +1082,7 @@
     },
     {
       "date": "2026-06-29",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "weightKg", "actionNote"],
       "bedtime": "23:10",
@@ -1067,6 +1115,8 @@
       "actionDirection": "external",
       "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "reading",
@@ -1079,7 +1129,7 @@
     },
     {
       "date": "2026-07-01",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "actionNote"],
       "bedtime": "23:30",
@@ -1109,6 +1159,8 @@
       "actionDirection": "external",
       "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "family",
@@ -1121,7 +1173,7 @@
     },
     {
       "date": "2026-07-03",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact"],
       "bedtime": "23:50",
@@ -1152,6 +1204,8 @@
       "actionDirection": "preparation",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "english",
@@ -1164,7 +1218,7 @@
     },
     {
       "date": "2026-07-06",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "weightKg"],
       "bedtime": "00:35",
@@ -1194,6 +1248,8 @@
       "actionDirection": "preparation",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "creativity",
@@ -1206,7 +1262,7 @@
     },
     {
       "date": "2026-07-08",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "nutritionNote", "actionNote"],
       "bedtime": "23:30",
@@ -1238,6 +1294,8 @@
       "actionDirection": "external",
       "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "reading",
@@ -1250,7 +1308,7 @@
     },
     {
       "date": "2026-07-10",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact"],
       "bedtime": "23:50",
@@ -1282,6 +1340,8 @@
       "actionDirection": "preparation",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "family",
@@ -1294,7 +1354,7 @@
     },
     {
       "date": "2026-07-13",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "weightKg", "actionNote", "experimentCompleted"],
       "bedtime": "23:10",
@@ -1324,6 +1384,8 @@
       "actionDirection": "external",
       "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "english",
@@ -1336,7 +1398,7 @@
     },
     {
       "date": "2026-07-14",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "experimentCompleted"],
       "bedtime": "23:30",
@@ -1367,6 +1429,8 @@
       "actionDirection": "preparation",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "creativity",
@@ -1379,7 +1443,7 @@
     },
     {
       "date": "2026-07-15",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "actionNote", "experimentCompleted"],
       "bedtime": "00:35",
@@ -1410,6 +1474,8 @@
       "actionDirection": "external",
       "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "reading",
@@ -1422,7 +1488,7 @@
     },
     {
       "date": "2026-07-16",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "experimentCompleted"],
       "bedtime": "23:10",
@@ -1453,6 +1519,8 @@
       "actionDirection": "preparation",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "family",
@@ -1465,7 +1533,7 @@
     },
     {
       "date": "2026-07-17",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "experimentCompleted"],
       "bedtime": "23:30",
@@ -1497,6 +1565,8 @@
       "actionDirection": "preparation",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "english",
@@ -1509,7 +1579,7 @@
     },
     {
       "date": "2026-07-18",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "nutritionNote", "actionNote", "experimentCompleted"],
       "bedtime": "23:50",
@@ -1539,6 +1609,8 @@
       "actionDirection": "external",
       "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "creativity",
@@ -1551,7 +1623,7 @@
     },
     {
       "date": "2026-07-19",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "contextNote", "actionNote", "experimentCompleted"],
       "bedtime": "23:10",
@@ -1583,6 +1655,8 @@
       "actionDirection": "external",
       "actionNote": "Выбрал подходящий вариант и подготовил отклик",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "reading",
@@ -1595,7 +1669,7 @@
     },
     {
       "date": "2026-07-20",
-      "entrySchemaVersion": 1,
+      "entrySchemaVersion": 2,
       "activeDailyBlocksSnapshot": ["sleep", "context", "career", "movement", "nutrition"],
       "recordedFields": ["bedtime", "wakeTime", "sleepMinutes", "timeInBedMinutes", "sleepQuality", "energy", "contextFactors", "careerStates", "activities", "nutritionState", "actionDirection", "lifeAreas", "importantFact", "weightKg", "experimentCompleted"],
       "bedtime": "00:35",
@@ -1625,6 +1699,8 @@
       "actionDirection": "preparation",
       "actionNote": "",
       "focusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+      "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+      "focusReviewDate": "2026-08-15",
       "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
       "lifeAreas": [
         "family",
@@ -2096,7 +2172,7 @@
   ],
   "settings": {
     "id": "main",
-    "settingsVersion": 7,
+    "settingsVersion": 8,
     "activeDailyBlocks": [
       "sleep",
       "context",
@@ -2143,6 +2219,8 @@
     ],
     "hiddenContextFactorIds": [],
     "activeFocusTitle": "Найти устойчивый ритм поиска работы и личного проекта",
+    "focusOutcomeCriterion": "Стабильно выполнять запланированные действия и получить проверяемую обратную связь",
+    "focusReviewDate": "2026-08-15",
     "externalEvidenceCriterion": "Отправленный отклик, назначенный разговор или опубликованный результат",
     "nutritionGoalCriterion": "Регулярные приёмы пищи без позднего переедания",
     "experiment": {

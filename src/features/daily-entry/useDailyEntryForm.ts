@@ -101,6 +101,8 @@ export function useDailyEntryForm(store: AppStore) {
     }
     const entry = prepareDailyEntryForSave(form, currentMetrics(), {
       focusTitle: store.settings.activeFocusTitle,
+      focusOutcomeCriterion: store.settings.focusOutcomeCriterion,
+      focusReviewDate: store.settings.focusReviewDate,
       externalEvidenceCriterion: store.settings.externalEvidenceCriterion,
       nutritionCriterion: store.settings.nutritionGoalCriterion,
       activeDailyBlocks: store.settings.activeDailyBlocks,

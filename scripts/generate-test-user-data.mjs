@@ -68,7 +68,7 @@ const dailyEntries = trackedDates.map((date, index) => {
 
   return {
     date,
-    entrySchemaVersion: 1,
+    entrySchemaVersion: 2,
     activeDailyBlocksSnapshot: ['sleep', 'context', 'career', 'movement', 'nutrition'],
     recordedFields: [
       'bedtime', 'wakeTime', 'sleepMinutes', 'timeInBedMinutes', 'sleepQuality', 'energy',
@@ -105,6 +105,8 @@ const dailyEntries = trackedDates.map((date, index) => {
     actionDirection: careerStates.includes('external') ? 'external' : index % 6 === 0 ? 'recovery' : 'preparation',
     actionNote: careerStates.includes('external') ? 'Выбрал подходящий вариант и подготовил отклик' : '',
     focusTitle: 'Найти устойчивый ритм поиска работы и личного проекта',
+    focusOutcomeCriterion: 'Стабильно выполнять запланированные действия и получить проверяемую обратную связь',
+    focusReviewDate: '2026-08-15',
     externalEvidenceCriterion: 'Отправленный отклик, назначенный разговор или опубликованный результат',
     lifeAreas: lifeAreaCycles[index % lifeAreaCycles.length],
     lifeAreasRecorded: true,
@@ -203,7 +205,7 @@ const payload = {
   monthlyReviews,
   settings: {
     id: 'main',
-    settingsVersion: 7,
+    settingsVersion: 8,
     activeDailyBlocks: ['sleep', 'context', 'career', 'movement', 'nutrition'],
     activeLifeAreas: ['family', 'reading', 'creativity', 'rest', 'friends', 'english', 'custom:life:personal-projects'],
     customCareerOptions: [
@@ -217,6 +219,8 @@ const payload = {
     ],
     hiddenContextFactorIds: [],
     activeFocusTitle: 'Найти устойчивый ритм поиска работы и личного проекта',
+    focusOutcomeCriterion: 'Стабильно выполнять запланированные действия и получить проверяемую обратную связь',
+    focusReviewDate: '2026-08-15',
     externalEvidenceCriterion: 'Отправленный отклик, назначенный разговор или опубликованный результат',
     nutritionGoalCriterion: 'Регулярные приёмы пищи без позднего переедания',
     experiment: {

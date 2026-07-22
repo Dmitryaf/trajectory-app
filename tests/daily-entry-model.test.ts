@@ -22,6 +22,8 @@ describe('daily entry model', () => {
     const metrics = { sleepMinutes: 420, timeInBedMinutes: 470, weightKg: 82.46 };
     const defaults = {
       focusTitle: ' Текущая цель ',
+      focusOutcomeCriterion: ' Пять выполненных действий ',
+      focusReviewDate: '2026-08-01',
       externalEvidenceCriterion: ' Внешний результат ',
       nutritionCriterion: ' Обычный режим ',
       activeDailyBlocks: ['sleep', 'context', 'movement'] as DailyBlockId[],
@@ -33,15 +35,19 @@ describe('daily entry model', () => {
       timeInBedMinutes: 470,
       weightKg: 82.5,
       focusTitle: 'Текущая цель',
+      focusOutcomeCriterion: 'Пять выполненных действий',
+      focusReviewDate: '2026-08-01',
       externalEvidenceCriterion: 'Внешний результат',
       nutritionCriterion: 'Обычный режим',
-      entrySchemaVersion: 1,
+      entrySchemaVersion: 2,
       activeDailyBlocksSnapshot: ['sleep', 'context', 'movement'],
     });
     expect(source.focusTitle).toBe('');
 
     const existing = prepareDailyEntryForSave(source, metrics, defaults, false);
     expect(existing.focusTitle).toBe('');
+    expect(existing.focusOutcomeCriterion).toBe('');
+    expect(existing.focusReviewDate).toBe('');
     expect(existing.externalEvidenceCriterion).toBe('');
     expect(existing.nutritionCriterion).toBe('');
     expect(existing.activeDailyBlocksSnapshot).toBeNull();

@@ -132,6 +132,9 @@ describe('analytics', () => {
   it('builds a manual analysis package with labels and experiment context', () => {
     const settings = structuredClone(defaultSettings);
     settings.customContextFactorOptions = [{ id: 'custom:context:rain', label: 'Шум за окном', custom: true }];
+    settings.activeFocusTitle = 'Завершить прототип';
+    settings.focusOutcomeCriterion = 'Показать работающий сценарий трём людям';
+    settings.focusReviewDate = '2026-07-31';
     settings.experiment = { ...settings.experiment, active: true, title: 'Без новостей', startDate: '2026-07-13', endDate: '2026-07-19', conclusion: 'unclear' };
     const payload = buildAiReportPayload('week', '2026-07-16', {
       entries: [entry('2026-07-13', { contextFactors: ['custom:context:rain'] })],
@@ -142,7 +145,7 @@ describe('analytics', () => {
       settings,
     });
 
-    expect(payload.version).toBe(7);
+    expect(payload.version).toBe(8);
     expect(payload.dataThrough).toBe('2026-07-19');
     expect(payload.labels.contextFactors).toContainEqual(expect.objectContaining({ id: 'custom:context:rain', label: 'Шум за окном' }));
     expect(payload.factorSummaries[0].label).toBe('Шум за окном');
@@ -153,6 +156,8 @@ describe('analytics', () => {
     expect(prompt).toContain('ДАННЫЕ ДЛЯ АНАЛИЗА');
     expect(prompt).toContain('Шум за окном');
     expect(prompt).toContain('Ложиться раньше');
+    expect(prompt).toContain('Наблюдаемый результат цели: Показать работающий сценарий трём людям.');
+    expect(prompt).toContain('Цель нужно пересмотреть 2026-07-31.');
     expect(prompt).not.toContain('Данные JSON');
     expect(prompt).not.toContain('custom:context:rain');
     expect(prompt).not.toContain('"generatedAt"');

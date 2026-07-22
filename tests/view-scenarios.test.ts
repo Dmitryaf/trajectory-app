@@ -52,6 +52,8 @@ describe('daily entry scenario', () => {
   it('validates sleep duration and saves the completed day with current criteria', async () => {
     const { pinia, store } = createStore();
     store.settings.activeFocusTitle = 'Главный фокус';
+    store.settings.focusOutcomeCriterion = 'Получить проверяемый результат';
+    store.settings.focusReviewDate = '2026-08-01';
     store.settings.externalEvidenceCriterion = 'Получен ответ извне';
     store.settings.nutritionGoalCriterion = 'Обычный режим питания';
     const saveEntry = vi.spyOn(store, 'saveEntry').mockImplementation(async (entry) => {
@@ -88,7 +90,7 @@ describe('daily entry scenario', () => {
     expect(saveEntry).toHaveBeenCalledTimes(1);
     expect(saveEntry.mock.calls[0][0]).toMatchObject({
       date: '2026-07-21',
-      entrySchemaVersion: 1,
+      entrySchemaVersion: 2,
       activeDailyBlocksSnapshot: ['sleep', 'context', 'career', 'movement', 'nutrition'],
       bedtime: '23:40',
       wakeTime: '07:30',
@@ -96,6 +98,8 @@ describe('daily entry scenario', () => {
       timeInBedMinutes: 470,
       importantFact: 'Завершил важный разговор',
       focusTitle: 'Главный фокус',
+      focusOutcomeCriterion: 'Получить проверяемый результат',
+      focusReviewDate: '2026-08-01',
       externalEvidenceCriterion: 'Получен ответ извне',
       nutritionCriterion: 'Обычный режим питания'
     });

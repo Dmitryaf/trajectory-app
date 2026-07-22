@@ -367,13 +367,18 @@ async function clearAll() {
     </article>
 
     <article class="settings-card settings-card--career">
-      <div class="form-card__heading"><span class="section-icon section-icon--blue">↗</span><div><h2>Карьера</h2><p>Задай текущую рабочую цель и действия, которые показывают конкретный результат.</p></div></div>
+      <div class="form-card__heading"><span class="section-icon section-icon--blue">↗</span><div><h2>Цель и карьерные действия</h2><p>Опиши цель, заметный результат и дату, когда стоит решить: продолжать, изменить или завершить.</p></div></div>
       <div class="settings-field-stack">
-        <label class="field-label" for="active-focus">Текущая рабочая цель</label>
-        <input id="active-focus" v-model="settings.activeFocusTitle" type="text" maxlength="100" placeholder="Например: найти новую работу или подготовиться к смене роли" />
+        <label class="field-label" for="active-focus">Над чем ты сейчас работаешь</label>
+        <input id="active-focus" v-model="settings.activeFocusTitle" type="text" maxlength="100" placeholder="Например: восстановить режим сна или подготовиться к смене работы" />
+        <label class="field-label" for="focus-outcome">Какой результат покажет прогресс</label>
+        <textarea id="focus-outcome" v-model="settings.focusOutcomeCriterion" rows="2" maxlength="220" placeholder="Например: пять дней подряд вставать до 08:00 или получить приглашение на собеседование"></textarea>
+        <label class="field-label" for="focus-review-date">Когда пересмотреть цель</label>
+        <input id="focus-review-date" v-model="settings.focusReviewDate" type="date" />
         <label class="field-label" for="external-evidence">Что считать конкретным действием</label>
         <textarea id="external-evidence" v-model="settings.externalEvidenceCriterion" rows="2" maxlength="220" placeholder="Например: отправленный отклик, разговор, собеседование или выполненное задание"></textarea>
       </div>
+      <span class="field-label">Варианты карьерных действий</span>
       <div class="option-preview">
         <span v-for="option in allCareerOptions" :key="option.id" class="option-pill">
           <i v-if="option.icon">{{ option.icon }}</i>{{ option.label }}
@@ -393,7 +398,7 @@ async function clearAll() {
           </div>
         </div>
       </div>
-      <button class="primary-button" type="button" @click="save('Настройки карьеры сохранены')">Сохранить настройки карьеры</button>
+      <button class="primary-button" type="button" @click="save('Настройки цели сохранены')">Сохранить настройки цели</button>
     </article>
 
     <article class="settings-card settings-card--nutrition">

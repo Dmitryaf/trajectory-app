@@ -26,7 +26,7 @@ export type AiReportPeriod = 'week' | 'month' | 'range';
 
 export type AiReportPayload = {
   app: 'trajectory';
-  version: 7;
+  version: 8;
   period: AiReportPeriod;
   rangeMonths?: number;
   start: string;
@@ -50,6 +50,8 @@ export type AiReportPayload = {
     activeDailyBlocks: AppSettings['activeDailyBlocks'];
     activeLifeAreas: string[];
     activeFocusTitle: string;
+    focusOutcomeCriterion: string;
+    focusReviewDate: string;
     externalEvidenceCriterion: string;
     nutritionGoalCriterion: string;
     experiment: AppSettings['experiment'];
@@ -101,7 +103,7 @@ function buildPayload(
 
   return {
     app: 'trajectory',
-    version: 7,
+    version: 8,
     period,
     start,
     end,
@@ -119,6 +121,8 @@ function buildPayload(
       activeDailyBlocks: source.settings.activeDailyBlocks,
       activeLifeAreas: source.settings.activeLifeAreas,
       activeFocusTitle: source.settings.activeFocusTitle,
+      focusOutcomeCriterion: source.settings.focusOutcomeCriterion,
+      focusReviewDate: source.settings.focusReviewDate,
       externalEvidenceCriterion: source.settings.externalEvidenceCriterion,
       nutritionGoalCriterion: source.settings.nutritionGoalCriterion,
       experiment: { ...source.settings.experiment },
@@ -203,6 +207,8 @@ function buildReadableSections(payload: AiReportPayload): string[] {
   appendSection(lines, 'Текущие определения', [
     `Блоки, доступные в ежедневной записи: ${payload.settingsSnapshot.activeDailyBlocks.length ? payload.settingsSnapshot.activeDailyBlocks.map((id) => labelFor(dailyBlockOptions, id)).join(', ') : 'все необязательные блоки скрыты'}.`,
     payload.settingsSnapshot.activeFocusTitle ? `Текущая цель: ${cleanText(payload.settingsSnapshot.activeFocusTitle)}.` : '',
+    payload.settingsSnapshot.focusOutcomeCriterion ? `Наблюдаемый результат цели: ${cleanText(payload.settingsSnapshot.focusOutcomeCriterion)}.` : '',
+    payload.settingsSnapshot.focusReviewDate ? `Цель нужно пересмотреть ${payload.settingsSnapshot.focusReviewDate}.` : '',
     payload.settingsSnapshot.externalEvidenceCriterion ? `Что считается конкретным действием: ${cleanText(payload.settingsSnapshot.externalEvidenceCriterion)}.` : '',
     payload.settingsSnapshot.nutritionGoalCriterion ? `Правила питания: ${cleanText(payload.settingsSnapshot.nutritionGoalCriterion)}.` : '',
     formatExperiment(payload.settingsSnapshot.experiment),
@@ -266,6 +272,15 @@ function labelFor(options: Array<{ id: string; label: string }>, id: string): st
 
 function formatEntry(entry: DailyEntry, payload: AiReportPayload): string {
   const values: string[] = [];
+  if (entry.focusTitle && entry.focusTitle !== payload.settingsSnapshot.activeFocusTitle) {
+    values.push(`цель на эту дату: ${cleanText(entry.focusTitle)}`);
+  }
+  if (entry.focusOutcomeCriterion && entry.focusOutcomeCriterion !== payload.settingsSnapshot.focusOutcomeCriterion) {
+    values.push(`ожидаемый результат на эту дату: ${cleanText(entry.focusOutcomeCriterion)}`);
+  }
+  if (entry.focusReviewDate && entry.focusReviewDate !== payload.settingsSnapshot.focusReviewDate) {
+    values.push(`дата пересмотра цели на эту дату: ${entry.focusReviewDate}`);
+  }
   if (entry.bedtime) values.push(`лёг ${entry.bedtime}`);
   if (entry.wakeTime) values.push(`встал ${entry.wakeTime}`);
   if (entry.sleepMinutes !== null) values.push(`сон ${formatMinutes(entry.sleepMinutes)}`);

@@ -15,7 +15,7 @@ describe('settings migrations', () => {
     });
 
     expect(settings.customCareerOptions).toEqual([]);
-    expect(settings.settingsVersion).toBe(7);
+    expect(settings.settingsVersion).toBe(8);
     expect(settings.activeDailyBlocks).toContain('context');
     expect(settings.customContextFactorOptions).toEqual([]);
     expect(settings.hiddenContextFactorIds).toEqual([]);
@@ -23,6 +23,20 @@ describe('settings migrations', () => {
     expect(normalized.careerStates).toEqual(['preparation', 'external']);
     expect(normalized.contextFactors).toEqual(['screen']);
     expect(normalized).not.toHaveProperty('eveningFactors');
+  });
+
+  it('keeps optional goal evidence and ignores an invalid review date', () => {
+    const settings = normalizeSettings({
+      focusOutcomeCriterion: 'Пять завершённых тренировок',
+      focusReviewDate: '2026-08-01',
+    });
+    const invalid = normalizeSettings({ focusReviewDate: '01.08.2026' });
+
+    expect(settings).toMatchObject({
+      focusOutcomeCriterion: 'Пять завершённых тренировок',
+      focusReviewDate: '2026-08-01',
+    });
+    expect(invalid.focusReviewDate).toBe('');
   });
 
   it('combines old context notes without dropping either value', () => {

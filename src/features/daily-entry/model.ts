@@ -9,6 +9,8 @@ export type DailyEntryMetrics = {
 
 export type DailyEntryDefaults = {
   focusTitle: string;
+  focusOutcomeCriterion: string;
+  focusReviewDate: string;
   externalEvidenceCriterion: string;
   nutritionCriterion: string;
   activeDailyBlocks: DailyBlockId[];
@@ -51,6 +53,8 @@ export function prepareDailyEntryForSave(
     prepared.entrySchemaVersion = currentDailyEntrySchemaVersion;
     prepared.activeDailyBlocksSnapshot = [...defaults.activeDailyBlocks];
     if (!prepared.focusTitle.trim()) prepared.focusTitle = defaults.focusTitle.trim();
+    if (!prepared.focusOutcomeCriterion.trim()) prepared.focusOutcomeCriterion = defaults.focusOutcomeCriterion.trim();
+    if (!prepared.focusReviewDate) prepared.focusReviewDate = defaults.focusReviewDate;
     if (!prepared.externalEvidenceCriterion.trim()) prepared.externalEvidenceCriterion = defaults.externalEvidenceCriterion.trim();
     if (!prepared.nutritionCriterion.trim()) prepared.nutritionCriterion = defaults.nutritionCriterion.trim();
   }
