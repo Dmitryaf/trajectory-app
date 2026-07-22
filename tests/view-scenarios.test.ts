@@ -196,6 +196,25 @@ describe('daily entry scenario', () => {
     expect(factCard!.get('textarea').element).toHaveProperty('value', 'Не потерять эту запись');
   });
 
+  it('clears an automatically derived time in bed but preserves a manual duration', async () => {
+    const { pinia } = createStore();
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+    await wrapper.get('#bedtime').setValue('23:40');
+    await wrapper.get('#wake-time').setValue('07:30');
+    const timeInBedHours = wrapper.get('#time-in-bed-hours');
+    expect((timeInBedHours.element as HTMLInputElement).value).toBe('7');
+
+    await wrapper.get('#wake-time').setValue('');
+    expect((timeInBedHours.element as HTMLInputElement).value).toBe('');
+
+    await wrapper.get('#wake-time').setValue('07:30');
+    await timeInBedHours.setValue('8');
+    await wrapper.get('#wake-time').setValue('');
+    expect((timeInBedHours.element as HTMLInputElement).value).toBe('8');
+  });
+
   it('blocks route navigation while the daily entry is dirty', async () => {
     const { pinia } = createStore();
     const router = createRouter({

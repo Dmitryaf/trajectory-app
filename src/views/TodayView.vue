@@ -1,20 +1,16 @@
 <script setup lang="ts">
-import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
-import { onBeforeRouteLeave } from 'vue-router';
+import { computed } from 'vue';
 import ChipGroup from '../components/ChipGroup.vue';
 import DurationInput from '../components/DurationInput.vue';
 import ScalePicker from '../components/ScalePicker.vue';
-import { prepareDailyEntryForSave, snapshotDailyEntry, timeBetween, validateDailyEntryMetrics, type DailyEntryMetrics } from '../features/daily-entry/model';
+import { useDailyEntryForm } from '../features/daily-entry/useDailyEntryForm';
 import { useAppStore } from '../stores/app';
 import { addDays, endOfMonth, endOfWeek, formatDate, formatMinutes, startOfMonth, startOfWeek, todayKey } from '../services/dates';
 import { buildObservations, entriesForPeriod, entriesForWeek, summarize } from '../services/analytics';
-import { notifyError, notifySaved, notifyUnknownError } from '../services/notifications';
-import { plainCopy } from '../services/plain';
 import {
   actionDirectionEntryOptions,
   activityOptions,
   careerOptions,
-  emptyDailyEntry,
   experimentAppliesToDate,
   contextFactorOptions,
   lifeAreaOptions,
@@ -23,22 +19,29 @@ import {
   type ActionDirectionId,
   type ActivityId,
   type CareerState,
-  type DailyBlockId,
   type DailyEntry,
   type LifeAreaId,
   type NutritionState
 } from '../types';
 
 const store = useAppStore();
-const selectedDate = ref(todayKey());
-const sleepDurationMinutes = ref<number | null>(null);
-const timeInBedDurationMinutes = ref<number | null>(null);
-const weightKg = ref<number | null>(null);
-const saved = ref(false);
-const saving = ref(false);
-const validationMessage = ref('');
-const originalEntrySnapshot = ref('');
-const form = reactive<DailyEntry>(emptyDailyEntry(selectedDate.value));
+const {
+  selectedDate,
+  sleepDurationMinutes,
+  timeInBedDurationMinutes,
+  weightKg,
+  saved,
+  validationMessage,
+  form,
+  hasSavedEntry,
+  entryChangeNotice,
+  saveButtonText,
+  saveButtonDisabled,
+  blockIsActive,
+  changeSelectedDate,
+  selectDate,
+  save,
+} = useDailyEntryForm(store);
 
 const careerItems = computed(() => [...careerOptions, ...store.settings.customCareerOptions.filter((option) => !option.archived)]);
 const contextFactorItems = computed(() => [
@@ -50,7 +53,6 @@ const actionDirectionItems = computed(() => form.actionDirection === 'recovery'
   : actionDirectionEntryOptions);
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
 const activeLifeOptions = computed(() => lifeAreaItems.value.filter((option) => store.settings.activeLifeAreas.includes(option.id)));
-const activeDailyBlocks = computed(() => new Set(store.settings.activeDailyBlocks));
 const isToday = computed(() => selectedDate.value === todayKey());
 const weekEntryCount = computed(() => entriesForWeek(store.dailyEntries, selectedDate.value).length);
 const currentWeekEntries = computed(() => entriesForWeek(store.dailyEntries, todayKey()));
@@ -61,22 +63,6 @@ const currentMonthEntries = computed(() => entriesForPeriod(store.dailyEntries, 
 const currentMonthSummary = computed(() => summarize(currentMonthEntries.value, externalCareerIds.value));
 const isWeekReviewWindow = computed(() => isToday.value && todayKey() >= addDays(endOfWeek(todayKey()), -1));
 const isMonthReviewWindow = computed(() => isToday.value && todayKey() >= addDays(endOfMonth(todayKey()), -2));
-const hasSavedEntry = computed(() => Boolean(store.entryByDate(selectedDate.value)));
-const currentEntrySnapshot = computed(() => snapshotEntry(form));
-const isDirty = computed(() => currentEntrySnapshot.value !== originalEntrySnapshot.value);
-const entryChangeNotice = computed(() => {
-  if (saved.value) return '';
-  if (isDirty.value && hasSavedEntry.value) return `Есть изменения за ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })}. Сохрани, чтобы обновить запись.`;
-  if (isDirty.value) return `Есть несохранённая запись за ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })}.`;
-  return '';
-});
-const saveButtonText = computed(() => {
-  if (saving.value) return 'Сохраняю…';
-  if (hasSavedEntry.value && isDirty.value) return 'Сохранить изменения';
-  if (hasSavedEntry.value) return 'Запись сохранена';
-  return 'Сохранить день';
-});
-const saveButtonDisabled = computed(() => saving.value || (hasSavedEntry.value && !isDirty.value && !saved.value));
 const experimentAppliesToSelectedDate = computed(() => {
   return experimentAppliesToDate(store.settings.experiment, selectedDate.value);
 });
@@ -90,103 +76,6 @@ const reviewReminders = computed(() => [
 ].filter((item): item is { id: string; title: string; text: string; to: string; label: string } => item !== null));
 const yesterday = computed(() => addDays(todayKey(), -1));
 const yesterdayMissing = computed(() => isToday.value && store.loaded && !store.entryByDate(yesterday.value));
-
-function blockIsActive(block: DailyBlockId) {
-  return activeDailyBlocks.value.has(block);
-}
-
-function snapshotEntry(entry: DailyEntry) {
-  return snapshotDailyEntry(entry, {
-    sleepMinutes: sleepDurationMinutes.value,
-    timeInBedMinutes: timeInBedDurationMinutes.value,
-    weightKg: weightKg.value,
-  });
-}
-
-function currentMetrics(): DailyEntryMetrics {
-  return {
-    sleepMinutes: sleepDurationMinutes.value,
-    timeInBedMinutes: timeInBedDurationMinutes.value,
-    weightKg: weightKg.value,
-  };
-}
-
-function loadEntry(date: string) {
-  validationMessage.value = '';
-  const existing = store.entryByDate(date);
-  Object.assign(form, existing ? plainCopy(existing) : emptyDailyEntry(date));
-  sleepDurationMinutes.value = form.sleepMinutes;
-  timeInBedDurationMinutes.value = form.timeInBedMinutes;
-  weightKg.value = form.weightKg;
-  originalEntrySnapshot.value = snapshotEntry(form);
-  saved.value = false;
-}
-
-watch(selectedDate, loadEntry, { immediate: true });
-watch(() => [form.bedtime, form.wakeTime], ([bedtime, wakeTime]) => {
-  const duration = timeBetween(String(bedtime), String(wakeTime));
-  if (duration !== null) timeInBedDurationMinutes.value = duration;
-});
-
-function confirmDiscardChanges(): boolean {
-  return !isDirty.value || window.confirm('Есть несохранённые изменения. Отбросить их и продолжить?');
-}
-
-function changeSelectedDate(date: string): boolean {
-  if (!date || date === selectedDate.value) return true;
-  if (!confirmDiscardChanges()) return false;
-  selectedDate.value = date;
-  return true;
-}
-
-function selectDate(event: Event) {
-  const input = event.currentTarget as HTMLInputElement;
-  if (!changeSelectedDate(input.value)) input.value = selectedDate.value;
-}
-
-function handleBeforeUnload(event: BeforeUnloadEvent) {
-  if (!isDirty.value) return;
-  event.preventDefault();
-  event.returnValue = '';
-}
-
-if (getCurrentInstance()?.appContext.config.globalProperties.$router) {
-  onBeforeRouteLeave(() => confirmDiscardChanges());
-}
-onMounted(() => window.addEventListener('beforeunload', handleBeforeUnload));
-onBeforeUnmount(() => window.removeEventListener('beforeunload', handleBeforeUnload));
-
-async function save() {
-  if (saving.value) return;
-  validationMessage.value = '';
-  validationMessage.value = validateDailyEntryMetrics(currentMetrics(), blockIsActive('sleep'));
-  if (validationMessage.value) {
-    notifyError(validationMessage.value);
-    return;
-  }
-  const entry = prepareDailyEntryForSave(form, currentMetrics(), {
-    focusTitle: store.settings.activeFocusTitle,
-    externalEvidenceCriterion: store.settings.externalEvidenceCriterion,
-    nutritionCriterion: store.settings.nutritionGoalCriterion,
-  }, !hasSavedEntry.value);
-  const wasExistingEntry = hasSavedEntry.value;
-  saving.value = true;
-  try {
-    const savedEntry = await store.saveEntry(entry);
-    Object.assign(form, plainCopy(savedEntry));
-    sleepDurationMinutes.value = savedEntry.sleepMinutes;
-    timeInBedDurationMinutes.value = savedEntry.timeInBedMinutes;
-    weightKg.value = savedEntry.weightKg;
-    originalEntrySnapshot.value = snapshotEntry(form);
-    saved.value = true;
-    notifySaved(wasExistingEntry ? `Запись за ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })} обновлена` : 'День сохранён');
-    window.setTimeout(() => (saved.value = false), 2200);
-  } catch (error) {
-    notifyUnknownError(error, 'Не удалось сохранить день');
-  } finally {
-    saving.value = false;
-  }
-}
 
 function fillYesterday() {
   changeSelectedDate(yesterday.value);
