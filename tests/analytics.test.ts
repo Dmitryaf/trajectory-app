@@ -6,7 +6,7 @@ import { buildObservations, factorSummaries } from '../src/features/analytics/ob
 import { entriesForPeriod, entriesForWeek, summarize } from '../src/features/analytics/periodSummary';
 import { buildRangeReviewCues, buildReviewCues } from '../src/features/analytics/reviewCues';
 import { weekSummaryText } from '../src/services/analytics';
-import { buildAiReportPayload, buildAiReportPrompt, buildAiReportRangePayload } from '../src/features/export/report';
+import { AI_PROMPT_CHARACTER_LIMIT, buildAiReportPayload, buildAiReportPrompt, buildAiReportRangePayload } from '../src/features/export/report';
 import { addMonths, monthsBetween } from '../src/services/dates';
 import { defaultSettings, emptyDailyEntry, experimentAppliesToDate, normalizeDailyEntry, normalizeLifeEvent, normalizeMonthlyReview, normalizeSettings, normalizeWeeklyReview, type DailyEntry } from '../src/types';
 
@@ -193,6 +193,31 @@ describe('analytics', () => {
     expect(payload.start).toBe('2026-05-01');
     expect(payload.dataThrough).toBe('2026-07-16');
     expect(payload.entries.map((item) => item.date)).toEqual(['2026-05-01']);
+  });
+
+  it('summarizes long ranges by month and bounds verbose records', () => {
+    const longNote = 'Подробное наблюдение '.repeat(400);
+    const payload = buildAiReportRangePayload(12, '2026-07-16', {
+      entries: Array.from({ length: 180 }, (_, index) => entry(`2026-${String(2 + Math.floor(index / 28)).padStart(2, '0')}-${String(1 + (index % 28)).padStart(2, '0')}`, { energy: 3 })),
+      results: [],
+      lifeEvents: Array.from({ length: 140 }, (_, index) => ({
+        id: index + 1,
+        date: '2026-07-01',
+        title: `Наблюдение ${index}`,
+        note: longNote,
+        type: 'insight' as const,
+        createdAt: '2026-07-01T10:00:00.000Z',
+      })),
+      reviews: [],
+      monthlyReviews: [],
+      settings: defaultSettings,
+    });
+
+    const prompt = buildAiReportPrompt(payload, defaultSettings);
+    expect(prompt).toContain('Покрытие по месяцам');
+    expect(prompt).not.toContain('Записи по дням');
+    expect(prompt).toContain('Не включено подробностей: 80');
+    expect(prompt.length).toBeLessThanOrEqual(AI_PROMPT_CHARACTER_LIMIT);
   });
 
   it('selects entries only from the requested Monday-Sunday week', () => {

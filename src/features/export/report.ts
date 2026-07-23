@@ -11,6 +11,7 @@ import {
   contextFactorOptions,
   lifeAreaOptions,
   legacyActivityOptions,
+  legacyContextFactorOptions,
   lifeEventTypeOptions,
   nutritionOptions,
   resultAreaOptions,
@@ -26,6 +27,7 @@ import {
 } from '../../types';
 
 export type AiReportPeriod = 'week' | 'month' | 'range';
+export const AI_PROMPT_CHARACTER_LIMIT = 48_000;
 
 export type AiReportPayload = {
   app: 'trajectory';
@@ -143,7 +145,7 @@ function buildLabelDictionary(settings: AppSettings) {
   return {
     career: copyOptions([...careerOptions, ...settings.customCareerOptions]),
     lifeAreas: copyOptions([...lifeAreaOptions, ...settings.customLifeAreaOptions]),
-    contextFactors: copyOptions([...contextFactorOptions, ...settings.customContextFactorOptions]),
+    contextFactors: copyOptions([...contextFactorOptions, ...legacyContextFactorOptions, ...settings.customContextFactorOptions]),
     activities: copyOptions([...activityOptions, ...legacyActivityOptions]),
     actionDirections: copyOptions(actionDirectionOptions),
     nutrition: copyOptions(nutritionOptions),
@@ -164,7 +166,7 @@ export function buildAiReportPrompt(payload: AiReportPayload, settings: AppSetti
 
   const sections = buildReadableSections(payload);
 
-  return [
+  const prompt = [
     `Проанализируй данные личного трекера «Траектория» за ${periodTitle}. Фактические данные доступны по ${formatDate(payload.dataThrough, { day: 'numeric', month: 'long', year: 'numeric' })}.`,
     '',
     'Роль: спокойный аналитик поведения. Не морализируй, не ставь диагнозы, не оценивай личность и не считай общий балл.',
@@ -191,6 +193,8 @@ export function buildAiReportPrompt(payload: AiReportPayload, settings: AppSetti
     'ДАННЫЕ ДЛЯ АНАЛИЗА',
     ...sections,
   ].filter(Boolean).join('\n');
+
+  return constrainPrompt(prompt);
 }
 
 function buildReadableSections(payload: AiReportPayload): string[] {
@@ -224,18 +228,64 @@ function buildReadableSections(payload: AiReportPayload): string[] {
 
   appendSection(lines, 'Автоматические наблюдения приложения', payload.observations.map((item) => `${item.title}: ${item.text}`));
   appendSection(lines, 'Повторяющиеся факторы дня', payload.factorSummaries.map(formatFactorSummary));
-  appendSection(lines, 'Записи по дням', payload.entries.map((entry) => formatEntry(entry, payload)));
-  appendSection(lines, 'Завершённые итоги', payload.results.map((result) => {
+  appendSection(lines, 'Сохранённые обзоры', limitedValues(reviewLines(payload), 18, 1_600));
+  appendSection(
+    lines,
+    payload.period === 'range' ? 'Покрытие по месяцам' : 'Записи по дням',
+    payload.period === 'range'
+      ? monthlyEntryLines(payload)
+      : limitedValues(payload.entries.map((entry) => formatEntry(entry, payload)), payload.period === 'week' ? 7 : 31, 1_600),
+  );
+  appendSection(lines, 'Завершённые итоги', limitedValues(payload.results.map((result) => {
     return `${result.date} — ${labelFor(payload.labels.resultAreas, result.area)}: ${cleanText(result.title)}`;
-  }));
-  appendSection(lines, 'События и инсайты', payload.lifeEvents.map((event) => {
+  }), payload.period === 'range' ? 80 : 60, payload.period === 'range' ? 400 : 800));
+  appendSection(lines, 'События и инсайты', limitedValues(payload.lifeEvents.map((event) => {
     const note = cleanText(event.note);
     return `${event.date} — ${labelFor(payload.labels.eventTypes, event.type)}: ${cleanText(event.title)}${note ? `; ${note}` : ''}`;
-  }));
-  appendSection(lines, 'Завершённые эксперименты', payload.experimentHistory.map(({ record, summary }) => formatCompletedExperiment(record, summary)));
-  appendSection(lines, 'Сохранённые обзоры', reviewLines(payload));
+  }), payload.period === 'range' ? 60 : 60, payload.period === 'range' ? 600 : 1_000));
+  appendSection(lines, 'Завершённые эксперименты', limitedValues(payload.experimentHistory.map(({ record, summary }) => formatCompletedExperiment(record, summary)), 24, 1_600));
 
   return lines;
+}
+
+function monthlyEntryLines(payload: AiReportPayload): string[] {
+  const byMonth = new Map<string, DailyEntry[]>();
+  for (const entry of payload.entries) {
+    const month = entry.date.slice(0, 7);
+    byMonth.set(month, [...(byMonth.get(month) ?? []), entry]);
+  }
+
+  return [...byMonth.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([month, entries]) => {
+    const summary = summarize(entries);
+    const values = [
+      `${summary.coveredEntriesCount} записей`,
+      summary.averageSleep === null ? '' : `сон ${formatMinutes(Math.round(summary.averageSleep))} (${summary.sleepSamples})`,
+      summary.averageEnergy === null ? '' : `энергия ${formatDecimal(summary.averageEnergy)}/5 (${summary.energySamples})`,
+      summary.averageSleepQuality === null ? '' : `качество сна ${formatDecimal(summary.averageSleepQuality)}/5 (${summary.sleepQualitySamples})`,
+      summary.averageWeightKg === null ? '' : `вес ${formatDecimal(summary.averageWeightKg)} кг (${summary.weightSamples})`,
+      `действия по цели ${summary.externalActionDays}/${summary.actionDirectionSamples}`,
+    ].filter(Boolean);
+    return `${formatDate(`${month}-01`, { month: 'long', year: 'numeric' })}: ${values.join('; ')}.`;
+  });
+}
+
+function limitedValues(values: string[], maxItems: number, maxLineLength: number): string[] {
+  const limited = values.slice(0, maxItems).map((value) => clipText(value, maxLineLength));
+  if (values.length > maxItems) limited.push(`Не включено подробностей: ${values.length - maxItems}. Они остаются в полном JSON-экспорте.`);
+  return limited;
+}
+
+function clipText(value: string, maxLength: number): string {
+  if (value.length <= maxLength) return value;
+  return `${value.slice(0, Math.max(0, maxLength - 34)).trimEnd()}… [подробности сокращены]`;
+}
+
+function constrainPrompt(prompt: string): string {
+  if (prompt.length <= AI_PROMPT_CHARACTER_LIMIT) return prompt;
+  const notice = '\n\n[Пакет сокращён до безопасного объёма. Остальные подробности доступны в полном JSON-экспорте.]';
+  const boundary = AI_PROMPT_CHARACTER_LIMIT - notice.length;
+  const lastLineBreak = prompt.lastIndexOf('\n', boundary);
+  return `${prompt.slice(0, lastLineBreak > 0 ? lastLineBreak : boundary).trimEnd()}${notice}`;
 }
 
 function appendSection(target: string[], title: string, values: string[]) {
