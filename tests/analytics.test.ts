@@ -132,6 +132,7 @@ describe('analytics', () => {
   it('builds a manual analysis package with labels and experiment context', () => {
     const settings = structuredClone(defaultSettings);
     settings.customContextFactorOptions = [{ id: 'custom:context:rain', label: 'Шум за окном', custom: true }];
+    settings.customActivityOptions = [{ id: 'custom:activity:swimming', label: 'Плавание', custom: true }];
     settings.activeFocusTitle = 'Завершить прототип';
     settings.focusOutcomeCriterion = 'Показать работающий сценарий трём людям';
     settings.focusReviewDate = '2026-07-31';
@@ -148,6 +149,7 @@ describe('analytics', () => {
     expect(payload.version).toBe(9);
     expect(payload.dataThrough).toBe('2026-07-19');
     expect(payload.labels.contextFactors).toContainEqual(expect.objectContaining({ id: 'custom:context:rain', label: 'Шум за окном' }));
+    expect(payload.labels.activities).toContainEqual(expect.objectContaining({ id: 'custom:activity:swimming', label: 'Плавание' }));
     expect(payload.factorSummaries[0].label).toBe('Шум за окном');
     expect(payload.settingsSnapshot.experiment.conclusion).toBe('unclear');
     expect(payload.previousWeeklyReview?.nextLever).toBe('Ложиться раньше');

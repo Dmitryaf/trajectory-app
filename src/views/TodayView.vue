@@ -14,6 +14,7 @@ import {
   experimentAppliesToDate,
   contextFactorOptions,
   legacyContextFactorOptions,
+  legacyActivityOptions,
   lifeAreaOptions,
   nutritionOptions,
   specialDayOptions,
@@ -47,6 +48,23 @@ const {
 } = useDailyEntryForm(store);
 
 const careerItems = computed(() => [...careerOptions, ...store.settings.customCareerOptions.filter((option) => !option.archived)]);
+const activityItems = computed(() => {
+  const configured = [
+    ...activityOptions.filter((option) => !store.settings.hiddenActivityIds.includes(option.id)),
+    ...store.settings.customActivityOptions.filter((option) => !option.archived),
+  ];
+  const configuredIds = new Set(configured.map((option) => option.id));
+  const historical = Array.from(new Map([
+    ...activityOptions,
+    ...legacyActivityOptions,
+    ...store.settings.customActivityOptions,
+  ].map((option) => [option.id, option])).values())
+    .filter((option) => form.activities.includes(option.id) && !configuredIds.has(option.id));
+  return [
+    ...configured,
+    ...historical,
+  ];
+});
 const contextFactorItems = computed(() => [
   ...contextFactorOptions.filter((option) => !store.settings.hiddenContextFactorIds.includes(option.id)),
   ...store.settings.customContextFactorOptions.filter((option) => !option.archived),
@@ -274,7 +292,7 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
           <span class="section-icon section-icon--green">△</span>
           <div><h2>Физическая активность</h2><p>Можно выбрать несколько вариантов.</p></div>
         </div>
-        <ChipGroup :model-value="form.activities as ActivityId[]" :options="activityOptions" multiple @update:model-value="setActivities" />
+        <ChipGroup :model-value="form.activities as ActivityId[]" :options="activityItems" multiple @update:model-value="setActivities" />
         <button class="none-option" :class="{ selected: form.activitiesRecorded && !form.activities.length }" type="button" @click="setActivities([])">Без активности</button>
       </article>
 

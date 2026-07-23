@@ -12,7 +12,7 @@ describe('test user fixture', () => {
   it('uses the current import schema and normalized settings', () => {
     expect(fixture.version).toBe(5);
     const settings = normalizeSettings(fixture.settings);
-    expect(settings.settingsVersion).toBe(9);
+    expect(settings.settingsVersion).toBe(10);
     expect(settings.focusOutcomeCriterion).not.toBe('');
     expect(settings.focusReviewDate).toBe('2026-08-15');
     expect(settings.experiment).toMatchObject({ targetMetricId: null, minimumMeaningfulChange: null });
@@ -21,6 +21,7 @@ describe('test user fixture', () => {
     expect(settings.activeDailyBlocks).toEqual(['sleep', 'context', 'career', 'movement', 'nutrition']);
     expect(settings.activeLifeAreas).not.toContain('spiritual');
     expect(settings.customLifeAreaOptions).toContainEqual(expect.objectContaining({ id: 'custom:life:music', label: 'Музыка', custom: true }));
+    expect(settings.customActivityOptions).toContainEqual(expect.objectContaining({ id: 'custom:activity:swimming', label: 'Плавание', custom: true }));
     expect(settings.customCareerOptions.some((option) => option.label === 'Адресные отклики')).toBe(false);
     expect(settings.customContextFactorOptions.some((option) => option.label === 'Спокойный душ')).toBe(false);
   });

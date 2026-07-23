@@ -57,6 +57,7 @@ describe('daily entry scenario', () => {
     store.settings.focusReviewDate = '2026-08-01';
     store.settings.externalEvidenceCriterion = 'Получен ответ извне';
     store.settings.nutritionGoalCriterion = 'Обычный режим питания';
+    store.settings.customActivityOptions = [{ id: 'bachata', label: 'Бачата', icon: '♪', custom: true }];
     const saveEntry = vi.spyOn(store, 'saveEntry').mockImplementation(async (entry) => {
       store.dailyEntries = [entry];
       return entry;
@@ -71,7 +72,8 @@ describe('daily entry scenario', () => {
     const directionCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Действия по текущей цели');
     expect(directionCard?.findAll('.chip').map((chip) => chip.text())).not.toContain('Восстановление');
     const movementCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Физическая активность');
-    expect(movementCard?.findAll('.chip').map((chip) => chip.text())).toEqual(['→ Прогулка', '△ Тренировка', '○ Восстановление']);
+    expect(movementCard?.findAll('.chip').map((chip) => chip.text())).toEqual(['→ Прогулка', '△ Тренировка', '○ Восстановление', '♪ Бачата']);
+    await movementCard!.findAll('.chip').find((chip) => chip.text().includes('Бачата'))!.trigger('click');
     const lifeAreaCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Области жизни');
     expect(lifeAreaCard?.text()).not.toContain('Английский');
 
@@ -108,7 +110,8 @@ describe('daily entry scenario', () => {
       focusOutcomeCriterion: 'Получить проверяемый результат',
       focusReviewDate: '2026-08-01',
       externalEvidenceCriterion: 'Получен ответ извне',
-      nutritionCriterion: 'Обычный режим питания'
+      nutritionCriterion: 'Обычный режим питания',
+      activities: ['bachata'],
     });
     expect(wrapper.find('.mobile-save-button').exists()).toBe(false);
   });
@@ -478,6 +481,32 @@ describe('settings scenarios', () => {
     await restoreButton!.trigger('click');
     await flushPromises();
     expect(saveSettings).toHaveBeenLastCalledWith(expect.objectContaining({ hiddenContextFactorIds: [] }));
+  });
+
+  it('adds a personal activity and can hide and restore it', async () => {
+    const { pinia, store } = createStore();
+    const saveSettings = vi.spyOn(store, 'saveSettings').mockResolvedValue(undefined);
+    const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
+    const movementCard = wrapper.get('.settings-card--movement');
+
+    await movementCard.get('#new-activity-option').setValue('Бачата');
+    await movementCard.findAll('button').find((button) => button.text() === 'Добавить')!.trigger('click');
+    await flushPromises();
+    expect(saveSettings).toHaveBeenLastCalledWith(expect.objectContaining({
+      customActivityOptions: [expect.objectContaining({ id: 'bachata', label: 'Бачата', custom: true })],
+    }));
+
+    await movementCard.get('[aria-label="Убрать Бачата из ежедневной записи"]').trigger('click');
+    await flushPromises();
+    expect(saveSettings).toHaveBeenLastCalledWith(expect.objectContaining({
+      customActivityOptions: [expect.objectContaining({ id: 'bachata', archived: true })],
+    }));
+
+    await movementCard.get('[aria-label="Вернуть Бачата в ежедневную запись"]').trigger('click');
+    await flushPromises();
+    expect(saveSettings).toHaveBeenLastCalledWith(expect.objectContaining({
+      customActivityOptions: [expect.objectContaining({ id: 'bachata', archived: false })],
+    }));
   });
 
   it('saves a free-form experiment and completes it into history', async () => {

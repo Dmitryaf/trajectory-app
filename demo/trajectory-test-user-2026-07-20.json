@@ -2179,7 +2179,7 @@
   ],
   "settings": {
     "id": "main",
-    "settingsVersion": 9,
+    "settingsVersion": 10,
     "activeDailyBlocks": [
       "sleep",
       "context",
@@ -2195,6 +2195,16 @@
       "friends",
       "custom:life:music"
     ],
+    "customActivityOptions": [
+      {
+        "id": "custom:activity:swimming",
+        "label": "Плавание",
+        "icon": "+",
+        "custom": true,
+        "archived": false
+      }
+    ],
+    "hiddenActivityIds": [],
     "customCareerOptions": [
       {
         "id": "custom:career:research",

@@ -207,9 +207,13 @@ const payload = {
   monthlyReviews,
   settings: {
     id: 'main',
-    settingsVersion: 9,
+    settingsVersion: 10,
     activeDailyBlocks: ['sleep', 'context', 'career', 'movement', 'nutrition'],
     activeLifeAreas: ['family', 'reading', 'creativity', 'rest', 'friends', 'custom:life:music'],
+    customActivityOptions: [
+      { id: 'custom:activity:swimming', label: 'Плавание', icon: '+', custom: true, archived: false },
+    ],
+    hiddenActivityIds: [],
     customCareerOptions: [
       { id: 'custom:career:research', label: 'Исследование материалов', icon: '+', custom: true, countsAsExternal: false, archived: true },
     ],

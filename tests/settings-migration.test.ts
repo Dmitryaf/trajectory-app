@@ -16,7 +16,7 @@ describe('settings migrations', () => {
     });
 
     expect(settings.customCareerOptions).toEqual([]);
-    expect(settings.settingsVersion).toBe(9);
+    expect(settings.settingsVersion).toBe(10);
     expect(settings.activeDailyBlocks).toContain('context');
     expect(settings.customContextFactorOptions).toEqual([]);
     expect(settings.hiddenContextFactorIds).toEqual([]);
@@ -103,6 +103,26 @@ describe('settings migrations', () => {
       label: 'Английский',
       custom: true,
     }));
+  });
+
+  it('preserves custom activities and hides only known built-in choices', () => {
+    const settings = normalizeSettings({
+      customActivityOptions: [{ id: 'custom:activity:swimming', label: 'Плавание', archived: false }],
+      hiddenActivityIds: ['walk', 'bachata', 'unknown'],
+    });
+    const entry = normalizeDailyEntry({
+      date: '2026-07-17',
+      activities: ['custom:activity:swimming', 'bachata'],
+      activitiesRecorded: true,
+    });
+
+    expect(settings.customActivityOptions).toContainEqual(expect.objectContaining({
+      id: 'custom:activity:swimming',
+      label: 'Плавание',
+      custom: true,
+    }));
+    expect(settings.hiddenActivityIds).toEqual(['walk']);
+    expect(entry.activities).toEqual(['custom:activity:swimming', 'bachata']);
   });
 
   it('removes the ambiguous factor from new choices without deleting old marks', () => {

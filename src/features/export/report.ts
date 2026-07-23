@@ -146,7 +146,7 @@ function buildLabelDictionary(settings: AppSettings) {
     career: copyOptions([...careerOptions, ...settings.customCareerOptions]),
     lifeAreas: copyOptions([...lifeAreaOptions, ...settings.customLifeAreaOptions]),
     contextFactors: copyOptions([...contextFactorOptions, ...legacyContextFactorOptions, ...settings.customContextFactorOptions]),
-    activities: copyOptions([...activityOptions, ...legacyActivityOptions]),
+    activities: copyOptions([...activityOptions, ...legacyActivityOptions, ...settings.customActivityOptions]),
     actionDirections: copyOptions(actionDirectionOptions),
     nutrition: copyOptions(nutritionOptions),
     specialDays: copyOptions(specialDayOptions),

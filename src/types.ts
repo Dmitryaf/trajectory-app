@@ -5,7 +5,8 @@ export type BaseCareerState =
   | "interview"
   | "result";
 export type CareerState = BaseCareerState | string;
-export type ActivityId = "boxing" | "bachata" | "walk" | "workout" | "recovery";
+export type BaseActivityId = "boxing" | "bachata" | "walk" | "workout" | "recovery";
+export type ActivityId = BaseActivityId | string;
 export type NutritionState = "supports_goal" | "neutral" | "blocks_goal";
 export type ActionDirectionId = "external" | "preparation" | "maintenance" | "recovery" | "drift";
 export type SpecialDayId = "sick" | "travel" | "overload" | "event" | "recovery" | "other";
@@ -161,6 +162,8 @@ export type AppSettings = {
   settingsVersion: number;
   activeDailyBlocks: DailyBlockId[];
   activeLifeAreas: LifeAreaId[];
+  customActivityOptions: Option<ActivityId>[];
+  hiddenActivityIds: ActivityId[];
   customCareerOptions: Option<CareerState>[];
   customLifeAreaOptions: Option<LifeAreaId>[];
   customContextFactorOptions: Option<ContextFactorId>[];
@@ -306,9 +309,11 @@ const dailyRecordedFieldIds: DailyRecordedFieldId[] = [
 
 export const defaultSettings: AppSettings = {
   id: "main",
-  settingsVersion: 9,
+  settingsVersion: 10,
   activeDailyBlocks: dailyBlockOptions.map((option) => option.id),
   activeLifeAreas: ["family", "reading", "creativity", "rest"],
+  customActivityOptions: [],
+  hiddenActivityIds: [],
   customCareerOptions: [],
   customLifeAreaOptions: [],
   customContextFactorOptions: [],
@@ -348,6 +353,13 @@ function validDate(value: unknown): string {
 
 export function normalizeSettings(settings: LegacyAppSettings | null | undefined): AppSettings {
   const source = settings ?? {};
+  const customActivityOptions = sanitizeOptions(source.customActivityOptions)
+    .filter((option) => !activityOptions.some((builtIn) => builtIn.id === option.id));
+  const hiddenActivityIds = Array.isArray(source.hiddenActivityIds)
+    ? Array.from(new Set(source.hiddenActivityIds.filter((id): id is ActivityId => (
+        typeof id === "string" && activityOptions.some((option) => option.id === id)
+      ))))
+    : [];
   const customCareerOptions = sanitizeOptions(source.customCareerOptions)
     .filter((option) => option.id !== removedDemoCareerOptionId);
   const activeLifeAreas = Array.isArray(source.activeLifeAreas)
@@ -380,6 +392,8 @@ export function normalizeSettings(settings: LegacyAppSettings | null | undefined
     settingsVersion: defaultSettings.settingsVersion,
     activeDailyBlocks,
     activeLifeAreas: (source.settingsVersion ?? 1) < 2 ? activeLifeAreas.filter((area) => area !== "spiritual") : activeLifeAreas,
+    customActivityOptions,
+    hiddenActivityIds,
     customCareerOptions,
     customLifeAreaOptions,
     customContextFactorOptions,
@@ -462,7 +476,7 @@ function legacyExperimentMetricId(value: string): ExperimentMetricId | null {
   return exactLabels[normalized] ?? null;
 }
 
-export function createCustomOption(label: string, prefix: "career" | "life" | "context"): Option<string> {
+export function createCustomOption(label: string, prefix: "activity" | "career" | "life" | "context"): Option<string> {
   const suffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   return { id: `custom:${prefix}:${suffix}`, label: label.trim(), icon: "+", custom: true };
 }
@@ -560,7 +574,10 @@ export function normalizeDailyEntry(entry: LegacyDailyEntry & { date: string }):
     state === removedDemoCareerOptionId ? "external" : state
   ))));
   const activities = Array.isArray(entry.activities)
-    ? entry.activities.filter((activity): activity is ActivityId => knownActivityOptions.some((option) => option.id === activity))
+    ? Array.from(new Set(entry.activities.filter((activity): activity is ActivityId => (
+        typeof activity === "string"
+        && (knownActivityOptions.some((option) => option.id === activity) || activity.startsWith("custom:activity:"))
+      ))))
     : [];
   const sourceContextFactors = Array.isArray(entry.contextFactors)
     ? entry.contextFactors

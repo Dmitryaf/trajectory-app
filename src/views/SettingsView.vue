@@ -10,12 +10,13 @@ import { loadCloudSnapshot, markCloudSyncSynced } from '../services/cloudSync';
 import { todayKey } from '../services/dates';
 import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { plainCopy } from '../services/plain';
-import { careerOptions, contextFactorOptions, createCustomOption, dailyBlockOptions, lifeAreaOptions, type AppSettings, type CareerState, type ContextFactorId, type DailyBlockId, type LifeAreaId, type Option } from '../types';
+import { activityOptions, careerOptions, contextFactorOptions, createCustomOption, dailyBlockOptions, legacyActivityOptions, lifeAreaOptions, type ActivityId, type AppSettings, type CareerState, type ContextFactorId, type DailyBlockId, type LifeAreaId, type Option } from '../types';
 
 const store = useAppStore();
 const settings = reactive<AppSettings>(plainCopy(store.settings));
 const importInput = ref<HTMLInputElement>();
 const newCareerLabel = ref('');
+const newActivityLabel = ref('');
 const newCareerCountsAsExternal = ref(true);
 const newLifeAreaLabel = ref('');
 const newContextFactorLabel = ref('');
@@ -23,6 +24,14 @@ const newPassword = ref('');
 const newPasswordConfirmation = ref('');
 const auth = useAuthStore();
 const allCareerOptions = computed(() => [...careerOptions, ...settings.customCareerOptions.filter((option) => !option.archived)]);
+const activeActivityOptions = computed(() => [
+  ...activityOptions.filter((option) => !settings.hiddenActivityIds.includes(option.id)),
+  ...settings.customActivityOptions.filter((option) => !option.archived),
+]);
+const hiddenActivityOptions = computed(() => [
+  ...activityOptions.filter((option) => settings.hiddenActivityIds.includes(option.id)),
+  ...settings.customActivityOptions.filter((option) => option.archived),
+]);
 const allLifeAreaOptions = computed(() => [...lifeAreaOptions, ...settings.customLifeAreaOptions.filter((option) => !option.archived)]);
 const activeContextFactorOptions = computed(() => [
   ...contextFactorOptions.filter((option) => !settings.hiddenContextFactorIds.includes(option.id)),
@@ -114,6 +123,43 @@ async function addCareerOption() {
   newCareerLabel.value = '';
   newCareerCountsAsExternal.value = true;
   await save();
+}
+
+async function addActivityOption() {
+  const label = newActivityLabel.value.trim();
+  if (!label) return;
+  const hiddenBuiltIn = activityOptions.find((option) => settings.hiddenActivityIds.includes(option.id) && sameLabel(option.label, label));
+  if (hiddenBuiltIn) {
+    settings.hiddenActivityIds = settings.hiddenActivityIds.filter((id) => id !== hiddenBuiltIn.id);
+    newActivityLabel.value = '';
+    await save('Вариант активности возвращён');
+    return;
+  }
+  if (hasOption(activityOptions, label)) return;
+  const archived = findArchived(settings.customActivityOptions, label);
+  if (archived) archived.archived = false;
+  else if (!hasOption(settings.customActivityOptions, label)) {
+    const legacy = legacyActivityOptions.find((option) => sameLabel(option.label, label));
+    settings.customActivityOptions.push(legacy
+      ? { ...legacy, custom: true }
+      : createCustomOption(label, 'activity'));
+  }
+  newActivityLabel.value = '';
+  await save('Варианты активности сохранены');
+}
+
+async function removeActivityOption(id: ActivityId) {
+  const option = settings.customActivityOptions.find((item) => item.id === id);
+  if (option) option.archived = true;
+  else if (!settings.hiddenActivityIds.includes(id)) settings.hiddenActivityIds.push(id);
+  await save('Вариант убран из ежедневной записи');
+}
+
+async function restoreActivityOption(id: ActivityId) {
+  const option = settings.customActivityOptions.find((item) => item.id === id);
+  if (option) option.archived = false;
+  else settings.hiddenActivityIds = settings.hiddenActivityIds.filter((activityId) => activityId !== id);
+  await save('Вариант активности возвращён');
 }
 
 async function removeCareerOption(id: CareerState) {
@@ -347,6 +393,30 @@ async function deleteAccount() {
       <ChipGroup v-model="settings.activeDailyBlocks as DailyBlockId[]" :options="dailyBlockOptions" multiple />
       <p v-if="!settings.activeDailyBlocks.length" class="data-note">Останутся общие блоки: действия по текущей цели, области жизни и факт дня.</p>
       <button class="primary-button" type="button" @click="save('Блоки ежедневной записи сохранены')">Сохранить блоки</button>
+    </article>
+
+    <article class="settings-card settings-card--movement">
+      <div class="form-card__heading"><span class="section-icon section-icon--green">△</span><div><h2>Физическая активность</h2><p>Оставь общие варианты или добавь занятия, которые важны именно тебе.</p></div></div>
+      <div class="custom-list context-factor-list">
+        <div v-for="option in activeActivityOptions" :key="option.id" class="custom-list__item">
+          <span><i v-if="option.icon">{{ option.icon }}</i>{{ option.label }}</span>
+          <button class="hide-option-button" type="button" :aria-label="`Убрать ${option.label} из ежедневной записи`" title="Убрать из ежедневной записи" @click="removeActivityOption(option.id)">−</button>
+        </div>
+      </div>
+      <div class="custom-options">
+        <label class="field-label" for="new-activity-option">Добавить свой вариант</label>
+        <div class="inline-add">
+          <input id="new-activity-option" v-model="newActivityLabel" type="text" maxlength="40" placeholder="Например: плавание" @keyup.enter="addActivityOption" />
+          <button class="secondary-button" type="button" :disabled="!newActivityLabel.trim()" @click="addActivityOption">Добавить</button>
+        </div>
+        <div v-if="hiddenActivityOptions.length" class="hidden-options">
+          <span class="field-label">Убраны из ежедневной записи</span>
+          <div class="hidden-options__list">
+            <button v-for="option in hiddenActivityOptions" :key="option.id" class="restore-option" type="button" :aria-label="`Вернуть ${option.label} в ежедневную запись`" @click="restoreActivityOption(option.id)"><span>+</span>{{ option.label }}</button>
+          </div>
+        </div>
+        <p class="data-note">Убранные варианты не предлагаются в новых записях. Прежние отметки сохраняются в истории и выгрузке.</p>
+      </div>
     </article>
 
     <article class="settings-card settings-card--areas">
