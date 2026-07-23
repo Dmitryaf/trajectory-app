@@ -68,11 +68,17 @@ select private.configure_beta_signup('replace-with-a-long-random-code', 15, true
 ```
 
 4. In Authentication Hooks, enable `Before User Created` with `public.hook_require_beta_invite`.
-5. Configure the correct Site URL and redirect URLs, keep email confirmation enabled, and configure SMTP before inviting several people at once.
-6. Review Auth rate limits. Do not enable CAPTCHA until a compatible challenge is added to the frontend; the invite hook remains the beta access boundary.
-7. Enable `Allow new users to sign up` in Supabase.
-8. Set `VITE_ENABLE_BETA_SIGNUP=true` only for the matching Vercel environment and redeploy.
-9. Verify invalid code, valid signup, email confirmation, first login, password recovery and RLS isolation.
+5. Deploy the authenticated account-deletion function to the same project:
+
+```text
+npx supabase functions deploy delete-account --project-ref <project-ref>
+```
+
+6. Configure the correct Site URL and redirect URLs, keep email confirmation enabled, and configure SMTP before inviting several people at once.
+7. Review Auth rate limits. Do not enable CAPTCHA until a compatible challenge is added to the frontend; the invite hook remains the beta access boundary.
+8. Enable `Allow new users to sign up` in Supabase.
+9. Set `VITE_ENABLE_BETA_SIGNUP=true` only for the matching Vercel environment and redeploy.
+10. Verify invalid code, valid signup, email confirmation, first login, password recovery, account deletion and RLS isolation with disposable users.
 
 The invitation code is checked before account creation and removed from stored user metadata by a database trigger. The hook stops after the configured number of successful signup attempts. Changing the code resets this counter.
 
@@ -83,6 +89,8 @@ select private.configure_beta_signup('', 15, false);
 ```
 
 Then turn off `Allow new users to sign up` and remove `VITE_ENABLE_BETA_SIGNUP` during the next deployment.
+
+`delete-account` accepts only an authenticated user token, verifies it again through Auth and passes that same user's ID to the server-only Admin API. The `service_role` key remains inside the Supabase function environment and is never sent to the browser. Deleting the Auth user cascades to `trajectory_snapshots`; the client clears its IndexedDB data, sync metadata and local session only after the server confirms deletion.
 
 ## Vercel
 
