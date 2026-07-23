@@ -11,6 +11,9 @@ enable_anonymous_sign_ins = false
 enabled = true
 uri = "pg-functions://postgres/public/hook_require_beta_invite"
 
+[functions.delete-account]
+verify_jwt = true
+
 [auth.email]
 enable_signup = true
 enable_confirmations = true

@@ -17,6 +17,8 @@ const config = JSON.parse(
 
 const appRoutes = ['/week', '/month', '/trends', '/more', '/results', '/events', '/settings'];
 const betaSignupMigration = readFileSync(new URL('../supabase/migrations/20260723000000_add_beta_signup_gate.sql', import.meta.url), 'utf8');
+const deleteAccountFunction = readFileSync(new URL('../supabase/functions/delete-account/index.ts', import.meta.url), 'utf8');
+const cloudSyncService = readFileSync(new URL('../src/services/cloudSync.ts', import.meta.url), 'utf8');
 
 function cacheControlFor(source: string): string | undefined {
   return config.headers
@@ -51,5 +53,13 @@ describe('deployment configuration', () => {
     expect(betaSignupMigration).toContain('signup_count >= config.max_signups');
     expect(betaSignupMigration).toContain("- 'beta_invite_code'");
     expect(betaSignupMigration).not.toContain('service_role');
+  });
+
+  it('deletes only the authenticated caller through a server-side function', () => {
+    expect(deleteAccountFunction).toContain('auth.getUser(accessToken)');
+    expect(deleteAccountFunction).toContain("body.confirmation !== 'DELETE_MY_ACCOUNT'");
+    expect(deleteAccountFunction).toContain('auth.admin.deleteUser(user.id)');
+    expect(deleteAccountFunction).toContain("Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')");
+    expect(cloudSyncService).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
   });
 });
