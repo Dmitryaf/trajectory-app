@@ -30,10 +30,10 @@ const specialDays = {
 };
 
 const lifeAreaCycles = [
-  ['reading', 'custom:life:personal-projects'],
+  ['reading', 'custom:life:music'],
   ['family', 'rest'],
-  ['english', 'friends'],
-  ['creativity', 'custom:life:personal-projects'],
+  ['friends', 'rest'],
+  ['creativity', 'custom:life:music'],
 ];
 const factorCycles = [
   [],
@@ -42,14 +42,14 @@ const factorCycles = [
   ['anxiety_overload'],
   ['late_food', 'screen'],
 ];
-const activityCycles = [['walk'], ['workout'], [], ['boxing'], ['recovery']];
+const activityCycles = [['walk'], ['workout'], [], ['walk', 'recovery'], ['recovery']];
 const factCycles = [
-  'Отправил отклик и записал следующий шаг',
-  'Разобрал одну сложную тему без спешки',
-  'Закрыл небольшой этап личного проекта',
-  'Оставил вечер свободным и восстановился',
-  'Созвонился с близкими',
-  'Провёл тренировку по плану',
+  'Отправил черновик организатору встречи',
+  'Подобрал примеры для одного раздела доклада',
+  'Завершил несколько слайдов презентации',
+  'Оставил вечер без рабочих дел',
+  'Приготовил ужин вместе с семьёй',
+  'Прошёл запланированный маршрут пешком',
 ];
 
 const dailyEntries = trackedDates.map((date, index) => {
@@ -103,13 +103,13 @@ const dailyEntries = trackedDates.map((date, index) => {
     nutritionState: index % 7 === 0 ? 'blocks_goal' : index % 3 === 0 ? 'neutral' : 'supports_goal',
     nutritionNote: index % 7 === 0 ? 'Поздний ужин после насыщенного дня' : '',
     nutritionCriterion: 'Регулярные приёмы пищи без позднего переедания',
-    weightKg: new Date(`${date}T00:00:00Z`).getUTCDay() === 1 ? Number((89.3 - index * 0.055).toFixed(1)) : null,
+    weightKg: new Date(`${date}T00:00:00Z`).getUTCDay() === 1 ? Number((72.4 + Math.sin(index / 3) * 0.35).toFixed(1)) : null,
     actionDirection: careerStates.includes('external') ? 'external' : index % 6 === 0 ? 'recovery' : 'preparation',
-    actionNote: careerStates.includes('external') ? 'Выбрал подходящий вариант и подготовил отклик' : '',
-    focusTitle: 'Найти устойчивый ритм поиска работы и личного проекта',
-    focusOutcomeCriterion: 'Стабильно выполнять запланированные действия и получить проверяемую обратную связь',
+    actionNote: careerStates.includes('external') ? 'Отправил материал и запросил конкретный комментарий' : '',
+    focusTitle: 'Подготовить короткий доклад для профессиональной встречи',
+    focusOutcomeCriterion: 'Готовая версия доклада и проведённая репетиция',
     focusReviewDate: '2026-08-15',
-    externalEvidenceCriterion: 'Отправленный отклик, назначенный разговор или опубликованный результат',
+    externalEvidenceCriterion: 'Отправленный черновик, полученный комментарий или назначенная репетиция',
     lifeAreas: lifeAreaCycles[index % lifeAreaCycles.length],
     lifeAreasRecorded: true,
     importantFact: factCycles[index % factCycles.length],
@@ -119,17 +119,17 @@ const dailyEntries = trackedDates.map((date, index) => {
 });
 
 const resultTitles = [
-  ['career', 'Обновил блок опыта в резюме'],
-  ['career', 'Отправил отклик'],
-  ['custom:life:personal-projects', 'Собрал новый экран проекта'],
-  ['reading', 'Закончил главу и выписал идеи'],
-  ['sport', 'Провёл тренировку по плану'],
-  ['family', 'Устроил спокойный семейный вечер'],
-  ['english', 'Провёл разговорную практику'],
-  ['sleep', 'Три вечера подряд завершил работу заранее'],
-  ['career', 'Получил обратную связь по резюме'],
-  ['rest', 'Оставил выходной без рабочих задач'],
-  ['career', 'Подготовил разбор проекта для интервью'],
+  ['career', 'Согласовал тему доклада'],
+  ['career', 'Отправил организатору первый черновик'],
+  ['custom:life:music', 'Разучил небольшую музыкальную композицию'],
+  ['reading', 'Закончил книгу и выписал основные идеи'],
+  ['sport', 'Прошёл длинный маршрут пешком'],
+  ['family', 'Приготовил семейный ужин'],
+  ['creativity', 'Собрал небольшой фотоальбом'],
+  ['sleep', 'Три вечера подряд лёг спать вовремя'],
+  ['career', 'Получил комментарии к структуре доклада'],
+  ['rest', 'Провёл выходной за городом'],
+  ['career', 'Провёл первую репетицию выступления'],
   ['friends', 'Встретился с друзьями'],
   ['nutrition', 'Заранее подготовил еду на два дня'],
   ['creativity', 'Сделал визуальный набросок'],
@@ -145,16 +145,16 @@ const results = resultDates.map((date, index) => ({
 }));
 
 const eventSpecs = [
-  ['2026-05-06', 'decision', 'Ограничил число параллельных задач', 'Оставил один карьерный и один личный фокус.'],
-  ['2026-05-18', 'insight', 'Короткий внешний шаг легче сделать утром', 'После обеда чаще откладывал отклики на следующий день.'],
-  ['2026-05-29', 'event', 'Получил подробную обратную связь', 'Зафиксировал конкретные правки для резюме и рассказа о проекте.'],
+  ['2026-05-06', 'decision', 'Сократил число параллельных задач', 'Оставил подготовку доклада и обычные домашние дела.'],
+  ['2026-05-18', 'insight', 'Черновик проще отправить в первой половине дня', 'После обеда чаще хотелось ещё раз перепроверить материал.'],
+  ['2026-05-29', 'event', 'Организатор прислал подробные комментарии', 'Зафиксировал правки к структуре и примерам в докладе.'],
   ['2026-06-12', 'change', 'Поездка изменила режим недели', 'Не сравниваю эту неделю с обычными по сну и нагрузке.'],
-  ['2026-06-24', 'decision', 'Добавил отдельный вечер восстановления', 'По средам не планирую работу над проектом после 20:00.'],
+  ['2026-06-24', 'decision', 'Оставил один вечер без подготовки', 'По средам не открываю материалы доклада после 20:00.'],
   ['2026-07-03', 'insight', 'Экран перед сном связан с более поздним засыпанием', 'Это наблюдение по нескольким дням, а не доказанная причина.'],
-  ['2026-07-10', 'event', 'Провёл пробное интервью', 'Собрал вопросы, на которых ответ получился неструктурированным.'],
-  ['2026-07-13', 'decision', 'Начал эксперимент со спокойным вечером', 'На две недели отмечаю завершение работы и экрана до 22:30.'],
-  ['2026-07-17', 'change', 'Перенёс отклики на первую половину дня', 'Проверяю, станет ли внешний шаг регулярнее.'],
-  ['2026-07-20', 'other', 'Обновил тестовый набор данных', 'Снимок учитывает новые поля и сценарии интерфейса.'],
+  ['2026-07-10', 'event', 'Провёл пробную репетицию', 'Отметил места, где объяснение получилось слишком длинным.'],
+  ['2026-07-13', 'decision', 'Начал эксперимент с первым часом без уведомлений', 'На две недели отмечаю, удалось ли начать запланированную задачу без переключений.'],
+  ['2026-07-17', 'change', 'Перенёс переписку на первую половину дня', 'Проверяю, станет ли получение обратной связи регулярнее.'],
+  ['2026-07-20', 'other', 'Скорректировал план последней недели', 'Оставил одну репетицию и финальную проверку материалов.'],
 ];
 const lifeEvents = eventSpecs.map(([date, type, title, note], index) => ({ id: index + 1, date, type, title, note, createdAt: isoAt(date, 18) }));
 
@@ -162,16 +162,16 @@ const weekStarts = eachDate('2026-05-04', '2026-07-13').filter((date) => new Dat
 const weeklyReviews = weekStarts.map((weekStart, index) => ({
   weekStart,
   updatedAt: isoAt(eachDate(weekStart, dataThrough)[Math.min(6, eachDate(weekStart, dataThrough).length - 1)], 17),
-  previousPlanOutcome: index === 0 ? 'Первый обзор в наборе данных' : index % 3 === 0 ? 'План сработал частично: внешний шаг сделал, вечер перегрузил' : 'Основной следующий шаг выполнен',
+  previousPlanOutcome: index === 0 ? 'Первый обзор в наборе данных' : index % 3 === 0 ? 'План сработал частично: материал отправил, вечер перегрузил' : 'Основной следующий шаг выполнен',
   results: [
     resultTitles[(index * 2) % resultTitles.length][1],
     resultTitles[(index * 2 + 1) % resultTitles.length][1],
     index % 2 === 0 ? 'Сохранил время на восстановление' : '',
   ],
-  support: index % 2 === 0 ? 'Один небольшой приоритет на день' : 'Заранее определённый первый шаг',
+  support: index % 2 === 0 ? 'Один небольшой раздел на день' : 'Заранее определённый первый шаг',
   obstacle: index % 3 === 0 ? 'Позднее завершение работы' : 'Слишком широкий список задач',
-  nextLever: index % 2 === 0 ? 'Сделать внешний шаг до обеда' : 'Закрывать рабочий день коротким итогом',
-  ifThenPlan: index % 2 === 0 ? 'Если начинаю откладывать отклик, открываю одну выбранную вакансию на 15 минут' : 'Если после 22:30 остаётся задача, переношу её в план следующего дня',
+  nextLever: index % 2 === 0 ? 'Отправлять готовый фрагмент до обеда' : 'Закрывать подготовку коротким итогом',
+  ifThenPlan: index % 2 === 0 ? 'Если начинаю снова перепроверять готовый фрагмент, отправляю его организатору на комментарий' : 'Если после 22:30 остаётся задача, переношу её в план следующего дня',
 }));
 
 const monthlyReviews = [
@@ -179,10 +179,10 @@ const monthlyReviews = [
     monthStart: '2026-05-01',
     updatedAt: '2026-05-31T18:00:00.000Z',
     mainPattern: 'Небольшие заранее выбранные шаги выполнялись устойчивее больших списков.',
-    support: 'Утренний блок без сообщений и один понятный критерий результата.',
+    support: 'Утренний блок без сообщений и один понятный раздел доклада.',
     obstacle: 'Попытка одновременно улучшать слишком много направлений.',
-    courseChange: 'Оставить один карьерный и один личный приоритет на неделю.',
-    nextFocus: 'Регулярный внешний шаг без увеличения вечерней нагрузки.',
+    courseChange: 'Оставить один основной раздел доклада на неделю.',
+    nextFocus: 'Регулярно получать комментарии без увеличения вечерней нагрузки.',
     ifThenPlan: 'Если неделя перегружена, сокращаю объём шага, но не добавляю новые направления.',
   },
   {
@@ -190,9 +190,9 @@ const monthlyReviews = [
     updatedAt: '2026-06-30T18:00:00.000Z',
     mainPattern: 'После поздней работы сон и энергия чаще были ниже обычного.',
     support: 'Свободный вечер в середине недели и прогулки.',
-    obstacle: 'Работа над проектом продолжалась дольше запланированного.',
+    obstacle: 'Подготовка материалов продолжалась дольше запланированного.',
     courseChange: 'Завершать активную работу до 22:30 и отдельно отмечать исключения.',
-    nextFocus: 'Проверить спокойный вечер как практический эксперимент.',
+    nextFocus: 'Проверить первый час без уведомлений как практический эксперимент.',
     ifThenPlan: 'Если хочется продолжить после 22:30, записываю следующий шаг и закрываю ноутбук.',
   },
 ];
@@ -209,27 +209,26 @@ const payload = {
     id: 'main',
     settingsVersion: 9,
     activeDailyBlocks: ['sleep', 'context', 'career', 'movement', 'nutrition'],
-    activeLifeAreas: ['family', 'reading', 'creativity', 'rest', 'friends', 'english', 'custom:life:personal-projects'],
+    activeLifeAreas: ['family', 'reading', 'creativity', 'rest', 'friends', 'custom:life:music'],
     customCareerOptions: [
-      { id: 'custom:career:course', label: 'Учебный курс', icon: '+', custom: true, countsAsExternal: false, archived: true },
+      { id: 'custom:career:research', label: 'Исследование материалов', icon: '+', custom: true, countsAsExternal: false, archived: true },
     ],
     customLifeAreaOptions: [
-      { id: 'english', label: 'Английский', icon: 'A', custom: true, archived: false },
-      { id: 'custom:life:personal-projects', label: 'Личные проекты', icon: '+', custom: true, archived: false },
+      { id: 'custom:life:music', label: 'Музыка', icon: '+', custom: true, archived: false },
     ],
     customContextFactorOptions: [
-      { id: 'custom:context:noise', label: 'Шум за окном', icon: '+', custom: true, archived: true },
+      { id: 'custom:context:renovation-noise', label: 'Ремонт у соседей', icon: '+', custom: true, archived: true },
     ],
     hiddenContextFactorIds: [],
-    activeFocusTitle: 'Найти устойчивый ритм поиска работы и личного проекта',
-    focusOutcomeCriterion: 'Стабильно выполнять запланированные действия и получить проверяемую обратную связь',
+    activeFocusTitle: 'Подготовить короткий доклад для профессиональной встречи',
+    focusOutcomeCriterion: 'Готовая версия доклада и проведённая репетиция',
     focusReviewDate: '2026-08-15',
-    externalEvidenceCriterion: 'Отправленный отклик, назначенный разговор или опубликованный результат',
+    externalEvidenceCriterion: 'Отправленный черновик, полученный комментарий или назначенная репетиция',
     nutritionGoalCriterion: 'Регулярные приёмы пищи без позднего переедания',
     experiment: {
       active: true,
-      title: 'Спокойное завершение вечера',
-      hypothesis: 'Станет ли проще засыпать и сохранять энергию утром.',
+      title: 'Первый час без уведомлений',
+      hypothesis: 'Станет ли проще начать запланированную задачу без переключений.',
       targetMetricId: null,
       targetMetric: '',
       targetDirection: 'increase',
@@ -240,16 +239,16 @@ const payload = {
       decision: null,
     },
     experimentHistory: [{
-      id: 'experiment-2026-06-reading',
-      title: 'Чтение вместо ленты перед сном',
-      hypothesis: 'Поможет ли спокойное чтение легче завершать день.',
+      id: 'experiment-2026-06-walk',
+      title: 'Короткая прогулка после обеда',
+      hypothesis: 'Поможет ли прогулка легче переключаться между задачами.',
       targetMetricId: null,
       targetMetric: '',
       targetDirection: 'increase',
       minimumMeaningfulChange: null,
       startDate: '2026-06-10',
       endDate: '2026-06-16',
-      conclusion: 'Вечером было проще переключаться, но отметок пока мало для уверенного решения.',
+      conclusion: 'После прогулки переключаться было проще, но отметок пока мало для уверенного решения.',
       decision: 'more_data',
       completedAt: '2026-06-16T20:00:00.000Z',
     }],

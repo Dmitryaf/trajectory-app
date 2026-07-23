@@ -20,7 +20,7 @@ describe('test user fixture', () => {
     expect(settings.experimentHistory[0]).toMatchObject({ decision: 'more_data', endDate: '2026-06-16' });
     expect(settings.activeDailyBlocks).toEqual(['sleep', 'context', 'career', 'movement', 'nutrition']);
     expect(settings.activeLifeAreas).not.toContain('spiritual');
-    expect(settings.customLifeAreaOptions).toContainEqual(expect.objectContaining({ id: 'english', label: 'Английский', custom: true }));
+    expect(settings.customLifeAreaOptions).toContainEqual(expect.objectContaining({ id: 'custom:life:music', label: 'Музыка', custom: true }));
     expect(settings.customCareerOptions.some((option) => option.label === 'Адресные отклики')).toBe(false);
     expect(settings.customContextFactorOptions.some((option) => option.label === 'Спокойный душ')).toBe(false);
   });
@@ -44,5 +44,12 @@ describe('test user fixture', () => {
     const events = (fixture.lifeEvents ?? []).map(normalizeLifeEvent);
     expect(events.every((event) => event.date <= dataThrough)).toBe(true);
     expect(events.every((event) => event.type !== 'milestone')).toBe(true);
+  });
+
+  it('does not reuse the owner-specific vocabulary removed from the public fixture', () => {
+    const serialized = JSON.stringify(fixture).toLocaleLowerCase('ru-RU');
+    for (const fragment of ['резюме', 'ваканси', 'отклик', 'интервью', 'личн', 'английск', 'бокс', 'бачат', 'gpt', 'codex']) {
+      expect(serialized).not.toContain(fragment);
+    }
   });
 });
