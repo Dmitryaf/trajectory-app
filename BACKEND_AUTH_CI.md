@@ -8,7 +8,7 @@ Cloud data changes the threat model. Once records are stored outside the browser
 
 The production app uses an auth gate when Supabase environment variables are configured. Local IndexedDB data is loaded only after a verified Supabase session exists. The local cache is also bound to the current Supabase `user.id`; if another user signs in on the same browser, the previous local cache is cleared before the app loads.
 
-This is a single-user deployment. The application exposes sign-in only and does not contain a sign-up flow. After the owner's account has been created, new-user registration must also be disabled in Supabase Authentication settings. Hiding registration in the frontend is not a security boundary by itself.
+The default deployment exposes sign-in only. A closed beta can enable self-registration, but the frontend flag is only presentation: the server-side `Before User Created` hook must require the beta invitation code and enforce the participant limit before Supabase signup is enabled.
 
 ## Chosen first backend layer
 
@@ -37,9 +37,9 @@ The next backend phase, when needed, should make Supabase the source of truth wi
 
 1. Create a Supabase project.
 2. Open SQL Editor.
-3. Run `supabase/trajectory_snapshots.sql`.
+3. Apply every migration from `supabase/migrations` while new-user signup remains disabled.
 4. Create the owner's account in Supabase Authentication.
-5. Disable new-user sign-ups in Supabase Authentication settings.
+5. Keep new-user sign-ups disabled unless the closed beta procedure below has been completed.
 6. Open Project Settings -> API.
 7. Copy:
    - Project URL
@@ -54,6 +54,35 @@ VITE_SUPABASE_ANON_KEY=...
 The anon key is allowed in the frontend. It is not a database master key. Security comes from RLS policies, not from hiding the anon key.
 
 Never put `service_role` in the frontend or in `VITE_*` variables.
+
+## Closed beta self-registration
+
+The beta flow lets invited people create their own email/password account. Do these steps in order for staging first:
+
+1. Keep `Allow new users to sign up` disabled and `VITE_ENABLE_BETA_SIGNUP=false`.
+2. Apply `20260723000000_add_beta_signup_gate.sql`.
+3. Configure a unique code and the participant limit in SQL Editor. Do not save the code in the repository, Vercel variables, logs or screenshots:
+
+```sql
+select private.configure_beta_signup('replace-with-a-long-random-code', 15, true);
+```
+
+4. In Authentication Hooks, enable `Before User Created` with `public.hook_require_beta_invite`.
+5. Configure the correct Site URL and redirect URLs, keep email confirmation enabled, and configure SMTP before inviting several people at once.
+6. Review Auth rate limits. Do not enable CAPTCHA until a compatible challenge is added to the frontend; the invite hook remains the beta access boundary.
+7. Enable `Allow new users to sign up` in Supabase.
+8. Set `VITE_ENABLE_BETA_SIGNUP=true` only for the matching Vercel environment and redeploy.
+9. Verify invalid code, valid signup, email confirmation, first login, password recovery and RLS isolation.
+
+The invitation code is checked before account creation and removed from stored user metadata by a database trigger. The hook stops after the configured number of successful signup attempts. Changing the code resets this counter.
+
+To stop enrollment immediately, disable it server-side; a frontend deployment is not required:
+
+```sql
+select private.configure_beta_signup('', 15, false);
+```
+
+Then turn off `Allow new users to sign up` and remove `VITE_ENABLE_BETA_SIGNUP` during the next deployment.
 
 ## Vercel
 
