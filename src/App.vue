@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
 import { RouterLink, RouterView } from 'vue-router';
 import { Toaster } from 'vue-sonner';
 import 'vue-sonner/style.css';
 import AuthGate from './components/AuthGate.vue';
+import { createResumeCloudRefresh } from './features/sync/resume';
 import { prepareLocalCacheOwner, reconcileCloudSnapshotOnStartup } from './features/sync/startup';
 import { notifyInfo, notifyUnknownError } from './services/notifications';
 import { useAppStore } from './stores/app';
@@ -13,10 +14,42 @@ const store = useAppStore();
 const auth = useAuthStore();
 const canOpenApp = computed(() => auth.initialized && auth.isAuthenticated);
 let appDataLoadPromise: Promise<void> | null = null;
+const refreshCloudAfterResume = createResumeCloudRefresh(async () => {
+  await reconcileCloudSnapshotOnStartup(store, auth.requiresAuth ? auth.session?.user.id : null);
+});
+
+function currentCloudRefreshState() {
+  return {
+    authenticated: canOpenApp.value,
+    loaded: store.loaded,
+    status: store.cloudSyncStatus,
+  };
+}
+
+function handleWindowFocus() {
+  void refreshCloudAfterResume(currentCloudRefreshState());
+}
+
+function handleVisibilityChange() {
+  if (document.visibilityState === 'visible') handleWindowFocus();
+}
+
+function handleOnline() {
+  void refreshCloudAfterResume(currentCloudRefreshState(), true);
+}
 
 onMounted(async () => {
+  window.addEventListener('focus', handleWindowFocus);
+  window.addEventListener('online', handleOnline);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
   await auth.init();
   if (canOpenApp.value) await loadAppData();
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('focus', handleWindowFocus);
+  window.removeEventListener('online', handleOnline);
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
 });
 
 watch(canOpenApp, async (allowed) => {
