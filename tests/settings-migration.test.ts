@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeDailyEntry, normalizeSettings } from '../src/types';
+import { contextFactorOptions, normalizeDailyEntry, normalizeSettings } from '../src/types';
+import { contextFactorLabel } from '../src/services/analytics';
 
 describe('settings migrations', () => {
   it('removes obsolete demo options while preserving old response entries', () => {
@@ -102,5 +103,13 @@ describe('settings migrations', () => {
       label: 'Английский',
       custom: true,
     }));
+  });
+
+  it('removes the ambiguous factor from new choices without deleting old marks', () => {
+    const normalized = normalizeDailyEntry({ date: '2026-07-16', contextFactors: ['other'] });
+
+    expect(contextFactorOptions.some((option) => option.id === 'other')).toBe(false);
+    expect(normalized.contextFactors).toEqual(['other']);
+    expect(contextFactorLabel('other')).toBe('Другое (старая отметка)');
   });
 });

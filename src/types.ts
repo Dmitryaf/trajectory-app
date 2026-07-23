@@ -252,7 +252,11 @@ export const contextFactorOptions: Option<BaseContextFactorId>[] = [
   { id: "late_food", label: "Поздний приём пищи", icon: "+" },
   { id: "caffeine_alcohol", label: "Кофеин или алкоголь", icon: "◌" },
   { id: "anxiety_overload", label: "Эмоциональная нагрузка", icon: "⌁" },
-  { id: "other", label: "Другое", icon: "…" },
+];
+
+export const legacyContextFactorOptions: Option<BaseContextFactorId>[] = [
+  { id: "other", label: "Другое (старая отметка)", icon: "…" },
+  { id: "porn", label: "Другое (старая отметка)", icon: "…" },
 ];
 
 export const lifeAreaOptions: Option<BaseLifeAreaId>[] = [

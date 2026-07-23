@@ -1,5 +1,5 @@
 import type { ContextFactorId, DailyEntry, LifeAreaId, Option } from '../types';
-import { actionDirectionOptions, careerOptions, contextFactorOptions, knownActivityOptions, lifeAreaOptions, specialDayOptions } from '../types';
+import { actionDirectionOptions, careerOptions, contextFactorOptions, knownActivityOptions, legacyContextFactorOptions, lifeAreaOptions, specialDayOptions } from '../types';
 import { careerStatesForEntry, type PeriodSummary } from '../features/analytics/periodSummary';
 import { dateRange, endOfMonth, endOfWeek, formatMinutes, startOfMonth, startOfWeek } from './dates';
 
@@ -74,8 +74,9 @@ export function specialDayLabel(value: string | null): string {
 }
 
 export function contextFactorLabel(value: string, factorOptions: Option<ContextFactorId>[] = contextFactorOptions): string {
-  if (value === 'porn') return 'Другое';
-  return factorOptions.find((option) => option.id === value)?.label ?? value;
+  return factorOptions.find((option) => option.id === value)?.label
+    ?? legacyContextFactorOptions.find((option) => option.id === value)?.label
+    ?? value;
 }
 
 export function actionDirectionLabel(value: string | null): string {

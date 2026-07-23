@@ -13,6 +13,7 @@ import {
   careerOptions,
   experimentAppliesToDate,
   contextFactorOptions,
+  legacyContextFactorOptions,
   lifeAreaOptions,
   nutritionOptions,
   specialDayOptions,
@@ -49,6 +50,7 @@ const careerItems = computed(() => [...careerOptions, ...store.settings.customCa
 const contextFactorItems = computed(() => [
   ...contextFactorOptions.filter((option) => !store.settings.hiddenContextFactorIds.includes(option.id)),
   ...store.settings.customContextFactorOptions.filter((option) => !option.archived),
+  ...legacyContextFactorOptions.filter((option) => form.contextFactors.includes(option.id)),
 ]);
 const actionDirectionItems = computed(() => form.actionDirection === 'recovery'
   ? [...actionDirectionEntryOptions, { id: 'recovery' as const, label: 'Восстановление (старая отметка)', icon: '◌' }]
