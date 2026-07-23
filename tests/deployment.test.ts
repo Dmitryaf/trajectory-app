@@ -16,6 +16,7 @@ const config = JSON.parse(
 ) as VercelConfig;
 
 const appRoutes = ['/week', '/month', '/trends', '/more', '/results', '/events', '/settings'];
+const betaSignupMigration = readFileSync(new URL('../supabase/migrations/20260723000000_add_beta_signup_gate.sql', import.meta.url), 'utf8');
 
 function cacheControlFor(source: string): string | undefined {
   return config.headers
@@ -43,5 +44,12 @@ describe('deployment configuration', () => {
 
   it.each(['/sw.js', '/manifest.webmanifest'])('revalidates %s on every request', (source) => {
     expect(cacheControlFor(source)).toBe('public, max-age=0, must-revalidate');
+  });
+
+  it('keeps beta signup limited by a server-side hook', () => {
+    expect(betaSignupMigration).toContain('hook_require_beta_invite');
+    expect(betaSignupMigration).toContain('signup_count >= config.max_signups');
+    expect(betaSignupMigration).toContain("- 'beta_invite_code'");
+    expect(betaSignupMigration).not.toContain('service_role');
   });
 });
