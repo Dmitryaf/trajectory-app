@@ -2,6 +2,7 @@ import { createClient, type Session, type SupabaseClient } from '@supabase/supab
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const betaSignupEnabled = import.meta.env.VITE_ENABLE_BETA_SIGNUP === 'true';
 
 let client: SupabaseClient | null = null;
 
@@ -29,6 +30,10 @@ const emptyMeta: CloudSyncMeta = {
 
 export function isCloudSyncConfigured(): boolean {
   return Boolean(supabaseUrl && supabaseAnonKey);
+}
+
+export function isBetaSignupConfigured(): boolean {
+  return isCloudSyncConfigured() && betaSignupEnabled;
 }
 
 export function getSupabaseClient(): SupabaseClient {
@@ -71,6 +76,42 @@ export async function signInToCloud(email: string, password: string): Promise<Se
   const { data, error } = await getSupabaseClient().auth.signInWithPassword({ email, password });
   if (error) throw error;
   return data.session;
+}
+
+export async function signUpToCloud(email: string, password: string, inviteCode: string): Promise<{ session: Session | null; confirmationRequired: boolean }> {
+  const { data, error } = await getSupabaseClient().auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: `${window.location.origin}/`,
+      data: { beta_invite_code: inviteCode },
+    },
+  });
+  if (error) throw error;
+  return { session: data.session, confirmationRequired: !data.session };
+}
+
+export async function requestCloudPasswordReset(email: string): Promise<void> {
+  const { error } = await getSupabaseClient().auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/settings?password-recovery=1`,
+  });
+  if (error) throw error;
+}
+
+export async function resendCloudSignupConfirmation(email: string): Promise<void> {
+  const { error } = await getSupabaseClient().auth.resend({
+    type: 'signup',
+    email,
+    options: {
+      emailRedirectTo: `${window.location.origin}/`,
+    },
+  });
+  if (error) throw error;
+}
+
+export async function updateCloudPassword(password: string): Promise<void> {
+  const { error } = await getSupabaseClient().auth.updateUser({ password });
+  if (error) throw error;
 }
 
 export async function signOutFromCloud(): Promise<void> {

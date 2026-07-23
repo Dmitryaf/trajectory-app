@@ -1,11 +1,14 @@
 // @vitest-environment happy-dom
 
 import { mount } from '@vue/test-utils';
-import { describe, expect, it } from 'vitest';
+import { createPinia, setActivePinia } from 'pinia';
+import { describe, expect, it, vi } from 'vitest';
 import AccountMenu from '../src/components/AccountMenu.vue';
+import AuthGate from '../src/components/AuthGate.vue';
 import ChipGroup from '../src/components/ChipGroup.vue';
 import DurationInput from '../src/components/DurationInput.vue';
 import PeriodNavigator from '../src/components/PeriodNavigator.vue';
+import { useAuthStore } from '../src/stores/auth';
 
 describe('form components', () => {
   it('shows a duration as hours and minutes and emits exact minute values', async () => {
@@ -87,5 +90,28 @@ describe('account menu', () => {
     expect(wrapper.text()).toContain('Настройки');
     await wrapper.get('button').trigger('click');
     expect(wrapper.emitted('signOut')).toHaveLength(1);
+  });
+});
+
+describe('beta authentication', () => {
+  it('requires a matching password and invitation code for self-registration', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    auth.signupEnabled = true;
+    auth.signUp = vi.fn().mockResolvedValue({ session: null, confirmationRequired: true });
+    const wrapper = mount(AuthGate, { global: { plugins: [pinia] } });
+
+    await wrapper.findAll('button').find((button) => button.text() === 'Создать аккаунт')!.trigger('click');
+    const inputs = wrapper.findAll('input');
+    await inputs[0].setValue('friend@example.com');
+    await inputs[1].setValue('safe-password');
+    await inputs[2].setValue('safe-password');
+    await inputs[3].setValue('BETA-INVITE-2026');
+    await wrapper.get('form').trigger('submit');
+
+    expect(auth.signUp).toHaveBeenCalledWith('friend@example.com', 'safe-password', 'BETA-INVITE-2026');
+    expect(wrapper.text()).toContain('Проверь почту и подтверди email');
+    expect(wrapper.text()).toContain('Отправить письмо ещё раз');
   });
 });

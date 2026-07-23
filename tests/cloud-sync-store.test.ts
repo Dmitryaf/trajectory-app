@@ -6,6 +6,7 @@ import { markCloudSyncPending, saveCloudSnapshot } from '../src/services/cloudSy
 
 vi.mock('../src/services/cloudSync', () => ({
   getVerifiedCloudSession: vi.fn(),
+  isBetaSignupConfigured: () => false,
   isCloudSyncConfigured: () => true,
   markCloudSyncPending: vi.fn(),
   onCloudAuthChange: vi.fn(),

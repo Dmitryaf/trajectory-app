@@ -19,6 +19,8 @@ const newCareerLabel = ref('');
 const newCareerCountsAsExternal = ref(true);
 const newLifeAreaLabel = ref('');
 const newContextFactorLabel = ref('');
+const newPassword = ref('');
+const newPasswordConfirmation = ref('');
 const auth = useAuthStore();
 const allCareerOptions = computed(() => [...careerOptions, ...settings.customCareerOptions.filter((option) => !option.archived)]);
 const allLifeAreaOptions = computed(() => [...lifeAreaOptions, ...settings.customLifeAreaOptions.filter((option) => !option.archived)]);
@@ -204,6 +206,25 @@ async function signOutCloud() {
     await auth.signOut();
     notifyInfo('Выход выполнен');
   });
+}
+
+async function changePassword() {
+  if (newPassword.value.length < 8) {
+    notifyError('Пароль должен содержать не меньше 8 символов');
+    return;
+  }
+  if (newPassword.value !== newPasswordConfirmation.value) {
+    notifyError('Пароли не совпадают');
+    return;
+  }
+  try {
+    await auth.updatePassword(newPassword.value);
+    newPassword.value = '';
+    newPasswordConfirmation.value = '';
+    notifySaved('Пароль изменён');
+  } catch {
+    notifyError(auth.error || 'Не удалось изменить пароль');
+  }
 }
 
 async function saveBackupToCloud() {
@@ -438,6 +459,16 @@ async function clearAll() {
             <div><strong>{{ cloudUserEmail }}</strong></div>
             <button class="secondary-button cloud-session__logout" type="button" @click="signOutCloud">Выйти</button>
           </div>
+          <details class="account-security" :open="$route.query['password-recovery'] === '1'">
+            <summary>Изменить пароль</summary>
+            <div class="settings-field-stack account-security__form">
+              <label class="field-label" for="new-password">Новый пароль</label>
+              <input id="new-password" v-model="newPassword" type="password" autocomplete="new-password" minlength="8" placeholder="Не меньше 8 символов" />
+              <label class="field-label" for="new-password-confirmation">Повтори пароль</label>
+              <input id="new-password-confirmation" v-model="newPasswordConfirmation" type="password" autocomplete="new-password" minlength="8" placeholder="Повтори пароль" />
+              <button class="secondary-button" type="button" :disabled="auth.loading || !newPassword" @click="changePassword">Сохранить новый пароль</button>
+            </div>
+          </details>
           <div class="cloud-sync-note" :class="`cloud-sync-note--${store.cloudSyncStatus}`">
             <strong>{{ cloudStatusTitle }}</strong>
             <p>{{ cloudStatusText }}</p>
