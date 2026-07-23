@@ -4,6 +4,7 @@ import { RouterLink, RouterView } from 'vue-router';
 import { Toaster } from 'vue-sonner';
 import 'vue-sonner/style.css';
 import AuthGate from './components/AuthGate.vue';
+import AccountMenu from './components/AccountMenu.vue';
 import { createResumeCloudRefresh } from './features/sync/resume';
 import { prepareLocalCacheOwner, reconcileCloudSnapshotOnStartup } from './features/sync/startup';
 import { notifyInfo, notifyUnknownError } from './services/notifications';
@@ -111,15 +112,10 @@ const navItems = [
         <span><strong>Траектория</strong><small>факты, а не оценка</small></span>
       </RouterLink>
       <div v-if="canOpenApp && store.loaded" class="header-actions">
-        <RouterLink to="/settings" class="header-settings-link" aria-label="Открыть настройки" title="Настройки">
+        <RouterLink v-if="!auth.requiresAuth" to="/settings" class="header-settings-link" aria-label="Открыть настройки" title="Настройки">
           <span>⚙</span><strong>Настройки</strong>
         </RouterLink>
-        <div v-if="auth.requiresAuth" class="account-strip" aria-label="Аккаунт">
-          <span class="account-strip__email" :title="auth.userEmail">{{ auth.userEmail }}</span>
-          <button class="account-strip__logout" type="button" :disabled="auth.loading" @click="signOut">
-            Выйти
-          </button>
-        </div>
+        <AccountMenu v-else :email="auth.userEmail" :loading="auth.loading" @sign-out="signOut" />
       </div>
     </header>
 

@@ -2,6 +2,7 @@
 
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
+import AccountMenu from '../src/components/AccountMenu.vue';
 import ChipGroup from '../src/components/ChipGroup.vue';
 import DurationInput from '../src/components/DurationInput.vue';
 import PeriodNavigator from '../src/components/PeriodNavigator.vue';
@@ -68,5 +69,23 @@ describe('period navigation', () => {
     expect(wrapper.emitted('previous')).toHaveLength(1);
     expect(wrapper.emitted('current')).toHaveLength(1);
     expect(wrapper.emitted('next')).toHaveLength(1);
+  });
+});
+
+describe('account menu', () => {
+  it('groups settings and sign out under the current account', async () => {
+    const wrapper = mount(AccountMenu, {
+      props: { email: 'friend@example.com' },
+      global: {
+        stubs: {
+          RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' }
+        }
+      }
+    });
+
+    expect(wrapper.text()).toContain('friend@example.com');
+    expect(wrapper.text()).toContain('Настройки');
+    await wrapper.get('button').trigger('click');
+    expect(wrapper.emitted('signOut')).toHaveLength(1);
   });
 });

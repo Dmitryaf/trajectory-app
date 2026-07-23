@@ -59,14 +59,21 @@ textarea { resize: vertical; min-height: 64px; }
 .header-settings-link strong { font-weight: 800; }
 .header-settings-link:hover { transform: translateY(-1px); border-color: #bcd8cc; background: #fff; }
 .header-settings-link.router-link-active { border-color: #72c7a7; background: #dff5ec; color: #145e49; }
-.account-strip { min-width: 0; display: inline-flex; align-items: center; gap: 8px; }
-.account-strip__email { max-width: 240px; overflow: hidden; color: #6a7488; font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-.account-strip__logout {
-  flex: 0 0 auto; min-height: 36px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.82); padding: 8px 12px;
-  color: #4f5b70; cursor: pointer; font-size: 13px; font-weight: 800; transition: border-color .15s ease, background-color .15s ease, color .15s ease;
-}
-.account-strip__logout:hover { border-color: #cfd7e5; background: #fff; color: var(--navy); }
-.account-strip__logout:disabled { opacity: .58; cursor: not-allowed; }
+.account-menu { position: relative; z-index: 31; min-width: 0; }
+.account-menu > summary { min-height: 42px; display: flex; align-items: center; gap: 9px; padding: 5px 9px 5px 5px; border: 1px solid #d5e2dc; border-radius: 15px; background: rgba(255,255,255,.86); box-shadow: 0 6px 18px rgba(16,45,44,.06); cursor: pointer; list-style: none; transition: border-color var(--motion-fast), background-color var(--motion-fast); }
+.account-menu > summary::-webkit-details-marker { display: none; }
+.account-menu > summary:hover, .account-menu[open] > summary { border-color: #bcd8cc; background: #fff; }
+.account-menu__avatar { width: 30px; height: 30px; display: grid; flex: 0 0 auto; place-items: center; border-radius: 10px; background: #dff5ec; color: #145e49; font-size: 12px; font-weight: 850; }
+.account-menu__email { max-width: 180px; overflow: hidden; color: #52635e; font-size: 12px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+.account-menu__chevron { color: #83908b; font-size: 14px; transition: transform var(--motion-fast); }
+.account-menu[open] .account-menu__chevron { transform: rotate(180deg); }
+.account-menu__panel { position: absolute; right: 0; top: calc(100% + 8px); width: 190px; display: grid; gap: 4px; padding: 7px; border: 1px solid #d5e2dc; border-radius: 16px; background: rgba(255,255,255,.98); box-shadow: 0 18px 44px rgba(16,45,44,.16); }
+.account-menu__action { width: 100%; min-height: 40px; display: flex; align-items: center; gap: 10px; border: 0; border-radius: 11px; background: transparent; padding: 9px 11px; color: #315b4e; cursor: pointer; font-size: 13px; text-align: left; text-decoration: none; }
+.account-menu__action:hover, .account-menu__action.router-link-active { background: #eaf7f1; color: #145e49; }
+.account-menu__action span { width: 18px; text-align: center; }
+.account-menu__action strong { font-weight: 800; }
+.account-menu__logout { color: #65716d; }
+.account-menu__logout:disabled { opacity: .58; cursor: not-allowed; }
 .app-main { max-width: 980px; margin: 0 auto; padding: 22px 24px 120px; }
 .page { min-width: 0; animation: page-in .25s ease-out; }
 @keyframes page-in { from { opacity: 0; } }
@@ -622,7 +629,7 @@ textarea { resize: vertical; min-height: 64px; }
 @media (min-width: 980px) {
   .header-settings-link { width: 38px; min-height: 38px; justify-content: center; padding: 0; }
   .header-settings-link strong { display: none; }
-  .account-strip__email { max-width: 150px; }
+  .account-menu__email { max-width: 145px; }
   .bottom-nav { position: fixed; top: 8px; bottom: auto; gap: 2px; }
   .bottom-nav__item { min-width: 60px; padding: 8px 6px; }
   .bottom-nav__item small { font-size: 9px; }
@@ -636,8 +643,9 @@ textarea { resize: vertical; min-height: 64px; }
   .app-header { height: 66px; padding: 0 16px; }
   .header-settings-link { width: 36px; min-height: 36px; justify-content: center; padding: 0; }
   .header-settings-link strong { display: none; }
-  .account-strip__email { display: none; }
-  .account-strip__logout { min-height: 34px; padding: 7px 10px; font-size: 12px; }
+  .account-menu__email { display: none; }
+  .account-menu > summary { min-height: 38px; padding: 3px 7px 3px 3px; }
+  .account-menu__avatar { width: 30px; height: 30px; }
   .app-main { padding: 10px 14px 105px; }
   .page-heading { align-items: flex-start; margin: 10px 2px 22px; }
   .page--today > .page-heading { min-height: 156px; margin: 4px 0 0; padding: 24px 22px 42px; border-radius: 24px; }
