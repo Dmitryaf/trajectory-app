@@ -316,6 +316,26 @@ async function clearAll() {
   Object.assign(settings, plainCopy(store.settings));
   notifyInfo('Все данные удалены');
 }
+
+async function deleteAccount() {
+  const email = cloudUserEmail.value;
+  if (!email) return;
+  if (!window.confirm('Аккаунт и его облачная копия будут удалены без возможности восстановления. Перед этим лучше скачать резервную копию.')) return;
+  const confirmation = window.prompt(`Для подтверждения введи email аккаунта: ${email}`)?.trim().toLowerCase();
+  if (confirmation !== email.toLowerCase()) {
+    notifyError('Email не совпал. Аккаунт не удалён.');
+    return;
+  }
+
+  try {
+    await auth.deleteAccount();
+    await store.clearAll({ syncCloud: false });
+    Object.assign(settings, plainCopy(store.settings));
+    notifyInfo(auth.error || 'Аккаунт и его данные удалены');
+  } catch {
+    notifyError(auth.error || 'Не удалось удалить аккаунт');
+  }
+}
 </script>
 
 <template>
@@ -479,12 +499,16 @@ async function clearAll() {
           <strong>Сессия не найдена</strong>
           <p>Обнови страницу и войди снова. До входа приложение не загружает записи.</p>
         </div>
-        <div class="data-actions">
-          <button class="secondary-button" type="button" :disabled="!cloudSession" @click="saveBackupToCloud">Сохранить в облако</button>
-          <button class="secondary-button" type="button" :disabled="!cloudSession" @click="restoreBackupFromCloud">Загрузить из облака</button>
-        </div>
-      </template>
-    </article>
+          <div class="data-actions">
+            <button class="secondary-button" type="button" :disabled="!cloudSession" @click="saveBackupToCloud">Сохранить в облако</button>
+            <button class="secondary-button" type="button" :disabled="!cloudSession" @click="restoreBackupFromCloud">Загрузить из облака</button>
+          </div>
+          <div v-if="cloudSession" class="danger-zone">
+            <div><strong>Удалить аккаунт</strong><p>Аккаунт, облачная копия и данные на этом устройстве будут удалены.</p></div>
+            <button class="danger-button" type="button" :disabled="auth.loading" @click="deleteAccount">Удалить аккаунт</button>
+          </div>
+        </template>
+      </article>
 
     <article class="settings-card settings-card--analysis">
       <div class="form-card__heading"><span class="section-icon section-icon--green">↗</span><div><h2>Данные для внешнего анализа</h2><p>Промпт содержит читаемую сводку, а отдельный JSON — полную копию данных выбранного периода. Приложение само ничего не отправляет.</p></div></div>

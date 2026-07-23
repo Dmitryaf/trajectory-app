@@ -2,6 +2,8 @@ import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const cloud = vi.hoisted(() => ({
+  clearLocalSession: vi.fn(),
+  deleteAccount: vi.fn(),
   requestPasswordReset: vi.fn(),
   resendConfirmation: vi.fn(),
   signUp: vi.fn(),
@@ -9,6 +11,9 @@ const cloud = vi.hoisted(() => ({
 }));
 
 vi.mock('../src/services/cloudSync', () => ({
+  clearCloudSyncMeta: vi.fn(),
+  clearLocalCloudSession: cloud.clearLocalSession,
+  deleteCloudAccount: cloud.deleteAccount,
   getVerifiedCloudSession: vi.fn().mockResolvedValue(null),
   isBetaSignupConfigured: vi.fn(() => true),
   isCloudSyncConfigured: vi.fn(() => true),
@@ -64,5 +69,18 @@ describe('auth store beta lifecycle', () => {
 
     await auth.updatePassword('new-safe-password');
     expect(cloud.updatePassword).toHaveBeenCalledWith('new-safe-password');
+  });
+
+  it('deletes only the current account and clears its local cloud session', async () => {
+    cloud.deleteAccount.mockResolvedValue(undefined);
+    cloud.clearLocalSession.mockResolvedValue(undefined);
+    const auth = useAuthStore();
+    auth.session = { user: { id: 'user-1' } } as typeof auth.session;
+
+    await auth.deleteAccount();
+
+    expect(cloud.deleteAccount).toHaveBeenCalledOnce();
+    expect(cloud.clearLocalSession).toHaveBeenCalledOnce();
+    expect(auth.session).toBeNull();
   });
 });

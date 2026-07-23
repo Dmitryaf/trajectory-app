@@ -13,6 +13,7 @@ import TrendsView from '../src/views/TrendsView.vue';
 import WeekView from '../src/views/WeekView.vue';
 import { notifyError, notifySaved, notifyUnknownError } from '../src/services/notifications';
 import { useAppStore } from '../src/stores/app';
+import { useAuthStore } from '../src/stores/auth';
 import { defaultSettings, emptyDailyEntry } from '../src/types';
 
 vi.mock('../src/services/notifications', () => ({
@@ -395,6 +396,55 @@ describe('journal scenarios', () => {
 });
 
 describe('settings scenarios', () => {
+  it('clears local data only after the authenticated account is deleted', async () => {
+    const { pinia, store } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    auth.deleteAccount = vi.fn().mockResolvedValue(undefined);
+    const clearAll = vi.spyOn(store, 'clearAll').mockResolvedValue(undefined);
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const prompt = vi.spyOn(window, 'prompt').mockReturnValue('friend@example.com');
+    const wrapper = mount(SettingsView, {
+      global: { plugins: [pinia], mocks: { $route: { query: {} } } },
+    });
+
+    const deleteButton = wrapper.findAll('.settings-card--cloud button')
+      .find((button) => button.text() === 'Удалить аккаунт');
+    await deleteButton!.trigger('click');
+    await flushPromises();
+
+    expect(auth.deleteAccount).toHaveBeenCalledOnce();
+    expect(clearAll).toHaveBeenCalledWith({ syncCloud: false });
+    confirm.mockRestore();
+    prompt.mockRestore();
+  });
+
+  it('preserves local data when server-side account deletion fails', async () => {
+    const { pinia, store } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    auth.deleteAccount = vi.fn().mockRejectedValue(new Error('network error'));
+    auth.error = 'Не удалось удалить аккаунт.';
+    const clearAll = vi.spyOn(store, 'clearAll').mockResolvedValue(undefined);
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const prompt = vi.spyOn(window, 'prompt').mockReturnValue('friend@example.com');
+    const wrapper = mount(SettingsView, {
+      global: { plugins: [pinia], mocks: { $route: { query: {} } } },
+    });
+
+    const deleteButton = wrapper.findAll('.settings-card--cloud button')
+      .find((button) => button.text() === 'Удалить аккаунт');
+    await deleteButton!.trigger('click');
+    await flushPromises();
+
+    expect(clearAll).not.toHaveBeenCalled();
+    expect(notifyError).toHaveBeenCalledWith('Не удалось удалить аккаунт.');
+    confirm.mockRestore();
+    prompt.mockRestore();
+  });
+
   it('saves the selected daily entry blocks', async () => {
     const { pinia, store } = createStore();
     const saveSettings = vi.spyOn(store, 'saveSettings').mockResolvedValue(undefined);

@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia';
 import type { Session } from '@supabase/supabase-js';
 import {
+  clearCloudSyncMeta,
+  clearLocalCloudSession,
+  deleteCloudAccount,
   getVerifiedCloudSession,
   isBetaSignupConfigured,
   isCloudSyncConfigured,
@@ -114,6 +117,29 @@ export const useAuthStore = defineStore('auth', {
         this.error = 'Не удалось изменить пароль. Попробуй ещё раз.';
         throw error;
       } finally {
+        this.loading = false;
+      }
+    },
+    async deleteAccount() {
+      const userId = this.session?.user.id;
+      if (!userId) throw new Error('Сессия не найдена');
+
+      this.loading = true;
+      this.error = '';
+      try {
+        await deleteCloudAccount();
+      } catch (error) {
+        this.error = 'Не удалось удалить аккаунт. Данные не были очищены на этом устройстве.';
+        throw error;
+      }
+
+      clearCloudSyncMeta(userId);
+      try {
+        await clearLocalCloudSession();
+      } catch {
+        this.error = 'Аккаунт удалён. Локальный выход завершится после обновления страницы.';
+      } finally {
+        this.session = null;
         this.loading = false;
       }
     },

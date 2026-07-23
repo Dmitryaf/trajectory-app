@@ -114,6 +114,18 @@ export async function updateCloudPassword(password: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function deleteCloudAccount(): Promise<void> {
+  const { error } = await getSupabaseClient().functions.invoke('delete-account', {
+    body: { confirmation: 'DELETE_MY_ACCOUNT' },
+  });
+  if (error) throw error;
+}
+
+export async function clearLocalCloudSession(): Promise<void> {
+  const { error } = await getSupabaseClient().auth.signOut({ scope: 'local' });
+  if (error) throw error;
+}
+
 export async function signOutFromCloud(): Promise<void> {
   const { error } = await getSupabaseClient().auth.signOut();
   if (error) throw error;
@@ -198,6 +210,10 @@ export function markCloudSyncSynced(userId: string, cloudUpdatedAt: string) {
     conflict: false,
     error: ''
   });
+}
+
+export function clearCloudSyncMeta(userId: string) {
+  window.localStorage.removeItem(cloudSyncMetaKey(userId));
 }
 
 function cloudSyncMetaKey(userId: string) {

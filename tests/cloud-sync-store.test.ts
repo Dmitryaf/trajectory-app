@@ -5,6 +5,9 @@ import { useAuthStore } from '../src/stores/auth';
 import { markCloudSyncPending, saveCloudSnapshot } from '../src/services/cloudSync';
 
 vi.mock('../src/services/cloudSync', () => ({
+  clearCloudSyncMeta: vi.fn(),
+  clearLocalCloudSession: vi.fn(),
+  deleteCloudAccount: vi.fn(),
   getVerifiedCloudSession: vi.fn(),
   isBetaSignupConfigured: () => false,
   isCloudSyncConfigured: () => true,
