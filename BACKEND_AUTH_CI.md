@@ -78,7 +78,7 @@ npx supabase functions deploy delete-account --project-ref <project-ref>
 7. Review Auth rate limits. Do not enable CAPTCHA until a compatible challenge is added to the frontend; the invite hook remains the beta access boundary.
 8. Enable `Allow new users to sign up` in Supabase.
 9. Set `VITE_ENABLE_BETA_SIGNUP=true` only for the matching Vercel environment and redeploy.
-10. Verify invalid code, valid signup, email confirmation, first login, password recovery, account deletion and RLS isolation with disposable users.
+10. Verify invalid code, valid signup, email confirmation, first login, password recovery, account deletion and RLS isolation with disposable users. The recovery link must open `/password-reset`; journal data and navigation stay unavailable until the password changes, then the recovery session ends and the user signs in again.
 
 The invitation code is checked before account creation and removed from stored user metadata by a database trigger. The hook stops after the configured number of successful signup attempts. Changing the code resets this counter.
 
