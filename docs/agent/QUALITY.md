@@ -11,15 +11,15 @@
 
 ## Перед передачей результата
 
-Выполнить:
+Во время работы сначала выполнить релевантный точечный тест. После последнего изменения кода или конфигурации один раз выполнить полный gate:
 
 ```text
-npm test
-npm run build
-npm run check:dist
+npm run check
 git diff --check
 git status --short
 ```
+
+Если следующий pre-commit запускает тот же `npm run check` и после него код не менялся, отдельный ручной полный запуск не нужен. Для изменений только Markdown достаточно `git diff --cached --check` и проверки изменённых ссылок; CI всё равно выполняет полный gate после push.
 
 Если менялись Clipboard/Download API, маршруты, вход или облачная сверка, дополнительно выполнить `npm run test:e2e`. Первый локальный запуск требует `npx playwright install chromium`; CI устанавливает браузер отдельно.
 
@@ -56,7 +56,7 @@ git diff --cached --check
 
 ## Git hooks
 
-- `pre-commit` запускает `npm run check` — тесты, production-сборку, smoke-проверку и статическую сборку Storybook;
+- `pre-commit` запускает `npm run check` для кода, конфигурации и зависимостей; для чисто документационного staged-набора выполняет только `git diff --cached --check`;
 - `commit-msg` проверяет Conventional Commits через commitlint;
 - допустимый формат: `type: короткое описание`, например `fix: исправить экспорт данных`;
 - основные типы: `feat`, `fix`, `docs`, `test`, `refactor`, `build`, `ci`, `chore`;
