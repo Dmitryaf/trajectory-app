@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
-import { RouterLink, RouterView } from 'vue-router';
+import { RouterLink, RouterView, useRouter } from 'vue-router';
 import { Toaster } from 'vue-sonner';
 import 'vue-sonner/style.css';
 import AuthGate from './components/AuthGate.vue';
 import AccountMenu from './components/AccountMenu.vue';
+import PasswordResetView from './views/PasswordResetView.vue';
 import { createResumeCloudRefresh } from './features/sync/resume';
 import { prepareLocalCacheOwner, reconcileCloudSnapshotOnStartup } from './features/sync/startup';
 import { notifyInfo, notifyUnknownError } from './services/notifications';
@@ -13,6 +14,7 @@ import { useAuthStore } from './stores/auth';
 
 const store = useAppStore();
 const auth = useAuthStore();
+const router = useRouter();
 const canOpenApp = computed(() => auth.initialized && auth.isAuthenticated);
 let appDataLoadPromise: Promise<void> | null = null;
 const refreshCloudAfterResume = createResumeCloudRefresh(async () => {
@@ -44,6 +46,9 @@ onMounted(async () => {
   window.addEventListener('online', handleOnline);
   document.addEventListener('visibilitychange', handleVisibilityChange);
   await auth.init();
+  if (auth.recoveryRequired && router.currentRoute.value.path !== '/password-reset') {
+    await router.replace('/password-reset');
+  }
   if (canOpenApp.value) await loadAppData();
 });
 
@@ -58,6 +63,12 @@ watch(canOpenApp, async (allowed) => {
     await loadAppData();
   } else if (auth.requiresAuth) {
     store.unload();
+  }
+});
+
+watch(() => auth.recoveryRequired, async (required) => {
+  if (required && router.currentRoute.value.path !== '/password-reset') {
+    await router.replace('/password-reset');
   }
 });
 
@@ -105,7 +116,8 @@ const navItems = [
 </script>
 
 <template>
-  <div class="app-shell">
+  <PasswordResetView v-if="auth.initialized && auth.recoveryRequired" />
+  <div v-else class="app-shell">
     <header class="app-header">
       <RouterLink to="/" class="brand" aria-label="Траектория — главная">
         <span class="brand__mark"><i></i></span>

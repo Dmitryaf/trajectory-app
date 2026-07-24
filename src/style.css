@@ -635,6 +635,14 @@ textarea { resize: vertical; min-height: 64px; }
 .auth-reset:hover { color: var(--accent-dark); }
 .auth-card p, .auth-footnote { overflow-wrap: anywhere; }
 .auth-footnote { margin: 14px 0 0; color: #7a8497; font-size: 12px; line-height: 1.5; }
+.password-reset-shell { min-height: 100vh; display: grid; place-items: center; padding: 28px 14px; background: radial-gradient(circle at 20% 15%, rgba(73,201,155,.13), transparent 32%), var(--surface); }
+.password-reset-card { position: relative; width: min(460px, 100%); overflow: hidden; padding: 36px; border: 1px solid rgba(213,224,217,.95); border-radius: 30px; background: rgba(255,255,255,.97); box-shadow: 0 30px 80px rgba(16,45,44,.16); }
+.password-reset-card::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 8px; background: linear-gradient(90deg, #49c99b 0 58%, #ffd06e 58%); }
+.password-reset-card .auth-card__brand { margin-bottom: 30px; }
+.password-reset-card .auth-card__brand strong { color: var(--navy); font-size: 18px; }
+.password-reset-card h1 { margin: 5px 0 10px; font-size: clamp(30px, 7vw, 42px); line-height: 1.05; }
+.password-reset-card__intro { margin: 0 0 24px; color: var(--muted); line-height: 1.6; }
+.password-reset-card > .primary-button { width: 100%; }
 
 @media (min-width: 980px) {
   .header-settings-link { width: 38px; min-height: 38px; justify-content: center; padding: 0; }

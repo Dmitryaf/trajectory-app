@@ -3,7 +3,7 @@ project_id = "trajectory-app"
 [auth]
 enabled = true
 site_url = "https://trajectory-app-git-develop-trajectory3.vercel.app"
-additional_redirect_urls = []
+additional_redirect_urls = ["https://trajectory-app-git-develop-trajectory3.vercel.app/password-reset"]
 enable_signup = false
 enable_anonymous_sign_ins = false
 

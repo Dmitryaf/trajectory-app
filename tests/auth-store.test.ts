@@ -1,12 +1,17 @@
+// @vitest-environment happy-dom
+
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const cloud = vi.hoisted(() => ({
   clearLocalSession: vi.fn(),
   deleteAccount: vi.fn(),
+  getSession: vi.fn(),
+  onAuthChange: vi.fn(),
   requestPasswordReset: vi.fn(),
   resendConfirmation: vi.fn(),
   signUp: vi.fn(),
+  signOut: vi.fn(),
   updatePassword: vi.fn(),
 }));
 
@@ -14,14 +19,14 @@ vi.mock('../src/services/cloudSync', () => ({
   clearCloudSyncMeta: vi.fn(),
   clearLocalCloudSession: cloud.clearLocalSession,
   deleteCloudAccount: cloud.deleteAccount,
-  getVerifiedCloudSession: vi.fn().mockResolvedValue(null),
+  getVerifiedCloudSession: cloud.getSession,
   isBetaSignupConfigured: vi.fn(() => true),
   isCloudSyncConfigured: vi.fn(() => true),
-  onCloudAuthChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
+  onCloudAuthChange: cloud.onAuthChange,
   resendCloudSignupConfirmation: cloud.resendConfirmation,
   requestCloudPasswordReset: cloud.requestPasswordReset,
   signInToCloud: vi.fn(),
-  signOutFromCloud: vi.fn(),
+  signOutFromCloud: cloud.signOut,
   signUpToCloud: cloud.signUp,
   updateCloudPassword: cloud.updatePassword,
 }));
@@ -32,6 +37,10 @@ describe('auth store beta lifecycle', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     vi.clearAllMocks();
+    window.history.replaceState({}, '', '/');
+    window.sessionStorage.clear();
+    cloud.getSession.mockResolvedValue(null);
+    cloud.onAuthChange.mockImplementation(() => ({ data: { subscription: { unsubscribe: vi.fn() } } }));
   });
 
   it('keeps the user signed out until a new email is confirmed', async () => {
@@ -69,6 +78,31 @@ describe('auth store beta lifecycle', () => {
 
     await auth.updatePassword('new-safe-password');
     expect(cloud.updatePassword).toHaveBeenCalledWith('new-safe-password');
+  });
+
+  it('blocks a recovery session until the password changes and a normal sign-in starts', async () => {
+    let authListener: ((event: string, session: unknown) => void) | undefined;
+    cloud.onAuthChange.mockImplementation((callback) => {
+      authListener = callback;
+      return { data: { subscription: { unsubscribe: vi.fn() } } };
+    });
+    cloud.updatePassword.mockResolvedValue(undefined);
+    cloud.signOut.mockResolvedValue(undefined);
+    const auth = useAuthStore();
+
+    await auth.init();
+    authListener?.('PASSWORD_RECOVERY', { user: { id: 'user-1', email: 'friend@example.com' } });
+
+    expect(auth.recoveryRequired).toBe(true);
+    expect(auth.isAuthenticated).toBe(false);
+
+    await auth.completePasswordRecovery('new-safe-password');
+
+    expect(cloud.updatePassword).toHaveBeenCalledWith('new-safe-password');
+    expect(cloud.signOut).toHaveBeenCalledOnce();
+    expect(auth.session).toBeNull();
+    expect(auth.recoveryRequired).toBe(false);
+    expect(auth.notice).toBe('Пароль изменён. Войди с новым паролем.');
   });
 
   it('deletes only the current account and clears its local cloud session', async () => {

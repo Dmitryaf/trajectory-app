@@ -1,13 +1,15 @@
 // @vitest-environment happy-dom
 
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
+import { createMemoryHistory, createRouter } from 'vue-router';
 import { describe, expect, it, vi } from 'vitest';
 import AccountMenu from '../src/components/AccountMenu.vue';
 import AuthGate from '../src/components/AuthGate.vue';
 import ChipGroup from '../src/components/ChipGroup.vue';
 import DurationInput from '../src/components/DurationInput.vue';
 import PeriodNavigator from '../src/components/PeriodNavigator.vue';
+import PasswordResetView from '../src/views/PasswordResetView.vue';
 import { useAuthStore } from '../src/stores/auth';
 
 describe('form components', () => {
@@ -115,6 +117,36 @@ describe('beta authentication', () => {
     expect(auth.signUp).toHaveBeenCalledWith('friend@example.com', 'safe-password', 'BETA-INVITE-2026');
     expect(wrapper.text()).toContain('Проверь почту и подтверди email');
     expect(wrapper.text()).toContain('Отправить письмо ещё раз');
+  });
+
+  it('uses a dedicated password reset page before returning to sign-in', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    auth.recoveryRequired = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    auth.completePasswordRecovery = vi.fn().mockResolvedValue(undefined);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', component: { template: '<div>Вход</div>' } },
+        { path: '/password-reset', component: PasswordResetView },
+      ],
+    });
+    await router.push('/password-reset');
+    await router.isReady();
+    const wrapper = mount(PasswordResetView, { global: { plugins: [pinia, router] } });
+
+    expect(wrapper.text()).toContain('Создай новый пароль');
+    expect(wrapper.text()).toContain('Не меньше 8 символов.');
+    const inputs = wrapper.findAll('input');
+    await inputs[0].setValue('new-safe-password');
+    await inputs[1].setValue('new-safe-password');
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+
+    expect(auth.completePasswordRecovery).toHaveBeenCalledWith('new-safe-password');
+    expect(router.currentRoute.value.path).toBe('/');
   });
 
   it('explains why an incomplete registration cannot be submitted', async () => {

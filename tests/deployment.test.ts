@@ -15,7 +15,7 @@ const config = JSON.parse(
   readFileSync(new URL('../vercel.json', import.meta.url), 'utf8')
 ) as VercelConfig;
 
-const appRoutes = ['/week', '/month', '/trends', '/more', '/results', '/events', '/settings'];
+const appRoutes = ['/week', '/month', '/trends', '/more', '/results', '/events', '/settings', '/password-reset'];
 const betaSignupMigration = readFileSync(new URL('../supabase/migrations/20260723000000_add_beta_signup_gate.sql', import.meta.url), 'utf8');
 const deleteAccountFunction = readFileSync(new URL('../supabase/functions/delete-account/index.ts', import.meta.url), 'utf8');
 const cloudSyncService = readFileSync(new URL('../src/services/cloudSync.ts', import.meta.url), 'utf8');

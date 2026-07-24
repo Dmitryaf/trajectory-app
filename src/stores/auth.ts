@@ -17,6 +17,19 @@ import {
 } from '../services/cloudSync';
 
 let unsubscribeAuth: (() => void) | null = null;
+const passwordRecoveryKey = 'trajectory:password-recovery-required';
+
+function hasPasswordRecoveryRedirect() {
+  const url = new URL(window.location.href);
+  return url.pathname === '/password-reset'
+    || url.searchParams.get('password-recovery') === '1'
+    || window.sessionStorage.getItem(passwordRecoveryKey) === '1';
+}
+
+function persistPasswordRecovery(required: boolean) {
+  if (required) window.sessionStorage.setItem(passwordRecoveryKey, '1');
+  else window.sessionStorage.removeItem(passwordRecoveryKey);
+}
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -25,11 +38,13 @@ export const useAuthStore = defineStore('auth', {
     initialized: false,
     loading: false,
     session: null as Session | null,
-    error: ''
+    recoveryRequired: false,
+    error: '',
+    notice: ''
   }),
   getters: {
     requiresAuth: (state) => state.configured,
-    isAuthenticated: (state) => !state.configured || Boolean(state.session),
+    isAuthenticated: (state) => !state.configured || Boolean(state.session && !state.recoveryRequired),
     userEmail: (state) => state.session?.user.email ?? ''
   },
   actions: {
@@ -43,12 +58,18 @@ export const useAuthStore = defineStore('auth', {
           return;
         }
 
-        this.session = await getVerifiedCloudSession();
+        this.recoveryRequired = hasPasswordRecoveryRedirect();
+        persistPasswordRecovery(this.recoveryRequired);
         unsubscribeAuth?.();
-        const listener = onCloudAuthChange((session) => {
+        const listener = onCloudAuthChange((event, session) => {
           this.session = session;
+          if (event === 'PASSWORD_RECOVERY') {
+            this.recoveryRequired = true;
+            persistPasswordRecovery(true);
+          }
         });
         unsubscribeAuth = () => listener.data.subscription.unsubscribe();
+        this.session = await getVerifiedCloudSession();
         this.initialized = true;
       } catch (error) {
         this.session = null;
@@ -61,6 +82,7 @@ export const useAuthStore = defineStore('auth', {
     async signIn(email: string, password: string) {
       this.loading = true;
       this.error = '';
+      this.notice = '';
       try {
         this.session = await signInToCloud(email, password);
       } catch (error) {
@@ -120,6 +142,36 @@ export const useAuthStore = defineStore('auth', {
         this.loading = false;
       }
     },
+    async completePasswordRecovery(password: string) {
+      if (!this.recoveryRequired || !this.session) throw new Error('Ссылка восстановления недействительна');
+      this.loading = true;
+      this.error = '';
+      try {
+        await updateCloudPassword(password);
+        await signOutFromCloud();
+        this.session = null;
+        this.recoveryRequired = false;
+        persistPasswordRecovery(false);
+        this.notice = 'Пароль изменён. Войди с новым паролем.';
+      } catch (error) {
+        this.error = 'Не удалось изменить пароль. Запроси новую ссылку и попробуй ещё раз.';
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+    async cancelPasswordRecovery() {
+      this.loading = true;
+      this.error = '';
+      try {
+        if (this.session) await signOutFromCloud();
+      } finally {
+        this.session = null;
+        this.recoveryRequired = false;
+        persistPasswordRecovery(false);
+        this.loading = false;
+      }
+    },
     async deleteAccount() {
       const userId = this.session?.user.id;
       if (!userId) throw new Error('Сессия не найдена');
@@ -149,6 +201,8 @@ export const useAuthStore = defineStore('auth', {
       try {
         await signOutFromCloud();
         this.session = null;
+        this.recoveryRequired = false;
+        persistPasswordRecovery(false);
       } finally {
         this.loading = false;
       }

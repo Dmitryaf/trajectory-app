@@ -1,4 +1,4 @@
-import { createClient, type Session, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type AuthChangeEvent, type Session, type SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -68,8 +68,8 @@ export async function getVerifiedCloudSession(): Promise<Session | null> {
   return session;
 }
 
-export function onCloudAuthChange(callback: (session: Session | null) => void) {
-  return getSupabaseClient().auth.onAuthStateChange((_event, session) => callback(session));
+export function onCloudAuthChange(callback: (event: AuthChangeEvent, session: Session | null) => void) {
+  return getSupabaseClient().auth.onAuthStateChange((event, session) => callback(event, session));
 }
 
 export async function signInToCloud(email: string, password: string): Promise<Session | null> {
@@ -93,7 +93,7 @@ export async function signUpToCloud(email: string, password: string, inviteCode:
 
 export async function requestCloudPasswordReset(email: string): Promise<void> {
   const { error } = await getSupabaseClient().auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/settings?password-recovery=1`,
+    redirectTo: `${window.location.origin}/password-reset`,
   });
   if (error) throw error;
 }

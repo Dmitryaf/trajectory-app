@@ -36,6 +36,7 @@ function selectMode(nextMode: 'sign-in' | 'sign-up') {
   status.value = '';
   confirmationEmail.value = '';
   auth.error = '';
+  auth.notice = '';
 }
 
 async function submit() {
@@ -132,7 +133,7 @@ async function requestPasswordReset() {
       </form>
       <button v-if="mode === 'sign-in'" class="auth-reset" type="button" :disabled="auth.loading" @click="requestPasswordReset">Не помню пароль</button>
       <button v-if="confirmationEmail" class="auth-reset" type="button" :disabled="auth.loading" @click="resendConfirmation">Отправить письмо ещё раз</button>
-      <p v-if="status || auth.error" class="settings-status" aria-live="polite">{{ status || auth.error }}</p>
+      <p v-if="status || auth.error || auth.notice" class="settings-status" aria-live="polite">{{ status || auth.error || auth.notice }}</p>
     </article>
   </section>
 </template>
