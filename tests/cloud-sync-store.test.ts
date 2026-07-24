@@ -10,6 +10,7 @@ vi.mock('../src/services/cloudSync', () => ({
   deleteCloudAccount: vi.fn(),
   getVerifiedCloudSession: vi.fn(),
   isBetaSignupConfigured: () => false,
+  isCloudAuthRequired: () => false,
   isCloudSyncConfigured: () => true,
   markCloudSyncPending: vi.fn(),
   onCloudAuthChange: vi.fn(),

@@ -4,7 +4,9 @@ import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const cloud = vi.hoisted(() => ({
+  authRequired: vi.fn(),
   clearLocalSession: vi.fn(),
+  configured: vi.fn(),
   deleteAccount: vi.fn(),
   getSession: vi.fn(),
   onAuthChange: vi.fn(),
@@ -21,7 +23,8 @@ vi.mock('../src/services/cloudSync', () => ({
   deleteCloudAccount: cloud.deleteAccount,
   getVerifiedCloudSession: cloud.getSession,
   isBetaSignupConfigured: vi.fn(() => true),
-  isCloudSyncConfigured: vi.fn(() => true),
+  isCloudAuthRequired: cloud.authRequired,
+  isCloudSyncConfigured: cloud.configured,
   onCloudAuthChange: cloud.onAuthChange,
   resendCloudSignupConfirmation: cloud.resendConfirmation,
   requestCloudPasswordReset: cloud.requestPasswordReset,
@@ -39,6 +42,8 @@ describe('auth store beta lifecycle', () => {
     vi.clearAllMocks();
     window.history.replaceState({}, '', '/');
     window.sessionStorage.clear();
+    cloud.authRequired.mockReturnValue(false);
+    cloud.configured.mockReturnValue(true);
     cloud.getSession.mockResolvedValue(null);
     cloud.onAuthChange.mockImplementation(() => ({ data: { subscription: { unsubscribe: vi.fn() } } }));
   });
@@ -53,6 +58,18 @@ describe('auth store beta lifecycle', () => {
     });
     expect(auth.session).toBeNull();
     expect(cloud.signUp).toHaveBeenCalledWith('friend@example.com', 'safe-password', 'BETA-INVITE-2026');
+  });
+
+  it('fails closed when a deployed preview requires auth but has no backend configuration', async () => {
+    cloud.authRequired.mockReturnValue(true);
+    cloud.configured.mockReturnValue(false);
+    const auth = useAuthStore();
+
+    await auth.init();
+
+    expect(auth.configurationMissing).toBe(true);
+    expect(auth.requiresAuth).toBe(true);
+    expect(auth.isAuthenticated).toBe(false);
   });
 
   it('requests a password recovery email without exposing account existence', async () => {

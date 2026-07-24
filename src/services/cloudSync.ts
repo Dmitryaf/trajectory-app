@@ -3,6 +3,7 @@ import { createClient, type AuthChangeEvent, type Session, type SupabaseClient }
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 const betaSignupEnabled = import.meta.env.VITE_ENABLE_BETA_SIGNUP === 'true';
+const cloudAuthRequired = import.meta.env.VITE_REQUIRE_AUTH === 'true';
 
 let client: SupabaseClient | null = null;
 
@@ -30,6 +31,10 @@ const emptyMeta: CloudSyncMeta = {
 
 export function isCloudSyncConfigured(): boolean {
   return Boolean(supabaseUrl && supabaseAnonKey);
+}
+
+export function isCloudAuthRequired(): boolean {
+  return cloudAuthRequired;
 }
 
 export function isBetaSignupConfigured(): boolean {

@@ -6,6 +6,7 @@ import {
   deleteCloudAccount,
   getVerifiedCloudSession,
   isBetaSignupConfigured,
+  isCloudAuthRequired,
   isCloudSyncConfigured,
   onCloudAuthChange,
   resendCloudSignupConfirmation,
@@ -34,6 +35,7 @@ function persistPasswordRecovery(required: boolean) {
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     configured: isCloudSyncConfigured(),
+    authRequired: isCloudAuthRequired(),
     signupEnabled: isBetaSignupConfigured(),
     initialized: false,
     loading: false,
@@ -43,8 +45,11 @@ export const useAuthStore = defineStore('auth', {
     notice: ''
   }),
   getters: {
-    requiresAuth: (state) => state.configured,
-    isAuthenticated: (state) => !state.configured || Boolean(state.session && !state.recoveryRequired),
+    requiresAuth: (state) => state.configured || state.authRequired,
+    configurationMissing: (state) => state.authRequired && !state.configured,
+    isAuthenticated: (state) => state.configured
+      ? Boolean(state.session && !state.recoveryRequired)
+      : !state.authRequired,
     userEmail: (state) => state.session?.user.email ?? ''
   },
   actions: {

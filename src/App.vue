@@ -136,6 +136,13 @@ const navItems = [
         <span class="loading-card__mark" aria-hidden="true"><i></i></span>
         <strong>Проверяю доступ…</strong>
       </div>
+      <section v-else-if="auth.configurationMissing" class="auth-config-error" role="alert">
+        <span class="auth-config-error__mark" aria-hidden="true">!</span>
+        <div>
+          <h1>Эта сборка временно недоступна</h1>
+          <p>Не удалось подключить вход. Используй основную ссылку или попробуй позже.</p>
+        </div>
+      </section>
       <AuthGate v-else-if="auth.requiresAuth && !auth.isAuthenticated" />
       <div v-else-if="!store.loaded" class="loading-card" role="status" aria-live="polite">
         <span class="loading-card__mark" aria-hidden="true"><i></i></span>

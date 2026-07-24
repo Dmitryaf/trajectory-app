@@ -19,6 +19,7 @@ const appRoutes = ['/week', '/month', '/trends', '/more', '/results', '/events',
 const betaSignupMigration = readFileSync(new URL('../supabase/migrations/20260723000000_add_beta_signup_gate.sql', import.meta.url), 'utf8');
 const deleteAccountFunction = readFileSync(new URL('../supabase/functions/delete-account/index.ts', import.meta.url), 'utf8');
 const cloudSyncService = readFileSync(new URL('../src/services/cloudSync.ts', import.meta.url), 'utf8');
+const envExample = readFileSync(new URL('../.env.example', import.meta.url), 'utf8');
 
 function cacheControlFor(source: string): string | undefined {
   return config.headers
@@ -53,6 +54,11 @@ describe('deployment configuration', () => {
     expect(betaSignupMigration).toContain('signup_count >= config.max_signups');
     expect(betaSignupMigration).toContain("- 'beta_invite_code'");
     expect(betaSignupMigration).not.toContain('service_role');
+  });
+
+  it('supports fail-closed preview deployments without backend credentials', () => {
+    expect(envExample).toContain('VITE_REQUIRE_AUTH=false');
+    expect(cloudSyncService).toContain("import.meta.env.VITE_REQUIRE_AUTH === 'true'");
   });
 
   it('deletes only the authenticated caller through a server-side function', () => {
