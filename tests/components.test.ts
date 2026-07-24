@@ -103,6 +103,8 @@ describe('beta authentication', () => {
     const wrapper = mount(AuthGate, { global: { plugins: [pinia] } });
 
     await wrapper.findAll('button').find((button) => button.text() === 'Создать аккаунт')!.trigger('click');
+    expect(wrapper.text()).toContain('Не меньше 8 символов.');
+    expect(wrapper.get('button.primary-button').attributes('disabled')).toBeUndefined();
     const inputs = wrapper.findAll('input');
     await inputs[0].setValue('friend@example.com');
     await inputs[1].setValue('safe-password');
@@ -113,5 +115,23 @@ describe('beta authentication', () => {
     expect(auth.signUp).toHaveBeenCalledWith('friend@example.com', 'safe-password', 'BETA-INVITE-2026');
     expect(wrapper.text()).toContain('Проверь почту и подтверди email');
     expect(wrapper.text()).toContain('Отправить письмо ещё раз');
+  });
+
+  it('explains why an incomplete registration cannot be submitted', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    auth.signupEnabled = true;
+    auth.signUp = vi.fn();
+    const wrapper = mount(AuthGate, { global: { plugins: [pinia] } });
+
+    await wrapper.findAll('button').find((button) => button.text() === 'Создать аккаунт')!.trigger('click');
+    const inputs = wrapper.findAll('input');
+    await inputs[0].setValue('friend@example.com');
+    await inputs[1].setValue('short');
+    await wrapper.get('form').trigger('submit');
+
+    expect(wrapper.text()).toContain('Пароль должен содержать не меньше 8 символов.');
+    expect(auth.signUp).not.toHaveBeenCalled();
   });
 });

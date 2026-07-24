@@ -626,6 +626,7 @@ textarea { resize: vertical; min-height: 64px; }
 .auth-card__brand h1 { margin: 0; font-size: 38px; }
 .auth-card__brand p:last-child { margin-bottom: 0; }
 .auth-form { display: grid; min-width: 0; gap: 12px; }
+.auth-field-hint { display: block; margin-top: 6px; color: var(--muted); font-size: 12px; font-weight: 600; line-height: 1.4; }
 .auth-form .primary-button { min-height: 50px; margin-top: 4px; }
 .auth-mode { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin-bottom: 16px; padding: 4px; border-radius: 14px; background: #f1f4f1; }
 .auth-mode button { min-height: 38px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 800; }

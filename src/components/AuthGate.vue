@@ -19,6 +19,15 @@ const canSubmit = computed(() => {
     && inviteCode.value.trim().length >= 10;
 });
 
+const submitIssue = computed(() => {
+  if (email.value.trim().length <= 3) return 'Укажи email.';
+  const minimumLength = mode.value === 'sign-up' ? 8 : 6;
+  if (password.value.length < minimumLength) return `Пароль должен содержать не меньше ${minimumLength} символов.`;
+  if (mode.value === 'sign-up' && password.value !== passwordConfirmation.value) return 'Пароли не совпадают.';
+  if (mode.value === 'sign-up' && inviteCode.value.trim().length < 10) return 'Укажи код приглашения.';
+  return '';
+});
+
 function selectMode(nextMode: 'sign-in' | 'sign-up') {
   mode.value = nextMode;
   password.value = '';
@@ -30,7 +39,10 @@ function selectMode(nextMode: 'sign-in' | 'sign-up') {
 }
 
 async function submit() {
-  if (!canSubmit.value) return;
+  if (!canSubmit.value) {
+    status.value = submitIssue.value;
+    return;
+  }
   status.value = '';
   try {
     if (mode.value === 'sign-up') {
@@ -101,7 +113,8 @@ async function requestPasswordReset() {
         </label>
         <label class="form-control">
           <span class="field-label">Пароль</span>
-          <input v-model="password" type="password" :autocomplete="mode === 'sign-up' ? 'new-password' : 'current-password'" required :minlength="mode === 'sign-up' ? 8 : 6" placeholder="Пароль" />
+          <input v-model="password" type="password" :autocomplete="mode === 'sign-up' ? 'new-password' : 'current-password'" required :minlength="mode === 'sign-up' ? 8 : 6" :aria-describedby="mode === 'sign-up' ? 'signup-password-hint' : undefined" :placeholder="mode === 'sign-up' ? 'Не меньше 8 символов' : 'Пароль'" />
+          <small v-if="mode === 'sign-up'" id="signup-password-hint" class="auth-field-hint">Не меньше 8 символов.</small>
         </label>
         <template v-if="mode === 'sign-up'">
           <label class="form-control">
@@ -113,13 +126,13 @@ async function requestPasswordReset() {
             <input v-model="inviteCode" type="text" autocomplete="off" required minlength="10" maxlength="80" placeholder="Код приглашения" />
           </label>
         </template>
-        <button class="primary-button" type="submit" :disabled="!canSubmit">
+        <button class="primary-button" type="submit" :disabled="auth.loading">
           {{ auth.loading ? 'Проверяю...' : mode === 'sign-up' ? 'Создать аккаунт' : 'Войти' }}
         </button>
       </form>
       <button v-if="mode === 'sign-in'" class="auth-reset" type="button" :disabled="auth.loading" @click="requestPasswordReset">Не помню пароль</button>
       <button v-if="confirmationEmail" class="auth-reset" type="button" :disabled="auth.loading" @click="resendConfirmation">Отправить письмо ещё раз</button>
-      <p v-if="status || auth.error" class="settings-status">{{ status || auth.error }}</p>
+      <p v-if="status || auth.error" class="settings-status" aria-live="polite">{{ status || auth.error }}</p>
     </article>
   </section>
 </template>
