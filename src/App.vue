@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, watch } from 'vue';
 import { RouterLink, RouterView, useRouter } from 'vue-router';
 import { Toaster } from 'vue-sonner';
 import 'vue-sonner/style.css';
@@ -15,7 +15,9 @@ import { useAuthStore } from './stores/auth';
 const store = useAppStore();
 const auth = useAuthStore();
 const router = useRouter();
+const FeedbackDialog = defineAsyncComponent(() => import('./components/FeedbackDialog.vue'));
 const canOpenApp = computed(() => auth.initialized && auth.isAuthenticated);
+const feedbackEnabled = import.meta.env.VITE_FEEDBACK_ENABLED === 'true';
 let appDataLoadPromise: Promise<void> | null = null;
 const refreshCloudAfterResume = createResumeCloudRefresh(async () => {
   await reconcileCloudSnapshotOnStartup(store, auth.requiresAuth ? auth.session?.user.id : null);
@@ -124,6 +126,7 @@ const navItems = [
         <span><strong>Траектория</strong><small>факты, а не оценка</small></span>
       </RouterLink>
       <div v-if="canOpenApp && store.loaded" class="header-actions">
+        <FeedbackDialog v-if="feedbackEnabled" :access-token="auth.session?.access_token ?? ''" />
         <RouterLink v-if="!auth.requiresAuth" to="/settings" class="header-settings-link" aria-label="Открыть настройки" title="Настройки">
           <span>⚙</span><strong>Настройки</strong>
         </RouterLink>

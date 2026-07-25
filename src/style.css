@@ -59,6 +59,31 @@ textarea { resize: vertical; min-height: 64px; }
 .header-settings-link strong { font-weight: 800; }
 .header-settings-link:hover { transform: translateY(-1px); border-color: #bcd8cc; background: #fff; }
 .header-settings-link.router-link-active { border-color: #72c7a7; background: #dff5ec; color: #145e49; }
+.beta-feedback-link {
+  min-height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 10px 15px;
+  border: 1px solid #c9ded5; border-radius: 999px; background: rgba(255,255,255,.96); color: #245f4d;
+  box-shadow: 0 12px 30px rgba(16,45,44,.14); cursor: pointer; text-decoration: none; font-size: 12px;
+  transition: transform var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast);
+}
+.beta-feedback-link span { color: var(--accent-dark); font-size: 15px; }
+.beta-feedback-link strong { font-weight: 850; }
+.beta-feedback-link:hover { transform: translateY(-2px); border-color: #8fcdb5; box-shadow: 0 15px 34px rgba(16,45,44,.18); }
+.feedback-backdrop {
+  position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 20px;
+  background: rgba(11, 28, 27, .52); backdrop-filter: blur(5px);
+}
+.feedback-dialog {
+  width: min(540px, 100%); max-height: calc(100vh - 40px); overflow-y: auto; padding: 26px;
+  border: 1px solid rgba(213,224,217,.95); border-radius: 26px; background: #fff; box-shadow: 0 30px 80px rgba(8,28,25,.24);
+}
+.feedback-dialog__heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; margin-bottom: 18px; }
+.feedback-dialog__heading h2 { margin: 0; color: var(--navy); font-size: 25px; }
+.feedback-dialog__close { width: 38px; height: 38px; flex: 0 0 auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); color: #5f6d68; cursor: pointer; font-size: 24px; line-height: 1; }
+.feedback-dialog__close:disabled { opacity: .58; cursor: not-allowed; }
+.feedback-dialog textarea { min-height: 150px; }
+.feedback-dialog__hint { margin: 10px 0 0; color: #77827e; font-size: 12px; line-height: 1.5; }
+.feedback-dialog__actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.feedback-dialog__actions button { min-width: 120px; }
 .account-menu { position: relative; z-index: 31; min-width: 0; }
 .account-menu > summary { min-height: 42px; display: flex; align-items: center; gap: 9px; padding: 5px 9px 5px 5px; border: 1px solid #d5e2dc; border-radius: 15px; background: rgba(255,255,255,.86); box-shadow: 0 6px 18px rgba(16,45,44,.06); cursor: pointer; list-style: none; transition: border-color var(--motion-fast), background-color var(--motion-fast); }
 .account-menu > summary::-webkit-details-marker { display: none; }
@@ -649,6 +674,7 @@ textarea { resize: vertical; min-height: 64px; }
 .password-reset-card > .primary-button { width: 100%; }
 
 @media (min-width: 980px) {
+  .beta-feedback-link { min-height: 38px; padding: 8px 12px; }
   .header-settings-link { width: 38px; min-height: 38px; justify-content: center; padding: 0; }
   .header-settings-link strong { display: none; }
   .account-menu__email { max-width: 145px; }
@@ -668,6 +694,12 @@ textarea { resize: vertical; min-height: 64px; }
   .account-menu__email { display: none; }
   .account-menu > summary { min-height: 38px; padding: 3px 7px 3px 3px; }
   .account-menu__avatar { width: 30px; height: 30px; }
+  .beta-feedback-link { min-height: 36px; padding: 7px 10px; }
+  .beta-feedback-link strong { display: none; }
+  .feedback-backdrop { align-items: end; padding: 10px; }
+  .feedback-dialog { max-height: calc(100vh - 20px); padding: 20px; border-radius: 22px; }
+  .feedback-dialog__actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .feedback-dialog__actions button { min-width: 0; }
   .app-main { padding: 10px 14px 105px; }
   .page-heading { align-items: flex-start; margin: 10px 2px 22px; }
   .page--today > .page-heading { min-height: 156px; margin: 4px 0 0; padding: 24px 22px 42px; border-radius: 24px; }
@@ -803,6 +835,7 @@ textarea { resize: vertical; min-height: 64px; }
   .metric-card { padding: 14px; }
   .heatmap { grid-template-columns: 120px repeat(7, 38px); }
   .brand small { display: none; }
+  .beta-feedback-link { width: 36px; justify-content: center; padding: 0; }
   .bottom-nav { left: 6px; right: 6px; }
   .bottom-nav__item > span { font-size: 14px; }
   .bottom-nav__item small { font-size: 8.5px; }
