@@ -19,7 +19,27 @@ test('keeps every primary screen inside the minimum viewport width', async ({ pa
       content: document.documentElement.scrollWidth,
     }));
     expect(widths.content, `${route} should not scroll horizontally`).toBeLessThanOrEqual(widths.viewport);
+    const feedback = page.getByRole('button', { name: 'Обратная связь' });
+    await expect(feedback).toBeVisible();
   }
+});
+
+test('sends feedback from the built-in form without asking for recipient details', async ({ page }) => {
+  let submittedMessage = '';
+  await page.route('/api/feedback', async (route) => {
+    submittedMessage = (await route.request().postDataJSON() as { message: string }).message;
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+  });
+  await page.goto('/');
+
+  await page.getByRole('button', { name: 'Обратная связь' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Написать разработчику' });
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel('Предложение, проблема или ошибка').fill('Добавьте короткую подсказку к недельному обзору.');
+  await dialog.getByRole('button', { name: 'Отправить', exact: true }).click();
+
+  await expect(page.getByText('Спасибо, сообщение отправлено', { exact: true })).toBeVisible();
+  expect(submittedMessage).toBe('Добавьте короткую подсказку к недельному обзору.');
 });
 
 test('opens period review forms from the summary shortcuts', async ({ page }) => {

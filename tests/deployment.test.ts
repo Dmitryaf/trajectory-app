@@ -18,6 +18,7 @@ const config = JSON.parse(
 const appRoutes = ['/week', '/month', '/trends', '/more', '/results', '/events', '/settings', '/password-reset'];
 const betaSignupMigration = readFileSync(new URL('../supabase/migrations/20260723000000_add_beta_signup_gate.sql', import.meta.url), 'utf8');
 const deleteAccountFunction = readFileSync(new URL('../supabase/functions/delete-account/index.ts', import.meta.url), 'utf8');
+const feedbackFunction = readFileSync(new URL('../api/feedback.ts', import.meta.url), 'utf8');
 const cloudSyncService = readFileSync(new URL('../src/services/cloudSync.ts', import.meta.url), 'utf8');
 const envExample = readFileSync(new URL('../.env.example', import.meta.url), 'utf8');
 
@@ -58,7 +59,15 @@ describe('deployment configuration', () => {
 
   it('supports fail-closed preview deployments without backend credentials', () => {
     expect(envExample).toContain('VITE_REQUIRE_AUTH=false');
+    expect(envExample).toContain('VITE_FEEDBACK_ENABLED=false');
     expect(cloudSyncService).toContain("import.meta.env.VITE_REQUIRE_AUTH === 'true'");
+  });
+
+  it('keeps feedback delivery credentials and recipient on the server', () => {
+    expect(feedbackFunction).toContain('process.env.FEEDBACK_TO_EMAIL');
+    expect(feedbackFunction).toContain('process.env.RESEND_API_KEY');
+    expect(feedbackFunction).toContain('/auth/v1/user');
+    expect(feedbackFunction).not.toContain('import.meta.env');
   });
 
   it('deletes only the authenticated caller through a server-side function', () => {

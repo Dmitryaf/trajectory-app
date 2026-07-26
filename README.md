@@ -55,6 +55,8 @@ npm run storybook
 
 После запуска открой адрес, который покажет терминал (обычно `http://localhost:5173`).
 
+Для закрытой беты встроенная форма обратной связи включается переменной `VITE_FEEDBACK_ENABLED=true`. Сообщение отправляет Vercel Function: получатель и ключ почтового сервиса остаются в server-side переменных и не попадают в браузер. Настройка и полная граница готовности к приглашениям описаны в [docs/BETA_RELEASE.md](./docs/BETA_RELEASE.md).
+
 Проверка:
 
 ```bash
@@ -84,6 +86,6 @@ JSON-экспорт в настройках остаётся ручной стр
 
 Правила развития продукта, научной осторожности и добавления новых полей описаны в [docs/PRODUCT_RULES.md](./docs/PRODUCT_RULES.md).
 
-Правила работы агента начинаются с [docs/AGENTS.md](./docs/AGENTS.md), подробные инструкции находятся в [docs/agent](./docs/agent/README.md). Актуальный технический и продуктовый бэклог — в [docs/BACKLOG.md](./docs/BACKLOG.md), границы кода — в [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+Правила работы агента начинаются с [docs/AGENTS.md](./docs/AGENTS.md), подробные инструкции находятся в [docs/agent](./docs/agent/README.md). Актуальный технический и продуктовый бэклог — в [docs/BACKLOG.md](./docs/BACKLOG.md), beta release gate — в [docs/BETA_RELEASE.md](./docs/BETA_RELEASE.md), границы кода — в [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 Встроенного AI-агента и серверного обращения к модели в проекте нет. Кнопки анализа только копируют промпт в буфер или скачивают JSON; решение о передаче личных данных внешнему сервису остаётся за пользователем.
