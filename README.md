@@ -63,6 +63,17 @@ npm run storybook
 npm run check
 ```
 
+Отдельные read-only проверки кода и форматирования, а также явные команды исправления:
+
+```bash
+npm run lint
+npm run format:check
+npm run lint:fix
+npm run format
+```
+
+`lint:fix` и `format` меняют файлы и запускаются только явно. `npm run check`, CI и pre-commit ничего не форматируют автоматически.
+
 Первый запуск реальных браузерных сценариев требует локального Chromium Playwright:
 
 ```bash
