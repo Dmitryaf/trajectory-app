@@ -24,10 +24,7 @@ export type FactorSummary = {
   energySamplesWithout: number;
 };
 
-export function buildObservations(
-  entries: DailyEntry[],
-  factorOptions: Option<ContextFactorId>[] = contextFactorOptions,
-): Observation[] {
+export function buildObservations(entries: DailyEntry[], factorOptions: Option<ContextFactorId>[] = contextFactorOptions): Observation[] {
   const observations: Observation[] = [];
   const ordinaryEntries = entries.filter((entry) => entry.specialDay === null);
   const energyEntries = ordinaryEntries.filter((entry) => entry.energy !== null);
@@ -40,7 +37,13 @@ export function buildObservations(
 
   const movementEnergy = average(movementEntries.map((entry) => entry.energy));
   const stillEnergy = average(stillEntries.map((entry) => entry.energy));
-  if (movementEntries.length >= 4 && stillEntries.length >= 4 && movementEnergy !== null && stillEnergy !== null && Math.abs(movementEnergy - stillEnergy) >= 0.5) {
+  if (
+    movementEntries.length >= 4 &&
+    stillEntries.length >= 4 &&
+    movementEnergy !== null &&
+    stillEnergy !== null &&
+    Math.abs(movementEnergy - stillEnergy) >= 0.5
+  ) {
     const direction = movementEnergy > stillEnergy ? 'выше' : 'ниже';
     observations.push({
       id: 'movement-energy',
@@ -51,7 +54,13 @@ export function buildObservations(
 
   const restedEnergy = average(restedEntries.map((entry) => entry.energy));
   const shortSleepEnergy = average(shortSleepEntries.map((entry) => entry.energy));
-  if (restedEntries.length >= 4 && shortSleepEntries.length >= 4 && restedEnergy !== null && shortSleepEnergy !== null && Math.abs(restedEnergy - shortSleepEnergy) >= 0.5) {
+  if (
+    restedEntries.length >= 4 &&
+    shortSleepEntries.length >= 4 &&
+    restedEnergy !== null &&
+    shortSleepEnergy !== null &&
+    Math.abs(restedEnergy - shortSleepEnergy) >= 0.5
+  ) {
     const direction = restedEnergy > shortSleepEnergy ? 'выше' : 'ниже';
     observations.push({
       id: 'sleep-energy',
@@ -81,15 +90,14 @@ export function buildObservations(
   return observations;
 }
 
-export function factorSummaries(
-  entries: DailyEntry[],
-  factorOptions: Option<ContextFactorId>[] = contextFactorOptions,
-): FactorSummary[] {
+export function factorSummaries(entries: DailyEntry[], factorOptions: Option<ContextFactorId>[] = contextFactorOptions): FactorSummary[] {
   const ordinaryEntries = entries.filter((entry) => entry.specialDay === null);
   return factorOptions
     .map((option) => {
       const matching = ordinaryEntries.filter((entry) => entry.contextFactors.includes(option.id));
-      const other = ordinaryEntries.filter((entry) => dailyFieldWasRecorded(entry, 'contextFactors') && !entry.contextFactors.includes(option.id));
+      const other = ordinaryEntries.filter(
+        (entry) => dailyFieldWasRecorded(entry, 'contextFactors') && !entry.contextFactors.includes(option.id),
+      );
       return {
         id: option.id,
         label: option.label,
@@ -113,11 +121,20 @@ export function factorComparisonText(factor: FactorSummary): string {
   const parts: string[] = [];
   if (factor.sleepSamples >= 4 && factor.sleepSamplesWithout >= 4 && factor.averageSleep !== null && factor.averageSleepWithout !== null) {
     const difference = Math.round(factor.averageSleep - factor.averageSleepWithout);
-    parts.push(`Сон: ${formatMinutes(Math.round(factor.averageSleep))} против ${formatMinutes(Math.round(factor.averageSleepWithout))} без фактора (${signedMinutes(difference)})`);
+    parts.push(
+      `Сон: ${formatMinutes(Math.round(factor.averageSleep))} против ${formatMinutes(Math.round(factor.averageSleepWithout))} без фактора (${signedMinutes(difference)})`,
+    );
   }
-  if (factor.energySamples >= 4 && factor.energySamplesWithout >= 4 && factor.averageEnergy !== null && factor.averageEnergyWithout !== null) {
+  if (
+    factor.energySamples >= 4 &&
+    factor.energySamplesWithout >= 4 &&
+    factor.averageEnergy !== null &&
+    factor.averageEnergyWithout !== null
+  ) {
     const difference = factor.averageEnergy - factor.averageEnergyWithout;
-    parts.push(`энергия: ${formatNumber(factor.averageEnergy)} против ${formatNumber(factor.averageEnergyWithout)} (${signedNumber(difference)})`);
+    parts.push(
+      `энергия: ${formatNumber(factor.averageEnergy)} против ${formatNumber(factor.averageEnergyWithout)} (${signedNumber(difference)})`,
+    );
   }
   return parts.length ? `${parts.join('; ')}. Это связь, а не доказанная причина.` : '';
 }

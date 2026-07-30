@@ -6,7 +6,7 @@
     system-ui,
     -apple-system,
     BlinkMacSystemFont,
-    "Segoe UI",
+    'Segoe UI',
     sans-serif;
   color: #233330;
   background: #f3f1eb;
@@ -45,17 +45,8 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   background:
-    radial-gradient(
-      circle at 12% -8%,
-      rgba(73, 201, 155, 0.18),
-      transparent 31%
-    ),
-    radial-gradient(
-      circle at 92% 8%,
-      rgba(231, 164, 59, 0.12),
-      transparent 25%
-    ),
-    #f3f1eb;
+    radial-gradient(circle at 12% -8%, rgba(73, 201, 155, 0.18), transparent 31%),
+    radial-gradient(circle at 92% 8%, rgba(231, 164, 59, 0.12), transparent 25%), #f3f1eb;
 }
 button,
 input,
@@ -161,7 +152,7 @@ textarea {
   box-shadow: 0 10px 24px rgba(16, 45, 44, 0.24);
 }
 .brand__mark::before {
-  content: "";
+  content: '';
   width: 25px;
   height: 11px;
   border: 3px solid var(--accent);
@@ -491,7 +482,7 @@ textarea {
   box-shadow: 0 28px 70px rgba(16, 45, 44, 0.22);
 }
 .page--today > .page-heading::before {
-  content: "";
+  content: '';
   position: absolute;
   width: 220px;
   height: 220px;
@@ -504,7 +495,7 @@ textarea {
     0 0 0 70px rgba(140, 229, 194, 0.025);
 }
 .page--today > .page-heading::after {
-  content: "";
+  content: '';
   position: absolute;
   width: 92px;
   height: 92px;
@@ -671,34 +662,18 @@ textarea {
   box-shadow: var(--shadow-soft);
 }
 .form-card--sleep {
-  background: linear-gradient(
-    135deg,
-    rgba(115, 103, 240, 0.055),
-    rgba(255, 255, 255, 0.96) 45%
-  );
+  background: linear-gradient(135deg, rgba(115, 103, 240, 0.055), rgba(255, 255, 255, 0.96) 45%);
 }
 .form-card--context {
-  background: linear-gradient(
-    135deg,
-    rgba(235, 116, 88, 0.055),
-    rgba(255, 255, 255, 0.96) 48%
-  );
+  background: linear-gradient(135deg, rgba(235, 116, 88, 0.055), rgba(255, 255, 255, 0.96) 48%);
   border-color: #f1ddd8;
 }
 .form-card--direction {
-  background: linear-gradient(
-    135deg,
-    rgba(82, 100, 216, 0.06),
-    rgba(255, 255, 255, 0.96) 48%
-  );
+  background: linear-gradient(135deg, rgba(82, 100, 216, 0.06), rgba(255, 255, 255, 0.96) 48%);
   border-color: #dfe4f6;
 }
 .form-card--nutrition {
-  background: linear-gradient(
-    135deg,
-    rgba(240, 173, 66, 0.075),
-    rgba(255, 255, 255, 0.96) 48%
-  );
+  background: linear-gradient(135deg, rgba(240, 173, 66, 0.075), rgba(255, 255, 255, 0.96) 48%);
   border-color: #f0dfc2;
 }
 .form-card--experiment {
@@ -706,11 +681,7 @@ textarea {
   border-color: #f4ddcc;
 }
 .form-card--special {
-  background: linear-gradient(
-    135deg,
-    rgba(235, 116, 88, 0.06),
-    rgba(255, 255, 255, 0.96) 48%
-  );
+  background: linear-gradient(135deg, rgba(235, 116, 88, 0.06), rgba(255, 255, 255, 0.96) 48%);
   border-color: #f1ddd8;
 }
 .form-card__heading {
@@ -1135,7 +1106,7 @@ textarea {
   box-shadow: var(--shadow-soft);
 }
 .page--archive > .page-heading::after {
-  content: "";
+  content: '';
   position: absolute;
   width: 190px;
   height: 190px;
@@ -1174,7 +1145,7 @@ textarea {
   box-shadow: 0 12px 30px rgba(16, 45, 44, 0.075);
 }
 .result-composer::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0 auto 0 0;
   width: 5px;
@@ -1620,7 +1591,7 @@ textarea {
     box-shadow 0.18s ease;
 }
 .more-card::after {
-  content: "";
+  content: '';
   position: absolute;
   width: 145px;
   height: 145px;
@@ -1725,15 +1696,11 @@ textarea {
   padding: 26px 30px;
   border: 1px solid #d8e7e0;
   border-radius: 28px;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.97),
-    rgba(227, 246, 238, 0.9)
-  );
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(227, 246, 238, 0.9));
   box-shadow: var(--shadow-soft);
 }
 .page--review > .page-heading::after {
-  content: "";
+  content: '';
   position: absolute;
   width: 210px;
   height: 210px;
@@ -1857,7 +1824,7 @@ textarea {
   overflow: hidden;
 }
 .metric-card::before {
-  content: "";
+  content: '';
   position: absolute;
   left: 0;
   right: 0;
@@ -1866,7 +1833,7 @@ textarea {
   background: var(--metric-accent, var(--accent));
 }
 .metric-card::after {
-  content: "";
+  content: '';
   position: absolute;
   width: 74px;
   height: 74px;
@@ -1976,7 +1943,7 @@ textarea {
   box-shadow: 0 5px 14px rgba(0, 0, 0, 0.15);
 }
 .page--trends .dashboard-card::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: 24px;
@@ -2044,7 +2011,7 @@ textarea {
   overflow: hidden;
 }
 .review-cue::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0 auto 0 0;
   width: 4px;
@@ -2193,10 +2160,7 @@ textarea {
 .heatmap {
   --day-count: 7;
   display: grid;
-  grid-template-columns: minmax(140px, 1.5fr) repeat(
-      var(--day-count),
-      minmax(40px, 1fr)
-    );
+  grid-template-columns: minmax(140px, 1.5fr) repeat(var(--day-count), minmax(40px, 1fr));
   overflow-x: auto;
 }
 .heatmap__day {
@@ -2404,7 +2368,7 @@ textarea {
   border-color: #d7efe4;
 }
 .month-day--short-sleep::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0 auto 0 0;
   width: 4px;
@@ -2588,10 +2552,7 @@ textarea {
 .factor-summary-head,
 .factor-summary-item {
   display: grid;
-  grid-template-columns: minmax(170px, 1fr) 48px minmax(150px, 0.9fr) minmax(
-      140px,
-      0.8fr
-    );
+  grid-template-columns: minmax(170px, 1fr) 48px minmax(150px, 0.9fr) minmax(140px, 0.8fr);
   gap: 10px;
   align-items: center;
 }
@@ -2901,7 +2862,7 @@ textarea {
   margin-top: 7px;
 }
 .decision-timeline__item::before {
-  content: "";
+  content: '';
   position: absolute;
   left: -6px;
   top: 18px;
@@ -3023,7 +2984,7 @@ textarea {
   box-shadow: var(--shadow-soft);
 }
 .page--settings > .page-heading::after {
-  content: "⚙";
+  content: '⚙';
   position: absolute;
   right: 28px;
   color: rgba(29, 81, 72, 0.1);
@@ -3049,7 +3010,7 @@ textarea {
   box-shadow: 0 10px 28px rgba(16, 45, 44, 0.065);
 }
 .settings-card::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0 auto 0 0;
   width: 5px;
@@ -3431,7 +3392,7 @@ textarea {
   box-shadow: 0 30px 80px rgba(16, 45, 44, 0.16);
 }
 .auth-card::before {
-  content: "";
+  content: '';
   position: absolute;
   left: 0;
   right: 0;
@@ -3440,7 +3401,7 @@ textarea {
   background: linear-gradient(90deg, #49c99b 0 58%, #ffd06e 58%);
 }
 .auth-card::after {
-  content: "";
+  content: '';
   position: absolute;
   width: 160px;
   height: 160px;
@@ -3574,13 +3535,7 @@ textarea {
   display: grid;
   place-items: center;
   padding: 28px 14px;
-  background:
-    radial-gradient(
-      circle at 20% 15%,
-      rgba(73, 201, 155, 0.13),
-      transparent 32%
-    ),
-    var(--surface);
+  background: radial-gradient(circle at 20% 15%, rgba(73, 201, 155, 0.13), transparent 32%), var(--surface);
 }
 .password-reset-card {
   position: relative;
@@ -3593,7 +3548,7 @@ textarea {
   box-shadow: 0 30px 80px rgba(16, 45, 44, 0.16);
 }
 .password-reset-card::before {
-  content: "";
+  content: '';
   position: absolute;
   left: 0;
   right: 0;
@@ -4062,10 +4017,10 @@ textarea {
     text-transform: uppercase;
   }
   .factor-summary-item small:nth-of-type(1)::before {
-    content: "сон";
+    content: 'сон';
   }
   .factor-summary-item small:nth-of-type(2)::before {
-    content: "энергия";
+    content: 'энергия';
   }
   .long-chart__row {
     grid-template-columns: 48px 1fr;
@@ -4098,25 +4053,25 @@ textarea {
     text-transform: uppercase;
   }
   .trend-table__row span:nth-child(2)::before {
-    content: "данные";
+    content: 'данные';
   }
   .trend-table__row span:nth-child(3)::before {
-    content: "сон";
+    content: 'сон';
   }
   .trend-table__row span:nth-child(4)::before {
-    content: "вес";
+    content: 'вес';
   }
   .trend-table__row span:nth-child(5)::before {
-    content: "энергия";
+    content: 'энергия';
   }
   .trend-table__row span:nth-child(6)::before {
-    content: "шаги / подг.";
+    content: 'шаги / подг.';
   }
   .trend-table__row span:nth-child(7)::before {
-    content: "питание + / −";
+    content: 'питание + / −';
   }
   .trend-table__row span:nth-child(8)::before {
-    content: "особые";
+    content: 'особые';
   }
   .special-day-list--columns {
     grid-template-columns: 1fr;
@@ -4150,10 +4105,7 @@ textarea {
   .comparison-table__head,
   .comparison-table__row {
     min-width: 0;
-    grid-template-columns: minmax(96px, 1fr) minmax(68px, auto) minmax(
-        68px,
-        auto
-      );
+    grid-template-columns: minmax(96px, 1fr) minmax(68px, auto) minmax(68px, auto);
     gap: 8px;
   }
   .comparison-table__head {

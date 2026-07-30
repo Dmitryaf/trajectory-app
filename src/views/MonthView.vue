@@ -4,7 +4,18 @@ import type { EChartsCoreOption } from 'echarts/core';
 import EChartPanel from '../components/charts/EChartPanel.vue';
 import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
-import { actionDirectionLabel, buildObservations, buildReviewCues, buildReviewQuestions, careerStatesForEntry, entriesForMonth, factorSummaries, resultsForPeriod, specialDayLabel, summarize } from '../services/analytics';
+import {
+  actionDirectionLabel,
+  buildObservations,
+  buildReviewCues,
+  buildReviewQuestions,
+  careerStatesForEntry,
+  entriesForMonth,
+  factorSummaries,
+  resultsForPeriod,
+  specialDayLabel,
+  summarize,
+} from '../services/analytics';
 import { dateRange, endOfMonth, formatDate, formatMinutes, fromDateKey, startOfMonth, todayKey, toDateKey } from '../services/dates';
 import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../features/export/browser';
 import { buildWeightSeries } from '../features/analytics/weightSeries';
@@ -18,22 +29,39 @@ const anchor = ref(todayKey());
 const start = computed(() => startOfMonth(anchor.value));
 const end = computed(() => endOfMonth(anchor.value));
 const entries = computed(() => entriesForMonth(store.dailyEntries, anchor.value));
-const externalCareerIds = computed(() => ['external', 'interview', 'result', ...store.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id)]);
+const externalCareerIds = computed(() => [
+  'external',
+  'interview',
+  'result',
+  ...store.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id),
+]);
 const summary = computed(() => summarize(entries.value, externalCareerIds.value));
 const contextFactorItems = computed(() => [...contextFactorOptions, ...store.settings.customContextFactorOptions]);
 const observations = computed(() => buildObservations(entries.value, contextFactorItems.value));
 const factors = computed(() => factorSummaries(entries.value, contextFactorItems.value));
 const results = computed(() => resultsForPeriod(store.results, start.value, end.value));
 const showAllResults = ref(false);
-const displayedResults = computed(() => showAllResults.value ? results.value : results.value.slice(0, 5));
-const lifeEvents = computed(() => store.lifeEvents.filter((event) => event.date >= start.value && event.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)));
-const reviewCues = computed(() => buildReviewCues('month', entries.value, results.value, lifeEvents.value, externalCareerIds.value, contextFactorItems.value));
+const displayedResults = computed(() => (showAllResults.value ? results.value : results.value.slice(0, 5)));
+const lifeEvents = computed(() =>
+  store.lifeEvents.filter((event) => event.date >= start.value && event.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)),
+);
+const reviewCues = computed(() =>
+  buildReviewCues('month', entries.value, results.value, lifeEvents.value, externalCareerIds.value, contextFactorItems.value),
+);
 const reviewQuestions = buildReviewQuestions('month');
 const monthDates = computed(() => dateRange(start.value, end.value));
 const chartDates = computed(() => monthDates.value.filter((date) => date <= todayKey()));
 const entriesByDate = computed(() => new Map(entries.value.map((entry) => [entry.date, entry])));
-const sleepEntries = computed(() => [...entries.value].filter((entry) => entry.specialDay === null && entry.sleepMinutes !== null).sort((a, b) => a.date.localeCompare(b.date)));
-const weightEntries = computed(() => entries.value.filter((entry) => entry.date <= todayKey() && entry.specialDay === null && entry.weightKg !== null).sort((a, b) => a.date.localeCompare(b.date)));
+const sleepEntries = computed(() =>
+  [...entries.value]
+    .filter((entry) => entry.specialDay === null && entry.sleepMinutes !== null)
+    .sort((a, b) => a.date.localeCompare(b.date)),
+);
+const weightEntries = computed(() =>
+  entries.value
+    .filter((entry) => entry.date <= todayKey() && entry.specialDay === null && entry.weightKg !== null)
+    .sort((a, b) => a.date.localeCompare(b.date)),
+);
 const sleepEnergyOption = computed<EChartsCoreOption>(() => {
   const rows = chartDates.value.map((date) => {
     const entry = entriesByDate.value.get(date);
@@ -43,7 +71,7 @@ const sleepEnergyOption = computed<EChartsCoreOption>(() => {
     color: ['#7467e8', '#b8c8c2', '#2eaa7f'],
     tooltip: {
       trigger: 'axis',
-      formatter: (params: unknown) => formatSleepTooltip(params)
+      formatter: (params: unknown) => formatSleepTooltip(params),
     },
     legend: { top: 0, right: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: '#657085', fontSize: 12 } },
     grid: { left: 46, right: 42, top: 42, bottom: 34 },
@@ -52,17 +80,45 @@ const sleepEnergyOption = computed<EChartsCoreOption>(() => {
       data: rows.map((row) => formatDate(row.date, { day: 'numeric' })),
       axisTick: { show: false },
       axisLine: { lineStyle: { color: '#dfe4ed' } },
-      axisLabel: { color: '#7d8798' }
+      axisLabel: { color: '#7d8798' },
     },
     yAxis: [
-      { type: 'value', min: 0, max: 12, interval: 3, axisLabel: { formatter: '{value}ч', color: '#7d8798' }, splitLine: { lineStyle: { color: '#edf1f6' } } },
-      { type: 'value', min: 1, max: 5, interval: 1, axisLabel: { color: '#7d8798' }, splitLine: { show: false } }
+      {
+        type: 'value',
+        min: 0,
+        max: 12,
+        interval: 3,
+        axisLabel: { formatter: '{value}ч', color: '#7d8798' },
+        splitLine: { lineStyle: { color: '#edf1f6' } },
+      },
+      { type: 'value', min: 1, max: 5, interval: 1, axisLabel: { color: '#7d8798' }, splitLine: { show: false } },
     ],
     series: [
-      { name: 'Сон', type: 'bar', data: rows.map((row) => minutesToHours(row.entry?.sleepMinutes ?? null)), barMaxWidth: 16, itemStyle: { borderRadius: [7, 7, 2, 2] } },
-      { name: 'В кровати', type: 'bar', data: rows.map((row) => minutesToHours(row.entry?.timeInBedMinutes ?? null)), barMaxWidth: 16, itemStyle: { borderRadius: [7, 7, 2, 2] } },
-      { name: 'Энергия', type: 'line', yAxisIndex: 1, data: rows.map((row) => row.entry?.energy ?? null), smooth: false, symbolSize: 8, connectNulls: false, lineStyle: { width: 3 } }
-    ]
+      {
+        name: 'Сон',
+        type: 'bar',
+        data: rows.map((row) => minutesToHours(row.entry?.sleepMinutes ?? null)),
+        barMaxWidth: 16,
+        itemStyle: { borderRadius: [7, 7, 2, 2] },
+      },
+      {
+        name: 'В кровати',
+        type: 'bar',
+        data: rows.map((row) => minutesToHours(row.entry?.timeInBedMinutes ?? null)),
+        barMaxWidth: 16,
+        itemStyle: { borderRadius: [7, 7, 2, 2] },
+      },
+      {
+        name: 'Энергия',
+        type: 'line',
+        yAxisIndex: 1,
+        data: rows.map((row) => row.entry?.energy ?? null),
+        smooth: false,
+        symbolSize: 8,
+        connectNulls: false,
+        lineStyle: { width: 3 },
+      },
+    ],
   };
 });
 const weightOption = computed<EChartsCoreOption>(() => {
@@ -72,16 +128,36 @@ const weightOption = computed<EChartsCoreOption>(() => {
     tooltip: { trigger: 'axis' },
     legend: { top: 0, right: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: '#657085', fontSize: 12 } },
     grid: { left: 52, right: 24, top: 42, bottom: 34 },
-    xAxis: { type: 'category', data: rows.map((row) => formatDate(row.date, { day: 'numeric' })), axisTick: { show: false }, axisLine: { lineStyle: { color: '#dfe4ed' } }, axisLabel: { color: '#7d8798' } },
-    yAxis: { type: 'value', scale: true, axisLabel: { formatter: '{value}кг', color: '#7d8798' }, splitLine: { lineStyle: { color: '#edf1f6' } } },
+    xAxis: {
+      type: 'category',
+      data: rows.map((row) => formatDate(row.date, { day: 'numeric' })),
+      axisTick: { show: false },
+      axisLine: { lineStyle: { color: '#dfe4ed' } },
+      axisLabel: { color: '#7d8798' },
+    },
+    yAxis: {
+      type: 'value',
+      scale: true,
+      axisLabel: { formatter: '{value}кг', color: '#7d8798' },
+      splitLine: { lineStyle: { color: '#edf1f6' } },
+    },
     series: [
-      { name: 'измерение', type: 'line', symbolSize: 7, data: rows.map((row) => row.weight), lineStyle: { width: 1, opacity: .4 } },
-      { name: 'среднее за 7 дней', type: 'line', symbolSize: 8, data: rows.map((row) => row.rolling), connectNulls: false, lineStyle: { width: 3 } }
-    ]
+      { name: 'измерение', type: 'line', symbolSize: 7, data: rows.map((row) => row.weight), lineStyle: { width: 1, opacity: 0.4 } },
+      {
+        name: 'среднее за 7 дней',
+        type: 'line',
+        symbolSize: 8,
+        data: rows.map((row) => row.rolling),
+        connectNulls: false,
+        lineStyle: { width: 3 },
+      },
+    ],
   };
 });
 const contextNotes = computed(() => entries.value.filter((entry) => entry.contextNote.trim()).sort((a, b) => b.date.localeCompare(a.date)));
-const actionNotes = computed(() => entries.value.filter((entry) => entry.actionDirection !== null).sort((a, b) => b.date.localeCompare(a.date)));
+const actionNotes = computed(() =>
+  entries.value.filter((entry) => entry.actionDirection !== null).sort((a, b) => b.date.localeCompare(a.date)),
+);
 const specialDays = computed(() => entries.value.filter((entry) => entry.specialDay !== null).sort((a, b) => b.date.localeCompare(a.date)));
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
 const activeAreas = computed(() => lifeAreaItems.value.filter((option) => store.settings.activeLifeAreas.includes(option.id)));
@@ -105,7 +181,7 @@ const monthCalendarDays = computed(() => {
       hasNutritionBlock: entry?.nutritionState === 'blocks_goal',
       title: entry
         ? `${formatDate(date)} · сон ${formatMinutes(entry.sleepMinutes)} · энергия ${entry.energy ?? '—'}${entry.actionDirection ? ` · ${actionDirectionLabel(entry.actionDirection)}` : ''}${entry.nutritionState ? ` · питание ${nutritionText(entry.nutritionState)}` : ''}${entry.weightKg ? ` · вес ${entry.weightKg} кг` : ''}`
-        : `${formatDate(date)} · записи нет`
+        : `${formatDate(date)} · записи нет`,
     };
   });
   return [...blanks, ...monthDays];
@@ -175,14 +251,20 @@ function minutesToHours(value: number | null): number | null {
 function factorSleepText(factor: (typeof factors.value)[number]): string {
   if (factor.averageSleep === null) return '—';
   const withFactor = `${formatMinutes(Math.round(factor.averageSleep))} · ${factor.sleepSamples} дн.`;
-  const withoutFactor = factor.averageSleepWithout === null ? '—' : `${formatMinutes(Math.round(factor.averageSleepWithout))} · ${factor.sleepSamplesWithout} дн.`;
+  const withoutFactor =
+    factor.averageSleepWithout === null
+      ? '—'
+      : `${formatMinutes(Math.round(factor.averageSleepWithout))} · ${factor.sleepSamplesWithout} дн.`;
   return `${withFactor} / ${withoutFactor}`;
 }
 
 function factorEnergyText(factor: (typeof factors.value)[number]): string {
   if (factor.averageEnergy === null) return '—';
   const withFactor = `${factor.averageEnergy.toFixed(1).replace('.0', '')} · ${factor.energySamples} дн.`;
-  const withoutFactor = factor.averageEnergyWithout === null ? '—' : `${factor.averageEnergyWithout.toFixed(1).replace('.0', '')} · ${factor.energySamplesWithout} дн.`;
+  const withoutFactor =
+    factor.averageEnergyWithout === null
+      ? '—'
+      : `${factor.averageEnergyWithout.toFixed(1).replace('.0', '')} · ${factor.energySamplesWithout} дн.`;
   return `${withFactor} / ${withoutFactor}`;
 }
 
@@ -208,39 +290,80 @@ function shiftMonth(offset: number) {
   date.setMonth(date.getMonth() + offset, 1);
   anchor.value = toDateKey(date);
 }
-
 </script>
 
 <template>
   <section class="page page--review page--month">
     <div class="page-heading">
-      <div><span class="eyebrow">Месячная сводка</span><h1>Месяц</h1><p>Итоги, состояние и контекст месяца без общей оценки.</p></div>
+      <div>
+        <span class="eyebrow">Месячная сводка</span>
+        <h1>Месяц</h1>
+        <p>Итоги, состояние и контекст месяца без общей оценки.</p>
+      </div>
       <a class="review-jump" href="#month-review">К итогу <span aria-hidden="true">↓</span></a>
     </div>
     <PeriodNavigator
       :title="formatDate(start, { month: 'long', year: 'numeric' })"
       :subtitle="start === startOfMonth(todayKey()) ? 'Текущий месяц' : ''"
-      @previous="shiftMonth(-1)" @next="shiftMonth(1)" @current="anchor = todayKey()"
+      @previous="shiftMonth(-1)"
+      @next="shiftMonth(1)"
+      @current="anchor = todayKey()"
     />
 
     <div class="metrics-grid">
-      <MetricCard label="Заполненных дней" :value="summary.coveredEntriesCount" :hint="`${summary.ordinaryCoreEntriesCount} с основными полями`" accent="#1d5148" />
-      <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="`${summary.sleepSamples} дн. без особых`" accent="#7467e8" />
+      <MetricCard
+        label="Заполненных дней"
+        :value="summary.coveredEntriesCount"
+        :hint="`${summary.ordinaryCoreEntriesCount} с основными полями`"
+        accent="#1d5148"
+      />
+      <MetricCard
+        label="Средний сон"
+        :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))"
+        :hint="`${summary.sleepSamples} дн. без особых`"
+        accent="#7467e8"
+      />
       <MetricCard label="Карьера" :value="summary.externalSteps" hint="дней с откликом, разговором или итогом" accent="#3f82d5" />
-      <MetricCard label="Реальные шаги" :value="`${summary.externalActionDays}/${summary.preparationDays}`" :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`" accent="#2eaa7f" />
-      <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="summary.averageWeightKg === null ? `${summary.nutritionSamples} дн. с отметкой` : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг · ${summary.weightSamples} изм.`" accent="#d9952f" />
+      <MetricCard
+        label="Реальные шаги"
+        :value="`${summary.externalActionDays}/${summary.preparationDays}`"
+        :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`"
+        accent="#2eaa7f"
+      />
+      <MetricCard
+        label="Питание"
+        :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`"
+        :hint="
+          summary.averageWeightKg === null
+            ? `${summary.nutritionSamples} дн. с отметкой`
+            : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг · ${summary.weightSamples} изм.`
+        "
+        accent="#d9952f"
+      />
       <MetricCard label="Особых дней" :value="summary.specialDays" :hint="`${results.length} итогов`" accent="#eb7458" />
     </div>
 
     <article class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Карта месяца</span><h2>Энергия, сон и контекст по дням</h2></div></div>
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Карта месяца</span>
+          <h2>Энергия, сон и контекст по дням</h2>
+        </div>
+      </div>
       <div class="month-calendar">
         <div v-for="weekday in monthWeekdays" :key="weekday" class="month-calendar__head">{{ weekday }}</div>
         <article
           v-for="day in monthCalendarDays"
           :key="day.id"
           class="month-day"
-          :class="day.blank ? 'month-day--blank' : [`month-day--${day.energyLevel}`, { 'month-day--short-sleep': day.hasShortSleep, 'month-day--special': day.entry?.specialDay }]"
+          :class="
+            day.blank
+              ? 'month-day--blank'
+              : [
+                  `month-day--${day.energyLevel}`,
+                  { 'month-day--short-sleep': day.hasShortSleep, 'month-day--special': day.entry?.specialDay },
+                ]
+          "
           :title="day.blank ? '' : day.title"
         >
           <template v-if="!day.blank">
@@ -272,19 +395,42 @@ function shiftMonth(offset: number) {
     </article>
 
     <article id="month-review" class="review-card">
-      <div class="section-heading"><div><span class="eyebrow">Сохранить вывод</span><h2>Итог месяца</h2></div><small>{{ formatDate(end, { day: 'numeric', month: 'long' }) }}</small></div>
-      <label class="field-label">Что чаще всего повторялось?</label><textarea v-model="review.mainPattern" rows="2" placeholder="Повторяющееся действие, состояние или условие"></textarea>
-      <label class="field-label">Что поддерживало?</label><textarea v-model="review.support" rows="2" placeholder="Условия, решения или люди, которые помогали"></textarea>
-      <label class="field-label">Что мешало сильнее всего?</label><textarea v-model="review.obstacle" rows="2" placeholder="Один главный повторяющийся фактор"></textarea>
-      <label class="field-label">Что изменило месяц?</label><textarea v-model="review.courseChange" rows="2" placeholder="Событие, решение или итог, после которого данные стали выглядеть иначе"></textarea>
-      <label class="field-label">Главная цель следующего месяца</label><textarea v-model="review.nextFocus" rows="2" placeholder="Одна цель и понятный результат, который можно заметить"></textarea>
-      <label class="field-label">План если-то</label><textarea v-model="review.ifThenPlan" rows="2" placeholder="Если появится конкретный фактор, то я сделаю конкретное действие"></textarea>
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Сохранить вывод</span>
+          <h2>Итог месяца</h2>
+        </div>
+        <small>{{ formatDate(end, { day: 'numeric', month: 'long' }) }}</small>
+      </div>
+      <label class="field-label">Что чаще всего повторялось?</label
+      ><textarea v-model="review.mainPattern" rows="2" placeholder="Повторяющееся действие, состояние или условие"></textarea>
+      <label class="field-label">Что поддерживало?</label
+      ><textarea v-model="review.support" rows="2" placeholder="Условия, решения или люди, которые помогали"></textarea>
+      <label class="field-label">Что мешало сильнее всего?</label
+      ><textarea v-model="review.obstacle" rows="2" placeholder="Один главный повторяющийся фактор"></textarea>
+      <label class="field-label">Что изменило месяц?</label
+      ><textarea
+        v-model="review.courseChange"
+        rows="2"
+        placeholder="Событие, решение или итог, после которого данные стали выглядеть иначе"
+      ></textarea>
+      <label class="field-label">Главная цель следующего месяца</label
+      ><textarea v-model="review.nextFocus" rows="2" placeholder="Одна цель и понятный результат, который можно заметить"></textarea>
+      <label class="field-label">План если-то</label
+      ><textarea
+        v-model="review.ifThenPlan"
+        rows="2"
+        placeholder="Если появится конкретный фактор, то я сделаю конкретное действие"
+      ></textarea>
       <button class="primary-button" type="button" @click="saveReview">Сохранить итог месяца</button>
     </article>
 
     <article class="dashboard-card">
       <div class="section-heading">
-        <div><span class="eyebrow">Короткий разбор</span><h2>Месячный обзор</h2></div>
+        <div>
+          <span class="eyebrow">Короткий разбор</span>
+          <h2>Месячный обзор</h2>
+        </div>
         <div class="period-actions">
           <button class="secondary-button" type="button" @click="copyPrompt">Скопировать промпт</button>
           <button class="secondary-button" type="button" @click="downloadJson">Скачать данные</button>
@@ -302,7 +448,12 @@ function shiftMonth(offset: number) {
     </article>
 
     <article v-if="observations.length" class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Автоматические наблюдения</span><h2>Что видно по данным</h2></div></div>
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Автоматические наблюдения</span>
+          <h2>Что видно по данным</h2>
+        </div>
+      </div>
       <div class="observation-grid">
         <article v-for="observation in observations" :key="observation.id" class="observation-card">
           <strong>{{ observation.title }}</strong>
@@ -312,24 +463,48 @@ function shiftMonth(offset: number) {
     </article>
 
     <article class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Сон обычных дней</span><h2>Динамика сна</h2></div><small>{{ sleepRegularityText() }}</small></div>
-      <EChartPanel v-if="sleepEntries.length" :option="sleepEnergyOption" :height="320" aria-label="Динамика сна, времени в кровати и энергии" />
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Сон обычных дней</span>
+          <h2>Динамика сна</h2>
+        </div>
+        <small>{{ sleepRegularityText() }}</small>
+      </div>
+      <EChartPanel
+        v-if="sleepEntries.length"
+        :option="sleepEnergyOption"
+        :height="320"
+        aria-label="Динамика сна, времени в кровати и энергии"
+      />
       <div v-else class="empty-chart">Добавь данные о сне — здесь появится динамика.</div>
     </article>
 
     <article v-if="weightEntries.length" class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Вес</span><h2>Измерения и семидневный тренд</h2></div><small>данные по {{ formatDate(chartDates.at(-1) || end, { day: 'numeric', month: 'short' }) }} · особые дни исключены</small></div>
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Вес</span>
+          <h2>Измерения и семидневный тренд</h2>
+        </div>
+        <small>данные по {{ formatDate(chartDates.at(-1) || end, { day: 'numeric', month: 'short' }) }} · особые дни исключены</small>
+      </div>
       <EChartPanel :option="weightOption" :height="280" aria-label="Вес и среднее значение за семь дней" />
     </article>
 
     <article v-if="factors.length" class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Факторы состояния</span><h2>Что повторялось в течение дня</h2></div><span class="count-badge">{{ factors.length }}</span></div>
-      <div class="factor-summary-head">
-        <span>фактор</span><span>дни</span><span>сон: с / без</span><span>энергия: с / без</span>
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Факторы состояния</span>
+          <h2>Что повторялось в течение дня</h2>
+        </div>
+        <span class="count-badge">{{ factors.length }}</span>
       </div>
+      <div class="factor-summary-head"><span>фактор</span><span>дни</span><span>сон: с / без</span><span>энергия: с / без</span></div>
       <div class="factor-summary-list">
         <article v-for="factor in factors" :key="factor.id" class="factor-summary-item">
-          <span class="factor-summary-item__name"><i>{{ factor.icon }}</i>{{ factor.label }}</span>
+          <span class="factor-summary-item__name"
+            ><i>{{ factor.icon }}</i
+            >{{ factor.label }}</span
+          >
           <strong>{{ factor.count }}</strong>
           <small>{{ factorSleepText(factor) }}</small>
           <small>{{ factorEnergyText(factor) }}</small>
@@ -339,46 +514,104 @@ function shiftMonth(offset: number) {
 
     <div class="month-layout">
       <article class="dashboard-card">
-        <div class="section-heading"><div><span class="eyebrow">Сколько дней появлялось</span><h2>Области жизни</h2></div></div>
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Сколько дней появлялось</span>
+            <h2>Области жизни</h2>
+          </div>
+        </div>
         <div class="coverage-list">
           <div v-for="area in activeAreas" :key="area.id" class="coverage-row">
-            <span class="coverage-row__label"><i>{{ area.icon }}</i>{{ area.label }}</span>
-            <div class="coverage-row__track"><span :style="{ width: `${summary.lifeAreaSamples ? ((summary.areaCounts[area.id] ?? 0) / summary.lifeAreaSamples) * 100 : 0}%` }"></span></div>
+            <span class="coverage-row__label"
+              ><i>{{ area.icon }}</i
+              >{{ area.label }}</span
+            >
+            <div class="coverage-row__track">
+              <span
+                :style="{ width: `${summary.lifeAreaSamples ? ((summary.areaCounts[area.id] ?? 0) / summary.lifeAreaSamples) * 100 : 0}%` }"
+              ></span>
+            </div>
             <strong>{{ summary.areaCounts[area.id] ?? 0 }}/{{ summary.lifeAreaSamples }}</strong>
           </div>
         </div>
       </article>
 
       <article class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Завершённые факты</span><h2>Итоги месяца</h2></div><span class="count-badge">{{ results.length }}</span></div>
-        <TransitionGroup v-if="results.length" name="reveal-list" tag="ul" class="compact-results"><li v-for="result in displayedResults" :key="result.id ?? result.createdAt"><span>✓</span><div>{{ result.title }}<small>{{ formatDate(result.date, { day: 'numeric', month: 'short' }) }}</small></div></li></TransitionGroup>
-        <button v-if="results.length > 5" class="secondary-button load-more" type="button" :aria-expanded="showAllResults" @click="showAllResults = !showAllResults">{{ showAllResults ? 'Свернуть' : `Показать все (${results.length})` }}</button>
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Завершённые факты</span>
+            <h2>Итоги месяца</h2>
+          </div>
+          <span class="count-badge">{{ results.length }}</span>
+        </div>
+        <TransitionGroup v-if="results.length" name="reveal-list" tag="ul" class="compact-results"
+          ><li v-for="result in displayedResults" :key="result.id ?? result.createdAt">
+            <span>✓</span>
+            <div>
+              {{ result.title }}<small>{{ formatDate(result.date, { day: 'numeric', month: 'short' }) }}</small>
+            </div>
+          </li></TransitionGroup
+        >
+        <button
+          v-if="results.length > 5"
+          class="secondary-button load-more"
+          type="button"
+          :aria-expanded="showAllResults"
+          @click="showAllResults = !showAllResults"
+        >
+          {{ showAllResults ? 'Свернуть' : `Показать все (${results.length})` }}
+        </button>
         <div v-if="!results.length" class="empty-state empty-state--compact"><p>Пока нет зафиксированных итогов.</p></div>
       </article>
     </div>
 
     <article v-if="actionNotes.length" class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Действия по цели</span><h2>Конкретные действия и подготовка</h2></div><span class="count-badge">{{ actionNotes.length }}</span></div>
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Действия по цели</span>
+          <h2>Конкретные действия и подготовка</h2>
+        </div>
+        <span class="count-badge">{{ actionNotes.length }}</span>
+      </div>
       <div class="note-list note-list--columns">
         <article v-for="entry in actionNotes" :key="entry.date" class="note-item">
           <time>{{ formatDate(entry.date, { day: 'numeric', month: 'short' }) }}</time>
-          <p><strong>{{ actionDirectionLabel(entry.actionDirection) }}</strong><span v-if="entry.focusTitle"><br />Цель: {{ entry.focusTitle }}</span><span v-if="entry.actionNote"><br />{{ entry.actionNote }}</span></p>
+          <p>
+            <strong>{{ actionDirectionLabel(entry.actionDirection) }}</strong
+            ><span v-if="entry.focusTitle"><br />Цель: {{ entry.focusTitle }}</span
+            ><span v-if="entry.actionNote"><br />{{ entry.actionNote }}</span>
+          </p>
         </article>
       </div>
     </article>
 
     <article v-if="lifeEvents.length" class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Важный контекст</span><h2>События месяца</h2></div><span class="count-badge">{{ lifeEvents.length }}</span></div>
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Важный контекст</span>
+          <h2>События месяца</h2>
+        </div>
+        <span class="count-badge">{{ lifeEvents.length }}</span>
+      </div>
       <div class="note-list note-list--columns">
         <article v-for="event in lifeEvents" :key="event.id" class="note-item">
           <time>{{ formatDate(event.date, { day: 'numeric', month: 'short' }) }}</time>
-          <p><strong>{{ event.title }}</strong><span v-if="event.note"><br />{{ event.note }}</span></p>
+          <p>
+            <strong>{{ event.title }}</strong
+            ><span v-if="event.note"><br />{{ event.note }}</span>
+          </p>
         </article>
       </div>
     </article>
 
     <article v-if="contextNotes.length" class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Контекст дня</span><h2>Заметки за месяц</h2></div><span class="count-badge">{{ contextNotes.length }}</span></div>
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Контекст дня</span>
+          <h2>Заметки за месяц</h2>
+        </div>
+        <span class="count-badge">{{ contextNotes.length }}</span>
+      </div>
       <div class="note-list note-list--columns">
         <article v-for="entry in contextNotes" :key="entry.date" class="note-item">
           <time>{{ formatDate(entry.date, { day: 'numeric', month: 'short' }) }}</time>
@@ -388,7 +621,13 @@ function shiftMonth(offset: number) {
     </article>
 
     <article v-if="specialDays.length" class="dashboard-card">
-      <div class="section-heading"><div><span class="eyebrow">Поправка на контекст</span><h2>Особые дни месяца</h2></div><span class="count-badge">{{ specialDays.length }}</span></div>
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Поправка на контекст</span>
+          <h2>Особые дни месяца</h2>
+        </div>
+        <span class="count-badge">{{ specialDays.length }}</span>
+      </div>
       <div class="special-day-list special-day-list--columns">
         <article v-for="entry in specialDays" :key="entry.date" class="special-day-item">
           <time>{{ formatDate(entry.date, { day: 'numeric', month: 'short' }) }}</time>

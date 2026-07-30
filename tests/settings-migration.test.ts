@@ -67,7 +67,9 @@ describe('settings migrations', () => {
 
   it('links an unambiguous legacy experiment metric without guessing a combined metric', () => {
     const energy = normalizeSettings({ experiment: { ...normalizeSettings(undefined).experiment, targetMetric: 'Энергия' } });
-    const combined = normalizeSettings({ experiment: { ...normalizeSettings(undefined).experiment, targetMetric: 'Энергия и качество сна' } });
+    const combined = normalizeSettings({
+      experiment: { ...normalizeSettings(undefined).experiment, targetMetric: 'Энергия и качество сна' },
+    });
 
     expect(energy.experiment).toMatchObject({ targetMetricId: 'energy', minimumMeaningfulChange: 0.5 });
     expect(combined.experiment.targetMetricId).toBeNull();
@@ -80,15 +82,21 @@ describe('settings migrations', () => {
       experiment: { ...defaultExperiment, title: 'Режим', startDate: '22.07.2026', endDate: '2026-07-29' },
       experimentHistory: [
         { ...defaultRecord, id: 'invalid', title: 'Старая запись', startDate: '2026-07-30', endDate: '2026-07-20', completedAt: '' },
-        { ...defaultRecord, id: 'valid', title: 'Спокойный вечер', startDate: '2026-07-01', endDate: '2026-07-07', conclusion: 'Стало легче завершать день', completedAt: '' },
+        {
+          ...defaultRecord,
+          id: 'valid',
+          title: 'Спокойный вечер',
+          startDate: '2026-07-01',
+          endDate: '2026-07-07',
+          conclusion: 'Стало легче завершать день',
+          completedAt: '',
+        },
       ],
     });
 
     expect(settings.experiment.startDate).toBe('');
     expect(settings.experiment.endDate).toBe('2026-07-29');
-    expect(settings.experimentHistory).toEqual([
-      expect.objectContaining({ id: 'valid', title: 'Спокойный вечер' }),
-    ]);
+    expect(settings.experimentHistory).toEqual([expect.objectContaining({ id: 'valid', title: 'Спокойный вечер' })]);
   });
 
   it('moves an active legacy personal area into user options', () => {
@@ -98,11 +106,13 @@ describe('settings migrations', () => {
     });
 
     expect(settings.activeLifeAreas).toEqual(['family', 'english']);
-    expect(settings.customLifeAreaOptions).toContainEqual(expect.objectContaining({
-      id: 'english',
-      label: 'Английский',
-      custom: true,
-    }));
+    expect(settings.customLifeAreaOptions).toContainEqual(
+      expect.objectContaining({
+        id: 'english',
+        label: 'Английский',
+        custom: true,
+      }),
+    );
   });
 
   it('preserves custom activities and hides only known built-in choices', () => {
@@ -116,11 +126,13 @@ describe('settings migrations', () => {
       activitiesRecorded: true,
     });
 
-    expect(settings.customActivityOptions).toContainEqual(expect.objectContaining({
-      id: 'custom:activity:swimming',
-      label: 'Плавание',
-      custom: true,
-    }));
+    expect(settings.customActivityOptions).toContainEqual(
+      expect.objectContaining({
+        id: 'custom:activity:swimming',
+        label: 'Плавание',
+        custom: true,
+      }),
+    );
     expect(settings.hiddenActivityIds).toEqual(['walk']);
     expect(entry.activities).toEqual(['custom:activity:swimming', 'bachata']);
   });

@@ -23,10 +23,12 @@ export function buildReviewCues(
   const summary = summarize(entries, externalCareerIds);
   const factors = factorSummaries(entries, factorOptions);
   const cues: ReviewCue[] = [];
-  const enoughEntries = period === 'week'
-    ? summary.ordinaryCoveredEntriesCount >= 4 && summary.ordinaryCoreEntriesCount >= 2
-    : summary.ordinaryCoveredEntriesCount >= 12 && summary.ordinaryCoreEntriesCount >= 6;
-  const minTarget = period === 'week' ? '4 заполненных дня, из них 2 с основными полями' : '12 заполненных дней, из них 6 с основными полями';
+  const enoughEntries =
+    period === 'week'
+      ? summary.ordinaryCoveredEntriesCount >= 4 && summary.ordinaryCoreEntriesCount >= 2
+      : summary.ordinaryCoveredEntriesCount >= 12 && summary.ordinaryCoreEntriesCount >= 6;
+  const minTarget =
+    period === 'week' ? '4 заполненных дня, из них 2 с основными полями' : '12 заполненных дней, из них 6 с основными полями';
 
   cues.push({
     id: 'coverage',
@@ -37,7 +39,9 @@ export function buildReviewCues(
     tone: enoughEntries ? 'good' : 'warning',
   });
 
-  const shortSleepDays = entries.filter((entry) => entry.specialDay === null && entry.sleepMinutes !== null && entry.sleepMinutes < 420).length;
+  const shortSleepDays = entries.filter(
+    (entry) => entry.specialDay === null && entry.sleepMinutes !== null && entry.sleepMinutes < 420,
+  ).length;
   if (shortSleepDays >= 2) {
     cues.push({
       id: 'short-sleep',
@@ -117,9 +121,10 @@ export function buildReviewCues(
     cues.push({
       id: 'nutrition',
       title: summary.nutritionBlockDays >= 2 ? 'Питание мешало цели' : 'Питание поддерживало цель',
-      text: summary.nutritionBlockDays >= 2
-        ? `${summary.nutritionBlockDays} ${plural(summary.nutritionBlockDays, 'день', 'дня', 'дней')} питание отмечено как мешающее цели. Лучше искать один повторяющийся сценарий, а не менять всё сразу.`
-        : `${summary.nutritionSupportDays} ${plural(summary.nutritionSupportDays, 'день', 'дня', 'дней')} питание поддерживало цель. Это стоит сохранить как рабочее условие.`,
+      text:
+        summary.nutritionBlockDays >= 2
+          ? `${summary.nutritionBlockDays} ${plural(summary.nutritionBlockDays, 'день', 'дня', 'дней')} питание отмечено как мешающее цели. Лучше искать один повторяющийся сценарий, а не менять всё сразу.`
+          : `${summary.nutritionSupportDays} ${plural(summary.nutritionSupportDays, 'день', 'дня', 'дней')} питание поддерживало цель. Это стоит сохранить как рабочее условие.`,
       tone: summary.nutritionBlockDays >= 2 ? 'warning' : 'good',
     });
   }
@@ -157,9 +162,10 @@ export function buildRangeReviewCues(
   const cues: ReviewCue[] = [];
   const coveredEntries = entries.filter((entry) => dataCoverageLevel(entry) > 0);
   const monthsWithData = new Set(coveredEntries.map((entry) => entry.date.slice(0, 7))).size;
-  const enoughEntries = summary.ordinaryCoveredEntriesCount >= rangeMonths * 8
-    && summary.ordinaryCoreEntriesCount >= rangeMonths * 4
-    && monthsWithData >= Math.max(2, rangeMonths - 1);
+  const enoughEntries =
+    summary.ordinaryCoveredEntriesCount >= rangeMonths * 8 &&
+    summary.ordinaryCoreEntriesCount >= rangeMonths * 4 &&
+    monthsWithData >= Math.max(2, rangeMonths - 1);
 
   cues.push({
     id: 'coverage',
@@ -184,21 +190,46 @@ export function buildRangeReviewCues(
     const preparationRate = ratioPercent(summary.preparationDays, summary.actionDirectionSamples) ?? 0;
     const driftRate = ratioPercent(summary.driftDays, summary.actionDirectionSamples) ?? 0;
     if (preparationRate >= 60 && externalRate <= 20) {
-      cues.push({ id: 'direction-preparation', title: 'Подготовка редко переходила в конкретные действия', text: `Подготовка — ${preparationRate}% отмеченных дней, конкретные действия — ${externalRate}%. Проверь, что может привести к заметному результату.`, tone: 'warning' });
+      cues.push({
+        id: 'direction-preparation',
+        title: 'Подготовка редко переходила в конкретные действия',
+        text: `Подготовка — ${preparationRate}% отмеченных дней, конкретные действия — ${externalRate}%. Проверь, что может привести к заметному результату.`,
+        tone: 'warning',
+      });
     } else if (externalRate >= 35) {
-      cues.push({ id: 'direction-external', title: 'Конкретные действия сохранялись', text: `Конкретные действия появлялись в ${externalRate}% дней с отметкой по текущей цели. Сверь это с итогами периода.`, tone: 'good' });
+      cues.push({
+        id: 'direction-external',
+        title: 'Конкретные действия сохранялись',
+        text: `Конкретные действия появлялись в ${externalRate}% дней с отметкой по текущей цели. Сверь это с итогами периода.`,
+        tone: 'good',
+      });
     }
     if (driftRate >= 30) {
-      cues.push({ id: 'direction-drift', title: 'Другие занятия часто вытесняли цель', text: `${driftRate}% дней с отметкой по текущей цели были заняты другим. Ищи повторяющееся условие, а не одну причину всего периода.`, tone: 'warning' });
+      cues.push({
+        id: 'direction-drift',
+        title: 'Другие занятия часто вытесняли цель',
+        text: `${driftRate}% дней с отметкой по текущей цели были заняты другим. Ищи повторяющееся условие, а не одну причину всего периода.`,
+        tone: 'warning',
+      });
     }
   }
 
   if (results.length) {
-    cues.push({ id: 'results', title: 'Есть завершённые итоги', text: `${results.length} ${plural(results.length, 'итог', 'итога', 'итогов')} за период. Сопоставь их с реальными шагами, а не только с занятостью.`, tone: 'good' });
+    cues.push({
+      id: 'results',
+      title: 'Есть завершённые итоги',
+      text: `${results.length} ${plural(results.length, 'итог', 'итога', 'итогов')} за период. Сопоставь их с реальными шагами, а не только с занятостью.`,
+      tone: 'good',
+    });
   }
 
   if (summary.specialDays || lifeEvents.length) {
-    cues.push({ id: 'context', title: 'Динамика менялась вместе с контекстом', text: `${summary.specialDays} особых ${plural(summary.specialDays, 'день', 'дня', 'дней')} и ${lifeEvents.length} ${plural(lifeEvents.length, 'важное событие', 'важных события', 'важных событий')}. Они исключены из базовых средних состояния.`, tone: 'neutral' });
+    cues.push({
+      id: 'context',
+      title: 'Динамика менялась вместе с контекстом',
+      text: `${summary.specialDays} особых ${plural(summary.specialDays, 'день', 'дня', 'дней')} и ${lifeEvents.length} ${plural(lifeEvents.length, 'важное событие', 'важных события', 'важных событий')}. Они исключены из базовых средних состояния.`,
+      tone: 'neutral',
+    });
   }
 
   return limitCues(cues, ['coverage', 'results', 'context']);

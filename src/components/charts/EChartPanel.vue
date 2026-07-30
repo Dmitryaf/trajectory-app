@@ -2,20 +2,42 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { init, use } from 'echarts/core';
 import { BarChart, HeatmapChart, LineChart, ScatterChart } from 'echarts/charts';
-import { CalendarComponent, GridComponent, LegendComponent, MarkLineComponent, TooltipComponent, VisualMapComponent } from 'echarts/components';
+import {
+  CalendarComponent,
+  GridComponent,
+  LegendComponent,
+  MarkLineComponent,
+  TooltipComponent,
+  VisualMapComponent,
+} from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import type { ECharts, EChartsCoreOption } from 'echarts/core';
 
-use([BarChart, HeatmapChart, LineChart, ScatterChart, CalendarComponent, GridComponent, LegendComponent, MarkLineComponent, TooltipComponent, VisualMapComponent, CanvasRenderer]);
+use([
+  BarChart,
+  HeatmapChart,
+  LineChart,
+  ScatterChart,
+  CalendarComponent,
+  GridComponent,
+  LegendComponent,
+  MarkLineComponent,
+  TooltipComponent,
+  VisualMapComponent,
+  CanvasRenderer,
+]);
 
-const props = withDefaults(defineProps<{
-  option: EChartsCoreOption;
-  height?: number;
-  ariaLabel?: string;
-}>(), {
-  height: 300,
-  ariaLabel: 'График',
-});
+const props = withDefaults(
+  defineProps<{
+    option: EChartsCoreOption;
+    height?: number;
+    ariaLabel?: string;
+  }>(),
+  {
+    height: 300,
+    ariaLabel: 'График',
+  },
+);
 
 const chartEl = ref<HTMLDivElement>();
 let chart: ECharts | null = null;
@@ -40,7 +62,10 @@ onMounted(async () => {
 });
 
 watch(() => props.option, render, { deep: true });
-watch(() => props.height, () => nextTick(resize));
+watch(
+  () => props.height,
+  () => nextTick(resize),
+);
 
 onBeforeUnmount(() => {
   resizeObserver?.disconnect();
@@ -49,11 +74,5 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div
-    ref="chartEl"
-    class="echart-panel"
-    :style="{ height: `${height}px` }"
-    role="img"
-    :aria-label="ariaLabel"
-  ></div>
+  <div ref="chartEl" class="echart-panel" :style="{ height: `${height}px` }" role="img" :aria-label="ariaLabel"></div>
 </template>

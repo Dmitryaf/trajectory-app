@@ -1,7 +1,24 @@
-import { buildObservations, entriesForPeriod, factorSummaries, resultsForPeriod, summarize, weekSummaryText } from '../../services/analytics';
+import {
+  buildObservations,
+  entriesForPeriod,
+  factorSummaries,
+  resultsForPeriod,
+  summarize,
+  weekSummaryText,
+} from '../../services/analytics';
 import { buildExperimentSummary, type ExperimentSummary } from '../analytics/experimentComparison';
 import { experimentDecisionLabel } from '../experiments/model';
-import { addDays, addMonths, endOfMonth, endOfWeek, formatDate, formatMinutes, startOfMonth, startOfWeek, todayKey } from '../../services/dates';
+import {
+  addDays,
+  addMonths,
+  endOfMonth,
+  endOfWeek,
+  formatDate,
+  formatMinutes,
+  startOfMonth,
+  startOfWeek,
+  todayKey,
+} from '../../services/dates';
 import {
   actionDirectionOptions,
   activityOptions,
@@ -73,7 +90,11 @@ export type AiReportSourceData = {
   settings: AppSettings;
 };
 
-export function buildAiReportPayload(period: Exclude<AiReportPeriod, 'range'>, anchor: string, source: AiReportSourceData): AiReportPayload {
+export function buildAiReportPayload(
+  period: Exclude<AiReportPeriod, 'range'>,
+  anchor: string,
+  source: AiReportSourceData,
+): AiReportPayload {
   const start = period === 'week' ? startOfWeek(anchor) : startOfMonth(anchor);
   const end = period === 'week' ? endOfWeek(anchor) : endOfMonth(anchor);
   const dataThrough = end < todayKey() ? end : todayKey();
@@ -81,7 +102,8 @@ export function buildAiReportPayload(period: Exclude<AiReportPeriod, 'range'>, a
     weeklyReview: period === 'week' ? source.reviews.find((review) => review.weekStart === start) : undefined,
     previousWeeklyReview: period === 'week' ? source.reviews.find((review) => review.weekStart === addDays(start, -7)) : undefined,
     monthlyReview: period === 'month' ? source.monthlyReviews.find((review) => review.monthStart === start) : undefined,
-    previousMonthlyReview: period === 'month' ? source.monthlyReviews.find((review) => review.monthStart === addMonths(start, -1)) : undefined,
+    previousMonthlyReview:
+      period === 'month' ? source.monthlyReviews.find((review) => review.monthStart === addMonths(start, -1)) : undefined,
   });
 }
 
@@ -90,7 +112,9 @@ export function buildAiReportRangePayload(rangeMonths: number, anchor: string, s
   const end = anchor < todayKey() ? anchor : todayKey();
   return buildPayload('range', start, end, end, source, {
     rangeMonths,
-    monthlyReviews: source.monthlyReviews.filter((review) => review.monthStart >= start && review.monthStart <= end).sort((a, b) => a.monthStart.localeCompare(b.monthStart)),
+    monthlyReviews: source.monthlyReviews
+      .filter((review) => review.monthStart >= start && review.monthStart <= end)
+      .sort((a, b) => a.monthStart.localeCompare(b.monthStart)),
   });
 }
 
@@ -105,7 +129,9 @@ function buildPayload(
   const entries = dataThrough >= start ? entriesForPeriod(source.entries, start, dataThrough) : [];
   const careerItems = [...careerOptions, ...source.settings.customCareerOptions];
   const factorItems = [...contextFactorOptions, ...source.settings.customContextFactorOptions];
-  const externalCareerIds = careerItems.filter((option) => option.countsAsExternal || ['external', 'interview', 'result'].includes(option.id)).map((option) => option.id);
+  const externalCareerIds = careerItems
+    .filter((option) => option.countsAsExternal || ['external', 'interview', 'result'].includes(option.id))
+    .map((option) => option.id);
 
   return {
     app: 'trajectory',
@@ -124,7 +150,9 @@ function buildPayload(
       .map((record) => ({ record: { ...record }, summary: buildExperimentSummary(source.entries, record) })),
     entries,
     results: dataThrough >= start ? resultsForPeriod(source.results, start, dataThrough) : [],
-    lifeEvents: source.lifeEvents.filter((event) => event.date >= start && event.date <= dataThrough).sort((a, b) => b.date.localeCompare(a.date)),
+    lifeEvents: source.lifeEvents
+      .filter((event) => event.date >= start && event.date <= dataThrough)
+      .sort((a, b) => b.date.localeCompare(a.date)),
     labels: buildLabelDictionary(source.settings),
     settingsSnapshot: {
       activeDailyBlocks: source.settings.activeDailyBlocks,
@@ -141,7 +169,13 @@ function buildPayload(
 }
 
 function buildLabelDictionary(settings: AppSettings) {
-  const copyOptions = <T extends string>(options: Array<{ id: T; label: string; countsAsExternal?: boolean; archived?: boolean }>) => options.map(({ id, label, countsAsExternal, archived }) => ({ id, label, ...(countsAsExternal ? { countsAsExternal: true } : {}), ...(archived ? { archived: true } : {}) }));
+  const copyOptions = <T extends string>(options: Array<{ id: T; label: string; countsAsExternal?: boolean; archived?: boolean }>) =>
+    options.map(({ id, label, countsAsExternal, archived }) => ({
+      id,
+      label,
+      ...(countsAsExternal ? { countsAsExternal: true } : {}),
+      ...(archived ? { archived: true } : {}),
+    }));
   return {
     career: copyOptions([...careerOptions, ...settings.customCareerOptions]),
     lifeAreas: copyOptions([...lifeAreaOptions, ...settings.customLifeAreaOptions]),
@@ -158,11 +192,12 @@ function buildLabelDictionary(settings: AppSettings) {
 export function buildAiReportPrompt(payload: AiReportPayload, settings: AppSettings): string {
   const areaOptions = [...lifeAreaOptions, ...settings.customLifeAreaOptions];
   const summaryText = payload.period === 'week' ? weekSummaryText(payload.summary, settings.activeLifeAreas, areaOptions) : '';
-  const periodTitle = payload.period === 'week'
-    ? `неделю ${formatDate(payload.start, { day: 'numeric', month: 'short' })} — ${formatDate(payload.end, { day: 'numeric', month: 'short' })}`
-    : payload.period === 'month'
-      ? `месяц ${formatDate(payload.start, { month: 'long', year: 'numeric' })}`
-      : `${payload.rangeMonths ?? 'несколько'} месяцев: ${formatDate(payload.start, { month: 'short', year: 'numeric' })} — ${formatDate(payload.end, { month: 'short', year: 'numeric' })}`;
+  const periodTitle =
+    payload.period === 'week'
+      ? `неделю ${formatDate(payload.start, { day: 'numeric', month: 'short' })} — ${formatDate(payload.end, { day: 'numeric', month: 'short' })}`
+      : payload.period === 'month'
+        ? `месяц ${formatDate(payload.start, { month: 'long', year: 'numeric' })}`
+        : `${payload.rangeMonths ?? 'несколько'} месяцев: ${formatDate(payload.start, { month: 'short', year: 'numeric' })} — ${formatDate(payload.end, { month: 'short', year: 'numeric' })}`;
 
   const sections = buildReadableSections(payload);
 
@@ -192,7 +227,9 @@ export function buildAiReportPrompt(payload: AiReportPayload, settings: AppSetti
     '',
     'ДАННЫЕ ДЛЯ АНАЛИЗА',
     ...sections,
-  ].filter(Boolean).join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
 
   return constrainPrompt(prompt);
 }
@@ -204,7 +241,11 @@ function buildReadableSections(payload: AiReportPayload): string[] {
   appendSection(lines, 'Сводка', [
     `Записей с данными: ${summary.coveredEntriesCount}; обычных дней: ${summary.ordinaryCoveredEntriesCount}; необычных дней: ${summary.specialDays}.`,
     metricLine('Сон', summary.averageSleep === null ? null : formatMinutes(Math.round(summary.averageSleep)), summary.sleepSamples),
-    metricLine('Время в кровати', summary.averageTimeInBed === null ? null : formatMinutes(Math.round(summary.averageTimeInBed)), summary.timeInBedSamples),
+    metricLine(
+      'Время в кровати',
+      summary.averageTimeInBed === null ? null : formatMinutes(Math.round(summary.averageTimeInBed)),
+      summary.timeInBedSamples,
+    ),
     metricLine('Энергия', formatDecimal(summary.averageEnergy), summary.energySamples, '/ 5'),
     metricLine('Качество сна', formatDecimal(summary.averageSleepQuality), summary.sleepQualitySamples, '/ 5'),
     schemaCoverageLine(payload.entries),
@@ -218,15 +259,25 @@ function buildReadableSections(payload: AiReportPayload): string[] {
   appendSection(lines, 'Текущие определения', [
     `Блоки, доступные в ежедневной записи: ${payload.settingsSnapshot.activeDailyBlocks.length ? payload.settingsSnapshot.activeDailyBlocks.map((id) => labelFor(dailyBlockOptions, id)).join(', ') : 'все необязательные блоки скрыты'}.`,
     payload.settingsSnapshot.activeFocusTitle ? `Текущая цель: ${cleanText(payload.settingsSnapshot.activeFocusTitle)}.` : '',
-    payload.settingsSnapshot.focusOutcomeCriterion ? `Наблюдаемый результат цели: ${cleanText(payload.settingsSnapshot.focusOutcomeCriterion)}.` : '',
+    payload.settingsSnapshot.focusOutcomeCriterion
+      ? `Наблюдаемый результат цели: ${cleanText(payload.settingsSnapshot.focusOutcomeCriterion)}.`
+      : '',
     payload.settingsSnapshot.focusReviewDate ? `Цель нужно пересмотреть ${payload.settingsSnapshot.focusReviewDate}.` : '',
-    payload.settingsSnapshot.externalEvidenceCriterion ? `Что считается конкретным действием: ${cleanText(payload.settingsSnapshot.externalEvidenceCriterion)}.` : '',
-    payload.settingsSnapshot.nutritionGoalCriterion ? `Правила питания: ${cleanText(payload.settingsSnapshot.nutritionGoalCriterion)}.` : '',
+    payload.settingsSnapshot.externalEvidenceCriterion
+      ? `Что считается конкретным действием: ${cleanText(payload.settingsSnapshot.externalEvidenceCriterion)}.`
+      : '',
+    payload.settingsSnapshot.nutritionGoalCriterion
+      ? `Правила питания: ${cleanText(payload.settingsSnapshot.nutritionGoalCriterion)}.`
+      : '',
     formatExperiment(payload.settingsSnapshot.experiment),
     formatExperimentSummary(payload.experimentSummary),
   ]);
 
-  appendSection(lines, 'Автоматические наблюдения приложения', payload.observations.map((item) => `${item.title}: ${item.text}`));
+  appendSection(
+    lines,
+    'Автоматические наблюдения приложения',
+    payload.observations.map((item) => `${item.title}: ${item.text}`),
+  );
   appendSection(lines, 'Повторяющиеся факторы дня', payload.factorSummaries.map(formatFactorSummary));
   appendSection(lines, 'Сохранённые обзоры', limitedValues(reviewLines(payload), 18, 1_600));
   appendSection(
@@ -234,16 +285,44 @@ function buildReadableSections(payload: AiReportPayload): string[] {
     payload.period === 'range' ? 'Покрытие по месяцам' : 'Записи по дням',
     payload.period === 'range'
       ? monthlyEntryLines(payload)
-      : limitedValues(payload.entries.map((entry) => formatEntry(entry, payload)), payload.period === 'week' ? 7 : 31, 1_600),
+      : limitedValues(
+          payload.entries.map((entry) => formatEntry(entry, payload)),
+          payload.period === 'week' ? 7 : 31,
+          1_600,
+        ),
   );
-  appendSection(lines, 'Завершённые итоги', limitedValues(payload.results.map((result) => {
-    return `${result.date} — ${labelFor(payload.labels.resultAreas, result.area)}: ${cleanText(result.title)}`;
-  }), payload.period === 'range' ? 80 : 60, payload.period === 'range' ? 400 : 800));
-  appendSection(lines, 'События и инсайты', limitedValues(payload.lifeEvents.map((event) => {
-    const note = cleanText(event.note);
-    return `${event.date} — ${labelFor(payload.labels.eventTypes, event.type)}: ${cleanText(event.title)}${note ? `; ${note}` : ''}`;
-  }), payload.period === 'range' ? 60 : 60, payload.period === 'range' ? 600 : 1_000));
-  appendSection(lines, 'Завершённые эксперименты', limitedValues(payload.experimentHistory.map(({ record, summary }) => formatCompletedExperiment(record, summary)), 24, 1_600));
+  appendSection(
+    lines,
+    'Завершённые итоги',
+    limitedValues(
+      payload.results.map((result) => {
+        return `${result.date} — ${labelFor(payload.labels.resultAreas, result.area)}: ${cleanText(result.title)}`;
+      }),
+      payload.period === 'range' ? 80 : 60,
+      payload.period === 'range' ? 400 : 800,
+    ),
+  );
+  appendSection(
+    lines,
+    'События и инсайты',
+    limitedValues(
+      payload.lifeEvents.map((event) => {
+        const note = cleanText(event.note);
+        return `${event.date} — ${labelFor(payload.labels.eventTypes, event.type)}: ${cleanText(event.title)}${note ? `; ${note}` : ''}`;
+      }),
+      payload.period === 'range' ? 60 : 60,
+      payload.period === 'range' ? 600 : 1_000,
+    ),
+  );
+  appendSection(
+    lines,
+    'Завершённые эксперименты',
+    limitedValues(
+      payload.experimentHistory.map(({ record, summary }) => formatCompletedExperiment(record, summary)),
+      24,
+      1_600,
+    ),
+  );
 
   return lines;
 }
@@ -255,18 +334,22 @@ function monthlyEntryLines(payload: AiReportPayload): string[] {
     byMonth.set(month, [...(byMonth.get(month) ?? []), entry]);
   }
 
-  return [...byMonth.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([month, entries]) => {
-    const summary = summarize(entries);
-    const values = [
-      `${summary.coveredEntriesCount} записей`,
-      summary.averageSleep === null ? '' : `сон ${formatMinutes(Math.round(summary.averageSleep))} (${summary.sleepSamples})`,
-      summary.averageEnergy === null ? '' : `энергия ${formatDecimal(summary.averageEnergy)}/5 (${summary.energySamples})`,
-      summary.averageSleepQuality === null ? '' : `качество сна ${formatDecimal(summary.averageSleepQuality)}/5 (${summary.sleepQualitySamples})`,
-      summary.averageWeightKg === null ? '' : `вес ${formatDecimal(summary.averageWeightKg)} кг (${summary.weightSamples})`,
-      `действия по цели ${summary.externalActionDays}/${summary.actionDirectionSamples}`,
-    ].filter(Boolean);
-    return `${formatDate(`${month}-01`, { month: 'long', year: 'numeric' })}: ${values.join('; ')}.`;
-  });
+  return [...byMonth.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([month, entries]) => {
+      const summary = summarize(entries);
+      const values = [
+        `${summary.coveredEntriesCount} записей`,
+        summary.averageSleep === null ? '' : `сон ${formatMinutes(Math.round(summary.averageSleep))} (${summary.sleepSamples})`,
+        summary.averageEnergy === null ? '' : `энергия ${formatDecimal(summary.averageEnergy)}/5 (${summary.energySamples})`,
+        summary.averageSleepQuality === null
+          ? ''
+          : `качество сна ${formatDecimal(summary.averageSleepQuality)}/5 (${summary.sleepQualitySamples})`,
+        summary.averageWeightKg === null ? '' : `вес ${formatDecimal(summary.averageWeightKg)} кг (${summary.weightSamples})`,
+        `действия по цели ${summary.externalActionDays}/${summary.actionDirectionSamples}`,
+      ].filter(Boolean);
+      return `${formatDate(`${month}-01`, { month: 'long', year: 'numeric' })}: ${values.join('; ')}.`;
+    });
 }
 
 function limitedValues(values: string[], maxItems: number, maxLineLength: number): string[] {
@@ -350,17 +433,29 @@ function formatEntry(entry: DailyEntry, payload: AiReportPayload): string {
     values.push(`условия дня: ${factors.length ? factors.join(', ') : 'ничего из списка'}`);
   }
   if (cleanText(entry.contextNote)) values.push(`контекст: ${cleanText(entry.contextNote)}`);
-  if (entry.specialDay) values.push(`необычный день: ${labelFor(payload.labels.specialDays, entry.specialDay)}${entry.specialDayNote ? ` (${cleanText(entry.specialDayNote)})` : ''}`);
+  if (entry.specialDay)
+    values.push(
+      `необычный день: ${labelFor(payload.labels.specialDays, entry.specialDay)}${entry.specialDayNote ? ` (${cleanText(entry.specialDayNote)})` : ''}`,
+    );
   const careerStates = entry.careerStates.length ? entry.careerStates : entry.careerState ? [entry.careerState] : [];
-  if (dailyFieldWasRecorded(entry, 'careerStates')) values.push(`карьера: ${careerStates.length ? careerStates.map((id) => labelFor(payload.labels.career, id)).join(', ') : 'действий не было'}`);
-  if (dailyFieldWasRecorded(entry, 'actionDirection')) values.push(entry.actionDirection
-    ? `по цели: ${labelFor(payload.labels.actionDirections, entry.actionDirection)}${entry.actionNote ? ` (${cleanText(entry.actionNote)})` : ''}`
-    : 'по цели: действий не было');
+  if (dailyFieldWasRecorded(entry, 'careerStates'))
+    values.push(
+      `карьера: ${careerStates.length ? careerStates.map((id) => labelFor(payload.labels.career, id)).join(', ') : 'действий не было'}`,
+    );
+  if (dailyFieldWasRecorded(entry, 'actionDirection'))
+    values.push(
+      entry.actionDirection
+        ? `по цели: ${labelFor(payload.labels.actionDirections, entry.actionDirection)}${entry.actionNote ? ` (${cleanText(entry.actionNote)})` : ''}`
+        : 'по цели: действий не было',
+    );
   if (dailyFieldWasRecorded(entry, 'activities')) {
     const activities = entry.activities.map((id) => labelFor(payload.labels.activities, id));
     values.push(`активность: ${activities.length ? activities.join(', ') : 'не было'}`);
   }
-  if (entry.nutritionState) values.push(`питание: ${labelFor(payload.labels.nutrition, entry.nutritionState)}${entry.nutritionNote ? ` (${cleanText(entry.nutritionNote)})` : ''}`);
+  if (entry.nutritionState)
+    values.push(
+      `питание: ${labelFor(payload.labels.nutrition, entry.nutritionState)}${entry.nutritionNote ? ` (${cleanText(entry.nutritionNote)})` : ''}`,
+    );
   if (entry.weightKg !== null) values.push(`вес ${formatDecimal(entry.weightKg)} кг`);
   if (dailyFieldWasRecorded(entry, 'lifeAreas')) {
     const areas = entry.lifeAreas.map((id) => labelFor(payload.labels.lifeAreas, id));
@@ -374,10 +469,14 @@ function formatEntry(entry: DailyEntry, payload: AiReportPayload): string {
 function formatFactorSummary(factor: AiReportPayload['factorSummaries'][number]): string {
   const values = [`${factor.label}: ${factor.count} дн.`];
   if (factor.sleepSamples || factor.sleepSamplesWithout) {
-    values.push(`сон с фактором ${factor.averageSleep === null ? 'нет данных' : formatMinutes(Math.round(factor.averageSleep))} (${factor.sleepSamples}), без него ${factor.averageSleepWithout === null ? 'нет данных' : formatMinutes(Math.round(factor.averageSleepWithout))} (${factor.sleepSamplesWithout})`);
+    values.push(
+      `сон с фактором ${factor.averageSleep === null ? 'нет данных' : formatMinutes(Math.round(factor.averageSleep))} (${factor.sleepSamples}), без него ${factor.averageSleepWithout === null ? 'нет данных' : formatMinutes(Math.round(factor.averageSleepWithout))} (${factor.sleepSamplesWithout})`,
+    );
   }
   if (factor.energySamples || factor.energySamplesWithout) {
-    values.push(`энергия с фактором ${formatDecimal(factor.averageEnergy) ?? 'нет данных'} (${factor.energySamples}), без него ${formatDecimal(factor.averageEnergyWithout) ?? 'нет данных'} (${factor.energySamplesWithout})`);
+    values.push(
+      `энергия с фактором ${formatDecimal(factor.averageEnergy) ?? 'нет данных'} (${factor.energySamples}), без него ${formatDecimal(factor.averageEnergyWithout) ?? 'нет данных'} (${factor.energySamplesWithout})`,
+    );
   }
   return values.join('; ');
 }
@@ -386,14 +485,18 @@ function formatExperiment(experiment: AppSettings['experiment']): string {
   if (!experiment.active && !cleanText(experiment.title)) return '';
   const values = [cleanText(experiment.title) || 'без названия'];
   if (cleanText(experiment.hypothesis)) values.push(`что пользователь хочет проверить: ${cleanText(experiment.hypothesis)}`);
-  if (experiment.startDate || experiment.endDate) values.push(`даты: ${experiment.startDate || 'не указано'} — ${experiment.endDate || 'не указано'}`);
+  if (experiment.startDate || experiment.endDate)
+    values.push(`даты: ${experiment.startDate || 'не указано'} — ${experiment.endDate || 'не указано'}`);
   if (cleanText(experiment.conclusion)) values.push(`итог: ${cleanText(experiment.conclusion)}`);
   return `Эксперимент: ${values.join('; ')}.`;
 }
 
 function formatExperimentSummary(summary: ExperimentSummary | null): string {
   if (!summary) return '';
-  const metrics = summary.metrics.map((metric) => `${metric.label}: до ${formatExperimentMetricValue(metric.baselineAverage, metric.id)} (${metric.baselineSamples}), во время ${formatExperimentMetricValue(metric.experimentAverage, metric.id)} (${metric.experimentSamples})`);
+  const metrics = summary.metrics.map(
+    (metric) =>
+      `${metric.label}: до ${formatExperimentMetricValue(metric.baselineAverage, metric.id)} (${metric.baselineSamples}), во время ${formatExperimentMetricValue(metric.experimentAverage, metric.id)} (${metric.experimentSamples})`,
+  );
   return `Сводка эксперимента: условие выполнено в ${summary.adherenceCompletedDays} из ${summary.adherenceMarkedDays} отмеченных дней, не выполнено в ${summary.adherenceNotCompletedDays}, без отметки — ${summary.adherenceUnmarkedDays}; ${metrics.length ? metrics.join('; ') : 'сопоставимых числовых данных нет'}. Это фактическая сводка, а не автоматический вывод о результате или причине.`;
 }
 

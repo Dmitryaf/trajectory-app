@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { nextTick, onMounted, ref, watch } from 'vue';
 
-const props = withDefaults(defineProps<{
-  modelValue: string;
-  rows?: number;
-  maxLength?: number;
-  placeholder?: string;
-}>(), {
-  rows: 3,
-  maxLength: 2000,
-  placeholder: '',
-});
+const props = withDefaults(
+  defineProps<{
+    modelValue: string;
+    rows?: number;
+    maxLength?: number;
+    placeholder?: string;
+  }>(),
+  {
+    rows: 3,
+    maxLength: 2000,
+    placeholder: '',
+  },
+);
 
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>();
 const field = ref<HTMLTextAreaElement>();
@@ -30,7 +33,10 @@ function update(event: Event) {
   resize();
 }
 
-watch(() => props.modelValue, () => nextTick(resize));
+watch(
+  () => props.modelValue,
+  () => nextTick(resize),
+);
 onMounted(resize);
 </script>
 

@@ -20,14 +20,14 @@ vi.mock('../src/services/notifications', () => ({
   notifyError: vi.fn(),
   notifyInfo: vi.fn(),
   notifySaved: vi.fn(),
-  notifyUnknownError: vi.fn()
+  notifyUnknownError: vi.fn(),
 }));
 
 enableAutoUnmount(afterEach);
 
 const routerLinkStub = {
   props: ['to'],
-  template: '<a :href="to"><slot /></a>'
+  template: '<a :href="to"><slot /></a>',
 };
 
 function createStore() {
@@ -63,7 +63,7 @@ describe('daily entry scenario', () => {
       return entry;
     });
     const wrapper = mount(TodayView, {
-      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } }
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
     });
 
     expect(wrapper.get('[aria-label="Дата записи"]').attributes('max')).toBe('2026-07-21');
@@ -72,8 +72,16 @@ describe('daily entry scenario', () => {
     const directionCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Действия по текущей цели');
     expect(directionCard?.findAll('.chip').map((chip) => chip.text())).not.toContain('Восстановление');
     const movementCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Физическая активность');
-    expect(movementCard?.findAll('.chip').map((chip) => chip.text())).toEqual(['→ Прогулка', '△ Тренировка', '○ Восстановление', '♪ Бачата']);
-    await movementCard!.findAll('.chip').find((chip) => chip.text().includes('Бачата'))!.trigger('click');
+    expect(movementCard?.findAll('.chip').map((chip) => chip.text())).toEqual([
+      '→ Прогулка',
+      '△ Тренировка',
+      '○ Восстановление',
+      '♪ Бачата',
+    ]);
+    await movementCard!
+      .findAll('.chip')
+      .find((chip) => chip.text().includes('Бачата'))!
+      .trigger('click');
     const lifeAreaCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Области жизни');
     expect(lifeAreaCard?.text()).not.toContain('Английский');
 
@@ -130,30 +138,34 @@ describe('daily entry scenario', () => {
     await wrapper.get('form').trigger('submit');
     await flushPromises();
 
-    expect(saveEntry).toHaveBeenCalledWith(expect.objectContaining({
-      careerStates: [],
-      actionDirection: null,
-      recordedFields: expect.arrayContaining(['careerStates', 'actionDirection']),
-    }));
+    expect(saveEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        careerStates: [],
+        actionDirection: null,
+        recordedFields: expect.arrayContaining(['careerStates', 'actionDirection']),
+      }),
+    );
   });
 
   it('hides inactive blocks while preserving values in an existing entry', async () => {
     const { pinia, store } = createStore();
     store.settings.activeDailyBlocks = [];
-    store.dailyEntries = [{
-      ...emptyDailyEntry('2026-07-21'),
-      bedtime: '23:40',
-      wakeTime: '07:30',
-      sleepMinutes: 600,
-      timeInBedMinutes: 470,
-      nutritionState: 'supports_goal'
-    }];
+    store.dailyEntries = [
+      {
+        ...emptyDailyEntry('2026-07-21'),
+        bedtime: '23:40',
+        wakeTime: '07:30',
+        sleepMinutes: 600,
+        timeInBedMinutes: 470,
+        nutritionState: 'supports_goal',
+      },
+    ];
     const saveEntry = vi.spyOn(store, 'saveEntry').mockImplementation(async (entry) => {
       store.dailyEntries = [entry];
       return entry;
     });
     const wrapper = mount(TodayView, {
-      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } }
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
     });
 
     const headings = wrapper.findAll('.form-card h2').map((heading) => heading.text());
@@ -168,20 +180,22 @@ describe('daily entry scenario', () => {
     await wrapper.get('form').trigger('submit');
     await flushPromises();
 
-    expect(saveEntry).toHaveBeenCalledWith(expect.objectContaining({
-      bedtime: '23:40',
-      sleepMinutes: 600,
-      timeInBedMinutes: 470,
-      nutritionState: 'supports_goal',
-      importantFact: 'Обновил только общий факт'
-    }));
+    expect(saveEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bedtime: '23:40',
+        sleepMinutes: 600,
+        timeInBedMinutes: 470,
+        nutritionState: 'supports_goal',
+        importantFact: 'Обновил только общий факт',
+      }),
+    );
   });
 
   it('shows context independently when the sleep block is hidden', () => {
     const { pinia, store } = createStore();
     store.settings.activeDailyBlocks = ['context'];
     const wrapper = mount(TodayView, {
-      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } }
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
     });
 
     const headings = wrapper.findAll('.form-card h2').map((heading) => heading.text());
@@ -192,10 +206,12 @@ describe('daily entry scenario', () => {
 
   it('keeps a dirty entry until the user confirms changing the date', async () => {
     const { pinia, store } = createStore();
-    store.dailyEntries = [{
-      ...emptyDailyEntry('2026-07-20'),
-      importantFact: 'Сохранённый факт за вчера',
-    }];
+    store.dailyEntries = [
+      {
+        ...emptyDailyEntry('2026-07-20'),
+        importantFact: 'Сохранённый факт за вчера',
+      },
+    ];
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
     const wrapper = mount(TodayView, {
       global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
@@ -269,10 +285,7 @@ describe('daily entry scenario', () => {
     });
     await router.push('/');
     await router.isReady();
-    const wrapper = mount(
-      { template: '<RouterView />' },
-      { global: { plugins: [pinia, router], stubs: { RouterLink: routerLinkStub } } },
-    );
+    const wrapper = mount({ template: '<RouterView />' }, { global: { plugins: [pinia, router], stubs: { RouterLink: routerLinkStub } } });
     const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Факт дня');
     await factCard!.get('textarea').setValue('Несохранённая запись');
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
@@ -296,7 +309,7 @@ describe('journal scenarios', () => {
       date: '2026-07-21',
       area: 'career' as const,
       title: `Итог ${index + 1}`,
-      createdAt: `2026-07-21T${String(index + 10).padStart(2, '0')}:00:00.000Z`
+      createdAt: `2026-07-21T${String(index + 10).padStart(2, '0')}:00:00.000Z`,
     }));
     const wrapper = mount(ResultsView, { global: { plugins: [pinia] } });
 
@@ -316,7 +329,7 @@ describe('journal scenarios', () => {
     store.results = [
       { id: 3, date: '2026-07-21', area: 'career', title: 'Сегодняшний итог', createdAt: '2026-07-21T10:00:00.000Z' },
       { id: 1, date: '2026-07-20', area: 'reading', title: 'Дочитал книгу', createdAt: '2026-07-20T10:00:00.000Z' },
-      { id: 2, date: '2026-07-19', area: 'career', title: 'Получил ответ', createdAt: '2026-07-19T10:00:00.000Z' }
+      { id: 2, date: '2026-07-19', area: 'career', title: 'Получил ответ', createdAt: '2026-07-19T10:00:00.000Z' },
     ];
     const addResult = vi.spyOn(store, 'addResult').mockResolvedValue(undefined);
     const wrapper = mount(ResultsView, { global: { plugins: [pinia] } });
@@ -346,7 +359,7 @@ describe('journal scenarios', () => {
     expect(addResult).toHaveBeenCalledWith({
       date: '2026-07-21',
       area: 'career',
-      title: 'Закончил курс'
+      title: 'Закончил курс',
     });
   });
 
@@ -356,8 +369,15 @@ describe('journal scenarios', () => {
     store.lifeEvents = [
       { id: 3, date: '2026-07-21', type: 'decision', title: 'Сегодняшнее решение', note: '', createdAt: '2026-07-21T10:00:00.000Z' },
       { id: 4, date: '2026-07-21', type: 'insight', title: 'Развёрнутый инсайт', note: longNote, createdAt: '2026-07-21T11:00:00.000Z' },
-      { id: 1, date: '2026-07-20', type: 'insight', title: 'Наблюдение', note: 'Лучше думаю после прогулки', createdAt: '2026-07-20T10:00:00.000Z' },
-      { id: 2, date: '2026-07-19', type: 'event', title: 'Встреча', note: 'Обсудили планы', createdAt: '2026-07-19T10:00:00.000Z' }
+      {
+        id: 1,
+        date: '2026-07-20',
+        type: 'insight',
+        title: 'Наблюдение',
+        note: 'Лучше думаю после прогулки',
+        createdAt: '2026-07-20T10:00:00.000Z',
+      },
+      { id: 2, date: '2026-07-19', type: 'event', title: 'Встреча', note: 'Обсудили планы', createdAt: '2026-07-19T10:00:00.000Z' },
     ];
     const addLifeEvent = vi.spyOn(store, 'addLifeEvent').mockResolvedValue(undefined);
     const wrapper = mount(EventsView, { global: { plugins: [pinia] } });
@@ -393,7 +413,7 @@ describe('journal scenarios', () => {
       date: '2026-07-21',
       type: 'insight',
       title: 'Понял причину усталости',
-      note: longNote
+      note: longNote,
     });
   });
 });
@@ -412,8 +432,7 @@ describe('settings scenarios', () => {
       global: { plugins: [pinia], mocks: { $route: { query: {} } } },
     });
 
-    const deleteButton = wrapper.findAll('.settings-card--cloud button')
-      .find((button) => button.text() === 'Удалить аккаунт');
+    const deleteButton = wrapper.findAll('.settings-card--cloud button').find((button) => button.text() === 'Удалить аккаунт');
     await deleteButton!.trigger('click');
     await flushPromises();
 
@@ -437,8 +456,7 @@ describe('settings scenarios', () => {
       global: { plugins: [pinia], mocks: { $route: { query: {} } } },
     });
 
-    const deleteButton = wrapper.findAll('.settings-card--cloud button')
-      .find((button) => button.text() === 'Удалить аккаунт');
+    const deleteButton = wrapper.findAll('.settings-card--cloud button').find((button) => button.text() === 'Удалить аккаунт');
     await deleteButton!.trigger('click');
     await flushPromises();
 
@@ -460,9 +478,11 @@ describe('settings scenarios', () => {
     await blockCard.get('.primary-button').trigger('click');
     await flushPromises();
 
-    expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({
-      activeDailyBlocks: ['sleep', 'context', 'movement', 'nutrition']
-    }));
+    expect(saveSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activeDailyBlocks: ['sleep', 'context', 'movement', 'nutrition'],
+      }),
+    );
   });
 
   it('hides and restores built-in context factors without deleting their definition', async () => {
@@ -490,23 +510,32 @@ describe('settings scenarios', () => {
     const movementCard = wrapper.get('.settings-card--movement');
 
     await movementCard.get('#new-activity-option').setValue('Бачата');
-    await movementCard.findAll('button').find((button) => button.text() === 'Добавить')!.trigger('click');
+    await movementCard
+      .findAll('button')
+      .find((button) => button.text() === 'Добавить')!
+      .trigger('click');
     await flushPromises();
-    expect(saveSettings).toHaveBeenLastCalledWith(expect.objectContaining({
-      customActivityOptions: [expect.objectContaining({ id: 'bachata', label: 'Бачата', custom: true })],
-    }));
+    expect(saveSettings).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        customActivityOptions: [expect.objectContaining({ id: 'bachata', label: 'Бачата', custom: true })],
+      }),
+    );
 
     await movementCard.get('[aria-label="Убрать Бачата из ежедневной записи"]').trigger('click');
     await flushPromises();
-    expect(saveSettings).toHaveBeenLastCalledWith(expect.objectContaining({
-      customActivityOptions: [expect.objectContaining({ id: 'bachata', archived: true })],
-    }));
+    expect(saveSettings).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        customActivityOptions: [expect.objectContaining({ id: 'bachata', archived: true })],
+      }),
+    );
 
     await movementCard.get('[aria-label="Вернуть Бачата в ежедневную запись"]').trigger('click');
     await flushPromises();
-    expect(saveSettings).toHaveBeenLastCalledWith(expect.objectContaining({
-      customActivityOptions: [expect.objectContaining({ id: 'bachata', archived: false })],
-    }));
+    expect(saveSettings).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        customActivityOptions: [expect.objectContaining({ id: 'bachata', archived: false })],
+      }),
+    );
   });
 
   it('saves a free-form experiment and completes it into history', async () => {
@@ -526,25 +555,29 @@ describe('settings scenarios', () => {
     await card.get('.primary-button').trigger('click');
     await flushPromises();
 
-    expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({
-      experiment: expect.objectContaining({
-        title: 'Спокойный вечер',
-        targetMetricId: null,
-        minimumMeaningfulChange: null,
-        startDate: '2026-07-15',
-        endDate: '2026-07-21',
+    expect(saveSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        experiment: expect.objectContaining({
+          title: 'Спокойный вечер',
+          targetMetricId: null,
+          minimumMeaningfulChange: null,
+          startDate: '2026-07-15',
+          endDate: '2026-07-21',
+        }),
       }),
-    }));
+    );
 
     await card.get('#experiment-conclusion').setValue('Вечером было спокойнее');
     const completeButton = card.findAll('button').find((button) => button.text().includes('Завершить и добавить'));
     await completeButton!.trigger('click');
     await flushPromises();
 
-    expect(saveSettings).toHaveBeenLastCalledWith(expect.objectContaining({
-      experiment: expect.objectContaining({ active: false, title: '' }),
-      experimentHistory: [expect.objectContaining({ title: 'Спокойный вечер', conclusion: 'Вечером было спокойнее' })],
-    }));
+    expect(saveSettings).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        experiment: expect.objectContaining({ active: false, title: '' }),
+        experimentHistory: [expect.objectContaining({ title: 'Спокойный вечер', conclusion: 'Вечером было спокойнее' })],
+      }),
+    );
   });
 });
 

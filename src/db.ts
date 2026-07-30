@@ -15,14 +15,14 @@ class TrajectoryDatabase extends Dexie {
       dailyEntries: '&date, updatedAt, careerState',
       results: '++id, date, area, createdAt',
       weeklyReviews: '&weekStart',
-      settings: '&id'
+      settings: '&id',
     });
     this.version(2).stores({
       dailyEntries: '&date, updatedAt, careerState',
       results: '++id, date, area, createdAt',
       lifeEvents: '++id, date, type, createdAt',
       weeklyReviews: '&weekStart',
-      settings: '&id'
+      settings: '&id',
     });
     this.version(3).stores({
       dailyEntries: '&date, updatedAt, careerState',
@@ -30,7 +30,7 @@ class TrajectoryDatabase extends Dexie {
       lifeEvents: '++id, date, type, createdAt',
       weeklyReviews: '&weekStart',
       monthlyReviews: '&monthStart',
-      settings: '&id'
+      settings: '&id',
     });
   }
 }

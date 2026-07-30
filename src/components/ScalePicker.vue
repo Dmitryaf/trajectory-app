@@ -17,6 +17,9 @@ defineEmits<{ 'update:modelValue': [value: number] }>();
         {{ value }}
       </button>
     </div>
-    <div class="scale-picker__labels"><span>{{ lowLabel }}</span><span>{{ highLabel }}</span></div>
+    <div class="scale-picker__labels">
+      <span>{{ lowLabel }}</span
+      ><span>{{ highLabel }}</span>
+    </div>
   </div>
 </template>

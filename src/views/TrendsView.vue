@@ -3,8 +3,29 @@ import { computed, ref, watch } from 'vue';
 import type { EChartsCoreOption } from 'echarts/core';
 import EChartPanel from '../components/charts/EChartPanel.vue';
 import MetricCard from '../components/MetricCard.vue';
-import { buildCoverageSeries, buildEventComparison, buildRangeReviewCues, entriesForPeriod, factorSummaries, ratioPercent, resultsForPeriod, summarize, type EventComparisonMetric } from '../services/analytics';
-import { addMonths, dateRange, endOfMonth, endOfWeek, formatDate, formatMinutes, monthsBetween, startOfMonth, toDateKey, todayKey } from '../services/dates';
+import {
+  buildCoverageSeries,
+  buildEventComparison,
+  buildRangeReviewCues,
+  entriesForPeriod,
+  factorSummaries,
+  ratioPercent,
+  resultsForPeriod,
+  summarize,
+  type EventComparisonMetric,
+} from '../services/analytics';
+import {
+  addMonths,
+  dateRange,
+  endOfMonth,
+  endOfWeek,
+  formatDate,
+  formatMinutes,
+  monthsBetween,
+  startOfMonth,
+  toDateKey,
+  todayKey,
+} from '../services/dates';
 import { buildRangePackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../features/export/browser';
 import { buildExperimentSummary } from '../features/analytics/experimentComparison';
 import { experimentDecisionLabel } from '../features/experiments/model';
@@ -33,58 +54,83 @@ const rangeOptions: Array<{ value: RangeMonths; label: string }> = [
   { value: 12, label: '12 месяцев' },
 ];
 
-const externalCareerIds = computed(() => ['external', 'interview', 'result', ...store.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id)]);
+const externalCareerIds = computed(() => [
+  'external',
+  'interview',
+  'result',
+  ...store.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id),
+]);
 const end = computed(() => todayKey());
 const start = computed(() => startOfMonth(addMonths(todayKey(), -(range.value - 1))));
 const entries = computed(() => entriesForPeriod(store.dailyEntries, start.value, end.value));
 const contextFactorItems = computed(() => [...contextFactorOptions, ...store.settings.customContextFactorOptions]);
 const results = computed(() => resultsForPeriod(store.results, start.value, end.value));
-const lifeEvents = computed(() => store.lifeEvents.filter((event) => event.date >= start.value && event.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)));
+const lifeEvents = computed(() =>
+  store.lifeEvents.filter((event) => event.date >= start.value && event.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)),
+);
 const summary = computed(() => summarize(entries.value, externalCareerIds.value));
 const factors = computed(() => factorSummaries(entries.value, contextFactorItems.value).slice(0, 5));
-const cues = computed(() => buildRangeReviewCues(range.value, entries.value, results.value, lifeEvents.value, externalCareerIds.value, contextFactorItems.value));
+const cues = computed(() =>
+  buildRangeReviewCues(range.value, entries.value, results.value, lifeEvents.value, externalCareerIds.value, contextFactorItems.value),
+);
 
 function eventKey(event: (typeof store.lifeEvents)[number]): string {
   return `${event.date}|${event.createdAt}`;
 }
 
-watch(lifeEvents, (events) => {
-  if (!events.some((event) => eventKey(event) === selectedEventKey.value)) {
-    selectedEventKey.value = events[0] ? eventKey(events[0]) : '';
-  }
-}, { immediate: true });
-watch(range, () => { timelineExpanded.value = false; });
+watch(
+  lifeEvents,
+  (events) => {
+    if (!events.some((event) => eventKey(event) === selectedEventKey.value)) {
+      selectedEventKey.value = events[0] ? eventKey(events[0]) : '';
+    }
+  },
+  { immediate: true },
+);
+watch(range, () => {
+  timelineExpanded.value = false;
+});
 
 const selectedEvent = computed(() => lifeEvents.value.find((event) => eventKey(event) === selectedEventKey.value) ?? null);
-const eventComparison = computed(() => selectedEvent.value
-  ? buildEventComparison(selectedEvent.value.date, store.dailyEntries, store.results, externalCareerIds.value, 14, end.value)
-  : null);
+const eventComparison = computed(() =>
+  selectedEvent.value
+    ? buildEventComparison(selectedEvent.value.date, store.dailyEntries, store.results, externalCareerIds.value, 14, end.value)
+    : null,
+);
 const coverageSeries = computed(() => buildCoverageSeries(entries.value, start.value, end.value));
 
-const monthRows = computed(() => monthsBetween(start.value, end.value).map((monthStart) => {
-  const calendarEnd = endOfMonth(monthStart);
-  const monthEnd = monthStart === startOfMonth(todayKey()) ? todayKey() : calendarEnd;
-  const monthEntries = entriesForPeriod(entries.value, monthStart, monthEnd);
-  const monthSummary = summarize(monthEntries, externalCareerIds.value);
-  return {
-    monthStart,
-    label: `${formatDate(monthStart, { month: 'short' })}${monthStart === startOfMonth(todayKey()) ? '*' : ''}`,
-    isPartial: monthStart === startOfMonth(todayKey()),
-    expectedDays: dateRange(monthStart, monthEnd).length,
-    summary: monthSummary,
-    resultsCount: resultsForPeriod(results.value, monthStart, monthEnd).length,
-    eventsCount: lifeEvents.value.filter((event) => event.date >= monthStart && event.date <= monthEnd).length,
-  };
-}));
+const monthRows = computed(() =>
+  monthsBetween(start.value, end.value).map((monthStart) => {
+    const calendarEnd = endOfMonth(monthStart);
+    const monthEnd = monthStart === startOfMonth(todayKey()) ? todayKey() : calendarEnd;
+    const monthEntries = entriesForPeriod(entries.value, monthStart, monthEnd);
+    const monthSummary = summarize(monthEntries, externalCareerIds.value);
+    return {
+      monthStart,
+      label: `${formatDate(monthStart, { month: 'short' })}${monthStart === startOfMonth(todayKey()) ? '*' : ''}`,
+      isPartial: monthStart === startOfMonth(todayKey()),
+      expectedDays: dateRange(monthStart, monthEnd).length,
+      summary: monthSummary,
+      resultsCount: resultsForPeriod(results.value, monthStart, monthEnd).length,
+      eventsCount: lifeEvents.value.filter((event) => event.date >= monthStart && event.date <= monthEnd).length,
+    };
+  }),
+);
 
-const eventLines = computed(() => monthRows.value.flatMap((row) => {
-  const events = lifeEvents.value.filter((event) => event.date.startsWith(row.monthStart.slice(0, 7)));
-  return events.length ? [{
-    name: events.map((event) => `${formatDate(event.date, { day: 'numeric', month: 'short' })}: ${event.title}`).join('\n'),
-    value: events.length,
-    xAxis: row.label,
-  }] : [];
-}));
+const eventLines = computed(() =>
+  monthRows.value.flatMap((row) => {
+    const events = lifeEvents.value.filter((event) => event.date.startsWith(row.monthStart.slice(0, 7)));
+    return events.length
+      ? [
+          {
+            name: events.map((event) => `${formatDate(event.date, { day: 'numeric', month: 'short' })}: ${event.title}`).join('\n'),
+            value: events.length,
+            xAxis: row.label,
+          },
+        ]
+      : [];
+  }),
+);
 
 const trendOverviewOption = computed<EChartsCoreOption>(() => ({
   color: ['#7467e8', '#2eaa7f'],
@@ -96,11 +142,17 @@ const trendOverviewOption = computed<EChartsCoreOption>(() => ({
     data: monthRows.value.map((row) => row.label),
     axisTick: { show: false },
     axisLine: { lineStyle: { color: '#dfe4ed' } },
-    axisLabel: { color: '#7d8798' }
+    axisLabel: { color: '#7d8798' },
   },
   yAxis: [
-    { type: 'value', min: 0, max: 12, axisLabel: { formatter: '{value}ч', color: '#7d8798' }, splitLine: { lineStyle: { color: '#edf1f6' } } },
-    { type: 'value', min: 1, max: 5, interval: 1, axisLabel: { color: '#7d8798' }, splitLine: { show: false } }
+    {
+      type: 'value',
+      min: 0,
+      max: 12,
+      axisLabel: { formatter: '{value}ч', color: '#7d8798' },
+      splitLine: { lineStyle: { color: '#edf1f6' } },
+    },
+    { type: 'value', min: 1, max: 5, interval: 1, axisLabel: { color: '#7d8798' }, splitLine: { show: false } },
   ],
   series: [
     {
@@ -126,8 +178,8 @@ const trendOverviewOption = computed<EChartsCoreOption>(() => ({
       data: monthRows.value.map((row) => roundValue(row.summary.averageEnergy)),
       connectNulls: false,
       lineStyle: { width: 3 },
-    }
-  ]
+    },
+  ],
 }));
 
 const coverageOption = computed<EChartsCoreOption>(() => ({
@@ -163,7 +215,11 @@ const coverageOption = computed<EChartsCoreOption>(() => ({
     splitLine: { show: true, lineStyle: { color: '#fff', width: 3 } },
     itemStyle: { borderWidth: 2, borderColor: '#fff' },
     yearLabel: { show: false },
-    monthLabel: { color: '#657085', fontSize: 11, nameMap: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'] },
+    monthLabel: {
+      color: '#657085',
+      fontSize: 11,
+      nameMap: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'],
+    },
     dayLabel: { firstDay: 1, color: '#8a94a7', fontSize: 10, nameMap: ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'] },
   },
   series: [{ type: 'heatmap', coordinateSystem: 'calendar', data: coverageSeries.value }],
@@ -187,55 +243,97 @@ function experimentTimelineContent(record: ExperimentRecord): Pick<DecisionTimel
   const decision = experimentDecisionLabel(record.decision);
   if (decision) parts.push(`Дальше: ${decision.toLocaleLowerCase('ru-RU')}`);
   if (summary) {
-    parts.push(`Условие выполнено в ${summary.adherenceCompletedDays} из ${summary.adherenceMarkedDays} отмеченных дней; без отметки — ${summary.adherenceUnmarkedDays}`);
-    const metrics = summary.metrics.flatMap((metric) => metric.baselineAverage === null || metric.experimentAverage === null ? [] : [
-      `${metric.label.toLocaleLowerCase('ru-RU')} ${experimentMetricValue(metric.id, metric.baselineAverage)} → ${experimentMetricValue(metric.id, metric.experimentAverage)} (${metric.baselineSamples}/${metric.experimentSamples} изм.)`,
-    ]);
+    parts.push(
+      `Условие выполнено в ${summary.adherenceCompletedDays} из ${summary.adherenceMarkedDays} отмеченных дней; без отметки — ${summary.adherenceUnmarkedDays}`,
+    );
+    const metrics = summary.metrics.flatMap((metric) =>
+      metric.baselineAverage === null || metric.experimentAverage === null
+        ? []
+        : [
+            `${metric.label.toLocaleLowerCase('ru-RU')} ${experimentMetricValue(metric.id, metric.baselineAverage)} → ${experimentMetricValue(metric.id, metric.experimentAverage)} (${metric.baselineSamples}/${metric.experimentSamples} изм.)`,
+          ],
+    );
     return { detail: parts.join('. '), extra: metrics.length ? `До → во время: ${metrics.join(', ')}` : undefined };
   }
   return { detail: parts.join('. ') };
 }
 
-const decisionTimeline = computed<DecisionTimelineItem[]>(() => ([
-  ...lifeEvents.value.map((event) => ({ date: event.date, type: 'Событие', tone: 'event', title: event.title, detail: event.note })),
-  ...results.value.map((result) => ({ date: result.date, type: 'Итог', tone: 'result', title: result.title, detail: '' })),
-  ...store.weeklyReviews.flatMap((review) => {
-    const date = savedDate(review.updatedAt, endOfWeek(review.weekStart));
-    const items = [];
-    if (review.nextLever || review.ifThenPlan) items.push({ date, type: 'Решение недели', tone: 'decision', title: review.nextLever || 'План недели', detail: review.ifThenPlan });
-    if (review.previousPlanOutcome) items.push({ date, type: 'Проверка решения', tone: 'outcome', title: review.previousPlanOutcome, detail: '' });
-    return items;
-  }),
-  ...store.monthlyReviews.map((review) => ({
-    date: savedDate(review.updatedAt, endOfMonth(review.monthStart)),
-    type: 'Решение месяца',
-    tone: 'decision',
-    title: review.nextFocus || review.courseChange || review.mainPattern || 'Обзор месяца',
-    detail: review.ifThenPlan,
-  })),
-  ...store.settings.experimentHistory.map((record) => ({
-    date: record.endDate,
-    type: 'Эксперимент',
-    tone: 'experiment',
-    title: record.title,
-    ...experimentTimelineContent(record),
-  })),
-] as DecisionTimelineItem[]).filter((item) => item.date >= start.value && item.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)));
-const displayedDecisionTimeline = computed(() => timelineExpanded.value ? decisionTimeline.value : decisionTimeline.value.slice(0, 8));
-const timelineSummary = computed(() => [
-  { tone: 'event', label: 'События', count: decisionTimeline.value.filter((item) => item.tone === 'event').length },
-  { tone: 'result', label: 'Итоги', count: decisionTimeline.value.filter((item) => item.tone === 'result').length },
-  { tone: 'decision', label: 'Решения', count: decisionTimeline.value.filter((item) => item.tone === 'decision').length },
-  { tone: 'outcome', label: 'Проверки', count: decisionTimeline.value.filter((item) => item.tone === 'outcome').length },
-  { tone: 'experiment', label: 'Эксперименты', count: decisionTimeline.value.filter((item) => item.tone === 'experiment').length },
-].filter((item) => item.count > 0));
+const decisionTimeline = computed<DecisionTimelineItem[]>(() =>
+  (
+    [
+      ...lifeEvents.value.map((event) => ({ date: event.date, type: 'Событие', tone: 'event', title: event.title, detail: event.note })),
+      ...results.value.map((result) => ({ date: result.date, type: 'Итог', tone: 'result', title: result.title, detail: '' })),
+      ...store.weeklyReviews.flatMap((review) => {
+        const date = savedDate(review.updatedAt, endOfWeek(review.weekStart));
+        const items = [];
+        if (review.nextLever || review.ifThenPlan)
+          items.push({
+            date,
+            type: 'Решение недели',
+            tone: 'decision',
+            title: review.nextLever || 'План недели',
+            detail: review.ifThenPlan,
+          });
+        if (review.previousPlanOutcome)
+          items.push({ date, type: 'Проверка решения', tone: 'outcome', title: review.previousPlanOutcome, detail: '' });
+        return items;
+      }),
+      ...store.monthlyReviews.map((review) => ({
+        date: savedDate(review.updatedAt, endOfMonth(review.monthStart)),
+        type: 'Решение месяца',
+        tone: 'decision',
+        title: review.nextFocus || review.courseChange || review.mainPattern || 'Обзор месяца',
+        detail: review.ifThenPlan,
+      })),
+      ...store.settings.experimentHistory.map((record) => ({
+        date: record.endDate,
+        type: 'Эксперимент',
+        tone: 'experiment',
+        title: record.title,
+        ...experimentTimelineContent(record),
+      })),
+    ] as DecisionTimelineItem[]
+  )
+    .filter((item) => item.date >= start.value && item.date <= end.value)
+    .sort((a, b) => b.date.localeCompare(a.date)),
+);
+const displayedDecisionTimeline = computed(() => (timelineExpanded.value ? decisionTimeline.value : decisionTimeline.value.slice(0, 8)));
+const timelineSummary = computed(() =>
+  [
+    { tone: 'event', label: 'События', count: decisionTimeline.value.filter((item) => item.tone === 'event').length },
+    { tone: 'result', label: 'Итоги', count: decisionTimeline.value.filter((item) => item.tone === 'result').length },
+    { tone: 'decision', label: 'Решения', count: decisionTimeline.value.filter((item) => item.tone === 'decision').length },
+    { tone: 'outcome', label: 'Проверки', count: decisionTimeline.value.filter((item) => item.tone === 'outcome').length },
+    { tone: 'experiment', label: 'Эксперименты', count: decisionTimeline.value.filter((item) => item.tone === 'experiment').length },
+  ].filter((item) => item.count > 0),
+);
 const weightOption = computed<EChartsCoreOption>(() => ({
   color: ['#d9952f'],
   tooltip: { trigger: 'axis' },
   grid: { left: 52, right: 24, top: 20, bottom: 34 },
-  xAxis: { type: 'category', data: monthRows.value.map((row) => row.label), axisTick: { show: false }, axisLine: { lineStyle: { color: '#dfe4ed' } }, axisLabel: { color: '#7d8798' } },
-  yAxis: { type: 'value', scale: true, axisLabel: { formatter: '{value}кг', color: '#7d8798' }, splitLine: { lineStyle: { color: '#edf1f6' } } },
-  series: [{ name: 'средний вес', type: 'line', symbolSize: 8, data: monthRows.value.map((row) => roundValue(row.summary.averageWeightKg)), connectNulls: false, lineStyle: { width: 3 } }]
+  xAxis: {
+    type: 'category',
+    data: monthRows.value.map((row) => row.label),
+    axisTick: { show: false },
+    axisLine: { lineStyle: { color: '#dfe4ed' } },
+    axisLabel: { color: '#7d8798' },
+  },
+  yAxis: {
+    type: 'value',
+    scale: true,
+    axisLabel: { formatter: '{value}кг', color: '#7d8798' },
+    splitLine: { lineStyle: { color: '#edf1f6' } },
+  },
+  series: [
+    {
+      name: 'средний вес',
+      type: 'line',
+      symbolSize: 8,
+      data: monthRows.value.map((row) => roundValue(row.summary.averageWeightKg)),
+      connectNulls: false,
+      lineStyle: { width: 3 },
+    },
+  ],
 }));
 const progressOption = computed<EChartsCoreOption>(() => ({
   color: ['#1d5148', '#6f9f91', '#2eaa7f', '#b8c8c2', '#b85c4c', '#e7a43b'],
@@ -247,20 +345,59 @@ const progressOption = computed<EChartsCoreOption>(() => ({
     data: monthRows.value.map((row) => row.label),
     axisTick: { show: false },
     axisLine: { lineStyle: { color: '#dfe4ed' } },
-    axisLabel: { color: '#7d8798' }
+    axisLabel: { color: '#7d8798' },
   },
   yAxis: [
-    { type: 'value', min: 0, max: 100, axisLabel: { formatter: '{value}%', color: '#7d8798' }, splitLine: { lineStyle: { color: '#edf1f6' } } },
-    { type: 'value', minInterval: 1, axisLabel: { color: '#7d8798' }, splitLine: { show: false } }
+    {
+      type: 'value',
+      min: 0,
+      max: 100,
+      axisLabel: { formatter: '{value}%', color: '#7d8798' },
+      splitLine: { lineStyle: { color: '#edf1f6' } },
+    },
+    { type: 'value', minInterval: 1, axisLabel: { color: '#7d8798' }, splitLine: { show: false } },
   ],
   series: [
-    { name: 'конкретные действия', type: 'bar', stack: 'direction', data: monthRows.value.map((row) => ratioPercent(row.summary.externalActionDays, row.summary.actionDirectionSamples)), itemStyle: { borderRadius: [5, 5, 0, 0] } },
-    { name: 'подготовка', type: 'bar', stack: 'direction', data: monthRows.value.map((row) => ratioPercent(row.summary.preparationDays, row.summary.actionDirectionSamples)) },
-    { name: 'поддержание', type: 'bar', stack: 'direction', data: monthRows.value.map((row) => ratioPercent(row.summary.actionDirectionCounts.maintenance, row.summary.actionDirectionSamples)) },
-    { name: 'восстановление', type: 'bar', stack: 'direction', data: monthRows.value.map((row) => ratioPercent(row.summary.actionDirectionCounts.recovery, row.summary.actionDirectionSamples)) },
-    { name: 'в сторону', type: 'bar', stack: 'direction', data: monthRows.value.map((row) => ratioPercent(row.summary.driftDays, row.summary.actionDirectionSamples)) },
-    { name: 'итоги', type: 'line', yAxisIndex: 1, data: monthRows.value.map((row) => row.resultsCount), symbolSize: 8, lineStyle: { width: 3 } }
-  ]
+    {
+      name: 'конкретные действия',
+      type: 'bar',
+      stack: 'direction',
+      data: monthRows.value.map((row) => ratioPercent(row.summary.externalActionDays, row.summary.actionDirectionSamples)),
+      itemStyle: { borderRadius: [5, 5, 0, 0] },
+    },
+    {
+      name: 'подготовка',
+      type: 'bar',
+      stack: 'direction',
+      data: monthRows.value.map((row) => ratioPercent(row.summary.preparationDays, row.summary.actionDirectionSamples)),
+    },
+    {
+      name: 'поддержание',
+      type: 'bar',
+      stack: 'direction',
+      data: monthRows.value.map((row) => ratioPercent(row.summary.actionDirectionCounts.maintenance, row.summary.actionDirectionSamples)),
+    },
+    {
+      name: 'восстановление',
+      type: 'bar',
+      stack: 'direction',
+      data: monthRows.value.map((row) => ratioPercent(row.summary.actionDirectionCounts.recovery, row.summary.actionDirectionSamples)),
+    },
+    {
+      name: 'в сторону',
+      type: 'bar',
+      stack: 'direction',
+      data: monthRows.value.map((row) => ratioPercent(row.summary.driftDays, row.summary.actionDirectionSamples)),
+    },
+    {
+      name: 'итоги',
+      type: 'line',
+      yAxisIndex: 1,
+      data: monthRows.value.map((row) => row.resultsCount),
+      symbolSize: 8,
+      lineStyle: { width: 3 },
+    },
+  ],
 }));
 
 function coverageText(row: (typeof monthRows.value)[number]): string {
@@ -301,21 +438,28 @@ function observationLabel(samples: number | null): string {
   if (samples === 0) return 'нет наблюдений';
   const lastTwo = samples % 100;
   const last = samples % 10;
-  const noun = lastTwo >= 11 && lastTwo <= 14 ? 'наблюдений' : last === 1 ? 'наблюдение' : last >= 2 && last <= 4 ? 'наблюдения' : 'наблюдений';
+  const noun =
+    lastTwo >= 11 && lastTwo <= 14 ? 'наблюдений' : last === 1 ? 'наблюдение' : last >= 2 && last <= 4 ? 'наблюдения' : 'наблюдений';
   return `${samples} ${noun}`;
 }
 
 function factorSleepText(factor: (typeof factors.value)[number]): string {
   if (factor.averageSleep === null) return '—';
   const withFactor = `${formatMinutes(Math.round(factor.averageSleep))} · ${factor.sleepSamples} дн.`;
-  const withoutFactor = factor.averageSleepWithout === null ? '—' : `${formatMinutes(Math.round(factor.averageSleepWithout))} · ${factor.sleepSamplesWithout} дн.`;
+  const withoutFactor =
+    factor.averageSleepWithout === null
+      ? '—'
+      : `${formatMinutes(Math.round(factor.averageSleepWithout))} · ${factor.sleepSamplesWithout} дн.`;
   return `${withFactor} / ${withoutFactor}`;
 }
 
 function factorEnergyText(factor: (typeof factors.value)[number]): string {
   if (factor.averageEnergy === null) return '—';
   const withFactor = `${factor.averageEnergy.toFixed(1).replace('.0', '')} · ${factor.energySamples} дн.`;
-  const withoutFactor = factor.averageEnergyWithout === null ? '—' : `${factor.averageEnergyWithout.toFixed(1).replace('.0', '')} · ${factor.energySamplesWithout} дн.`;
+  const withoutFactor =
+    factor.averageEnergyWithout === null
+      ? '—'
+      : `${factor.averageEnergyWithout.toFixed(1).replace('.0', '')} · ${factor.energySamplesWithout} дн.`;
   return `${withFactor} / ${withoutFactor}`;
 }
 
@@ -352,49 +496,108 @@ function downloadJson() {
     notifyUnknownError(error, 'Не удалось скачать данные');
   }
 }
-
 </script>
 
 <template>
   <section class="page page--review page--trends">
     <div class="page-heading">
-      <div><span class="eyebrow">3–12 месяцев</span><h1>Тренды</h1><p>Изменения сна, энергии, веса, питания, действий по цели и важных событий.</p></div>
+      <div>
+        <span class="eyebrow">3–12 месяцев</span>
+        <h1>Тренды</h1>
+        <p>Изменения сна, энергии, веса, питания, действий по цели и важных событий.</p>
+      </div>
     </div>
 
     <div class="range-tabs" aria-label="Период динамики">
-      <button v-for="option in rangeOptions" :key="option.value" type="button" :class="{ active: range === option.value }" @click="range = option.value">{{ option.label }}</button>
+      <button
+        v-for="option in rangeOptions"
+        :key="option.value"
+        type="button"
+        :class="{ active: range === option.value }"
+        @click="range = option.value"
+      >
+        {{ option.label }}
+      </button>
     </div>
 
     <div class="metrics-grid">
-      <MetricCard label="Заполненных дней" :value="summary.coveredEntriesCount" :hint="`${summary.ordinaryCoreEntriesCount} с основными полями`" accent="#1d5148" />
-      <MetricCard label="Средний сон" :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))" :hint="`${summary.sleepSamples} дн. без особых`" accent="#7467e8" />
+      <MetricCard
+        label="Заполненных дней"
+        :value="summary.coveredEntriesCount"
+        :hint="`${summary.ordinaryCoreEntriesCount} с основными полями`"
+        accent="#1d5148"
+      />
+      <MetricCard
+        label="Средний сон"
+        :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))"
+        :hint="`${summary.sleepSamples} дн. без особых`"
+        accent="#7467e8"
+      />
       <MetricCard label="Карьера" :value="summary.externalSteps" hint="дней с откликом, разговором или итогом" accent="#3f82d5" />
-      <MetricCard label="Реальные шаги" :value="`${summary.externalActionDays}/${summary.preparationDays}`" :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`" accent="#2eaa7f" />
-      <MetricCard label="Питание" :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`" :hint="summary.averageWeightKg === null ? `${summary.nutritionSamples} дн. с отметкой` : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг · ${summary.weightSamples} изм.`" accent="#d9952f" />
+      <MetricCard
+        label="Реальные шаги"
+        :value="`${summary.externalActionDays}/${summary.preparationDays}`"
+        :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`"
+        accent="#2eaa7f"
+      />
+      <MetricCard
+        label="Питание"
+        :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`"
+        :hint="
+          summary.averageWeightKg === null
+            ? `${summary.nutritionSamples} дн. с отметкой`
+            : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг · ${summary.weightSamples} изм.`
+        "
+        accent="#d9952f"
+      />
       <MetricCard label="Итогов" :value="results.length" :hint="`${lifeEvents.length} важных событий`" accent="#e7a43b" />
     </div>
 
     <article class="dashboard-card dashboard-card--quality">
-      <div class="section-heading"><div><span class="eyebrow">Качество наблюдений</span><h2>Карта заполнения</h2></div><small>без серий и оценок</small></div>
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Качество наблюдений</span>
+          <h2>Карта заполнения</h2>
+        </div>
+        <small>без серий и оценок</small>
+      </div>
       <EChartPanel :option="coverageOption" :height="230" aria-label="Календарная карта полноты дневных записей" />
-      <p class="data-note">«Основные поля» означают, что заполнены хотя бы два блока: состояние, действия или питание. Карта нужна только для оценки надёжности выводов.</p>
+      <p class="data-note">
+        «Основные поля» означают, что заполнены хотя бы два блока: состояние, действия или питание. Карта нужна только для оценки надёжности
+        выводов.
+      </p>
     </article>
 
     <article class="dashboard-card dashboard-card--trend">
-      <div class="section-heading"><div><span class="eyebrow">Динамика периода</span><h2>Сон и энергия</h2></div><small>* неполный текущий месяц</small></div>
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Динамика периода</span>
+          <h2>Сон и энергия</h2>
+        </div>
+        <small>* неполный текущий месяц</small>
+      </div>
       <EChartPanel :option="trendOverviewOption" :height="320" aria-label="Динамика сна и энергии по месяцам" />
-      <p v-if="lifeEvents.length" class="data-note">Оранжевые пунктирные линии показывают месяцы с важными событиями. Число у линии — количество событий; наведи на неё, чтобы увидеть список.</p>
+      <p v-if="lifeEvents.length" class="data-note">
+        Оранжевые пунктирные линии показывают месяцы с важными событиями. Число у линии — количество событий; наведи на неё, чтобы увидеть
+        список.
+      </p>
     </article>
 
     <article v-if="lifeEvents.length" class="dashboard-card dashboard-card--event">
       <div class="section-heading">
-        <div><span class="eyebrow">До и после</span><h2>Что менялось рядом с событием</h2></div>
+        <div>
+          <span class="eyebrow">До и после</span>
+          <h2>Что менялось рядом с событием</h2>
+        </div>
         <details ref="eventPicker" class="event-picker">
           <summary aria-label="Выбрать событие для сравнения">
             <span class="event-picker__icon">◆</span>
             <span class="event-picker__current">
               <small>Событие для сравнения</small>
-              <strong v-if="selectedEvent">{{ formatDate(selectedEvent.date, { day: 'numeric', month: 'short', year: 'numeric' }) }} · {{ selectedEvent.title }}</strong>
+              <strong v-if="selectedEvent"
+                >{{ formatDate(selectedEvent.date, { day: 'numeric', month: 'short', year: 'numeric' }) }} ·
+                {{ selectedEvent.title }}</strong
+              >
             </span>
             <span class="event-picker__chevron">⌄</span>
           </summary>
@@ -410,7 +613,10 @@ function downloadJson() {
               @click="selectEvent(event)"
             >
               <time>{{ formatDate(event.date, { day: 'numeric', month: 'short' }) }}</time>
-              <span><strong>{{ event.title }}</strong><small v-if="event.note">{{ event.note }}</small></span>
+              <span
+                ><strong>{{ event.title }}</strong
+                ><small v-if="event.note">{{ event.note }}</small></span
+              >
               <i>{{ eventKey(event) === selectedEventKey ? '✓' : '' }}</i>
             </button>
           </div>
@@ -418,30 +624,55 @@ function downloadJson() {
       </div>
       <template v-if="eventComparison">
         <div class="comparison-periods">
-          <span>До: {{ formatDate(eventComparison.beforeStart, { day: 'numeric', month: 'short' }) }} — {{ formatDate(eventComparison.beforeEnd, { day: 'numeric', month: 'short' }) }} · заполнено {{ eventComparison.beforeEntries }}/{{ eventComparison.windowDays }}</span>
-          <span>После: {{ formatDate(eventComparison.afterStart, { day: 'numeric', month: 'short' }) }} — {{ formatDate(eventComparison.afterEnd, { day: 'numeric', month: 'short' }) }} · заполнено {{ eventComparison.afterEntries }}/{{ eventComparison.windowDays }}</span>
+          <span
+            >До: {{ formatDate(eventComparison.beforeStart, { day: 'numeric', month: 'short' }) }} —
+            {{ formatDate(eventComparison.beforeEnd, { day: 'numeric', month: 'short' }) }} · заполнено
+            {{ eventComparison.beforeEntries }}/{{ eventComparison.windowDays }}</span
+          >
+          <span
+            >После: {{ formatDate(eventComparison.afterStart, { day: 'numeric', month: 'short' }) }} —
+            {{ formatDate(eventComparison.afterEnd, { day: 'numeric', month: 'short' }) }} · заполнено {{ eventComparison.afterEntries }}/{{
+              eventComparison.windowDays
+            }}</span
+          >
         </div>
         <div class="comparison-table">
           <div class="comparison-table__head"><span>Показатель</span><span>До</span><span>После</span></div>
           <div v-for="metric in eventComparison.metrics" :key="metric.id" class="comparison-table__row">
             <strong>{{ metric.label }}</strong>
-            <span>{{ formatComparisonValue(metric.before, metric.format) }} <small>{{ observationLabel(metric.beforeSamples) }}</small></span>
-            <span>{{ formatComparisonValue(metric.after, metric.format) }} <small>{{ observationLabel(metric.afterSamples) }}</small></span>
+            <span
+              >{{ formatComparisonValue(metric.before, metric.format) }} <small>{{ observationLabel(metric.beforeSamples) }}</small></span
+            >
+            <span
+              >{{ formatComparisonValue(metric.after, metric.format) }} <small>{{ observationLabel(metric.afterSamples) }}</small></span
+            >
           </div>
         </div>
-        <p class="data-note">Под значением указано число дневных наблюдений, вошедших в расчёт. Сравниваются равные календарные окна, день события исключён. Разница показывает совпадение во времени, а не причинный эффект.</p>
+        <p class="data-note">
+          Под значением указано число дневных наблюдений, вошедших в расчёт. Сравниваются равные календарные окна, день события исключён.
+          Разница показывает совпадение во времени, а не причинный эффект.
+        </p>
       </template>
       <p v-else class="empty-copy">После события пока не прошло ни одного полного дня для сравнения.</p>
     </article>
 
     <article class="dashboard-card dashboard-card--weight">
-      <div class="section-heading"><div><span class="eyebrow">Тренд без разовых скачков</span><h2>Вес по месяцам</h2></div><small>среднее и число измерений — в таблице</small></div>
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Тренд без разовых скачков</span>
+          <h2>Вес по месяцам</h2>
+        </div>
+        <small>среднее и число измерений — в таблице</small>
+      </div>
       <EChartPanel :option="weightOption" :height="260" aria-label="Динамика среднего веса по месяцам" />
     </article>
 
     <article class="dashboard-card dashboard-card--insights">
       <div class="section-heading">
-        <div><span class="eyebrow">Опорные выводы</span><h2>Что видно за выбранные месяцы</h2></div>
+        <div>
+          <span class="eyebrow">Опорные выводы</span>
+          <h2>Что видно за выбранные месяцы</h2>
+        </div>
         <div class="period-actions">
           <button class="secondary-button" type="button" @click="copyPrompt">Скопировать промпт</button>
           <button class="secondary-button" type="button" @click="downloadJson">Скачать данные</button>
@@ -456,20 +687,46 @@ function downloadJson() {
     </article>
 
     <article class="dashboard-card dashboard-card--progress">
-      <div class="section-heading"><div><span class="eyebrow">Действия по цели</span><h2>Конкретные действия, подготовка и итоги</h2></div><small>столбцы: % отмеченных дней</small></div>
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Действия по цели</span>
+          <h2>Конкретные действия, подготовка и итоги</h2>
+        </div>
+        <small>столбцы: % отмеченных дней</small>
+      </div>
       <EChartPanel :option="progressOption" :height="320" aria-label="Динамика конкретных действий, подготовки, других занятий и итогов" />
     </article>
 
     <article class="dashboard-card dashboard-card--table">
-      <div class="section-heading"><div><span class="eyebrow">Состояние</span><h2>Сон и энергия по месяцам</h2></div></div>
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Состояние</span>
+          <h2>Сон и энергия по месяцам</h2>
+        </div>
+      </div>
       <div class="trend-table">
-        <div class="trend-table__head"><span>месяц</span><span>заполнено</span><span>сон (дни)</span><span>вес (изм.)</span><span>энергия (дни)</span><span>шаги / подг.</span><span>питание + / −</span><span>особые</span></div>
+        <div class="trend-table__head">
+          <span>месяц</span><span>заполнено</span><span>сон (дни)</span><span>вес (изм.)</span><span>энергия (дни)</span
+          ><span>шаги / подг.</span><span>питание + / −</span><span>особые</span>
+        </div>
         <div v-for="row in monthRows" :key="`${row.monthStart}-state`" class="trend-table__row">
           <strong>{{ row.label }}</strong>
           <span>{{ coverageText(row) }}</span>
-          <span>{{ formatMinutes(row.summary.averageSleep === null ? null : Math.round(row.summary.averageSleep)) }} ({{ row.summary.sleepSamples }})</span>
-          <span>{{ row.summary.averageWeightKg === null ? '—' : `${row.summary.averageWeightKg.toFixed(1).replace('.0', '')} кг (${row.summary.weightSamples})` }}</span>
-          <span>{{ row.summary.averageEnergy === null ? '—' : `${row.summary.averageEnergy.toFixed(1).replace('.0', '')}/5 (${row.summary.energySamples})` }}</span>
+          <span
+            >{{ formatMinutes(row.summary.averageSleep === null ? null : Math.round(row.summary.averageSleep)) }} ({{
+              row.summary.sleepSamples
+            }})</span
+          >
+          <span>{{
+            row.summary.averageWeightKg === null
+              ? '—'
+              : `${row.summary.averageWeightKg.toFixed(1).replace('.0', '')} кг (${row.summary.weightSamples})`
+          }}</span>
+          <span>{{
+            row.summary.averageEnergy === null
+              ? '—'
+              : `${row.summary.averageEnergy.toFixed(1).replace('.0', '')}/5 (${row.summary.energySamples})`
+          }}</span>
           <span>{{ directionText(row) }}</span>
           <span>{{ nutritionText(row) }}</span>
           <span>{{ row.summary.specialDays }}</span>
@@ -478,25 +735,48 @@ function downloadJson() {
     </article>
 
     <article v-if="factors.length" class="dashboard-card dashboard-card--factors">
-      <div class="section-heading"><div><span class="eyebrow">Повторяемость</span><h2>Главные факторы дня</h2></div></div>
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Повторяемость</span>
+          <h2>Главные факторы дня</h2>
+        </div>
+      </div>
       <div class="factor-summary-list">
         <article v-for="factor in factors" :key="factor.id" class="factor-summary-item">
-          <span class="factor-summary-item__name"><i>{{ factor.icon }}</i>{{ factor.label }}</span>
+          <span class="factor-summary-item__name"
+            ><i>{{ factor.icon }}</i
+            >{{ factor.label }}</span
+          >
           <strong>{{ factor.count }}</strong>
           <small>{{ factorSleepText(factor) }}</small>
           <small>{{ factorEnergyText(factor) }}</small>
         </article>
       </div>
-      <p class="data-note">Формат: значение в дни с фактором / в обычные дни без него. Особые дни исключены; это связь, а не доказанная причина.</p>
+      <p class="data-note">
+        Формат: значение в дни с фактором / в обычные дни без него. Особые дни исключены; это связь, а не доказанная причина.
+      </p>
     </article>
 
     <article v-if="decisionTimeline.length" class="dashboard-card dashboard-card--timeline">
-      <div class="section-heading"><div><span class="eyebrow">История изменений</span><h2>События, решения и итоги</h2></div><span class="count-badge">{{ decisionTimeline.length }}</span></div>
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">История изменений</span>
+          <h2>События, решения и итоги</h2>
+        </div>
+        <span class="count-badge">{{ decisionTimeline.length }}</span>
+      </div>
       <div class="decision-timeline__summary" aria-label="Состав истории">
-        <span v-for="item in timelineSummary" :key="item.tone" :class="`decision-timeline__summary-item--${item.tone}`"><i></i>{{ item.label }} <strong>{{ item.count }}</strong></span>
+        <span v-for="item in timelineSummary" :key="item.tone" :class="`decision-timeline__summary-item--${item.tone}`"
+          ><i></i>{{ item.label }} <strong>{{ item.count }}</strong></span
+        >
       </div>
       <TransitionGroup name="reveal-list" tag="div" class="decision-timeline">
-        <article v-for="(item, index) in displayedDecisionTimeline" :key="`${item.date}-${item.type}-${item.title}-${index}`" class="decision-timeline__item" :class="`decision-timeline__item--${item.tone}`">
+        <article
+          v-for="(item, index) in displayedDecisionTimeline"
+          :key="`${item.date}-${item.type}-${item.title}-${index}`"
+          class="decision-timeline__item"
+          :class="`decision-timeline__item--${item.tone}`"
+        >
           <time>{{ formatDate(item.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</time>
           <span>{{ item.type }}</span>
           <div>
@@ -509,7 +789,15 @@ function downloadJson() {
           </div>
         </article>
       </TransitionGroup>
-      <button v-if="decisionTimeline.length > 8" class="secondary-button load-more timeline-toggle" type="button" :aria-expanded="timelineExpanded" @click="timelineExpanded = !timelineExpanded">{{ timelineExpanded ? 'Свернуть историю' : `Показать всю историю (${decisionTimeline.length})` }}</button>
+      <button
+        v-if="decisionTimeline.length > 8"
+        class="secondary-button load-more timeline-toggle"
+        type="button"
+        :aria-expanded="timelineExpanded"
+        @click="timelineExpanded = !timelineExpanded"
+      >
+        {{ timelineExpanded ? 'Свернуть историю' : `Показать всю историю (${decisionTimeline.length})` }}
+      </button>
     </article>
   </section>
 </template>

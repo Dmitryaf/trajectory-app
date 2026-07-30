@@ -27,7 +27,7 @@ test('keeps every primary screen inside the minimum viewport width', async ({ pa
 test('sends feedback from the built-in form without asking for recipient details', async ({ page }) => {
   let submittedMessage = '';
   await page.route('/api/feedback', async (route) => {
-    submittedMessage = (await route.request().postDataJSON() as { message: string }).message;
+    submittedMessage = ((await route.request().postDataJSON()) as { message: string }).message;
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
   });
   await page.goto('/');
@@ -45,7 +45,10 @@ test('sends feedback from the built-in form without asking for recipient details
 test('opens period review forms from the summary shortcuts', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 
-  for (const [route, target] of [['/week', '#week-review'], ['/month', '#month-review']] as const) {
+  for (const [route, target] of [
+    ['/week', '#week-review'],
+    ['/month', '#month-review'],
+  ] as const) {
     await page.goto(route);
     await page.locator(`a[href="${target}"]`).click();
     await expect(page).toHaveURL(new RegExp(`${target}$`));

@@ -38,11 +38,21 @@ function showAllTime() {
   <div class="archive-date-filter">
     <label>
       <span>С</span>
-      <input :value="dateFrom" type="date" :aria-label="`Начальная дата ${contextLabel}`" @input="emit('update:dateFrom', ($event.target as HTMLInputElement).value)" />
+      <input
+        :value="dateFrom"
+        type="date"
+        :aria-label="`Начальная дата ${contextLabel}`"
+        @input="emit('update:dateFrom', ($event.target as HTMLInputElement).value)"
+      />
     </label>
     <label>
       <span>По</span>
-      <input :value="dateTo" type="date" :aria-label="`Конечная дата ${contextLabel}`" @input="emit('update:dateTo', ($event.target as HTMLInputElement).value)" />
+      <input
+        :value="dateTo"
+        type="date"
+        :aria-label="`Конечная дата ${contextLabel}`"
+        @input="emit('update:dateTo', ($event.target as HTMLInputElement).value)"
+      />
     </label>
   </div>
   <p class="archive-date-filter__state" aria-live="polite">{{ rangeLabel }}</p>

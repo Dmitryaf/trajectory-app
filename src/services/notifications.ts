@@ -1,7 +1,7 @@
 import { toast } from 'vue-sonner';
 
 const toastOptions = {
-  duration: 2600
+  duration: 2600,
 };
 
 export function notifySaved(message = 'Сохранено') {

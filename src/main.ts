@@ -27,8 +27,8 @@ const router = createRouter({
     { path: '/trends', component: () => import('./views/TrendsView.vue'), meta: { title: 'Тренды' } },
     { path: '/more', component: () => import('./views/MoreView.vue'), meta: { title: 'Журнал' } },
     { path: '/settings', component: () => import('./views/SettingsView.vue'), meta: { title: 'Настройки' } },
-    { path: '/password-reset', component: () => import('./views/PasswordResetView.vue'), meta: { title: 'Новый пароль' } }
-  ]
+    { path: '/password-reset', component: () => import('./views/PasswordResetView.vue'), meta: { title: 'Новый пароль' } },
+  ],
 });
 
 router.afterEach((to) => {

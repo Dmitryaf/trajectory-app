@@ -13,13 +13,17 @@ const hours = ref<number | string | null>(null);
 const minutes = ref<number | string | null>(null);
 let syncing = false;
 
-watch(() => props.modelValue, (value) => {
-  syncing = true;
-  const parts = splitDuration(value);
-  hours.value = parts.hours;
-  minutes.value = parts.minutes;
-  syncing = false;
-}, { immediate: true });
+watch(
+  () => props.modelValue,
+  (value) => {
+    syncing = true;
+    const parts = splitDuration(value);
+    hours.value = parts.hours;
+    minutes.value = parts.minutes;
+    syncing = false;
+  },
+  { immediate: true },
+);
 
 watch([hours, minutes], () => {
   if (syncing) return;
@@ -32,7 +36,17 @@ watch([hours, minutes], () => {
 <template>
   <div class="duration-field">
     <label>
-      <input :id="id" v-model.number="hours" type="number" min="0" :max="maxHours" step="1" inputmode="numeric" aria-label="Часы" placeholder="7" />
+      <input
+        :id="id"
+        v-model.number="hours"
+        type="number"
+        min="0"
+        :max="maxHours"
+        step="1"
+        inputmode="numeric"
+        aria-label="Часы"
+        placeholder="7"
+      />
       <span>ч</span>
     </label>
     <label>

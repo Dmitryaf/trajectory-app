@@ -33,8 +33,7 @@ function requireWithinBudget(label, size, budget, relativePath) {
 }
 
 const html = await readFile(path.join(distRoot, 'index.html'), 'utf8');
-const assetPaths = [...html.matchAll(/(?:src|href)="(\/assets\/[^"?]+\.(?:js|css))"/g)]
-  .map((match) => match[1].slice(1));
+const assetPaths = [...html.matchAll(/(?:src|href)="(\/assets\/[^"?]+\.(?:js|css))"/g)].map((match) => match[1].slice(1));
 
 if (assetPaths.length < 2) {
   throw new Error('Built index.html must reference JavaScript and CSS assets');

@@ -29,7 +29,8 @@ export function useDailyEntryForm(store: AppStore) {
   const isDirty = computed(() => currentEntrySnapshot.value !== originalEntrySnapshot.value);
   const entryChangeNotice = computed(() => {
     if (saved.value) return '';
-    if (isDirty.value && hasSavedEntry.value) return `Есть изменения за ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })}. Сохрани, чтобы обновить запись.`;
+    if (isDirty.value && hasSavedEntry.value)
+      return `Есть изменения за ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })}. Сохрани, чтобы обновить запись.`;
     if (isDirty.value) return `Есть несохранённая запись за ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })}.`;
     return '';
   });
@@ -99,14 +100,19 @@ export function useDailyEntryForm(store: AppStore) {
       notifyError(validationMessage.value);
       return;
     }
-    const entry = prepareDailyEntryForSave(form, currentMetrics(), {
-      focusTitle: store.settings.activeFocusTitle,
-      focusOutcomeCriterion: store.settings.focusOutcomeCriterion,
-      focusReviewDate: store.settings.focusReviewDate,
-      externalEvidenceCriterion: store.settings.externalEvidenceCriterion,
-      nutritionCriterion: store.settings.nutritionGoalCriterion,
-      activeDailyBlocks: store.settings.activeDailyBlocks,
-    }, !hasSavedEntry.value);
+    const entry = prepareDailyEntryForSave(
+      form,
+      currentMetrics(),
+      {
+        focusTitle: store.settings.activeFocusTitle,
+        focusOutcomeCriterion: store.settings.focusOutcomeCriterion,
+        focusReviewDate: store.settings.focusReviewDate,
+        externalEvidenceCriterion: store.settings.externalEvidenceCriterion,
+        nutritionCriterion: store.settings.nutritionGoalCriterion,
+        activeDailyBlocks: store.settings.activeDailyBlocks,
+      },
+      !hasSavedEntry.value,
+    );
     const wasExistingEntry = hasSavedEntry.value;
     saving.value = true;
     try {
@@ -114,7 +120,9 @@ export function useDailyEntryForm(store: AppStore) {
       applyEntry(savedEntry);
       originalEntrySnapshot.value = snapshotDailyEntry(form, currentMetrics());
       saved.value = true;
-      notifySaved(wasExistingEntry ? `Запись за ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })} обновлена` : 'День сохранён');
+      notifySaved(
+        wasExistingEntry ? `Запись за ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })} обновлена` : 'День сохранён',
+      );
       if (savedTimer !== undefined) window.clearTimeout(savedTimer);
       savedTimer = window.setTimeout(() => (saved.value = false), 2200);
     } catch (error) {
@@ -125,19 +133,23 @@ export function useDailyEntryForm(store: AppStore) {
   }
 
   watch(selectedDate, loadEntry, { immediate: true });
-  watch(() => [form.bedtime, form.wakeTime], ([bedtime, wakeTime]) => {
-    if (syncingEntry) return;
-    const duration = timeBetween(String(bedtime), String(wakeTime));
-    if (duration !== null) {
-      timeInBedDurationMinutes.value = duration;
-      lastDerivedTimeInBed = duration;
-      return;
-    }
-    if (lastDerivedTimeInBed !== null && timeInBedDurationMinutes.value === lastDerivedTimeInBed) {
-      timeInBedDurationMinutes.value = null;
-    }
-    lastDerivedTimeInBed = null;
-  }, { flush: 'sync' });
+  watch(
+    () => [form.bedtime, form.wakeTime],
+    ([bedtime, wakeTime]) => {
+      if (syncingEntry) return;
+      const duration = timeBetween(String(bedtime), String(wakeTime));
+      if (duration !== null) {
+        timeInBedDurationMinutes.value = duration;
+        lastDerivedTimeInBed = duration;
+        return;
+      }
+      if (lastDerivedTimeInBed !== null && timeInBedDurationMinutes.value === lastDerivedTimeInBed) {
+        timeInBedDurationMinutes.value = null;
+      }
+      lastDerivedTimeInBed = null;
+    },
+    { flush: 'sync' },
+  );
 
   if (getCurrentInstance()?.appContext.config.globalProperties.$router) {
     onBeforeRouteLeave(() => confirmDiscardChanges());

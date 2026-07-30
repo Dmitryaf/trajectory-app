@@ -62,10 +62,12 @@ export function prepareDailyEntryForSave(
 }
 
 export function validateDailyEntryMetrics(metrics: DailyEntryMetrics, sleepBlockActive: boolean): string {
-  if (sleepBlockActive
-    && metrics.sleepMinutes !== null
-    && metrics.timeInBedMinutes !== null
-    && metrics.sleepMinutes > metrics.timeInBedMinutes) {
+  if (
+    sleepBlockActive &&
+    metrics.sleepMinutes !== null &&
+    metrics.timeInBedMinutes !== null &&
+    metrics.sleepMinutes > metrics.timeInBedMinutes
+  ) {
     return 'Время сна не может быть больше времени в кровати.';
   }
   return '';

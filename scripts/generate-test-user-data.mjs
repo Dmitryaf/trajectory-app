@@ -12,7 +12,11 @@ function isoAt(date, hour = 20) {
 
 function eachDate(from, through) {
   const dates = [];
-  for (const cursor = new Date(`${from}T00:00:00Z`); cursor <= new Date(`${through}T00:00:00Z`); cursor.setUTCDate(cursor.getUTCDate() + 1)) {
+  for (
+    const cursor = new Date(`${from}T00:00:00Z`);
+    cursor <= new Date(`${through}T00:00:00Z`);
+    cursor.setUTCDate(cursor.getUTCDate() + 1)
+  ) {
     dates.push(cursor.toISOString().slice(0, 10));
   }
   return dates;
@@ -35,13 +39,7 @@ const lifeAreaCycles = [
   ['friends', 'rest'],
   ['creativity', 'custom:life:music'],
 ];
-const factorCycles = [
-  [],
-  ['screen'],
-  ['work_code', 'late_bedtime'],
-  ['anxiety_overload'],
-  ['late_food', 'screen'],
-];
+const factorCycles = [[], ['screen'], ['work_code', 'late_bedtime'], ['anxiety_overload'], ['late_food', 'screen']];
 const activityCycles = [['walk'], ['workout'], [], ['walk', 'recovery'], ['recovery']];
 const factCycles = [
   'Отправил черновик организатору встречи',
@@ -55,27 +53,39 @@ const factCycles = [
 const dailyEntries = trackedDates.map((date, index) => {
   const factors = factorCycles[index % factorCycles.length];
   const special = specialDays[date] ?? null;
-  const careerStates = index % 4 === 0
-    ? ['preparation', 'external']
-    : index % 5 === 0
-      ? ['project', 'external']
-      : [index % 3 === 0 ? 'project' : 'preparation'];
+  const careerStates =
+    index % 4 === 0
+      ? ['preparation', 'external']
+      : index % 5 === 0
+        ? ['project', 'external']
+        : [index % 3 === 0 ? 'project' : 'preparation'];
   const late = factors.includes('late_bedtime');
   const sleepMinutes = special?.[0] === 'travel' ? 365 : late ? 390 : 440 + (index % 4) * 10;
-  const experimentCompleted = date >= '2026-07-13' && date <= dataThrough
-    ? !['2026-07-15', '2026-07-19'].includes(date)
-    : date >= '2026-06-10' && date <= '2026-06-16'
-      ? date !== '2026-06-12'
-      : null;
+  const experimentCompleted =
+    date >= '2026-07-13' && date <= dataThrough
+      ? !['2026-07-15', '2026-07-19'].includes(date)
+      : date >= '2026-06-10' && date <= '2026-06-16'
+        ? date !== '2026-06-12'
+        : null;
 
   return {
     date,
     entrySchemaVersion: 2,
     activeDailyBlocksSnapshot: ['sleep', 'context', 'career', 'movement', 'nutrition'],
     recordedFields: [
-      'bedtime', 'wakeTime', 'sleepMinutes', 'timeInBedMinutes', 'sleepQuality', 'energy',
-      'contextFactors', 'careerStates', 'activities', 'nutritionState', 'actionDirection',
-      'lifeAreas', 'importantFact',
+      'bedtime',
+      'wakeTime',
+      'sleepMinutes',
+      'timeInBedMinutes',
+      'sleepQuality',
+      'energy',
+      'contextFactors',
+      'careerStates',
+      'activities',
+      'nutritionState',
+      'actionDirection',
+      'lifeAreas',
+      'importantFact',
       ...(special ? ['specialDay'] : []),
       ...(factors.includes('anxiety_overload') || (!special && index % 6 === 0) ? ['contextNote'] : []),
       ...(index % 7 === 0 ? ['nutritionNote'] : []),
@@ -93,7 +103,9 @@ const dailyEntries = trackedDates.map((date, index) => {
     contextFactorsRecorded: true,
     contextNote: factors.includes('anxiety_overload')
       ? 'Было сложно переключиться после насыщенного дня'
-      : !special && index % 6 === 0 ? 'День с большим количеством встреч' : '',
+      : !special && index % 6 === 0
+        ? 'День с большим количеством встреч'
+        : '',
     specialDay: special?.[0] ?? null,
     specialDayNote: special?.[1] ?? '',
     careerState: careerStates[0],
@@ -150,19 +162,41 @@ const eventSpecs = [
   ['2026-05-29', 'event', 'Организатор прислал подробные комментарии', 'Зафиксировал правки к структуре и примерам в докладе.'],
   ['2026-06-12', 'change', 'Поездка изменила режим недели', 'Не сравниваю эту неделю с обычными по сну и нагрузке.'],
   ['2026-06-24', 'decision', 'Оставил один вечер без подготовки', 'По средам не открываю материалы доклада после 20:00.'],
-  ['2026-07-03', 'insight', 'Экран перед сном связан с более поздним засыпанием', 'Это наблюдение по нескольким дням, а не доказанная причина.'],
+  [
+    '2026-07-03',
+    'insight',
+    'Экран перед сном связан с более поздним засыпанием',
+    'Это наблюдение по нескольким дням, а не доказанная причина.',
+  ],
   ['2026-07-10', 'event', 'Провёл пробную репетицию', 'Отметил места, где объяснение получилось слишком длинным.'],
-  ['2026-07-13', 'decision', 'Начал эксперимент с первым часом без уведомлений', 'На две недели отмечаю, удалось ли начать запланированную задачу без переключений.'],
+  [
+    '2026-07-13',
+    'decision',
+    'Начал эксперимент с первым часом без уведомлений',
+    'На две недели отмечаю, удалось ли начать запланированную задачу без переключений.',
+  ],
   ['2026-07-17', 'change', 'Перенёс переписку на первую половину дня', 'Проверяю, станет ли получение обратной связи регулярнее.'],
   ['2026-07-20', 'other', 'Скорректировал план последней недели', 'Оставил одну репетицию и финальную проверку материалов.'],
 ];
-const lifeEvents = eventSpecs.map(([date, type, title, note], index) => ({ id: index + 1, date, type, title, note, createdAt: isoAt(date, 18) }));
+const lifeEvents = eventSpecs.map(([date, type, title, note], index) => ({
+  id: index + 1,
+  date,
+  type,
+  title,
+  note,
+  createdAt: isoAt(date, 18),
+}));
 
 const weekStarts = eachDate('2026-05-04', '2026-07-13').filter((date) => new Date(`${date}T00:00:00Z`).getUTCDay() === 1);
 const weeklyReviews = weekStarts.map((weekStart, index) => ({
   weekStart,
   updatedAt: isoAt(eachDate(weekStart, dataThrough)[Math.min(6, eachDate(weekStart, dataThrough).length - 1)], 17),
-  previousPlanOutcome: index === 0 ? 'Первый обзор в наборе данных' : index % 3 === 0 ? 'План сработал частично: материал отправил, вечер перегрузил' : 'Основной следующий шаг выполнен',
+  previousPlanOutcome:
+    index === 0
+      ? 'Первый обзор в наборе данных'
+      : index % 3 === 0
+        ? 'План сработал частично: материал отправил, вечер перегрузил'
+        : 'Основной следующий шаг выполнен',
   results: [
     resultTitles[(index * 2) % resultTitles.length][1],
     resultTitles[(index * 2 + 1) % resultTitles.length][1],
@@ -171,7 +205,10 @@ const weeklyReviews = weekStarts.map((weekStart, index) => ({
   support: index % 2 === 0 ? 'Один небольшой раздел на день' : 'Заранее определённый первый шаг',
   obstacle: index % 3 === 0 ? 'Позднее завершение работы' : 'Слишком широкий список задач',
   nextLever: index % 2 === 0 ? 'Отправлять готовый фрагмент до обеда' : 'Закрывать подготовку коротким итогом',
-  ifThenPlan: index % 2 === 0 ? 'Если начинаю снова перепроверять готовый фрагмент, отправляю его организатору на комментарий' : 'Если после 22:30 остаётся задача, переношу её в план следующего дня',
+  ifThenPlan:
+    index % 2 === 0
+      ? 'Если начинаю снова перепроверять готовый фрагмент, отправляю его организатору на комментарий'
+      : 'Если после 22:30 остаётся задача, переношу её в план следующего дня',
 }));
 
 const monthlyReviews = [
@@ -210,16 +247,12 @@ const payload = {
     settingsVersion: 10,
     activeDailyBlocks: ['sleep', 'context', 'career', 'movement', 'nutrition'],
     activeLifeAreas: ['family', 'reading', 'creativity', 'rest', 'friends', 'custom:life:music'],
-    customActivityOptions: [
-      { id: 'custom:activity:swimming', label: 'Плавание', icon: '+', custom: true, archived: false },
-    ],
+    customActivityOptions: [{ id: 'custom:activity:swimming', label: 'Плавание', icon: '+', custom: true, archived: false }],
     hiddenActivityIds: [],
     customCareerOptions: [
       { id: 'custom:career:research', label: 'Исследование материалов', icon: '+', custom: true, countsAsExternal: false, archived: true },
     ],
-    customLifeAreaOptions: [
-      { id: 'custom:life:music', label: 'Музыка', icon: '+', custom: true, archived: false },
-    ],
+    customLifeAreaOptions: [{ id: 'custom:life:music', label: 'Музыка', icon: '+', custom: true, archived: false }],
     customContextFactorOptions: [
       { id: 'custom:context:renovation-noise', label: 'Ремонт у соседей', icon: '+', custom: true, archived: true },
     ],
@@ -242,20 +275,22 @@ const payload = {
       conclusion: '',
       decision: null,
     },
-    experimentHistory: [{
-      id: 'experiment-2026-06-walk',
-      title: 'Короткая прогулка после обеда',
-      hypothesis: 'Поможет ли прогулка легче переключаться между задачами.',
-      targetMetricId: null,
-      targetMetric: '',
-      targetDirection: 'increase',
-      minimumMeaningfulChange: null,
-      startDate: '2026-06-10',
-      endDate: '2026-06-16',
-      conclusion: 'После прогулки переключаться было проще, но отметок пока мало для уверенного решения.',
-      decision: 'more_data',
-      completedAt: '2026-06-16T20:00:00.000Z',
-    }],
+    experimentHistory: [
+      {
+        id: 'experiment-2026-06-walk',
+        title: 'Короткая прогулка после обеда',
+        hypothesis: 'Поможет ли прогулка легче переключаться между задачами.',
+        targetMetricId: null,
+        targetMetric: '',
+        targetDirection: 'increase',
+        minimumMeaningfulChange: null,
+        startDate: '2026-06-10',
+        endDate: '2026-06-16',
+        conclusion: 'После прогулки переключаться было проще, но отметок пока мало для уверенного решения.',
+        decision: 'more_data',
+        completedAt: '2026-06-16T20:00:00.000Z',
+      },
+    ],
   },
 };
 
@@ -265,12 +300,18 @@ for (const property of ['activeDailyBlocksSnapshot', 'recordedFields']) {
   serialized = compactStringArrayProperty(serialized, property);
 }
 await writeFile(outputPath, `${serialized}\n`, 'utf8');
-console.log(`Generated ${path.relative(projectRoot, outputPath)}: ${dailyEntries.length} days, ${results.length} results, ${lifeEvents.length} events.`);
+console.log(
+  `Generated ${path.relative(projectRoot, outputPath)}: ${dailyEntries.length} days, ${results.length} results, ${lifeEvents.length} events.`,
+);
 
 function compactStringArrayProperty(json, property) {
   const pattern = new RegExp(`("${property}": \\[)\\n((?:\\s+"[^"]+",?\\n)+)(\\s*\\])`, 'g');
   return json.replace(pattern, (_, start, body) => {
-    const values = body.trim().split('\n').map((line) => line.trim()).join(' ');
+    const values = body
+      .trim()
+      .split('\n')
+      .map((line) => line.trim())
+      .join(' ');
     return `${start}${values}]`;
   });
 }

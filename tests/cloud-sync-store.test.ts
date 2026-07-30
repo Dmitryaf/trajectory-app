@@ -16,7 +16,7 @@ vi.mock('../src/services/cloudSync', () => ({
   onCloudAuthChange: vi.fn(),
   saveCloudSnapshot: vi.fn(),
   signInToCloud: vi.fn(),
-  signOutFromCloud: vi.fn()
+  signOutFromCloud: vi.fn(),
 }));
 
 describe('cloud synchronization state', () => {
@@ -34,7 +34,7 @@ describe('cloud synchronization state', () => {
 
     expect(markCloudSyncPending).toHaveBeenCalledWith('user-1', 'Локальные изменения ожидают синхронизации');
     expect(vi.mocked(markCloudSyncPending).mock.invocationCallOrder[0]).toBeLessThan(
-      vi.mocked(saveCloudSnapshot).mock.invocationCallOrder[0]
+      vi.mocked(saveCloudSnapshot).mock.invocationCallOrder[0],
     );
   });
 });

@@ -36,7 +36,16 @@ export function experimentDecisionLabel(decision: ExperimentDecision | null): st
   return experimentDecisionOptions.find((option) => option.id === decision)?.label ?? '';
 }
 
-export function experimentPeriodsOverlap(first: Pick<Experiment, 'startDate' | 'endDate'>, second: Pick<Experiment, 'startDate' | 'endDate'>): boolean {
-  return Boolean(first.startDate && first.endDate && second.startDate && second.endDate
-    && first.startDate <= second.endDate && second.startDate <= first.endDate);
+export function experimentPeriodsOverlap(
+  first: Pick<Experiment, 'startDate' | 'endDate'>,
+  second: Pick<Experiment, 'startDate' | 'endDate'>,
+): boolean {
+  return Boolean(
+    first.startDate &&
+    first.endDate &&
+    second.startDate &&
+    second.endDate &&
+    first.startDate <= second.endDate &&
+    second.startDate <= first.endDate,
+  );
 }

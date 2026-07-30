@@ -69,7 +69,9 @@ export function summarize(entries: DailyEntry[], externalCareerIds: string[] = e
     actionDirectionSamples: entries.filter((entry) => dailyFieldWasRecorded(entry, 'actionDirection')).length,
     experimentMarkedDays: entries.filter((entry) => entry.experimentCompleted !== null).length,
     experimentCompletedDays: entries.filter((entry) => entry.experimentCompleted === true).length,
-    sleepTimingSamples: ordinaryEntries.filter((entry) => clockMinutes(entry.bedtime, true) !== null && clockMinutes(entry.wakeTime, false) !== null).length,
+    sleepTimingSamples: ordinaryEntries.filter(
+      (entry) => clockMinutes(entry.bedtime, true) !== null && clockMinutes(entry.wakeTime, false) !== null,
+    ).length,
     averageSleep: average(ordinaryEntries.map((entry) => entry.sleepMinutes)),
     averageTimeInBed: average(ordinaryEntries.map((entry) => entry.timeInBedMinutes)),
     averageSleepEfficiency: average(ordinaryEntries.map(sleepEfficiency)),
