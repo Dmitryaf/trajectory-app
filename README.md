@@ -55,7 +55,7 @@ npm run storybook
 
 После запуска открой адрес, который покажет терминал (обычно `http://localhost:5173`).
 
-Для закрытой беты встроенная форма обратной связи включается переменной `VITE_FEEDBACK_ENABLED=true`. Сообщение отправляет Vercel Function: получатель и ключ почтового сервиса остаются в server-side переменных и не попадают в браузер. Настройка и полная граница готовности к приглашениям описаны в [docs/BETA_RELEASE.md](./docs/BETA_RELEASE.md).
+Для закрытой беты встроенная форма обратной связи включается переменной `VITE_FEEDBACK_ENABLED=true`. Сообщение отправляет Vercel Function: получатель и ключ почтового сервиса остаются в server-side переменных и не попадают в браузер. Настройка и полная граница готовности к приглашениям описаны в [BETA_RELEASE.md](./docs/operations/BETA_RELEASE.md).
 
 Проверка:
 
@@ -82,10 +82,10 @@ JSON-экспорт в настройках остаётся ручной стр
 
 ## Веб и PWA
 
-План backend, авторизации и Supabase RLS описан в [BACKEND_AUTH_CI.md](./BACKEND_AUTH_CI.md). Ветки, CI, staging и выпуск в production описаны в [docs/DELIVERY.md](./docs/DELIVERY.md).
+План backend, авторизации и Supabase RLS описан в [BACKEND_AUTH_CI.md](./docs/operations/BACKEND_AUTH_CI.md). Ветки, CI, staging и выпуск в production описаны в [DELIVERY.md](./docs/operations/DELIVERY.md).
 
-Правила развития продукта, научной осторожности и добавления новых полей описаны в [docs/PRODUCT_RULES.md](./docs/PRODUCT_RULES.md).
+Правила развития продукта, научной осторожности и добавления новых полей описаны в [PRODUCT_RULES.md](./docs/product/PRODUCT_RULES.md).
 
-Правила работы агента начинаются с [docs/AGENTS.md](./docs/AGENTS.md), подробные инструкции находятся в [docs/agent](./docs/agent/README.md). Актуальный технический и продуктовый бэклог — в [docs/BACKLOG.md](./docs/BACKLOG.md), beta release gate — в [docs/BETA_RELEASE.md](./docs/BETA_RELEASE.md), границы кода — в [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+Практический вход в проект находится в [OWNER_GUIDE.md](./docs/OWNER_GUIDE.md), навигация по специализированным материалам — в [docs/README.md](./docs/README.md). Правила работы агента начинаются с [docs/AGENTS.md](./docs/AGENTS.md), подробные инструкции находятся в [docs/agent](./docs/agent/README.md). Актуальный технический и продуктовый бэклог — в [BACKLOG.md](./docs/planning/BACKLOG.md), beta release gate — в [BETA_RELEASE.md](./docs/operations/BETA_RELEASE.md), границы кода — в [ARCHITECTURE.md](./docs/development/ARCHITECTURE.md).
 
 Встроенного AI-агента и серверного обращения к модели в проекте нет. Кнопки анализа только копируют промпт в буфер или скачивают JSON; решение о передаче личных данных внешнему сервису остаётся за пользователем.
