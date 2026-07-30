@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, watch } from 'vue';
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterLink, RouterView, useRouter } from 'vue-router';
 import { Toaster } from 'vue-sonner';
 import 'vue-sonner/style.css';
@@ -18,6 +18,10 @@ const router = useRouter();
 const FeedbackDialog = defineAsyncComponent(() => import('./components/FeedbackDialog.vue'));
 const canOpenApp = computed(() => auth.initialized && auth.isAuthenticated);
 const feedbackEnabled = import.meta.env.VITE_FEEDBACK_ENABLED === 'true';
+const appDataReady = ref(false);
+const appDataLoadError = ref('');
+const appDataLoadingText = ref('Загружаю записи…');
+const effectiveLoadError = computed(() => store.loadError || appDataLoadError.value);
 let appDataLoadPromise: Promise<void> | null = null;
 const refreshCloudAfterResume = createResumeCloudRefresh(async () => {
   await reconcileCloudSnapshotOnStartup(store, auth.requiresAuth ? auth.session?.user.id : null);
@@ -64,28 +68,39 @@ watch(canOpenApp, async (allowed) => {
   if (allowed) {
     await loadAppData();
   } else if (auth.requiresAuth) {
+    resetAppDataState();
     store.unload();
   }
 });
 
-watch(() => auth.recoveryRequired, async (required) => {
-  if (required && router.currentRoute.value.path !== '/password-reset') {
-    await router.replace('/password-reset');
-  }
-});
+watch(
+  () => auth.recoveryRequired,
+  async (required) => {
+    if (required && router.currentRoute.value.path !== '/password-reset') {
+      await router.replace('/password-reset');
+    }
+  },
+);
 
 async function loadAppData() {
-  if (store.loaded && !store.loadError) return;
+  if (appDataReady.value && store.loaded && !effectiveLoadError.value) return;
   if (appDataLoadPromise) return appDataLoadPromise;
 
+  appDataReady.value = false;
+  appDataLoadError.value = '';
+  appDataLoadingText.value = 'Загружаю записи…';
   appDataLoadPromise = (async () => {
     try {
-      await prepareLocalCacheOwner(store, auth.requiresAuth ? auth.session?.user.id : null);
+      const userId = auth.requiresAuth ? auth.session?.user.id : null;
+      await prepareLocalCacheOwner(store, userId);
       await store.load();
-      await reconcileCloudSnapshotOnStartup(store, auth.requiresAuth ? auth.session?.user.id : null);
+      if (userId) appDataLoadingText.value = 'Сверяю записи с облаком…';
+      await reconcileCloudSnapshotOnStartup(store, userId);
     } catch (error) {
-      console.error('Не удалось загрузить локальные данные', error);
+      console.error('Не удалось подготовить записи', error);
+      appDataLoadError.value = error instanceof Error ? error.message : 'Не удалось подготовить записи';
     } finally {
+      appDataReady.value = true;
       appDataLoadPromise = null;
     }
   })();
@@ -94,8 +109,15 @@ async function loadAppData() {
 }
 
 async function retryLoadAppData() {
+  resetAppDataState();
   store.unload();
   await loadAppData();
+}
+
+function resetAppDataState() {
+  appDataReady.value = false;
+  appDataLoadError.value = '';
+  appDataLoadingText.value = 'Загружаю записи…';
 }
 
 async function signOut() {
@@ -113,7 +135,7 @@ const navItems = [
   { to: '/week', label: 'Неделя', icon: '▦' },
   { to: '/month', label: 'Месяц', icon: '▥' },
   { to: '/trends', label: 'Тренды', icon: '≋' },
-  { to: '/more', label: 'Журнал', icon: '◇' }
+  { to: '/more', label: 'Журнал', icon: '◇' },
 ];
 </script>
 
@@ -125,7 +147,7 @@ const navItems = [
         <span class="brand__mark"><i></i></span>
         <span><strong>Траектория</strong><small>факты, а не оценка</small></span>
       </RouterLink>
-      <div v-if="canOpenApp && store.loaded" class="header-actions">
+      <div v-if="canOpenApp && appDataReady && store.loaded && !effectiveLoadError" class="header-actions">
         <FeedbackDialog v-if="feedbackEnabled" :access-token="auth.session?.access_token ?? ''" />
         <RouterLink v-if="!auth.requiresAuth" to="/settings" class="header-settings-link" aria-label="Открыть настройки" title="Настройки">
           <span>⚙</span><strong>Настройки</strong>
@@ -147,21 +169,25 @@ const navItems = [
         </div>
       </section>
       <AuthGate v-else-if="auth.requiresAuth && !auth.isAuthenticated" />
-      <div v-else-if="!store.loaded" class="loading-card" role="status" aria-live="polite">
+      <div v-else-if="!appDataReady" class="loading-card" role="status" aria-live="polite">
         <span class="loading-card__mark" aria-hidden="true"><i></i></span>
-        <strong>Загружаю записи…</strong>
+        <strong>{{ appDataLoadingText }}</strong>
       </div>
-      <section v-else-if="store.loadError" class="storage-error" role="alert">
+      <section v-else-if="effectiveLoadError" class="storage-error" role="alert">
         <span class="storage-error__mark" aria-hidden="true">!</span>
         <div>
           <p class="eyebrow">Локальное хранилище недоступно</p>
           <h1>Записи пока не открылись</h1>
-          <p>{{ store.loadError }}</p>
+          <p>{{ effectiveLoadError }}</p>
           <button class="primary-button" type="button" @click="retryLoadAppData">Повторить</button>
         </div>
       </section>
       <template v-else>
-        <section v-if="store.cloudSyncStatus === 'pending' || store.cloudSyncStatus === 'conflict' || store.cloudSyncStatus === 'error'" class="sync-banner" :class="`sync-banner--${store.cloudSyncStatus}`">
+        <section
+          v-if="store.cloudSyncStatus === 'pending' || store.cloudSyncStatus === 'conflict' || store.cloudSyncStatus === 'error'"
+          class="sync-banner"
+          :class="`sync-banner--${store.cloudSyncStatus}`"
+        >
           <span class="sync-banner__mark" aria-hidden="true">{{ store.cloudSyncStatus === 'conflict' ? '!' : '↥' }}</span>
           <div>
             <strong>{{ store.cloudSyncStatus === 'conflict' ? 'Нужен выбор по облаку' : 'Облако не обновлено' }}</strong>
@@ -173,8 +199,14 @@ const navItems = [
       </template>
     </main>
 
-    <nav v-if="canOpenApp && store.loaded" class="bottom-nav" aria-label="Основная навигация">
-      <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" class="bottom-nav__item" :class="{ 'router-link-active': item.to === '/more' && ['/results', '/events'].includes($route.path) }">
+    <nav v-if="canOpenApp && appDataReady && store.loaded && !effectiveLoadError" class="bottom-nav" aria-label="Основная навигация">
+      <RouterLink
+        v-for="item in navItems"
+        :key="item.to"
+        :to="item.to"
+        class="bottom-nav__item"
+        :class="{ 'router-link-active': item.to === '/more' && ['/results', '/events'].includes($route.path) }"
+      >
         <span>{{ item.icon }}</span>
         <small>{{ item.label }}</small>
       </RouterLink>
