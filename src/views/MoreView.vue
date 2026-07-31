@@ -11,15 +11,15 @@ const sections = computed(() => [
     tone: 'mint',
     count: store.results.length,
     title: 'Итоги',
-    text: 'Завершённые действия, полученные ответы и созданные вещи.',
+    text: 'Конкретные сделанные дела и полученные результаты.',
   },
   {
     to: '/events',
     icon: '✦',
     tone: 'amber',
     count: store.lifeEvents.length,
-    title: 'События и инсайты',
-    text: 'Изменения, решения и важные мысли в общей хронологии.',
+    title: 'События и важные мысли',
+    text: 'Событие — важная для вас ситуация, которая произошла. Важная мысль — что вы поняли или стали видеть иначе.',
   },
 ]);
 </script>
@@ -28,11 +28,18 @@ const sections = computed(() => [
   <section class="page page--journal">
     <div class="page-heading">
       <div>
-        <span class="eyebrow">Хронология</span>
+        <span class="eyebrow">Важное отдельно</span>
         <h1>Журнал</h1>
-        <p>Завершённые факты, события и инсайты в отдельных списках.</p>
+        <p>Здесь отдельно хранятся конкретные итоги, важные события и мысли.</p>
       </div>
     </div>
+    <article class="journal-guide-card">
+      <strong>Что записывать в Журнал</strong>
+      <p>
+        <b>Итог</b> — конкретное сделанное дело или полученный результат. <b>Событие</b> — важная для вас ситуация, которая произошла.
+        <b>Важная мысль</b> — что вы поняли или стали видеть иначе.
+      </p>
+    </article>
     <div class="more-grid">
       <RouterLink v-for="section in sections" :key="section.to" :to="section.to" class="more-card" :class="`more-card--${section.tone}`">
         <span>{{ section.icon }}</span>

@@ -22,6 +22,7 @@ import {
   createCustomOption,
   dailyBlockOptions,
   legacyActivityOptions,
+  legacyCareerOptions,
   lifeAreaOptions,
   type ActivityId,
   type AppSettings,
@@ -37,13 +38,26 @@ const settings = reactive<AppSettings>(plainCopy(store.settings));
 const importInput = ref<HTMLInputElement>();
 const newCareerLabel = ref('');
 const newActivityLabel = ref('');
-const newCareerCountsAsExternal = ref(true);
 const newLifeAreaLabel = ref('');
 const newContextFactorLabel = ref('');
 const newPassword = ref('');
 const newPasswordConfirmation = ref('');
 const auth = useAuthStore();
-const allCareerOptions = computed(() => [...careerOptions, ...settings.customCareerOptions.filter((option) => !option.archived)]);
+const allCareerOptions = computed(() => {
+  const usedIds = new Set([
+    ...store.dailyEntries.flatMap((entry) => entry.careerStates),
+    ...store.dailyEntries.flatMap((entry) => (entry.careerState ? [entry.careerState] : [])),
+  ]);
+  return Array.from(
+    new Map(
+      [
+        ...careerOptions,
+        ...settings.customCareerOptions.filter((option) => !option.archived),
+        ...legacyCareerOptions.filter((option) => usedIds.has(option.id)),
+      ].map((option) => [option.id, option]),
+    ).values(),
+  );
+});
 const activeActivityOptions = computed(() => [
   ...activityOptions.filter((option) => !settings.hiddenActivityIds.includes(option.id)),
   ...settings.customActivityOptions.filter((option) => !option.archived),
@@ -82,11 +96,11 @@ async function save(message = 'Настройки сохранены') {
 async function saveExperiment() {
   const experiment = settings.experiment;
   if (experiment.active && !experiment.title.trim()) {
-    notifyError('Укажи условие эксперимента');
+    notifyError('Напишите, что хотите попробовать');
     return;
   }
   if (experiment.active && (!experiment.startDate || !experiment.endDate)) {
-    notifyError('Укажи даты начала и окончания эксперимента');
+    notifyError('Укажите, с какого и до какого дня идёт эксперимент');
     return;
   }
   if (experiment.startDate && experiment.endDate && experiment.startDate > experiment.endDate) {
@@ -103,7 +117,7 @@ async function saveExperiment() {
 async function completeExperiment() {
   const experiment = settings.experiment;
   if (!experiment.title.trim() || !experiment.startDate || !experiment.endDate) {
-    notifyError('Укажи условие и даты эксперимента');
+    notifyError('Напишите, что пробовали, и укажите даты');
     return;
   }
   if (experiment.startDate > experiment.endDate) {
@@ -115,7 +129,7 @@ async function completeExperiment() {
     return;
   }
   if (!experiment.conclusion.trim()) {
-    notifyError('Запиши, что заметил по итогам эксперимента');
+    notifyError('Запишите, что вы заметили');
     return;
   }
   if (settings.experimentHistory.some((record) => experimentPeriodsOverlap(experiment, record))) {
@@ -133,15 +147,13 @@ async function addCareerOption() {
   const archived = findArchived(settings.customCareerOptions, label);
   if (archived) {
     archived.archived = false;
-    archived.countsAsExternal = newCareerCountsAsExternal.value;
     newCareerLabel.value = '';
     await save();
     return;
   }
   if (hasOption(settings.customCareerOptions, label)) return;
-  settings.customCareerOptions.push({ ...createCustomOption(label, 'career'), countsAsExternal: newCareerCountsAsExternal.value });
+  settings.customCareerOptions.push({ ...createCustomOption(label, 'career'), countsAsExternal: false });
   newCareerLabel.value = '';
-  newCareerCountsAsExternal.value = true;
   await save();
 }
 
@@ -418,12 +430,12 @@ async function deleteAccount() {
       </div>
     </div>
 
-    <article class="settings-card settings-card--daily-blocks">
+    <article id="daily-blocks" class="settings-card settings-card--daily-blocks">
       <div class="form-card__heading">
         <span class="section-icon section-icon--blue">☷</span>
         <div>
           <h2>Блоки ежедневной записи</h2>
-          <p>Скрой то, что сейчас не нужно заполнять. Старые записи и их данные останутся в обзорах и выгрузке.</p>
+          <p>Оставьте только то, что хотите видеть каждый день. Прежние записи не пропадут.</p>
         </div>
       </div>
       <ChipGroup v-model="settings.activeDailyBlocks as DailyBlockId[]" :options="dailyBlockOptions" multiple />
@@ -433,7 +445,7 @@ async function deleteAccount() {
       <button class="primary-button" type="button" @click="save('Блоки ежедневной записи сохранены')">Сохранить блоки</button>
     </article>
 
-    <article class="settings-card settings-card--movement">
+    <article id="movement-options" class="settings-card settings-card--movement">
       <div class="form-card__heading">
         <span class="section-icon section-icon--green">△</span>
         <div>
@@ -490,12 +502,12 @@ async function deleteAccount() {
       </div>
     </article>
 
-    <article class="settings-card settings-card--areas">
+    <article id="life-areas" class="settings-card settings-card--areas">
       <div class="form-card__heading">
         <span class="section-icon section-icon--amber">✦</span>
         <div>
           <h2>Области жизни</h2>
-          <p>То, что важно замечать в обычные дни: семья, отдых, чтение или свои пункты.</p>
+          <p>Выберите важные для вас части жизни или добавьте свою.</p>
         </div>
       </div>
       <ChipGroup v-model="settings.activeLifeAreas as LifeAreaId[]" :options="allLifeAreaOptions" multiple />
@@ -525,12 +537,12 @@ async function deleteAccount() {
       <button class="primary-button" type="button" @click="save('Области сохранены')">Сохранить области</button>
     </article>
 
-    <article class="settings-card settings-card--context">
+    <article id="context-options" class="settings-card settings-card--context">
       <div class="form-card__heading">
         <span class="section-icon section-icon--orange">⌁</span>
         <div>
-          <h2>Факторы дня</h2>
-          <p>Добавляй повторяющиеся условия, которые могут пригодиться в недельном или месячном разборе.</p>
+          <h2>Условия дня</h2>
+          <p>Добавьте условия, которые повторяются и которые вы хотите сравнивать между днями.</p>
         </div>
       </div>
       <div class="custom-list context-factor-list">
@@ -551,7 +563,7 @@ async function deleteAccount() {
         </div>
       </div>
       <div class="custom-options">
-        <label class="field-label" for="new-context-factor">Добавить свой фактор</label>
+        <label class="field-label" for="new-context-factor">Добавить своё условие</label>
         <div class="inline-add">
           <input
             id="new-context-factor"
@@ -584,12 +596,12 @@ async function deleteAccount() {
       </div>
     </article>
 
-    <article class="settings-card settings-card--career">
+    <article id="goal-settings" class="settings-card settings-card--career">
       <div class="form-card__heading">
-        <span class="section-icon section-icon--blue">↗</span>
+        <span class="section-icon section-icon--blue">⌁</span>
         <div>
-          <h2>Цель и карьерные действия</h2>
-          <p>Опиши цель, заметный результат и дату, когда стоит решить: продолжать, изменить или завершить.</p>
+          <h2>Текущая цель</h2>
+          <p>Запишите, что хотите изменить или закончить. Цель может относиться к любой части жизни.</p>
         </div>
       </div>
       <div class="settings-field-stack">
@@ -599,28 +611,39 @@ async function deleteAccount() {
           v-model="settings.activeFocusTitle"
           type="text"
           maxlength="100"
-          placeholder="Например: восстановить режим сна или подготовиться к смене работы"
+          placeholder="Например: восстановить режим сна или закончить обучение"
         />
-        <label class="field-label" for="focus-outcome">Какой результат покажет прогресс</label>
+        <label class="field-label" for="focus-outcome">Как понять, что получилось</label>
         <textarea
           id="focus-outcome"
           v-model="settings.focusOutcomeCriterion"
           rows="2"
           maxlength="220"
-          placeholder="Например: пять дней подряд вставать до 08:00 или получить приглашение на собеседование"
+          placeholder="Например: пять дней подряд вставать до 08:00 или закончить выбранный курс"
         ></textarea>
-        <label class="field-label" for="focus-review-date">Когда пересмотреть цель</label>
+        <label class="field-label" for="focus-review-date">Когда проверить цель</label>
         <input id="focus-review-date" v-model="settings.focusReviewDate" type="date" />
-        <label class="field-label" for="external-evidence">Что считать конкретным действием</label>
+        <label class="field-label" for="external-evidence">Что считать шагом к цели</label>
         <textarea
           id="external-evidence"
           v-model="settings.externalEvidenceCriterion"
           rows="2"
           maxlength="220"
-          placeholder="Например: отправленный отклик, разговор, собеседование или выполненное задание"
+          placeholder="Например: выполненное задание, тренировка, разговор или принятое решение"
         ></textarea>
       </div>
-      <span class="field-label">Варианты карьерных действий</span>
+      <button class="primary-button" type="button" @click="save('Настройки цели сохранены')">Сохранить цель</button>
+    </article>
+
+    <article id="work-settings" class="settings-card settings-card--career">
+      <div class="form-card__heading">
+        <span class="section-icon section-icon--blue">↗</span>
+        <div>
+          <h2>Варианты для блока «Работа»</h2>
+          <p>Оставьте общие варианты или добавьте то, что имеет смысл именно в вашей работе.</p>
+        </div>
+      </div>
+      <span class="field-label">Варианты в ежедневной записи</span>
       <div class="option-preview">
         <span v-for="option in allCareerOptions" :key="option.id" class="option-pill">
           <i v-if="option.icon">{{ option.icon }}</i
@@ -628,29 +651,23 @@ async function deleteAccount() {
         </span>
       </div>
       <div class="custom-options">
-        <label class="field-label" for="new-career-option">Карьерный пункт</label>
+        <label class="field-label" for="new-career-option">Добавить свой вариант</label>
         <div class="inline-add">
           <input
             id="new-career-option"
             v-model="newCareerLabel"
             type="text"
             maxlength="32"
-            placeholder="Отклики"
+            placeholder="Например: урок, смена, заказ или собеседование"
             @keyup.enter="addCareerOption"
           />
           <button class="secondary-button" type="button" :disabled="!newCareerLabel.trim()" @click="addCareerOption">Добавить</button>
         </div>
-        <label class="toggle-row toggle-row--compact"
-          ><span
-            ><strong>Считать конкретным действием</strong
-            ><small>Подходит для откликов, разговоров, выполненных заданий и собеседований.</small></span
-          ><input v-model="newCareerCountsAsExternal" type="checkbox"
-        /></label>
         <div v-if="settings.customCareerOptions.some((option) => !option.archived)" class="custom-list">
           <div v-for="option in settings.customCareerOptions.filter((item) => !item.archived)" :key="option.id" class="custom-list__item">
             <span
               ><i>{{ option.icon }}</i
-              >{{ option.label }}<small v-if="option.countsAsExternal">конкретное действие</small></span
+              >{{ option.label }}</span
             >
             <button
               class="ghost-button ghost-button--danger"
@@ -663,15 +680,14 @@ async function deleteAccount() {
           </div>
         </div>
       </div>
-      <button class="primary-button" type="button" @click="save('Настройки цели сохранены')">Сохранить настройки цели</button>
     </article>
 
-    <article class="settings-card settings-card--nutrition">
+    <article id="nutrition-settings" class="settings-card settings-card--nutrition">
       <div class="form-card__heading">
         <span class="section-icon section-icon--green">◐</span>
         <div>
           <h2>Критерий питания</h2>
-          <p>Определи наблюдаемые признаки заранее, чтобы ежедневная отметка не зависела только от настроения.</p>
+          <p>Заранее запишите, по каким понятным признакам питание подходит вашему плану.</p>
         </div>
       </div>
       <label class="field-label" for="nutrition-criterion">Что означает «поддержало цель»</label>
@@ -685,19 +701,19 @@ async function deleteAccount() {
       <button class="primary-button" type="button" @click="save('Критерий питания сохранён')">Сохранить настройки</button>
     </article>
 
-    <article class="settings-card settings-card--experiment">
+    <article id="experiment-settings" class="settings-card settings-card--experiment">
       <div class="form-card__heading">
         <span class="section-icon section-icon--orange">⌁</span>
         <div>
           <h2>Личный эксперимент</h2>
-          <p>Задай временное условие, отмечай его выполнение и сформулируй собственный вывод.</p>
+          <p>Попробуйте одно изменение несколько дней или недель, а потом запишите, что вы заметили.</p>
         </div>
       </div>
       <label class="toggle-row"
         ><span><strong>Включить эксперимент</strong><small>В ежедневной записи появится один дополнительный вопрос.</small></span
         ><input v-model="settings.experiment.active" type="checkbox"
       /></label>
-      <label class="field-label" for="experiment-title">Условие эксперимента</label>
+      <label class="field-label" for="experiment-title">Что хотите попробовать</label>
       <input
         id="experiment-title"
         v-model="settings.experiment.title"
@@ -705,7 +721,7 @@ async function deleteAccount() {
         maxlength="140"
         placeholder="Не читать новости после 22:00"
       />
-      <label class="field-label" for="experiment-hypothesis">Что хочешь проверить <span class="field-optional">необязательно</span></label>
+      <label class="field-label" for="experiment-hypothesis">Что хотите узнать <span class="field-optional">необязательно</span></label>
       <textarea
         id="experiment-hypothesis"
         v-model="settings.experiment.hypothesis"
@@ -715,14 +731,14 @@ async function deleteAccount() {
       ></textarea>
       <div class="form-row">
         <label class="form-control"
-          ><span class="field-label">Начало</span><input v-model="settings.experiment.startDate" type="date"
+          ><span class="field-label">С какого дня</span><input v-model="settings.experiment.startDate" type="date"
         /></label>
         <label class="form-control"
-          ><span class="field-label">Окончание</span><input v-model="settings.experiment.endDate" type="date"
+          ><span class="field-label">До какого дня</span><input v-model="settings.experiment.endDate" type="date"
         /></label>
       </div>
       <template v-if="experimentCanConclude">
-        <label class="field-label" for="experiment-conclusion">Что заметил по итогам</label>
+        <label class="field-label" for="experiment-conclusion">Что вы заметили?</label>
         <textarea
           id="experiment-conclusion"
           v-model="settings.experiment.conclusion"
@@ -730,18 +746,16 @@ async function deleteAccount() {
           maxlength="800"
           placeholder="Опиши наблюдения своими словами. Совпадение показателей не обязательно означает влияние эксперимента."
         ></textarea>
-        <label class="field-label">Что делать дальше <span class="field-optional">необязательно</span></label>
+        <label class="field-label">Что хотите делать дальше? <span class="field-optional">необязательно</span></label>
         <ChipGroup v-model="settings.experiment.decision" :options="experimentDecisionOptions" allow-clear />
       </template>
       <p v-else-if="settings.experiment.endDate" class="field-hint">
-        После окончания периода здесь можно записать вывод и сохранить эксперимент в общей истории.
+        После последнего дня здесь можно записать, что вы заметили. Завершённый эксперимент появится в истории раздела «Тренды».
       </p>
       <button class="primary-button" type="button" @click="saveExperiment">Сохранить настройки</button>
-      <button v-if="experimentCanConclude" class="secondary-button" type="button" @click="completeExperiment">
-        Завершить и добавить в историю
-      </button>
+      <button v-if="experimentCanConclude" class="secondary-button" type="button" @click="completeExperiment">Завершить эксперимент</button>
       <p v-if="settings.experimentHistory.length" class="data-note">
-        Завершённые эксперименты находятся в общей истории изменений: {{ settings.experimentHistory.length }}.
+        Завершённые эксперименты можно посмотреть в истории раздела «Тренды»: {{ settings.experimentHistory.length }}.
       </p>
     </article>
 

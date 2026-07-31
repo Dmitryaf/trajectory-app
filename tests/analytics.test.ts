@@ -201,6 +201,9 @@ describe('analytics', () => {
     expect(prompt).toContain('Ложиться раньше');
     expect(prompt).toContain('Наблюдаемый результат цели: Показать работающий сценарий трём людям.');
     expect(prompt).toContain('Цель нужно пересмотреть 2026-07-31.');
+    expect(prompt).toContain('Если данных мало, прямо скажи об этом вместо совета.');
+    expect(prompt).toContain('Не утверждай, что одно вызвало другое.');
+    expect(prompt).toContain('не давай обязательный совет только ради заполнения формата');
     expect(prompt).not.toContain('Данные JSON');
     expect(prompt).not.toContain('custom:context:rain');
     expect(prompt).not.toContain('"generatedAt"');
@@ -284,7 +287,7 @@ describe('analytics', () => {
   it('creates a factual summary without a score', () => {
     const summary = summarize([entry('2026-07-13', { careerState: 'external', activities: ['boxing'], lifeAreas: ['family'] })]);
     const text = weekSummaryText(summary, ['family', 'reading']);
-    expect(text).toContain('1 из 1 отмеченных дней с карьерными действиями');
+    expect(text).toContain('работа отмечена в 1 из 1 заполненных дней этого блока');
     expect(text).toContain('Присутствовали: семья');
     expect(text).toContain('Не отмечались: чтение');
     expect(text).not.toContain('%');

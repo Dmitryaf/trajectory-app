@@ -12,7 +12,7 @@ describe('test user fixture', () => {
   it('uses the current import schema and normalized settings', () => {
     expect(fixture.version).toBe(5);
     const settings = normalizeSettings(fixture.settings);
-    expect(settings.settingsVersion).toBe(10);
+    expect(settings.settingsVersion).toBe(11);
     expect(settings.focusOutcomeCriterion).not.toBe('');
     expect(settings.focusReviewDate).toBe('2026-08-15');
     expect(settings.experiment).toMatchObject({ targetMetricId: null, minimumMeaningfulChange: null });

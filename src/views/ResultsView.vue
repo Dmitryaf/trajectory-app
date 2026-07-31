@@ -95,9 +95,9 @@ function areaMeta(value: ResultRecord['area']) {
   <section class="page page--archive page--results">
     <div class="page-heading">
       <div>
-        <span class="eyebrow">Завершённое</span>
+        <span class="eyebrow">Конкретные результаты</span>
         <h1>Итоги</h1>
-        <p>Здесь можно сохранить выполненное дело, полученный результат или другое важное завершение.</p>
+        <p>Итог — конкретное сделанное дело или полученный результат.</p>
       </div>
     </div>
 
@@ -106,7 +106,7 @@ function areaMeta(value: ResultRecord['area']) {
         <span class="section-icon section-icon--green">✓</span>
         <div>
           <h2>{{ editingId === null ? 'Добавить итог' : 'Редактировать итог' }}</h2>
-          <p>Коротко запиши, что завершилось или какой результат получен.</p>
+          <p>Запишите одним предложением, что вы сделали или какой результат получили.</p>
         </div>
       </div>
       <ChipGroup v-model="area" :options="resultEntryOptions" />
@@ -115,7 +115,7 @@ function areaMeta(value: ResultRecord['area']) {
           v-model="title"
           type="text"
           maxlength="160"
-          placeholder="Например: закончил курс или завершил важное дело"
+          placeholder="Что вы сделали или какой результат получили"
           @keyup.enter="saveResult"
         />
         <input v-model="date" class="date-input" type="date" aria-label="Дата итога" />
@@ -168,7 +168,9 @@ function areaMeta(value: ResultRecord['area']) {
       <div v-else class="empty-state">
         <span>✓</span>
         <h3>{{ recentResults.length ? 'Ничего не найдено' : 'Итогов пока нет' }}</h3>
-        <p>{{ recentResults.length ? 'Измени фильтры или диапазон дат.' : 'Добавь первое завершённое дело или полученный результат.' }}</p>
+        <p>
+          {{ recentResults.length ? 'Измените фильтры или диапазон дат.' : 'Добавьте первое сделанное дело или полученный результат.' }}
+        </p>
       </div>
     </section>
   </section>

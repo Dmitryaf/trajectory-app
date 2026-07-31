@@ -28,6 +28,7 @@ import {
   contextFactorOptions,
   lifeAreaOptions,
   legacyActivityOptions,
+  legacyCareerOptions,
   legacyContextFactorOptions,
   lifeEventTypeOptions,
   nutritionOptions,
@@ -127,10 +128,10 @@ function buildPayload(
   extra: Partial<AiReportPayload>,
 ): AiReportPayload {
   const entries = dataThrough >= start ? entriesForPeriod(source.entries, start, dataThrough) : [];
-  const careerItems = [...careerOptions, ...source.settings.customCareerOptions];
+  const careerItems = [...careerOptions, ...legacyCareerOptions, ...source.settings.customCareerOptions];
   const factorItems = [...contextFactorOptions, ...source.settings.customContextFactorOptions];
   const externalCareerIds = careerItems
-    .filter((option) => option.countsAsExternal || ['external', 'interview', 'result'].includes(option.id))
+    .filter((option) => option.countsAsExternal || ['external', 'interview', 'result', 'work_result'].includes(option.id))
     .map((option) => option.id);
 
   return {
@@ -177,7 +178,7 @@ function buildLabelDictionary(settings: AppSettings) {
       ...(archived ? { archived: true } : {}),
     }));
   return {
-    career: copyOptions([...careerOptions, ...settings.customCareerOptions]),
+    career: copyOptions([...careerOptions, ...legacyCareerOptions, ...settings.customCareerOptions]),
     lifeAreas: copyOptions([...lifeAreaOptions, ...settings.customLifeAreaOptions]),
     contextFactors: copyOptions([...contextFactorOptions, ...legacyContextFactorOptions, ...settings.customContextFactorOptions]),
     activities: copyOptions([...activityOptions, ...legacyActivityOptions, ...settings.customActivityOptions]),
@@ -204,15 +205,15 @@ export function buildAiReportPrompt(payload: AiReportPayload, settings: AppSetti
   const prompt = [
     `Проанализируй данные личного трекера «Траектория» за ${periodTitle}. Фактические данные доступны по ${formatDate(payload.dataThrough, { day: 'numeric', month: 'long', year: 'numeric' })}.`,
     '',
-    'Роль: спокойный аналитик поведения. Не морализируй, не ставь диагнозы, не оценивай личность и не считай общий балл.',
-    'Цель: показать факты, повторяющиеся условия, осторожные гипотезы и 1–3 практических изменения на следующий период.',
+    'Роль: спокойный аналитик записей. Не морализируй, не ставь диагнозы, не оценивай личность и не считай общий балл.',
+    'Цель: показать факты, осторожные сравнения и один вопрос или изменение, которое имеет смысл проверить дальше. Если данных мало, прямо скажи об этом вместо совета.',
     '',
     'Формат ответа:',
     '1. Короткая фактическая сводка с числом наблюдений.',
-    '2. Что помогало сохранять состояние и выполнять намеченные действия.',
-    '3. Что могло мешать; называй это связью, а не причиной.',
-    '4. Какие действия привели к заметному результату или обратной связи, а где преобладала подготовка.',
-    '5. Одно главное изменение и короткий план «если — то».',
+    '2. Какие условия чаще встречались в дни с разным состоянием. Сравнивай только когда есть данные в обеих группах.',
+    '3. Какие действия и конкретные итоги были записаны рядом по времени. Не утверждай, что одно вызвало другое.',
+    '4. Один вопрос, который стоит проверить дальше. Предлагай изменение и план «если — то» только когда данных для этого достаточно.',
+    '5. Если данных мало, укажи, какие отметки помогут сделать следующий разбор полезнее.',
     '6. Ограничения данных: пропуски, малая выборка, особые дни и неполный период.',
     '7. Если есть прошлый обзор, сопоставь его решение с последующими фактами.',
     '',
@@ -220,7 +221,9 @@ export function buildAiReportPrompt(payload: AiReportPayload, settings: AppSetti
     '- пропуск не считай нулём или ответом «нет»;',
     '- особые дни не используй как обычную базу сравнения;',
     '- фактор дня сравнивай с отмеченными днями без него;',
-    '- не обсуждай карьеру, вес или эксперимент, если соответствующих данных нет;',
+    '- совместное появление фактов и порядок событий не доказывают причину;',
+    '- не давай обязательный совет только ради заполнения формата;',
+    '- не обсуждай работу, вес или эксперимент, если соответствующих данных нет;',
     '- не продолжай данные в будущее и не выдавай сглаживание за прогноз;',
     '',
     summaryText ? `Локальная сводка приложения: ${summaryText}` : '',
@@ -249,10 +252,10 @@ function buildReadableSections(payload: AiReportPayload): string[] {
     metricLine('Энергия', formatDecimal(summary.averageEnergy), summary.energySamples, '/ 5'),
     metricLine('Качество сна', formatDecimal(summary.averageSleepQuality), summary.sleepQualitySamples, '/ 5'),
     schemaCoverageLine(payload.entries),
-    `Карьера: действия были в ${summary.careerDays} из ${summary.careerSamples} отмеченных дней; отклик, разговор или результат — в ${summary.externalSteps} дн.`,
+    `Работа: отмечена в ${summary.careerDays} из ${summary.careerSamples} заполненных дней этого блока.`,
     `Физическая активность: ${summary.movementDays} из ${summary.movementSamples} отмеченных дней.`,
     `Питание: соответствовало правилам — ${summary.nutritionSupportDays}, мешало — ${summary.nutritionBlockDays}, всего отметок — ${summary.nutritionSamples}.`,
-    `Действия по цели: конкретное действие — ${summary.externalActionDays}, подготовка — ${summary.preparationDays}, занимался другим — ${summary.driftDays}; всего отметок — ${summary.actionDirectionSamples}.`,
+    `Действия по цели: шаг к цели — ${summary.externalActionDays}, подготовка — ${summary.preparationDays}, занимался другим — ${summary.driftDays}; всего отметок — ${summary.actionDirectionSamples}.`,
     metricLine('Вес', formatDecimal(summary.averageWeightKg), summary.weightSamples, 'кг'),
   ]);
 
@@ -304,7 +307,7 @@ function buildReadableSections(payload: AiReportPayload): string[] {
   );
   appendSection(
     lines,
-    'События и инсайты',
+    'События и важные мысли',
     limitedValues(
       payload.lifeEvents.map((event) => {
         const note = cleanText(event.note);
@@ -440,7 +443,7 @@ function formatEntry(entry: DailyEntry, payload: AiReportPayload): string {
   const careerStates = entry.careerStates.length ? entry.careerStates : entry.careerState ? [entry.careerState] : [];
   if (dailyFieldWasRecorded(entry, 'careerStates'))
     values.push(
-      `карьера: ${careerStates.length ? careerStates.map((id) => labelFor(payload.labels.career, id)).join(', ') : 'действий не было'}`,
+      `работа: ${careerStates.length ? careerStates.map((id) => labelFor(payload.labels.career, id)).join(', ') : 'ничего из списка'}`,
     );
   if (dailyFieldWasRecorded(entry, 'actionDirection'))
     values.push(

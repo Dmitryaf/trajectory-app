@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
+import { RouterLink } from 'vue-router';
 import type { EChartsCoreOption } from 'echarts/core';
 import EChartPanel from '../components/charts/EChartPanel.vue';
 import MetricCard from '../components/MetricCard.vue';
@@ -298,7 +299,7 @@ function shiftMonth(offset: number) {
       <div>
         <span class="eyebrow">Месячная сводка</span>
         <h1>Месяц</h1>
-        <p>Итоги, состояние и контекст месяца без общей оценки.</p>
+        <p>Сравните недели, важные события и результаты. Решите, что продолжить или изменить.</p>
       </div>
       <a class="review-jump" href="#month-review">К итогу <span aria-hidden="true">↓</span></a>
     </div>
@@ -309,6 +310,12 @@ function shiftMonth(offset: number) {
       @next="shiftMonth(1)"
       @current="anchor = todayKey()"
     />
+
+    <section v-if="summary.coveredEntriesCount === 0" class="period-empty-guide">
+      <strong>За этот месяц пока нет записей</strong>
+      <p>Данные появятся здесь после ежедневных записей. Итоги и важные события из Журнала тоже войдут в обзор месяца.</p>
+      <RouterLink class="secondary-button" to="/">Перейти к записи за день</RouterLink>
+    </section>
 
     <div class="metrics-grid">
       <MetricCard
@@ -323,9 +330,14 @@ function shiftMonth(offset: number) {
         :hint="`${summary.sleepSamples} дн. без особых`"
         accent="#7467e8"
       />
-      <MetricCard label="Карьера" :value="summary.externalSteps" hint="дней с откликом, разговором или итогом" accent="#3f82d5" />
       <MetricCard
-        label="Реальные шаги"
+        label="Работа"
+        :value="`${summary.careerDays}/${summary.careerSamples}`"
+        hint="дни с работой / дни с отметкой"
+        accent="#3f82d5"
+      />
+      <MetricCard
+        label="Шаги к цели"
         :value="`${summary.externalActionDays}/${summary.preparationDays}`"
         :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`"
         accent="#2eaa7f"
@@ -384,8 +396,8 @@ function shiftMonth(offset: number) {
       <div class="chart-legend">
         <span><i class="legend-dot legend-dot--energy-low"></i>низкая энергия</span>
         <span><i class="legend-dot legend-dot--energy-high"></i>высокая энергия</span>
-        <span><i class="legend-dot legend-dot--career"></i>карьера</span>
-        <span><i class="legend-dot legend-dot--direction"></i>конкретное действие</span>
+        <span><i class="legend-dot legend-dot--career"></i>работа</span>
+        <span><i class="legend-dot legend-dot--direction"></i>шаг к цели</span>
         <span><i class="legend-dot legend-dot--drift"></i>в сторону</span>
         <span><i class="legend-dot legend-dot--movement"></i>физическая активность</span>
         <span><i class="legend-dot legend-dot--nutrition"></i>питание поддержало</span>
@@ -420,7 +432,7 @@ function shiftMonth(offset: number) {
       ><textarea
         v-model="review.ifThenPlan"
         rows="2"
-        placeholder="Если появится конкретный фактор, то я сделаю конкретное действие"
+        placeholder="Если снова появится главное препятствие, то я сделаю конкретное действие"
       ></textarea>
       <button class="primary-button" type="button" @click="saveReview">Сохранить итог месяца</button>
     </article>
@@ -476,7 +488,7 @@ function shiftMonth(offset: number) {
         :height="320"
         aria-label="Динамика сна, времени в кровати и энергии"
       />
-      <div v-else class="empty-chart">Добавь данные о сне — здесь появится динамика.</div>
+      <div v-else class="empty-chart">Добавьте данные о сне — здесь будет видно, как он менялся.</div>
     </article>
 
     <article v-if="weightEntries.length" class="dashboard-card">
@@ -607,7 +619,7 @@ function shiftMonth(offset: number) {
     <article v-if="contextNotes.length" class="dashboard-card">
       <div class="section-heading">
         <div>
-          <span class="eyebrow">Контекст дня</span>
+          <span class="eyebrow">Условия дня</span>
           <h2>Заметки за месяц</h2>
         </div>
         <span class="count-badge">{{ contextNotes.length }}</span>

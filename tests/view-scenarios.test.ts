@@ -50,6 +50,19 @@ afterEach(() => {
 });
 
 describe('daily entry scenario', () => {
+  it('guides the first entry without treating yesterday as a missed day', () => {
+    const { pinia } = createStore();
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+
+    expect(wrapper.text()).toContain('Запишите несколько фактов о сегодняшнем дне');
+    expect(wrapper.text()).toContain('Не нужно заполнять всё.');
+    expect(wrapper.text()).not.toContain('Вчера без записи');
+    expect(wrapper.text()).toContain('Сначала выберите, над чем сейчас хотите работать.');
+    expect(wrapper.text()).not.toContain('Конкретное действие');
+  });
+
   it('validates sleep duration and saves the completed day with current criteria', async () => {
     const { pinia, store } = createStore();
     store.settings.activeFocusTitle = 'Главный фокус';
@@ -67,9 +80,9 @@ describe('daily entry scenario', () => {
     });
 
     expect(wrapper.get('[aria-label="Дата записи"]').attributes('max')).toBe('2026-07-21');
-    expect(wrapper.text()).toContain('Действия по текущей цели');
+    expect(wrapper.text()).toContain('Действия по цели');
     expect(wrapper.text()).toContain('Физическая активность');
-    const directionCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Действия по текущей цели');
+    const directionCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Действия по цели');
     expect(directionCard?.findAll('.chip').map((chip) => chip.text())).not.toContain('Восстановление');
     const movementCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Физическая активность');
     expect(movementCard?.findAll('.chip').map((chip) => chip.text())).toEqual([
@@ -96,8 +109,8 @@ describe('daily entry scenario', () => {
     expect(saveEntry).not.toHaveBeenCalled();
 
     await wrapper.get('#sleep-hours').setValue('7');
-    expect(wrapper.text()).toContain('Ожидаемый результат: Получить проверяемый результат');
-    expect(wrapper.text()).toContain('Пересмотреть цель: 1 августа 2026 г.');
+    expect(wrapper.text()).toContain('Как понять, что получилось: Получить проверяемый результат');
+    expect(wrapper.text()).toContain('Проверить цель: 1 августа 2026 г.');
     const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Факт дня');
     expect(factCard).toBeDefined();
     await factCard!.get('textarea').setValue('Завершил важный разговор');
@@ -108,7 +121,7 @@ describe('daily entry scenario', () => {
     expect(saveEntry.mock.calls[0][0]).toMatchObject({
       date: '2026-07-21',
       entrySchemaVersion: 2,
-      activeDailyBlocksSnapshot: ['sleep', 'context', 'career', 'movement', 'nutrition'],
+      activeDailyBlocksSnapshot: ['sleep', 'context', 'movement', 'nutrition'],
       bedtime: '23:40',
       wakeTime: '07:30',
       sleepMinutes: 420,
@@ -126,12 +139,23 @@ describe('daily entry scenario', () => {
 
   it('saves explicit empty career and goal answers separately from skipped blocks', async () => {
     const { pinia, store } = createStore();
+    store.settings.activeDailyBlocks.push('career');
+    store.settings.activeFocusTitle = 'Подготовиться к собеседованию';
     const saveEntry = vi.spyOn(store, 'saveEntry').mockImplementation(async (entry) => entry);
     const wrapper = mount(TodayView, {
       global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
     });
 
-    const careerNone = wrapper.findAll('button').find((button) => button.text() === 'Без карьерных действий');
+    const workCard = wrapper.get('#career');
+    expect(workCard.findAll('.chip').map((chip) => chip.text())).toEqual([
+      '▤ Рабочий день',
+      '◫ Обучение',
+      '◉ Общение по работе',
+      '◇ Свой проект',
+      '✓ Завершённый результат',
+    ]);
+
+    const careerNone = workCard.findAll('button').find((button) => button.text() === 'Ничего из списка');
     const actionNone = wrapper.findAll('button').find((button) => button.text() === 'Действий по цели не было');
     await careerNone!.trigger('click');
     await actionNone!.trigger('click');
@@ -147,6 +171,31 @@ describe('daily entry scenario', () => {
     );
   });
 
+  it('keeps the original label of a legacy work option without offering unrelated old defaults', () => {
+    const { pinia, store } = createStore();
+    store.settings.activeDailyBlocks.push('career');
+    store.dailyEntries = [
+      {
+        ...emptyDailyEntry('2026-07-21'),
+        careerState: 'external',
+        careerStates: ['external'],
+        recordedFields: ['careerStates'],
+      },
+    ];
+
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+    const labels = wrapper
+      .get('#career')
+      .findAll('.chip')
+      .map((chip) => chip.text());
+
+    expect(labels).toContain('↗ Отклик/контакт');
+    expect(labels).not.toContain('◉ Собеседование');
+    expect(labels).toContain('▤ Рабочий день');
+  });
+
   it('hides inactive blocks while preserving values in an existing entry', async () => {
     const { pinia, store } = createStore();
     store.settings.activeDailyBlocks = [];
@@ -158,6 +207,8 @@ describe('daily entry scenario', () => {
         sleepMinutes: 600,
         timeInBedMinutes: 470,
         nutritionState: 'supports_goal',
+        actionDirection: 'preparation',
+        recordedFields: ['actionDirection'],
       },
     ];
     const saveEntry = vi.spyOn(store, 'saveEntry').mockImplementation(async (entry) => {
@@ -170,10 +221,12 @@ describe('daily entry scenario', () => {
 
     const headings = wrapper.findAll('.form-card h2').map((heading) => heading.text());
     expect(headings).not.toContain('Сон и состояние');
-    expect(headings).not.toContain('Карьера');
+    expect(headings).not.toContain('Работа');
     expect(headings).not.toContain('Физическая активность');
     expect(headings).not.toContain('Питание');
     expect(headings).toContain('Факт дня');
+    expect(wrapper.text()).toContain('Для этой записи цель не была сохранена.');
+    expect(wrapper.findAll('#goal-actions .chip').map((chip) => chip.text())).toContain('◫ Подготовка');
 
     const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Факт дня');
     await factCard!.get('textarea').setValue('Обновил только общий факт');
@@ -199,7 +252,7 @@ describe('daily entry scenario', () => {
     });
 
     const headings = wrapper.findAll('.form-card h2').map((heading) => heading.text());
-    expect(headings).toContain('Контекст дня');
+    expect(headings).toContain('Что могло повлиять на день');
     expect(headings).not.toContain('Сон и состояние');
     expect(wrapper.text()).toContain('Необычный день');
   });
@@ -334,7 +387,7 @@ describe('journal scenarios', () => {
     const addResult = vi.spyOn(store, 'addResult').mockResolvedValue(undefined);
     const wrapper = mount(ResultsView, { global: { plugins: [pinia] } });
 
-    expect(wrapper.text()).toContain('Здесь можно сохранить выполненное дело, полученный результат или другое важное завершение.');
+    expect(wrapper.text()).toContain('Итог — конкретное сделанное дело или полученный результат.');
     expect(wrapper.get('[aria-label="Начальная дата итогов"]').element).toHaveProperty('value', '2026-07-21');
     expect(wrapper.get('[aria-label="Конечная дата итогов"]').element).toHaveProperty('value', '');
     expect(wrapper.text()).toContain('Сегодняшний итог');
@@ -382,7 +435,7 @@ describe('journal scenarios', () => {
     const addLifeEvent = vi.spyOn(store, 'addLifeEvent').mockResolvedValue(undefined);
     const wrapper = mount(EventsView, { global: { plugins: [pinia] } });
 
-    expect(wrapper.text()).toContain('Событие — то, что произошло. Инсайт — мысль или вывод, который важно сохранить.');
+    expect(wrapper.text()).toContain('Событие — важная для вас ситуация, которая произошла.');
     expect(wrapper.get('[aria-label="Начальная дата событий"]').element).toHaveProperty('value', '2026-07-21');
     expect(wrapper.get('[aria-label="Конечная дата событий"]').element).toHaveProperty('value', '');
     expect(wrapper.text()).toContain('Сегодняшнее решение');
@@ -401,7 +454,7 @@ describe('journal scenarios', () => {
     expect(wrapper.text()).not.toContain('Встреча');
 
     await wrapper.get('[aria-label="Поиск по событиям"]').setValue('');
-    const insightChoice = wrapper.findAll('.result-composer .chip').find((chip) => chip.text().includes('Инсайт'));
+    const insightChoice = wrapper.findAll('.result-composer .chip').find((chip) => chip.text().includes('Важная мысль'));
     expect(insightChoice).toBeDefined();
     await insightChoice!.trigger('click');
     await wrapper.get('.result-composer input[type="text"]').setValue('Понял причину усталости');
@@ -471,16 +524,16 @@ describe('settings scenarios', () => {
     const saveSettings = vi.spyOn(store, 'saveSettings').mockResolvedValue(undefined);
     const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
     const blockCard = wrapper.get('.settings-card--daily-blocks');
-    const careerChip = blockCard.findAll('.chip').find((chip) => chip.text().includes('Карьера'));
+    const careerChip = blockCard.findAll('.chip').find((chip) => chip.text().includes('Работа'));
 
-    expect(careerChip?.attributes('aria-pressed')).toBe('true');
+    expect(careerChip?.attributes('aria-pressed')).toBe('false');
     await careerChip!.trigger('click');
     await blockCard.get('.primary-button').trigger('click');
     await flushPromises();
 
     expect(saveSettings).toHaveBeenCalledWith(
       expect.objectContaining({
-        activeDailyBlocks: ['sleep', 'context', 'movement', 'nutrition'],
+        activeDailyBlocks: ['sleep', 'context', 'movement', 'nutrition', 'career'],
       }),
     );
   });
@@ -547,7 +600,7 @@ describe('settings scenarios', () => {
     await card.get('input[type="checkbox"]').setValue(true);
     await card.get('#experiment-title').setValue('Спокойный вечер');
     await card.get('.primary-button').trigger('click');
-    expect(notifyError).toHaveBeenCalledWith('Укажи даты начала и окончания эксперимента');
+    expect(notifyError).toHaveBeenCalledWith('Укажите, с какого и до какого дня идёт эксперимент');
     expect(saveSettings).not.toHaveBeenCalled();
 
     await card.findAll('input[type="date"]')[0]!.setValue('2026-07-15');
@@ -568,7 +621,7 @@ describe('settings scenarios', () => {
     );
 
     await card.get('#experiment-conclusion').setValue('Вечером было спокойнее');
-    const completeButton = card.findAll('button').find((button) => button.text().includes('Завершить и добавить'));
+    const completeButton = card.findAll('button').find((button) => button.text().includes('Завершить эксперимент'));
     await completeButton!.trigger('click');
     await flushPromises();
 
@@ -591,7 +644,7 @@ describe('trends scenarios', () => {
       title: `Итог ${index + 1}`,
       createdAt: `2026-07-${String(21 - index).padStart(2, '0')}T12:00:00.000Z`,
     }));
-    const wrapper = mount(TrendsView, { global: { plugins: [pinia], stubs: { EChartPanel: true } } });
+    const wrapper = mount(TrendsView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
 
     expect(wrapper.findAll('.decision-timeline__item')).toHaveLength(8);
     const toggle = wrapper.get('.timeline-toggle');
@@ -605,7 +658,7 @@ describe('trends scenarios', () => {
 describe('period review navigation', () => {
   it('links the week and month summaries to their review forms', () => {
     const { pinia } = createStore();
-    const global = { plugins: [pinia], stubs: { EChartPanel: true } };
+    const global = { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } };
     const week = mount(WeekView, { global });
     const month = mount(MonthView, { global });
 

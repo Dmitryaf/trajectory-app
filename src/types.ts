@@ -1,4 +1,4 @@
-export type BaseCareerState = 'preparation' | 'project' | 'external' | 'interview' | 'result';
+export type BaseCareerState = 'workday' | 'learning' | 'communication' | 'own_project' | 'work_result';
 export type CareerState = BaseCareerState | string;
 export type BaseActivityId = 'boxing' | 'bachata' | 'walk' | 'workout' | 'recovery';
 export type ActivityId = BaseActivityId | string;
@@ -182,6 +182,14 @@ export type ExperimentMetricOption = Option<ExperimentMetricId> & {
 };
 
 export const careerOptions: Option<BaseCareerState>[] = [
+  { id: 'workday', label: 'Рабочий день', icon: '▤' },
+  { id: 'learning', label: 'Обучение', icon: '◫' },
+  { id: 'communication', label: 'Общение по работе', icon: '◉' },
+  { id: 'own_project', label: 'Свой проект', icon: '◇' },
+  { id: 'work_result', label: 'Завершённый результат', icon: '✓' },
+];
+
+export const legacyCareerOptions: Option<CareerState>[] = [
   { id: 'preparation', label: 'Подготовка', icon: '◫' },
   { id: 'project', label: 'Проект', icon: '◇' },
   { id: 'external', label: 'Отклик/контакт', icon: '↗' },
@@ -209,7 +217,7 @@ export const nutritionOptions: Option<NutritionState>[] = [
 ];
 
 export const actionDirectionOptions: Option<ActionDirectionId>[] = [
-  { id: 'external', label: 'Конкретное действие', icon: '↗' },
+  { id: 'external', label: 'Шаг к цели', icon: '↗' },
   { id: 'preparation', label: 'Подготовка', icon: '◫' },
   { id: 'maintenance', label: 'Поддержание', icon: '○' },
   { id: 'recovery', label: 'Восстановление', icon: '◌' },
@@ -231,7 +239,7 @@ export const lifeEventTypeOptions: Option<LifeEventType>[] = [
   { id: 'change', label: 'Изменение', icon: '↻' },
   { id: 'decision', label: 'Решение', icon: '✓' },
   { id: 'event', label: 'Событие', icon: '◉' },
-  { id: 'insight', label: 'Инсайт', icon: '✦' },
+  { id: 'insight', label: 'Важная мысль', icon: '✦' },
   { id: 'other', label: 'Другое', icon: '·' },
 ];
 
@@ -263,7 +271,7 @@ export const lifeAreaOptions: Option<BaseLifeAreaId>[] = [
 export const legacyLifeAreaOptions: Option<BaseLifeAreaId>[] = [{ id: 'english', label: 'Английский', icon: 'A' }];
 
 export const resultAreaOptions: Option<ResultRecord['area']>[] = [
-  { id: 'career', label: 'Карьера', icon: '↗' },
+  { id: 'career', label: 'Работа', icon: '↗' },
   { id: 'sport', label: 'Спорт', icon: '△' },
   { id: 'nutrition', label: 'Питание', icon: '◐' },
   { id: 'sleep', label: 'Сон', icon: '◒' },
@@ -273,8 +281,8 @@ export const resultAreaOptions: Option<ResultRecord['area']>[] = [
 
 export const dailyBlockOptions: Option<DailyBlockId>[] = [
   { id: 'sleep', label: 'Сон и состояние', icon: '◒' },
-  { id: 'context', label: 'Контекст дня', icon: '⌁' },
-  { id: 'career', label: 'Карьера', icon: '↗' },
+  { id: 'context', label: 'Условия дня', icon: '⌁' },
+  { id: 'career', label: 'Работа', icon: '↗' },
   { id: 'movement', label: 'Физическая активность', icon: '△' },
   { id: 'nutrition', label: 'Питание и вес', icon: '◐' },
 ];
@@ -311,9 +319,9 @@ const dailyRecordedFieldIds: DailyRecordedFieldId[] = [
 
 export const defaultSettings: AppSettings = {
   id: 'main',
-  settingsVersion: 10,
+  settingsVersion: 11,
   introSeen: false,
-  activeDailyBlocks: dailyBlockOptions.map((option) => option.id),
+  activeDailyBlocks: dailyBlockOptions.filter((option) => option.id !== 'career').map((option) => option.id),
   activeLifeAreas: ['family', 'reading', 'creativity', 'rest'],
   customActivityOptions: [],
   hiddenActivityIds: [],
@@ -342,7 +350,7 @@ export const defaultSettings: AppSettings = {
   experimentHistory: [],
 };
 
-export const externalCareerStates: CareerState[] = ['external', 'interview', 'result'];
+export const externalCareerStates: CareerState[] = ['external', 'interview', 'result', 'work_result'];
 
 type LegacyAppSettings = Partial<AppSettings> & {
   customEveningFactorOptions?: unknown;
@@ -393,7 +401,9 @@ export function normalizeSettings(settings: LegacyAppSettings | null | undefined
 
   const parsedDailyBlocks = Array.isArray(source.activeDailyBlocks)
     ? source.activeDailyBlocks.filter((block): block is DailyBlockId => dailyBlockOptions.some((option) => option.id === block))
-    : defaultSettings.activeDailyBlocks;
+    : settings == null
+      ? defaultSettings.activeDailyBlocks
+      : dailyBlockOptions.map((option) => option.id);
   const activeDailyBlocks =
     (source.settingsVersion ?? 1) < 5 && !parsedDailyBlocks.includes('context')
       ? [...parsedDailyBlocks, 'context' as const]

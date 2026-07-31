@@ -24,6 +24,41 @@ test('keeps every primary screen inside the minimum viewport width', async ({ pa
   }
 });
 
+test('keeps mobile form controls inside their cards', async ({ page }) => {
+  for (const width of [320, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto('/');
+    const overflow = await page.locator('.form-card').evaluateAll((cards) =>
+      cards.flatMap((card) => {
+        const cardBox = card.getBoundingClientRect();
+        return Array.from(card.querySelectorAll('input, textarea, .duration-field'))
+          .map((element) => ({ element, box: element.getBoundingClientRect() }))
+          .filter(({ box }) => box.left < cardBox.left - 1 || box.right > cardBox.right + 1)
+          .map(({ element }) => `${element.tagName.toLowerCase()}#${element.id || element.className}`);
+      }),
+    );
+    expect(overflow, `form controls should stay inside cards at ${width}px`).toEqual([]);
+  }
+});
+
+test('explains the app from the permanent help button', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Как работает приложение' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Зачем нужна «Траектория»' });
+
+  await expect(dialog).toContainText('Заполнять всё не обязательно');
+  await expect(dialog).toContainText('Журнал: сохранить важное отдельно');
+  await expect(dialog).toContainText('Эксперимент: проверить одно изменение');
+});
+
+test('opens the exact settings section from a daily card', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#life-areas').getByRole('link', { name: 'Настроить' }).click();
+
+  await expect(page).toHaveURL(/\/settings#life-areas$/);
+  await expect(page.locator('#life-areas')).toBeInViewport();
+});
+
 test('sends feedback from the built-in form without asking for recipient details', async ({ page }) => {
   let submittedMessage = '';
   await page.route('/api/feedback', async (route) => {

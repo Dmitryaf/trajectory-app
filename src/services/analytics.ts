@@ -4,6 +4,7 @@ import {
   careerOptions,
   contextFactorOptions,
   knownActivityOptions,
+  legacyCareerOptions,
   legacyContextFactorOptions,
   lifeAreaOptions,
   specialDayOptions,
@@ -36,8 +37,7 @@ export function weekSummaryText(summary: PeriodSummary, activeAreas: LifeAreaId[
       ? activeAreas.filter((area) => (summary.areaCounts[area] ?? 0) === 0).map((area) => (labels.get(area) ?? area).toLowerCase())
       : [];
   const parts = [
-    `${summary.careerDays} из ${summary.careerSamples} отмеченных дней с карьерными действиями`,
-    `${summary.externalSteps} ${plural(summary.externalSteps, 'день', 'дня', 'дней')} с откликом, разговором или итогом`,
+    `работа отмечена в ${summary.careerDays} из ${summary.careerSamples} заполненных дней этого блока`,
     `${summary.movementDays} ${plural(summary.movementDays, 'день с активностью', 'дня с активностью', 'дней с активностью')}`,
   ];
   if (summary.nutritionSupportDays || summary.nutritionBlockDays) {
@@ -80,7 +80,7 @@ export function periodDays(anchor: string, period: 'week' | 'month'): string[] {
 }
 
 export function careerLabel(value: string | null): string {
-  return careerOptions.find((option) => option.id === value)?.label ?? 'Нет';
+  return [...careerOptions, ...legacyCareerOptions].find((option) => option.id === value)?.label ?? 'Нет';
 }
 
 export function activityLabel(value: string): string {

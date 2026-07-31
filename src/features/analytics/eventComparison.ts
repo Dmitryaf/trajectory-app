@@ -84,7 +84,7 @@ export function buildEventComparison(
       ),
       comparisonMetric(
         'external',
-        'Реальные шаги',
+        'Шаги к цели',
         'percent',
         ratioPercent(beforeSummary.externalActionDays, beforeSummary.actionDirectionSamples),
         ratioPercent(afterSummary.externalActionDays, afterSummary.actionDirectionSamples),

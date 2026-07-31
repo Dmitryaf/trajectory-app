@@ -77,9 +77,9 @@ export function buildReviewCues(
   if (summary.externalSteps > 0 || summary.careerDays > 0) {
     cues.push({
       id: 'career',
-      title: summary.externalSteps > 0 ? 'Были отклики, разговоры или итоги по карьере' : 'Карьера появлялась',
-      text: `${summary.careerDays} из ${summary.careerSamples} отмеченных дней содержат карьерные действия, из них ${summary.externalSteps} — отклик, разговор или итог. Так проще сверить ощущение с фактами.`,
-      tone: summary.externalSteps > 0 ? 'good' : 'neutral',
+      title: 'Работа была частью этого периода',
+      text: `Работа отмечена в ${summary.careerDays} из ${summary.careerSamples} заполненных дней этого блока. Сравните эти дни с состоянием и другими условиями, не считая совпадение причиной.`,
+      tone: 'neutral',
     });
   }
 
@@ -133,7 +133,7 @@ export function buildReviewCues(
     cues.push({
       id: 'experiment',
       title: 'Есть данные эксперимента',
-      text: `Условие выполнено в ${summary.experimentCompletedDays} из ${summary.experimentMarkedDays} отмеченных дней. Сначала оцени соблюдение, затем сравни выбранный показатель до и во время эксперимента.`,
+      text: `Получилось сделать выбранное изменение в ${summary.experimentCompletedDays} из ${summary.experimentMarkedDays} отмеченных дней. Посмотрите, что ещё менялось до и во время эксперимента.`,
       tone: 'neutral',
     });
   }
@@ -192,8 +192,8 @@ export function buildRangeReviewCues(
     if (preparationRate >= 60 && externalRate <= 20) {
       cues.push({
         id: 'direction-preparation',
-        title: 'Подготовка редко переходила в конкретные действия',
-        text: `Подготовка — ${preparationRate}% отмеченных дней, конкретные действия — ${externalRate}%. Проверь, что может привести к заметному результату.`,
+        title: 'Подготовка редко переходила в шаги к цели',
+        text: `Подготовка — ${preparationRate}% отмеченных дней, шаги к цели — ${externalRate}%. Проверьте, что может привести к заметному результату.`,
         tone: 'warning',
       });
     } else if (externalRate >= 35) {

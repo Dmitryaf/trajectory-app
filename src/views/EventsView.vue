@@ -114,9 +114,9 @@ function toggleNote(event: LifeEventRecord) {
   <section class="page page--archive page--events">
     <div class="page-heading">
       <div>
-        <span class="eyebrow">Важные записи</span>
-        <h1>События и инсайты</h1>
-        <p>Сохраняй важные события, решения и мысли, к которым захочется вернуться позже.</p>
+        <span class="eyebrow">Что произошло и что вы поняли</span>
+        <h1>События и важные мысли</h1>
+        <p>Событие — важная для вас ситуация, которая произошла. Важная мысль — что вы поняли или стали видеть иначе.</p>
       </div>
     </div>
 
@@ -125,26 +125,15 @@ function toggleNote(event: LifeEventRecord) {
         <span class="section-icon section-icon--amber">◆</span>
         <div>
           <h2>{{ editingId === null ? 'Добавить запись' : 'Редактировать запись' }}</h2>
-          <p>Событие — то, что произошло. Инсайт — мысль или вывод, который важно сохранить.</p>
+          <p>Выберите, что хотите записать: произошедшее событие или важную мысль.</p>
         </div>
       </div>
       <ChipGroup v-model="type" :options="lifeEventTypeOptions" />
       <div class="event-composer__fields">
-        <input
-          v-model="title"
-          type="text"
-          maxlength="140"
-          placeholder="Например: принял важное решение или заметил новое"
-          @keyup.enter="saveEvent"
-        />
+        <input v-model="title" type="text" maxlength="140" placeholder="Короткое название" @keyup.enter="saveEvent" />
         <input v-model="date" class="date-input" type="date" aria-label="Дата события" />
       </div>
-      <AutoGrowTextarea
-        v-model="note"
-        :rows="4"
-        :max-length="2000"
-        placeholder="Что произошло, что ты понял и почему к этой записи стоит вернуться"
-      />
+      <AutoGrowTextarea v-model="note" :rows="4" :max-length="2000" placeholder="Что произошло или что вы поняли и почему это важно" />
       <button class="primary-button" type="button" :disabled="!title.trim() || saving" @click="saveEvent">
         {{ editingId === null ? 'Добавить запись' : 'Сохранить запись' }}
       </button>
@@ -157,7 +146,7 @@ function toggleNote(event: LifeEventRecord) {
       <div class="section-heading">
         <div>
           <span class="eyebrow">Хронология</span>
-          <h2>События и инсайты</h2>
+          <h2>События и важные мысли</h2>
         </div>
         <span class="count-badge">{{ filteredEvents.length }}</span>
       </div>
@@ -211,7 +200,7 @@ function toggleNote(event: LifeEventRecord) {
       <div v-else class="empty-state">
         <span>◆</span>
         <h3>{{ recentEvents.length ? 'Ничего не найдено' : 'Записей пока нет' }}</h3>
-        <p>{{ recentEvents.length ? 'Измени фильтры или диапазон дат.' : 'Добавь событие или мысль, которую важно не потерять.' }}</p>
+        <p>{{ recentEvents.length ? 'Измените фильтры или диапазон дат.' : 'Добавьте первое важное событие или понимание.' }}</p>
       </div>
     </section>
   </section>

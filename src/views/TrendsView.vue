@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { RouterLink } from 'vue-router';
 import type { EChartsCoreOption } from 'echarts/core';
 import EChartPanel from '../components/charts/EChartPanel.vue';
 import MetricCard from '../components/MetricCard.vue';
@@ -504,7 +505,7 @@ function downloadJson() {
       <div>
         <span class="eyebrow">3–12 месяцев</span>
         <h1>Тренды</h1>
-        <p>Изменения сна, энергии, веса, питания, действий по цели и важных событий.</p>
+        <p>Сравните несколько месяцев и посмотрите, какие изменения повторялись.</p>
       </div>
     </div>
 
@@ -520,6 +521,12 @@ function downloadJson() {
       </button>
     </div>
 
+    <section v-if="summary.coveredEntriesCount === 0" class="period-empty-guide">
+      <strong>Для сравнения пока нет записей</strong>
+      <p>Тренды становятся полезны со временем. Начните с коротких записей за день, а здесь позже можно будет сравнить месяцы.</p>
+      <RouterLink class="secondary-button" to="/">Перейти к записи за день</RouterLink>
+    </section>
+
     <div class="metrics-grid">
       <MetricCard
         label="Заполненных дней"
@@ -533,9 +540,14 @@ function downloadJson() {
         :hint="`${summary.sleepSamples} дн. без особых`"
         accent="#7467e8"
       />
-      <MetricCard label="Карьера" :value="summary.externalSteps" hint="дней с откликом, разговором или итогом" accent="#3f82d5" />
       <MetricCard
-        label="Реальные шаги"
+        label="Работа"
+        :value="`${summary.careerDays}/${summary.careerSamples}`"
+        hint="дни с работой / дни с отметкой"
+        accent="#3f82d5"
+      />
+      <MetricCard
+        label="Шаги к цели"
         :value="`${summary.externalActionDays}/${summary.preparationDays}`"
         :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`"
         accent="#2eaa7f"
@@ -753,7 +765,7 @@ function downloadJson() {
         </article>
       </div>
       <p class="data-note">
-        Формат: значение в дни с фактором / в обычные дни без него. Особые дни исключены; это связь, а не доказанная причина.
+        Сначала показаны дни с условием, затем обычные дни без него. Особые дни не учитываются. Совпадение не доказывает причину.
       </p>
     </article>
 

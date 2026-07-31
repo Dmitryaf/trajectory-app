@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
+import { RouterLink } from 'vue-router';
 import type { EChartsCoreOption } from 'echarts/core';
 import EChartPanel from '../components/charts/EChartPanel.vue';
 import MetricCard from '../components/MetricCard.vue';
@@ -75,7 +76,7 @@ const reviewCues = computed(() =>
 const reviewQuestions = buildReviewQuestions('week');
 const previousReview = computed(() => store.reviewByWeek(addDays(start.value, -7)));
 const rows = computed(() => [
-  { id: 'career', label: 'Карьера', icon: '↗' },
+  { id: 'career', label: 'Работа', icon: '↗' },
   { id: 'sport', label: 'Спорт', icon: '△' },
   ...lifeAreaItems.value.filter((option) => store.settings.activeLifeAreas.includes(option.id)),
 ]);
@@ -105,16 +106,21 @@ const rhythmDays = computed(() =>
 );
 const rhythmOption = computed<EChartsCoreOption>(() => {
   const labels = rhythmDays.value.map((item) => formatDate(item.day, { weekday: 'short', day: '2-digit' }));
-  const actionRows = ['Карьера', 'Реальный шаг', 'В сторону', 'Движение', 'Питание', 'Особый день'];
+  const actionRows = ['Работа', 'Шаг к цели', 'Занимался другим', 'Движение', 'Питание', 'Особый день'];
   const actionSeries = [
-    { name: 'Карьера', row: 'Карьера', color: '#4188e8', active: (item: (typeof rhythmDays.value)[number]) => item.hasCareer },
+    { name: 'Работа', row: 'Работа', color: '#4188e8', active: (item: (typeof rhythmDays.value)[number]) => item.hasCareer },
     {
-      name: 'Реальный шаг',
-      row: 'Реальный шаг',
+      name: 'Шаг к цели',
+      row: 'Шаг к цели',
       color: '#5264d8',
       active: (item: (typeof rhythmDays.value)[number]) => item.hasExternalAction,
     },
-    { name: 'В сторону', row: 'В сторону', color: '#b85c4c', active: (item: (typeof rhythmDays.value)[number]) => item.hasDrift },
+    {
+      name: 'Занимался другим',
+      row: 'Занимался другим',
+      color: '#b85c4c',
+      active: (item: (typeof rhythmDays.value)[number]) => item.hasDrift,
+    },
     { name: 'Движение', row: 'Движение', color: '#38b989', active: (item: (typeof rhythmDays.value)[number]) => item.hasMovement },
     {
       name: 'Питание поддержало',
@@ -274,7 +280,7 @@ function downloadJson() {
       <div>
         <span class="eyebrow">Недельная сводка</span>
         <h1>Неделя</h1>
-        <p>Факты недели без общего балла.</p>
+        <p>Посмотрите, что повторялось за неделю, и выберите одно изменение на следующую.</p>
       </div>
       <a class="review-jump" href="#week-review">К обзору <span aria-hidden="true">↓</span></a>
     </div>
@@ -286,6 +292,12 @@ function downloadJson() {
       @current="anchor = todayKey()"
     />
 
+    <section v-if="summary.coveredEntriesCount === 0" class="period-empty-guide">
+      <strong>За эту неделю пока нет записей</strong>
+      <p>Заполняйте на главной несколько важных пунктов. Здесь они соберутся по дням и помогут сравнить сон, состояние и действия.</p>
+      <RouterLink class="secondary-button" to="/">Перейти к записи за день</RouterLink>
+    </section>
+
     <div class="metrics-grid">
       <MetricCard
         label="Средний сон"
@@ -294,13 +306,13 @@ function downloadJson() {
         accent="#7467e8"
       />
       <MetricCard
-        label="Карьера"
+        label="Работа"
         :value="`${summary.careerDays}/${summary.careerSamples}`"
-        :hint="`${summary.externalSteps} дн. с откликом или разговором`"
+        hint="дни с работой / дни с отметкой"
         accent="#3f82d5"
       />
       <MetricCard
-        label="Реальные шаги"
+        label="Шаги к цели"
         :value="`${summary.externalActionDays}/${summary.preparationDays}`"
         :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`"
         accent="#1d5148"
@@ -374,10 +386,10 @@ function downloadJson() {
         <p>
           <strong>{{ activeExperimentWeek.experiment.title }}</strong>
         </p>
-        <p v-if="activeExperimentWeek.experiment.hypothesis">Что проверяю: {{ activeExperimentWeek.experiment.hypothesis }}</p>
+        <p v-if="activeExperimentWeek.experiment.hypothesis">Что хотите узнать: {{ activeExperimentWeek.experiment.hypothesis }}</p>
         <div class="comparison-periods">
-          <span>Выполнено: {{ activeExperimentWeek.completedDays }}</span>
-          <span>Не выполнено: {{ activeExperimentWeek.notCompletedDays }}</span>
+          <span>Получилось: {{ activeExperimentWeek.completedDays }}</span>
+          <span>Не получилось: {{ activeExperimentWeek.notCompletedDays }}</span>
           <span>Без отметки: {{ activeExperimentWeek.unmarkedDays }} из {{ activeExperimentWeek.plannedDays }}</span>
         </div>
       </div>
@@ -435,7 +447,7 @@ function downloadJson() {
     <article v-if="contextNotes.length" class="dashboard-card">
       <div class="section-heading">
         <div>
-          <span class="eyebrow">Контекст дня</span>
+          <span class="eyebrow">Условия дня</span>
           <h2>Повторяющиеся условия и заметки</h2>
         </div>
         <span class="count-badge">{{ contextNotes.length }}</span>
@@ -553,7 +565,7 @@ function downloadJson() {
       ><textarea
         v-model="review.ifThenPlan"
         rows="2"
-        placeholder="Если появится главный фактор, то я сделаю конкретное действие"
+        placeholder="Если снова появится главное препятствие, то я сделаю конкретное действие"
       ></textarea>
       <button class="primary-button" type="button" @click="saveReview">Сохранить обзор</button>
     </article>

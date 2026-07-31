@@ -16,14 +16,21 @@ describe('settings migrations', () => {
     });
 
     expect(settings.customCareerOptions).toEqual([]);
-    expect(settings.settingsVersion).toBe(10);
+    expect(settings.settingsVersion).toBe(11);
+    expect(settings.introSeen).toBe(false);
     expect(settings.activeDailyBlocks).toContain('context');
+    expect(settings.activeDailyBlocks).toContain('career');
     expect(settings.customContextFactorOptions).toEqual([]);
     expect(settings.hiddenContextFactorIds).toEqual([]);
     expect(settings).not.toHaveProperty('customEveningFactorOptions');
     expect(normalized.careerStates).toEqual(['preparation', 'external']);
     expect(normalized.contextFactors).toEqual(['screen']);
     expect(normalized).not.toHaveProperty('eveningFactors');
+  });
+
+  it('keeps work optional for a new account without changing old account settings', () => {
+    expect(normalizeSettings(undefined).activeDailyBlocks).not.toContain('career');
+    expect(normalizeSettings({ settingsVersion: 10 }).activeDailyBlocks).toContain('career');
   });
 
   it('keeps optional goal evidence and ignores an invalid review date', () => {
