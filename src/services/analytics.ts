@@ -1,12 +1,30 @@
 import type { ContextFactorId, DailyEntry, LifeAreaId, Option } from '../types';
-import { actionDirectionOptions, careerOptions, contextFactorOptions, knownActivityOptions, legacyContextFactorOptions, lifeAreaOptions, specialDayOptions } from '../types';
+import {
+  actionDirectionOptions,
+  careerOptions,
+  contextFactorOptions,
+  knownActivityOptions,
+  legacyCareerOptions,
+  legacyContextFactorOptions,
+  lifeAreaOptions,
+  specialDayOptions,
+} from '../types';
 import { careerStatesForEntry, type PeriodSummary } from '../features/analytics/periodSummary';
 import { dateRange, endOfMonth, endOfWeek, formatMinutes, startOfMonth, startOfWeek } from './dates';
 
 export { buildCoverageSeries, dataCoverageLevel, type DataCoverageLevel } from '../features/analytics/coverage';
 export { buildEventComparison, type EventComparison, type EventComparisonMetric } from '../features/analytics/eventComparison';
 export { buildObservations, factorSummaries, type FactorSummary, type Observation } from '../features/analytics/observations';
-export { careerStatesForEntry, entriesForMonth, entriesForPeriod, entriesForWeek, hasMovement, resultsForPeriod, summarize, type PeriodSummary } from '../features/analytics/periodSummary';
+export {
+  careerStatesForEntry,
+  entriesForMonth,
+  entriesForPeriod,
+  entriesForWeek,
+  hasMovement,
+  resultsForPeriod,
+  summarize,
+  type PeriodSummary,
+} from '../features/analytics/periodSummary';
 export { buildRangeReviewCues, buildReviewCues, ratioPercent, type ReviewCue } from '../features/analytics/reviewCues';
 
 export function weekSummaryText(summary: PeriodSummary, activeAreas: LifeAreaId[], areaOptions: Option[] = lifeAreaOptions): string {
@@ -14,19 +32,21 @@ export function weekSummaryText(summary: PeriodSummary, activeAreas: LifeAreaId[
 
   const labels = new Map(areaOptions.map((item) => [item.id, item.label]));
   const present = activeAreas.filter((area) => summary.areaCounts[area] > 0).map((area) => (labels.get(area) ?? area).toLowerCase());
-  const absent = summary.lifeAreaSamples > 0
-    ? activeAreas.filter((area) => (summary.areaCounts[area] ?? 0) === 0).map((area) => (labels.get(area) ?? area).toLowerCase())
-    : [];
+  const absent =
+    summary.lifeAreaSamples > 0
+      ? activeAreas.filter((area) => (summary.areaCounts[area] ?? 0) === 0).map((area) => (labels.get(area) ?? area).toLowerCase())
+      : [];
   const parts = [
-    `${summary.careerDays} из ${summary.careerSamples} отмеченных дней с карьерными действиями`,
-    `${summary.externalSteps} ${plural(summary.externalSteps, 'день', 'дня', 'дней')} с откликом, разговором или итогом`,
+    `работа отмечена в ${summary.careerDays} из ${summary.careerSamples} заполненных дней этого блока`,
     `${summary.movementDays} ${plural(summary.movementDays, 'день с активностью', 'дня с активностью', 'дней с активностью')}`,
   ];
   if (summary.nutritionSupportDays || summary.nutritionBlockDays) {
     parts.push(`питание поддержало ${summary.nutritionSupportDays}, мешало ${summary.nutritionBlockDays}`);
   }
   if (summary.externalActionDays || summary.preparationDays || summary.driftDays) {
-    parts.push(`действия по цели: конкретные действия ${summary.externalActionDays}, подготовка ${summary.preparationDays}, занимался другим ${summary.driftDays}`);
+    parts.push(
+      `действия по цели: конкретные действия ${summary.externalActionDays}, подготовка ${summary.preparationDays}, занимался другим ${summary.driftDays}`,
+    );
   }
   if (summary.averageSleep !== null) parts.push(`средний сон ${formatMinutes(Math.round(summary.averageSleep))}`);
   if (summary.averageTimeInBed !== null && summary.averageSleep !== null && summary.averageTimeInBed - summary.averageSleep >= 45) {
@@ -56,13 +76,11 @@ export function buildReviewQuestions(period: 'week' | 'month'): string[] {
 }
 
 export function periodDays(anchor: string, period: 'week' | 'month'): string[] {
-  return period === 'week'
-    ? dateRange(startOfWeek(anchor), endOfWeek(anchor))
-    : dateRange(startOfMonth(anchor), endOfMonth(anchor));
+  return period === 'week' ? dateRange(startOfWeek(anchor), endOfWeek(anchor)) : dateRange(startOfMonth(anchor), endOfMonth(anchor));
 }
 
 export function careerLabel(value: string | null): string {
-  return careerOptions.find((option) => option.id === value)?.label ?? 'Нет';
+  return [...careerOptions, ...legacyCareerOptions].find((option) => option.id === value)?.label ?? 'Нет';
 }
 
 export function activityLabel(value: string): string {
@@ -74,9 +92,11 @@ export function specialDayLabel(value: string | null): string {
 }
 
 export function contextFactorLabel(value: string, factorOptions: Option<ContextFactorId>[] = contextFactorOptions): string {
-  return factorOptions.find((option) => option.id === value)?.label
-    ?? legacyContextFactorOptions.find((option) => option.id === value)?.label
-    ?? value;
+  return (
+    factorOptions.find((option) => option.id === value)?.label ??
+    legacyContextFactorOptions.find((option) => option.id === value)?.label ??
+    value
+  );
 }
 
 export function actionDirectionLabel(value: string | null): string {

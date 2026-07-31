@@ -35,7 +35,8 @@ export const Duration: Story = {
       const value = ref(452);
       return { value };
     },
-    template: '<div style="max-width: 380px"><DurationInput id="story-duration" v-model="value" :max-hours="18" /><p class="data-note">Внутреннее значение: {{ value }} минут</p></div>',
+    template:
+      '<div style="max-width: 380px"><DurationInput id="story-duration" v-model="value" :max-hours="18" /><p class="data-note">Внутреннее значение: {{ value }} минут</p></div>',
   }),
 };
 

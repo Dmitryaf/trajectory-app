@@ -1,0 +1,121 @@
+:root {
+  color-scheme: light;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  color: #233330;
+  background: #f3f1eb;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --navy: #102d2c;
+  --navy-soft: #1b4741;
+  --text: #233330;
+  --muted: #74807c;
+  --line: #dde4df;
+  --surface: #ffffff;
+  --surface-soft: #f7f8f4;
+  --accent: #49c99b;
+  --accent-dark: #19795c;
+  --purple: #7467e8;
+  --blue: #3f82d5;
+  --amber: #e7a43b;
+  --orange: #df6d53;
+  --shadow: 0 18px 50px rgba(23, 48, 43, 0.09);
+  --shadow-soft: 0 8px 24px rgba(23, 48, 43, 0.06);
+  --motion-fast: 140ms;
+  --motion-base: 190ms;
+  --motion-ease: cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+html {
+  min-width: 320px;
+  background: #f3f1eb;
+}
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 12% -8%, rgba(73, 201, 155, 0.18), transparent 31%),
+    radial-gradient(circle at 92% 8%, rgba(231, 164, 59, 0.12), transparent 25%), #f3f1eb;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+button {
+  color: inherit;
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(65, 136, 232, 0.25);
+  outline-offset: 2px;
+}
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+h1 {
+  margin-bottom: 8px;
+  font-size: clamp(34px, 6vw, 52px);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  color: var(--navy);
+}
+h2 {
+  margin-bottom: 4px;
+  font-size: 19px;
+  letter-spacing: -0.018em;
+}
+p {
+  color: var(--muted);
+  line-height: 1.55;
+}
+input,
+textarea,
+select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  padding: 13px 14px;
+  color: var(--text);
+  transition:
+    border-color 0.16s,
+    box-shadow 0.16s;
+}
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: #65b99a;
+  box-shadow: 0 0 0 4px rgba(73, 201, 155, 0.11);
+  outline: none;
+}
+textarea {
+  resize: vertical;
+  min-height: 64px;
+}
+.auto-grow-textarea {
+  resize: none;
+  overflow-y: hidden;
+}

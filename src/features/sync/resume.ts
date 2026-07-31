@@ -9,10 +9,7 @@ type ResumeCloudRefreshOptions = {
   now?: () => number;
 };
 
-export function createResumeCloudRefresh(
-  refresh: () => Promise<void>,
-  options: ResumeCloudRefreshOptions = {},
-) {
+export function createResumeCloudRefresh(refresh: () => Promise<void>, options: ResumeCloudRefreshOptions = {}) {
   const minIntervalMs = options.minIntervalMs ?? 10_000;
   const now = options.now ?? Date.now;
   let lastStartedAt = 0;

@@ -9,7 +9,7 @@ describe('monthly weight series', () => {
       { ...emptyDailyEntry('2026-07-16'), weightKg: 88 },
       { ...emptyDailyEntry('2026-07-18'), weightKg: 88.2 },
       { ...emptyDailyEntry('2026-07-20'), weightKg: 87.4 },
-      { ...emptyDailyEntry('2026-07-21'), weightKg: 87.1 }
+      { ...emptyDailyEntry('2026-07-21'), weightKg: 87.1 },
     ];
     const dates = dateRange(startOfMonth('2026-07-20'), endOfMonth('2026-07-20'));
 
@@ -24,15 +24,11 @@ describe('monthly weight series', () => {
 
   it('excludes special-day measurements from the baseline window', () => {
     const special = { ...emptyDailyEntry('2026-07-19'), weightKg: 100, specialDay: 'sick' as const };
-    const rows = buildWeightSeries([
-      '2026-07-18',
-      '2026-07-19',
-      '2026-07-20'
-    ], [
-      { ...emptyDailyEntry('2026-07-18'), weightKg: 88 },
-      special,
-      { ...emptyDailyEntry('2026-07-20'), weightKg: 87 }
-    ], '2026-07-20');
+    const rows = buildWeightSeries(
+      ['2026-07-18', '2026-07-19', '2026-07-20'],
+      [{ ...emptyDailyEntry('2026-07-18'), weightKg: 88 }, special, { ...emptyDailyEntry('2026-07-20'), weightKg: 87 }],
+      '2026-07-20',
+    );
 
     expect(rows[1]).toMatchObject({ weight: null, rolling: null });
     expect(rows[2]).toMatchObject({ weight: 87, rolling: 87.5 });

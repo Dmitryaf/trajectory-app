@@ -18,7 +18,10 @@ const editingCreatedAt = ref('');
 const saving = ref(false);
 const recentResults = computed(() => [...store.results].sort((a, b) => b.date.localeCompare(a.date)));
 const resultOptions = computed(() => [...resultAreaOptions, ...store.settings.customLifeAreaOptions]);
-const resultEntryOptions = computed(() => [...resultAreaOptions, ...store.settings.customLifeAreaOptions.filter((option) => !option.archived)]);
+const resultEntryOptions = computed(() => [
+  ...resultAreaOptions,
+  ...store.settings.customLifeAreaOptions.filter((option) => !option.archived),
+]);
 const {
   filterText,
   filterCategory: filterArea,
@@ -27,10 +30,10 @@ const {
   currentPage,
   filteredItems: filteredResults,
   pageCount,
-  visibleItems: visibleResults
+  visibleItems: visibleResults,
 } = useArchiveList(recentResults, {
   getSearchText: (result) => result.title,
-  getCategory: (result) => result.area
+  getCategory: (result) => result.area,
 });
 
 async function saveResult() {
@@ -42,7 +45,13 @@ async function saveResult() {
     if (editingId.value === null) {
       await store.addResult({ date: date.value, area: area.value, title: clean });
     } else {
-      await store.updateResult({ id: editingId.value, createdAt: editingCreatedAt.value, date: date.value, area: area.value, title: clean });
+      await store.updateResult({
+        id: editingId.value,
+        createdAt: editingCreatedAt.value,
+        date: date.value,
+        area: area.value,
+        title: clean,
+      });
     }
     resetForm();
     notifySaved(wasEditing ? 'Итог обновлён' : 'Итог добавлен');
@@ -85,41 +94,84 @@ function areaMeta(value: ResultRecord['area']) {
 <template>
   <section class="page page--archive page--results">
     <div class="page-heading">
-      <div><span class="eyebrow">Завершённое</span><h1>Итоги</h1><p>Здесь можно сохранить выполненное дело, полученный результат или другое важное завершение.</p></div>
+      <div>
+        <span class="eyebrow">Конкретные результаты</span>
+        <h1>Итоги</h1>
+        <p>Итог — конкретное сделанное дело или полученный результат.</p>
+      </div>
     </div>
 
     <article class="result-composer result-composer--results">
-      <div class="form-card__heading"><span class="section-icon section-icon--green">✓</span><div><h2>{{ editingId === null ? 'Добавить итог' : 'Редактировать итог' }}</h2><p>Коротко запиши, что завершилось или какой результат получен.</p></div></div>
+      <div class="form-card__heading">
+        <span class="section-icon section-icon--green">✓</span>
+        <div>
+          <h2>{{ editingId === null ? 'Добавить итог' : 'Редактировать итог' }}</h2>
+          <p>Запишите одним предложением, что вы сделали или какой результат получили.</p>
+        </div>
+      </div>
       <ChipGroup v-model="area" :options="resultEntryOptions" />
       <div class="result-composer__fields">
-        <input v-model="title" type="text" maxlength="160" placeholder="Например: закончил курс или завершил важное дело" @keyup.enter="saveResult" />
+        <input
+          v-model="title"
+          type="text"
+          maxlength="160"
+          placeholder="Что вы сделали или какой результат получили"
+          @keyup.enter="saveResult"
+        />
         <input v-model="date" class="date-input" type="date" aria-label="Дата итога" />
-        <button class="primary-button" type="button" :disabled="!title.trim() || saving" @click="saveResult">{{ editingId === null ? 'Добавить итог' : 'Сохранить итог' }}</button>
+        <button class="primary-button" type="button" :disabled="!title.trim() || saving" @click="saveResult">
+          {{ editingId === null ? 'Добавить итог' : 'Сохранить итог' }}
+        </button>
       </div>
-      <button v-if="editingId !== null" class="secondary-button composer-cancel" type="button" @click="resetForm">Отменить редактирование</button>
+      <button v-if="editingId !== null" class="secondary-button composer-cancel" type="button" @click="resetForm">
+        Отменить редактирование
+      </button>
     </article>
 
     <section class="archive-panel">
-      <div class="section-heading"><div><span class="eyebrow">Архив</span><h2>Итоги</h2></div><span class="count-badge">{{ filteredResults.length }}</span></div>
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Архив</span>
+          <h2>Итоги</h2>
+        </div>
+        <span class="count-badge">{{ filteredResults.length }}</span>
+      </div>
       <div class="archive-filters">
         <input v-model="filterText" type="search" placeholder="Поиск по итогам" aria-label="Поиск по итогам" />
-        <select v-model="filterArea" aria-label="Область итога"><option value="all">Все области</option><option v-for="option in resultOptions" :key="option.id" :value="option.id">{{ option.label }}</option></select>
+        <select v-model="filterArea" aria-label="Область итога">
+          <option value="all">Все области</option>
+          <option v-for="option in resultOptions" :key="option.id" :value="option.id">{{ option.label }}</option>
+        </select>
         <ArchiveDateRange v-model:date-from="dateFrom" v-model:date-to="dateTo" context-label="итогов" />
       </div>
       <div v-if="visibleResults.length">
         <TransitionGroup name="archive-list" tag="div" class="results-list">
-        <article v-for="result in visibleResults" :key="result.id ?? result.createdAt" class="result-item">
-          <span class="result-item__icon">{{ areaMeta(result.area).icon }}</span>
-          <div><strong>{{ result.title }}</strong><small>{{ areaMeta(result.area).label }} · {{ formatDate(result.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</small></div>
-          <div class="item-actions">
-            <button class="ghost-button" type="button" aria-label="Редактировать итог" @click="edit(result)">✎</button>
-            <button class="ghost-button ghost-button--danger" type="button" aria-label="Удалить итог" @click="remove(result.id)">×</button>
-          </div>
-        </article>
+          <article v-for="result in visibleResults" :key="result.id ?? result.createdAt" class="result-item">
+            <span class="result-item__icon">{{ areaMeta(result.area).icon }}</span>
+            <div>
+              <strong>{{ result.title }}</strong
+              ><small
+                >{{ areaMeta(result.area).label }} ·
+                {{ formatDate(result.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</small
+              >
+            </div>
+            <div class="item-actions">
+              <button class="ghost-button" type="button" aria-label="Редактировать итог" @click="edit(result)">✎</button>
+              <button class="ghost-button ghost-button--danger" type="button" aria-label="Удалить итог" @click="remove(result.id)">
+                ×
+              </button>
+            </div>
+          </article>
         </TransitionGroup>
         <ArchivePagination v-model:page="currentPage" :page-count="pageCount" context-label="итогов" />
       </div>
-      <div v-else class="empty-state"><span>✓</span><h3>{{ recentResults.length ? 'Ничего не найдено' : 'Итогов пока нет' }}</h3><p>{{ recentResults.length ? 'Измени фильтры или диапазон дат.' : 'Добавь первое завершённое дело или полученный результат.' }}</p></div>
+      <div v-else class="empty-state">
+        <span>✓</span>
+        <h3>{{ recentResults.length ? 'Ничего не найдено' : 'Итогов пока нет' }}</h3>
+        <p>
+          {{ recentResults.length ? 'Измените фильтры или диапазон дат.' : 'Добавьте первое сделанное дело или полученный результат.' }}
+        </p>
+      </div>
     </section>
   </section>
 </template>

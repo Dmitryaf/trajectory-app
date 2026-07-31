@@ -45,13 +45,7 @@ async function submit() {
 </script>
 
 <template>
-  <button
-    class="beta-feedback-link"
-    type="button"
-    aria-label="Обратная связь"
-    aria-haspopup="dialog"
-    @click="open"
-  >
+  <button class="beta-feedback-link" type="button" aria-label="Обратная связь" aria-haspopup="dialog" @click="open">
     <span aria-hidden="true">✦</span>
     <strong>Обратная связь</strong>
   </button>
@@ -79,7 +73,10 @@ async function submit() {
             required
             placeholder="Расскажи, что произошло или чего не хватило. Для ошибки можно добавить короткие шаги воспроизведения."
           ></textarea>
-          <p class="feedback-dialog__hint">К сообщению будет приложен email аккаунта, чтобы при необходимости уточнить детали. Не отправляй пароли, код приглашения и содержимое личных записей.</p>
+          <p class="feedback-dialog__hint">
+            К сообщению будет приложен email аккаунта, чтобы при необходимости уточнить детали. Не отправляй пароли, код приглашения и
+            содержимое личных записей.
+          </p>
           <div class="feedback-dialog__actions">
             <button class="secondary-button" type="button" :disabled="isSending" @click="close">Отмена</button>
             <button class="primary-button" type="submit" :disabled="isSending || message.trim().length < 3">

@@ -3,7 +3,20 @@ import { db } from '../db';
 import { isCloudSyncConfigured, markCloudSyncPending, saveCloudSnapshot } from '../services/cloudSync';
 import { plainCopy } from '../services/plain';
 import { useAuthStore } from './auth';
-import { defaultSettings, normalizeDailyEntry, normalizeLifeEvent, normalizeMonthlyReview, normalizeSettings, normalizeWeeklyReview, type AppSettings, type DailyEntry, type LifeEventRecord, type MonthlyReview, type ResultRecord, type WeeklyReview } from '../types';
+import {
+  defaultSettings,
+  normalizeDailyEntry,
+  normalizeLifeEvent,
+  normalizeMonthlyReview,
+  normalizeSettings,
+  normalizeWeeklyReview,
+  type AppSettings,
+  type DailyEntry,
+  type LifeEventRecord,
+  type MonthlyReview,
+  type ResultRecord,
+  type WeeklyReview,
+} from '../types';
 import { normalizeSnapshot, type ExportPayload } from '../features/backup/snapshot';
 
 export type { ExportPayload } from '../features/backup/snapshot';
@@ -24,12 +37,12 @@ export const useAppStore = defineStore('app', {
     lifeEvents: [] as LifeEventRecord[],
     weeklyReviews: [] as WeeklyReview[],
     monthlyReviews: [] as MonthlyReview[],
-    settings: structuredClone(defaultSettings) as AppSettings
+    settings: structuredClone(defaultSettings) as AppSettings,
   }),
   getters: {
     entryByDate: (state) => (date: string) => state.dailyEntries.find((entry) => entry.date === date),
     reviewByWeek: (state) => (weekStart: string) => state.weeklyReviews.find((review) => review.weekStart === weekStart),
-    reviewByMonth: (state) => (monthStart: string) => state.monthlyReviews.find((review) => review.monthStart === monthStart)
+    reviewByMonth: (state) => (monthStart: string) => state.monthlyReviews.find((review) => review.monthStart === monthStart),
   },
   actions: {
     async load() {
@@ -41,7 +54,7 @@ export const useAppStore = defineStore('app', {
           db.lifeEvents.toArray(),
           db.weeklyReviews.toArray(),
           db.monthlyReviews.toArray(),
-          db.settings.get('main')
+          db.settings.get('main'),
         ]);
         this.dailyEntries = dailyEntries.map((entry) => normalizeDailyEntry(entry));
         this.results = results.sort((a, b) => b.date.localeCompare(a.date));
@@ -68,7 +81,10 @@ export const useAppStore = defineStore('app', {
       return saved;
     },
     async addResult(result: Omit<ResultRecord, 'id' | 'createdAt'>) {
-      const record: ResultRecord = plainCopy({ ...result, createdAt: new Date().toISOString() });
+      const record: ResultRecord = plainCopy({
+        ...result,
+        createdAt: new Date().toISOString(),
+      });
       const id = await db.results.add(record);
       this.results.unshift({ ...record, id });
       void this.syncCloudSnapshot();
@@ -88,7 +104,10 @@ export const useAppStore = defineStore('app', {
       void this.syncCloudSnapshot();
     },
     async addLifeEvent(event: Omit<LifeEventRecord, 'id' | 'createdAt'>) {
-      const record: LifeEventRecord = plainCopy({ ...event, createdAt: new Date().toISOString() });
+      const record: LifeEventRecord = plainCopy({
+        ...event,
+        createdAt: new Date().toISOString(),
+      });
       const id = await db.lifeEvents.add(record);
       this.lifeEvents.unshift({ ...record, id });
       this.lifeEvents.sort((a, b) => b.date.localeCompare(a.date));
@@ -109,7 +128,12 @@ export const useAppStore = defineStore('app', {
       void this.syncCloudSnapshot();
     },
     async saveReview(review: WeeklyReview) {
-      const plainReview = plainCopy(normalizeWeeklyReview({ ...review, updatedAt: new Date().toISOString() }));
+      const plainReview = plainCopy(
+        normalizeWeeklyReview({
+          ...review,
+          updatedAt: new Date().toISOString(),
+        }),
+      );
       await db.weeklyReviews.put(plainReview);
       const index = this.weeklyReviews.findIndex((item) => item.weekStart === review.weekStart);
       if (index >= 0) this.weeklyReviews[index] = plainReview;
@@ -117,7 +141,12 @@ export const useAppStore = defineStore('app', {
       void this.syncCloudSnapshot();
     },
     async saveMonthlyReview(review: MonthlyReview) {
-      const plainReview = plainCopy(normalizeMonthlyReview({ ...review, updatedAt: new Date().toISOString() }));
+      const plainReview = plainCopy(
+        normalizeMonthlyReview({
+          ...review,
+          updatedAt: new Date().toISOString(),
+        }),
+      );
       await db.monthlyReviews.put(plainReview);
       const index = this.monthlyReviews.findIndex((item) => item.monthStart === review.monthStart);
       if (index >= 0) this.monthlyReviews[index] = plainReview;
@@ -139,27 +168,49 @@ export const useAppStore = defineStore('app', {
         lifeEvents: this.lifeEvents,
         weeklyReviews: this.weeklyReviews,
         monthlyReviews: this.monthlyReviews,
-        settings: this.settings
+        settings: this.settings,
       };
     },
     async importData(payload: unknown, options: { syncCloud?: boolean } = {}) {
       const prepared = normalizeSnapshot(payload);
-      await db.transaction('rw', [db.dailyEntries, db.results, db.lifeEvents, db.weeklyReviews, db.monthlyReviews, db.settings], async () => {
-        await Promise.all([db.dailyEntries.clear(), db.results.clear(), db.lifeEvents.clear(), db.weeklyReviews.clear(), db.monthlyReviews.clear(), db.settings.clear()]);
-        await db.dailyEntries.bulkPut(prepared.dailyEntries);
-        await db.results.bulkPut(prepared.results);
-        await db.lifeEvents.bulkPut(prepared.lifeEvents ?? []);
-        await db.weeklyReviews.bulkPut(prepared.weeklyReviews);
-        await db.monthlyReviews.bulkPut(prepared.monthlyReviews ?? []);
-        await db.settings.put(plainCopy(prepared.settings));
-      });
+      await db.transaction(
+        'rw',
+        [db.dailyEntries, db.results, db.lifeEvents, db.weeklyReviews, db.monthlyReviews, db.settings],
+        async () => {
+          await Promise.all([
+            db.dailyEntries.clear(),
+            db.results.clear(),
+            db.lifeEvents.clear(),
+            db.weeklyReviews.clear(),
+            db.monthlyReviews.clear(),
+            db.settings.clear(),
+          ]);
+          await db.dailyEntries.bulkPut(prepared.dailyEntries);
+          await db.results.bulkPut(prepared.results);
+          await db.lifeEvents.bulkPut(prepared.lifeEvents ?? []);
+          await db.weeklyReviews.bulkPut(prepared.weeklyReviews);
+          await db.monthlyReviews.bulkPut(prepared.monthlyReviews ?? []);
+          await db.settings.put(plainCopy(prepared.settings));
+        },
+      );
       await this.load();
       if (options.syncCloud) void this.syncCloudSnapshot({ force: true });
     },
     async clearAll(options: { syncCloud?: boolean } = { syncCloud: true }) {
-      await db.transaction('rw', [db.dailyEntries, db.results, db.lifeEvents, db.weeklyReviews, db.monthlyReviews, db.settings], async () => {
-        await Promise.all([db.dailyEntries.clear(), db.results.clear(), db.lifeEvents.clear(), db.weeklyReviews.clear(), db.monthlyReviews.clear(), db.settings.clear()]);
-      });
+      await db.transaction(
+        'rw',
+        [db.dailyEntries, db.results, db.lifeEvents, db.weeklyReviews, db.monthlyReviews, db.settings],
+        async () => {
+          await Promise.all([
+            db.dailyEntries.clear(),
+            db.results.clear(),
+            db.lifeEvents.clear(),
+            db.weeklyReviews.clear(),
+            db.monthlyReviews.clear(),
+            db.settings.clear(),
+          ]);
+        },
+      );
       this.dailyEntries = [];
       this.results = [];
       this.lifeEvents = [];
@@ -197,7 +248,9 @@ export const useAppStore = defineStore('app', {
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Не удалось сохранить облачную копию';
           if (userId) markCloudSyncPending(userId, message);
-          this.setCloudSyncState('pending', 'Изменения сохранены локально. Облако обновится после повторной синхронизации.', { error: message });
+          this.setCloudSyncState('pending', 'Изменения сохранены локально. Облако обновится после повторной синхронизации.', {
+            error: message,
+          });
           return;
         }
       } while (this.cloudSyncQueued);
@@ -216,6 +269,6 @@ export const useAppStore = defineStore('app', {
       this.weeklyReviews = [];
       this.monthlyReviews = [];
       this.settings = structuredClone(defaultSettings);
-    }
-  }
+    },
+  },
 });

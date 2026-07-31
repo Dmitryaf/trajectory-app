@@ -1,12 +1,12 @@
 export function toDateKey(date: Date): string {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
 export function fromDateKey(key: string): Date {
-  const [year, month, day] = key.split("-").map(Number);
+  const [year, month, day] = key.split('-').map(Number);
   return new Date(year!, month! - 1, day!);
 }
 
@@ -61,20 +61,16 @@ export function monthsBetween(start: string, end: string): string[] {
 
 export function dateRange(start: string, end: string): string[] {
   const result: string[] = [];
-  for (let current = start; current <= end; current = addDays(current, 1))
-    result.push(current);
+  for (let current = start; current <= end; current = addDays(current, 1)) result.push(current);
   return result;
 }
 
-export function formatDate(
-  key: string,
-  options: Intl.DateTimeFormatOptions = { day: "numeric", month: "long" },
-): string {
-  return new Intl.DateTimeFormat("ru-RU", options).format(fromDateKey(key));
+export function formatDate(key: string, options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long' }): string {
+  return new Intl.DateTimeFormat('ru-RU', options).format(fromDateKey(key));
 }
 
 export function formatMinutes(value: number | null): string {
-  if (value === null) return "—";
+  if (value === null) return '—';
   const hours = Math.floor(value / 60);
   const minutes = value % 60;
   return minutes ? `${hours} ч ${minutes} мин` : `${hours} ч`;

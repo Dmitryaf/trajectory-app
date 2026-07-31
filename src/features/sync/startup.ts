@@ -51,7 +51,10 @@ export async function reconcileCloudSnapshotOnStartup(
 
     if (meta.lastCloudUpdatedAt === snapshot.updatedAt) {
       if (meta.pending) await store.syncCloudSnapshot({ force: true });
-      else store.setCloudSyncState('synced', `Облако синхронизировано: ${formatUpdatedAt(snapshot.updatedAt)}`, { updatedAt: snapshot.updatedAt });
+      else
+        store.setCloudSyncState('synced', `Облако синхронизировано: ${formatUpdatedAt(snapshot.updatedAt)}`, {
+          updatedAt: snapshot.updatedAt,
+        });
       return;
     }
 
@@ -61,10 +64,14 @@ export async function reconcileCloudSnapshotOnStartup(
     }
 
     services.markConflict(userId, snapshot.updatedAt);
-    store.setCloudSyncState('conflict', 'В этом браузере и в облаке есть разные данные. Выбери действие в настройках.', { updatedAt: snapshot.updatedAt });
+    store.setCloudSyncState('conflict', 'В этом браузере и в облаке есть разные данные. Выбери действие в настройках.', {
+      updatedAt: snapshot.updatedAt,
+    });
   } catch (error) {
     console.warn('Не удалось загрузить облачную копию', error);
-    store.setCloudSyncState('pending', 'Локальные данные доступны. Облако пока не проверено.', { error: error instanceof Error ? error.message : 'Не удалось проверить облако' });
+    store.setCloudSyncState('pending', 'Локальные данные доступны. Облако пока не проверено.', {
+      error: error instanceof Error ? error.message : 'Не удалось проверить облако',
+    });
   }
 }
 
@@ -84,12 +91,12 @@ export async function prepareLocalCacheOwner(
 
 export function hasLocalUserData(store: AppStore): boolean {
   return Boolean(
-    store.dailyEntries.length
-      || store.results.length
-      || store.lifeEvents.length
-      || store.weeklyReviews.length
-      || store.monthlyReviews.length
-      || JSON.stringify(store.settings) !== JSON.stringify(defaultSettings)
+    store.dailyEntries.length ||
+    store.results.length ||
+    store.lifeEvents.length ||
+    store.weeklyReviews.length ||
+    store.monthlyReviews.length ||
+    JSON.stringify(store.settings) !== JSON.stringify(defaultSettings),
   );
 }
 

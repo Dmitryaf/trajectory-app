@@ -49,12 +49,27 @@ async function returnToSignIn() {
         <form class="auth-form" @submit.prevent="savePassword">
           <label class="form-control">
             <span class="field-label">Новый пароль</span>
-            <input v-model="password" type="password" autocomplete="new-password" required minlength="8" aria-describedby="reset-password-hint" placeholder="Не меньше 8 символов" />
+            <input
+              v-model="password"
+              type="password"
+              autocomplete="new-password"
+              required
+              minlength="8"
+              aria-describedby="reset-password-hint"
+              placeholder="Не меньше 8 символов"
+            />
             <small id="reset-password-hint" class="auth-field-hint">Не меньше 8 символов.</small>
           </label>
           <label class="form-control">
             <span class="field-label">Повтори пароль</span>
-            <input v-model="passwordConfirmation" type="password" autocomplete="new-password" required minlength="8" placeholder="Повтори новый пароль" />
+            <input
+              v-model="passwordConfirmation"
+              type="password"
+              autocomplete="new-password"
+              required
+              minlength="8"
+              placeholder="Повтори новый пароль"
+            />
           </label>
           <button class="primary-button" type="submit" :disabled="auth.loading">
             {{ auth.loading ? 'Сохраняю...' : 'Сохранить новый пароль' }}

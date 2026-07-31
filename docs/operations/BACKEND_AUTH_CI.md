@@ -113,7 +113,7 @@ Vercel handles CD:
 - `develop` provides persistent staging with isolated Preview variables.
 - Merges to `main` get production deployments.
 
-The full branch, protection, staging, release and hotfix procedure is documented in [docs/DELIVERY.md](./docs/DELIVERY.md).
+The full branch, protection, staging, release and hotfix procedure is documented in [DELIVERY.md](./DELIVERY.md).
 
 ## Operational rule
 

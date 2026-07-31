@@ -64,10 +64,9 @@ describe('experiment summary', () => {
   });
 
   it('includes user conclusions and a factual summary in the manual analysis package', () => {
-    const entries = Array.from({ length: 8 }, (_, index) => entry(
-      `2026-07-${String(index + 1).padStart(2, '0')}`,
-      { energy: index < 4 ? 2 : 3, experimentCompleted: index < 4 ? null : true },
-    ));
+    const entries = Array.from({ length: 8 }, (_, index) =>
+      entry(`2026-07-${String(index + 1).padStart(2, '0')}`, { energy: index < 4 ? 2 : 3, experimentCompleted: index < 4 ? null : true }),
+    );
     const settings = structuredClone(defaultSettings);
     const completed = experiment({ active: false, conclusion: 'Утром было немного легче', decision: 'more_data' });
     settings.experimentHistory = [createExperimentRecord(completed, '2026-07-08T20:00:00.000Z')];

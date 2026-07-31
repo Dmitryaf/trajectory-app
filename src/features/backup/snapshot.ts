@@ -54,9 +54,10 @@ export function normalizeSnapshot(input: unknown): ExportPayload {
     const review = requireRecord(value, `monthlyReviews[${index}]`);
     return normalizeMonthlyReview({ ...review, monthStart: requireDate(review.monthStart, `monthlyReviews[${index}].monthStart`) });
   });
-  const settings = source.settings === undefined
-    ? structuredClone(defaultSettings)
-    : normalizeSettings(requireRecord(source.settings, 'settings') as Partial<AppSettings>);
+  const settings =
+    source.settings === undefined
+      ? structuredClone(defaultSettings)
+      : normalizeSettings(requireRecord(source.settings, 'settings') as Partial<AppSettings>);
 
   return {
     version,

@@ -57,16 +57,18 @@ export function buildExperimentSummary(entries: DailyEntry[], experiment: Experi
       if (!baselineValues.length && !experimentValues.length) return [];
       const baselineAverage = average(baselineValues);
       const experimentAverage = average(experimentValues);
-      return [{
-        id: metric.id,
-        label: metric.label,
-        unit: metric.unit,
-        baselineAverage,
-        experimentAverage,
-        baselineSamples: baselineValues.length,
-        experimentSamples: experimentValues.length,
-        difference: baselineAverage === null || experimentAverage === null ? null : experimentAverage - baselineAverage,
-      }];
+      return [
+        {
+          id: metric.id,
+          label: metric.label,
+          unit: metric.unit,
+          baselineAverage,
+          experimentAverage,
+          baselineSamples: baselineValues.length,
+          experimentSamples: experimentValues.length,
+          difference: baselineAverage === null || experimentAverage === null ? null : experimentAverage - baselineAverage,
+        },
+      ];
     }),
   };
 }
@@ -76,9 +78,7 @@ function ordinaryEntriesInRange(entries: DailyEntry[], start: string, end: strin
 }
 
 function metricValues(entries: DailyEntry[], metricId: ExperimentMetricId): number[] {
-  return entries
-    .map((entry) => entry[metricId])
-    .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+  return entries.map((entry) => entry[metricId]).filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
 }
 
 function average(values: number[]): number | null {
