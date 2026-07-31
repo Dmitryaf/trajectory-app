@@ -89,8 +89,38 @@
   color: #60706a;
   line-height: 1.5;
 }
-.first-entry-guide .secondary-button {
+.first-entry-guide__actions {
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.help-link--inline {
+  width: auto;
+  min-height: 42px;
+  justify-content: center;
+  padding: 9px 13px;
+  background: #fff;
+}
+.help-link--inline strong {
+  display: inline;
+}
+.daily-layout-settings {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin: -4px 4px 14px;
+  color: #718079;
+  font-size: 12px;
+}
+.daily-layout-settings a {
+  color: var(--accent-dark);
+  font-weight: 850;
+  text-decoration: none;
+}
+.daily-layout-settings a:hover {
+  text-decoration: underline;
 }
 .period-empty-guide,
 .journal-guide-card {

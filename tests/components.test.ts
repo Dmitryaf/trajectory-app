@@ -79,6 +79,20 @@ describe('period navigation', () => {
 });
 
 describe('app explanation', () => {
+  it('can use a clearer label inside onboarding', () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/', component: { template: '<div />' } }],
+    });
+    const wrapper = mount(HowItWorksDialog, {
+      props: { buttonLabel: 'Зачем это заполнять?', inline: true },
+      global: { plugins: [router] },
+    });
+
+    expect(wrapper.get('button').text()).toContain('Зачем это заполнять?');
+    expect(wrapper.get('button').classes()).toContain('help-link--inline');
+  });
+
   it('opens for a first visit and explains the whole path in plain language', async () => {
     const router = createRouter({
       history: createMemoryHistory(),

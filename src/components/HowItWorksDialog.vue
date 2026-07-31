@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
 
 const props = withDefaults(
   defineProps<{
     openForFirstVisit?: boolean;
+    buttonLabel?: string;
+    inline?: boolean;
   }>(),
-  { openForFirstVisit: false },
+  { openForFirstVisit: false, buttonLabel: 'Как это работает', inline: false },
 );
 
 const emit = defineEmits<{ 'intro-seen': [] }>();
-const router = useRouter();
 const isOpen = ref(false);
 const closeButton = ref<HTMLButtonElement>();
 const openedAsIntro = ref(false);
@@ -46,16 +46,12 @@ function close() {
   if (openedAsIntro.value) emit('intro-seen');
   openedAsIntro.value = false;
 }
-
-async function goTo(path: string) {
-  close();
-  await router.push(path);
-}
 </script>
 
 <template>
   <button
     class="help-link"
+    :class="{ 'help-link--inline': inline }"
     type="button"
     aria-label="Как работает приложение"
     title="Как это работает"
@@ -63,7 +59,7 @@ async function goTo(path: string) {
     @click="open"
   >
     <span aria-hidden="true">?</span>
-    <strong>Как это работает</strong>
+    <strong>{{ buttonLabel }}</strong>
   </button>
 
   <Teleport to="body">
@@ -137,8 +133,8 @@ async function goTo(path: string) {
         </p>
 
         <div class="help-dialog__actions">
-          <button class="secondary-button" type="button" @click="goTo('/settings#daily-blocks')">Настроить записи</button>
-          <button class="primary-button" type="button" @click="goTo('/')">Начать запись</button>
+          <RouterLink class="secondary-button" to="/settings#daily-blocks" @click="close">Настроить записи</RouterLink>
+          <RouterLink class="primary-button" to="/" @click="close">Начать запись</RouterLink>
         </div>
       </section>
     </div>

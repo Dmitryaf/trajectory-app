@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import ChipGroup from '../components/ChipGroup.vue';
 import DurationInput from '../components/DurationInput.vue';
+import HowItWorksDialog from '../components/HowItWorksDialog.vue';
 import ScalePicker from '../components/ScalePicker.vue';
 import { useDailyEntryForm } from '../features/daily-entry/useDailyEntryForm';
 import { useAppStore } from '../stores/app';
@@ -217,10 +218,18 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
       <div>
         <span class="eyebrow">С чего начать</span>
         <h2>Запишите несколько фактов о сегодняшнем дне</h2>
-        <p>Не нужно заполнять всё. Выберите два-три пункта, которые сейчас важны, и сохраните день.</p>
+        <p>Не нужно заполнять всё. Разделы на главной можно добавить или убрать в настройках — уже сохранённые записи не пропадут.</p>
       </div>
-      <RouterLink class="secondary-button" to="/settings#daily-blocks">Выбрать нужные блоки</RouterLink>
+      <div class="first-entry-guide__actions">
+        <RouterLink class="secondary-button" to="/settings#daily-blocks">Настроить блоки на главной</RouterLink>
+        <HowItWorksDialog button-label="Зачем это заполнять?" inline />
+      </div>
     </section>
+
+    <div v-else class="daily-layout-settings">
+      <span>Хотите добавить или убрать разделы?</span>
+      <RouterLink to="/settings#daily-blocks">Настроить главную →</RouterLink>
+    </div>
 
     <section v-if="isToday && currentWeekSummary.coveredEntriesCount" class="today-pulse" aria-label="Пульс недели">
       <div>

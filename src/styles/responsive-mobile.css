@@ -81,8 +81,21 @@
     flex-direction: column;
     padding: 18px;
   }
-  .first-entry-guide .secondary-button {
+  .first-entry-guide__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .first-entry-guide__actions .secondary-button,
+  .first-entry-guide__actions .help-link--inline {
     width: 100%;
+  }
+  .help-link--inline strong {
+    display: inline;
+  }
+  .daily-layout-settings {
+    justify-content: space-between;
+    margin-right: 2px;
+    margin-left: 2px;
   }
   .card-settings-link {
     padding: 5px 4px;

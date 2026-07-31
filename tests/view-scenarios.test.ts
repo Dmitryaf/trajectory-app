@@ -57,10 +57,24 @@ describe('daily entry scenario', () => {
     });
 
     expect(wrapper.text()).toContain('Запишите несколько фактов о сегодняшнем дне');
-    expect(wrapper.text()).toContain('Не нужно заполнять всё.');
+    expect(wrapper.text()).toContain('Разделы на главной можно добавить или убрать в настройках');
+    expect(wrapper.text()).toContain('Настроить блоки на главной');
+    expect(wrapper.text()).toContain('Зачем это заполнять?');
     expect(wrapper.text()).not.toContain('Вчера без записи');
     expect(wrapper.text()).toContain('Сначала выберите, над чем сейчас хотите работать.');
     expect(wrapper.text()).not.toContain('Конкретное действие');
+  });
+
+  it('keeps the daily block settings available after the first entry', () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [emptyDailyEntry('2026-07-20')];
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+
+    expect(wrapper.text()).toContain('Хотите добавить или убрать разделы?');
+    expect(wrapper.text()).toContain('Настроить главную');
+    expect(wrapper.text()).not.toContain('С чего начать');
   });
 
   it('validates sleep duration and saves the completed day with current criteria', async () => {
