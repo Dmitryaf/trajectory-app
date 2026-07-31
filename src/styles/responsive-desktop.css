@@ -1,4 +1,7 @@
 @media (min-width: 980px) {
+  .app-header {
+    max-width: 1280px;
+  }
   .beta-feedback-link,
   .help-link {
     min-height: 38px;
@@ -41,5 +44,17 @@
   .checkin-grid > .form-card--wide,
   .checkin-grid > .primary-button--save {
     grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 980px) and (max-width: 1150px) {
+  .beta-feedback-link {
+    width: 38px;
+    justify-content: center;
+    padding: 0;
+  }
+  .beta-feedback-link strong,
+  .account-menu__email {
+    display: none;
   }
 }
