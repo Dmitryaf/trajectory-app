@@ -10,7 +10,7 @@ const emptyMeta: CloudSyncMeta = {
   lastSyncedAt: '',
   pending: false,
   conflict: false,
-  error: ''
+  error: '',
 };
 
 function createStore() {
@@ -29,7 +29,7 @@ function createServices(snapshot: CloudSnapshot | null, meta: Partial<CloudSyncM
     loadSnapshot: vi.fn().mockResolvedValue(snapshot),
     getMeta: vi.fn(() => ({ ...emptyMeta, ...meta })),
     markConflict: vi.fn(),
-    markSynced: vi.fn()
+    markSynced: vi.fn(),
   };
 }
 
@@ -61,7 +61,7 @@ describe('startup cloud reconciliation', () => {
     expect(store.setCloudSyncState).toHaveBeenCalledWith(
       'conflict',
       'В этом браузере и в облаке есть разные данные. Выбери действие в настройках.',
-      { updatedAt: snapshot.updatedAt }
+      { updatedAt: snapshot.updatedAt },
     );
   });
 
@@ -85,11 +85,9 @@ describe('startup cloud reconciliation', () => {
 
     await reconcileCloudSnapshotOnStartup(store, 'user-1', services);
 
-    expect(store.setCloudSyncState).toHaveBeenCalledWith(
-      'pending',
-      'Локальные данные доступны. Облако пока не проверено.',
-      { error: 'network unavailable' }
-    );
+    expect(store.setCloudSyncState).toHaveBeenCalledWith('pending', 'Локальные данные доступны. Облако пока не проверено.', {
+      error: 'network unavailable',
+    });
     expect(store.cloudSyncError).toBe('network unavailable');
     warning.mockRestore();
   });
@@ -99,7 +97,7 @@ describe('startup cloud reconciliation', () => {
     const values = new Map([['trajectory:local-owner-id', 'user-old']]);
     const storage = {
       getItem: vi.fn((key: string) => values.get(key) ?? null),
-      setItem: vi.fn((key: string, value: string) => values.set(key, value))
+      setItem: vi.fn((key: string, value: string) => values.set(key, value)),
     };
 
     await prepareLocalCacheOwner(store, 'user-new', storage);

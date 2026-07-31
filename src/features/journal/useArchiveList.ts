@@ -12,10 +12,7 @@ interface ArchiveListOptions<T> {
   pageSize?: number;
 }
 
-export function useArchiveList<T extends DatedArchiveItem>(
-  items: ComputedRef<T[]>,
-  options: ArchiveListOptions<T>
-) {
+export function useArchiveList<T extends DatedArchiveItem>(items: ComputedRef<T[]>, options: ArchiveListOptions<T>) {
   const filterText = ref('');
   const filterCategory = ref('all');
   const dateFrom = ref(todayKey());
@@ -26,12 +23,13 @@ export function useArchiveList<T extends DatedArchiveItem>(
   const filteredItems = computed(() => {
     const query = filterText.value.trim().toLocaleLowerCase('ru-RU');
 
-    return items.value.filter((item) => (
-      (!query || options.getSearchText(item).toLocaleLowerCase('ru-RU').includes(query))
-      && (filterCategory.value === 'all' || options.getCategory(item) === filterCategory.value)
-      && (!dateFrom.value || item.date >= dateFrom.value)
-      && (!dateTo.value || item.date <= dateTo.value)
-    ));
+    return items.value.filter(
+      (item) =>
+        (!query || options.getSearchText(item).toLocaleLowerCase('ru-RU').includes(query)) &&
+        (filterCategory.value === 'all' || options.getCategory(item) === filterCategory.value) &&
+        (!dateFrom.value || item.date >= dateFrom.value) &&
+        (!dateTo.value || item.date <= dateTo.value),
+    );
   });
   const pageCount = computed(() => countPages(filteredItems.value.length, pageSize));
   const visibleItems = computed(() => pageItems(filteredItems.value, currentPage.value, pageSize));
@@ -51,6 +49,6 @@ export function useArchiveList<T extends DatedArchiveItem>(
     currentPage,
     filteredItems,
     pageCount,
-    visibleItems
+    visibleItems,
   };
 }

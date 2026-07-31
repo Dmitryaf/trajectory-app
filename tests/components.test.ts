@@ -8,6 +8,7 @@ import AccountMenu from '../src/components/AccountMenu.vue';
 import AuthGate from '../src/components/AuthGate.vue';
 import ChipGroup from '../src/components/ChipGroup.vue';
 import DurationInput from '../src/components/DurationInput.vue';
+import HowItWorksDialog from '../src/components/HowItWorksDialog.vue';
 import PeriodNavigator from '../src/components/PeriodNavigator.vue';
 import PasswordResetView from '../src/views/PasswordResetView.vue';
 import { useAuthStore } from '../src/stores/auth';
@@ -15,7 +16,7 @@ import { useAuthStore } from '../src/stores/auth';
 describe('form components', () => {
   it('shows a duration as hours and minutes and emits exact minute values', async () => {
     const wrapper = mount(DurationInput, {
-      props: { id: 'sleep-duration', modelValue: 415, maxHours: 24 }
+      props: { id: 'sleep-duration', modelValue: 415, maxHours: 24 },
     });
     const [hours, minutes] = wrapper.findAll('input');
 
@@ -38,11 +39,11 @@ describe('form components', () => {
       props: {
         options: [
           { id: 'reading', label: 'Чтение' },
-          { id: 'walk', label: 'Прогулка' }
+          { id: 'walk', label: 'Прогулка' },
         ],
         modelValue: ['reading'],
-        multiple: true
-      }
+        multiple: true,
+      },
     });
     const buttons = wrapper.findAll('button');
 
@@ -61,7 +62,7 @@ describe('form components', () => {
 describe('period navigation', () => {
   it('exposes previous, current and next actions with accessible labels', async () => {
     const wrapper = mount(PeriodNavigator, {
-      props: { title: 'Июль 2026', subtitle: '20 записей' }
+      props: { title: 'Июль 2026', subtitle: '20 записей' },
     });
 
     expect(wrapper.text()).toContain('Июль 2026');
@@ -77,15 +78,58 @@ describe('period navigation', () => {
   });
 });
 
+describe('app explanation', () => {
+  it('can use a clearer label inside onboarding', () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/', component: { template: '<div />' } }],
+    });
+    const wrapper = mount(HowItWorksDialog, {
+      props: { buttonLabel: 'Зачем это заполнять?', inline: true },
+      global: { plugins: [router] },
+    });
+
+    expect(wrapper.get('button').text()).toContain('Зачем это заполнять?');
+    expect(wrapper.get('button').classes()).toContain('help-link--inline');
+  });
+
+  it('opens for a first visit and explains the whole path in plain language', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', component: { template: '<div />' } },
+        { path: '/settings', component: { template: '<div />' } },
+      ],
+    });
+    await router.push('/');
+    await router.isReady();
+    const wrapper = mount(HowItWorksDialog, {
+      props: { openForFirstVisit: true },
+      attachTo: document.body,
+      global: { plugins: [router] },
+    });
+    await flushPromises();
+
+    expect(document.body.textContent).toContain('Зачем нужна «Траектория»');
+    expect(document.body.textContent).toContain('Итог — конкретное сделанное дело или полученный результат');
+    expect(document.body.textContent).toContain('Эксперимент: проверить одно изменение');
+    expect(document.body.textContent).toContain('что оставить, что изменить или что проверить дальше');
+
+    (document.querySelector('[aria-label="Закрыть объяснение"]') as HTMLButtonElement).click();
+    await flushPromises();
+    expect(wrapper.emitted('intro-seen')).toHaveLength(1);
+  });
+});
+
 describe('account menu', () => {
   it('groups settings and sign out under the current account', async () => {
     const wrapper = mount(AccountMenu, {
       props: { email: 'friend@example.com' },
       global: {
         stubs: {
-          RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' }
-        }
-      }
+          RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' },
+        },
+      },
     });
 
     expect(wrapper.text()).toContain('friend@example.com');
@@ -104,7 +148,10 @@ describe('beta authentication', () => {
     auth.signUp = vi.fn().mockResolvedValue({ session: null, confirmationRequired: true });
     const wrapper = mount(AuthGate, { global: { plugins: [pinia] } });
 
-    await wrapper.findAll('button').find((button) => button.text() === 'Создать аккаунт')!.trigger('click');
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Создать аккаунт')!
+      .trigger('click');
     expect(wrapper.text()).toContain('Не меньше 8 символов.');
     expect(wrapper.get('button.primary-button').attributes('disabled')).toBeUndefined();
     const inputs = wrapper.findAll('input');
@@ -157,7 +204,10 @@ describe('beta authentication', () => {
     auth.signUp = vi.fn();
     const wrapper = mount(AuthGate, { global: { plugins: [pinia] } });
 
-    await wrapper.findAll('button').find((button) => button.text() === 'Создать аккаунт')!.trigger('click');
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Создать аккаунт')!
+      .trigger('click');
     const inputs = wrapper.findAll('input');
     await inputs[0].setValue('friend@example.com');
     await inputs[1].setValue('short');

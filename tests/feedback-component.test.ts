@@ -29,7 +29,9 @@ describe('feedback dialog', () => {
     expect(textarea).not.toBeNull();
     textarea!.value = 'Добавьте подсказку на экране недели';
     textarea!.dispatchEvent(new Event('input', { bubbles: true }));
-    document.body.querySelector<HTMLFormElement>('.feedback-dialog form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    document.body
+      .querySelector<HTMLFormElement>('.feedback-dialog form')!
+      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     await flushPromises();
 
     expect(feedback.send).toHaveBeenCalledWith('Добавьте подсказку на экране недели', 'session-token');

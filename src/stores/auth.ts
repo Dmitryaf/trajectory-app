@@ -22,9 +22,11 @@ const passwordRecoveryKey = 'trajectory:password-recovery-required';
 
 function hasPasswordRecoveryRedirect() {
   const url = new URL(window.location.href);
-  return url.pathname === '/password-reset'
-    || url.searchParams.get('password-recovery') === '1'
-    || window.sessionStorage.getItem(passwordRecoveryKey) === '1';
+  return (
+    url.pathname === '/password-reset' ||
+    url.searchParams.get('password-recovery') === '1' ||
+    window.sessionStorage.getItem(passwordRecoveryKey) === '1'
+  );
 }
 
 function persistPasswordRecovery(required: boolean) {
@@ -42,15 +44,13 @@ export const useAuthStore = defineStore('auth', {
     session: null as Session | null,
     recoveryRequired: false,
     error: '',
-    notice: ''
+    notice: '',
   }),
   getters: {
     requiresAuth: (state) => state.configured || state.authRequired,
     configurationMissing: (state) => state.authRequired && !state.configured,
-    isAuthenticated: (state) => state.configured
-      ? Boolean(state.session && !state.recoveryRequired)
-      : !state.authRequired,
-    userEmail: (state) => state.session?.user.email ?? ''
+    isAuthenticated: (state) => (state.configured ? Boolean(state.session && !state.recoveryRequired) : !state.authRequired),
+    userEmail: (state) => state.session?.user.email ?? '',
   },
   actions: {
     async init() {
@@ -211,6 +211,6 @@ export const useAuthStore = defineStore('auth', {
       } finally {
         this.loading = false;
       }
-    }
-  }
+    },
+  },
 });

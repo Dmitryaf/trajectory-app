@@ -31,7 +31,8 @@ describe('feedback API', () => {
   });
 
   it('verifies the Supabase session and sends a plain-text email', async () => {
-    const fetchMock = vi.fn()
+    const fetchMock = vi
+      .fn()
       .mockResolvedValueOnce(Response.json({ id: 'user-1', email: 'friend@example.test' }))
       .mockResolvedValueOnce(Response.json({ id: 'email-1' }));
     vi.stubGlobal('fetch', fetchMock);
@@ -77,10 +78,13 @@ describe('feedback browser client', () => {
 
     await sendFeedback('Идея для формы', 'session-token');
 
-    expect(fetchMock).toHaveBeenCalledWith('/api/feedback', expect.objectContaining({
-      method: 'POST',
-      headers: expect.objectContaining({ Authorization: 'Bearer session-token' }),
-      body: JSON.stringify({ message: 'Идея для формы' }),
-    }));
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/feedback',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({ Authorization: 'Bearer session-token' }),
+        body: JSON.stringify({ message: 'Идея для формы' }),
+      }),
+    );
   });
 });

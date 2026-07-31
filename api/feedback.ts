@@ -41,7 +41,7 @@ async function authenticatedUser(request: Request, supabaseUrl: string, supabase
   });
   if (!response.ok) return null;
 
-  const user = await response.json() as Partial<SupabaseUser>;
+  const user = (await response.json()) as Partial<SupabaseUser>;
   return typeof user.id === 'string' ? { id: user.id, email: typeof user.email === 'string' ? user.email : undefined } : null;
 }
 
@@ -66,7 +66,7 @@ export async function POST(request: Request): Promise<Response> {
 
   let body: FeedbackRequestBody;
   try {
-    body = await request.json() as FeedbackRequestBody;
+    body = (await request.json()) as FeedbackRequestBody;
   } catch {
     return json({ error: 'Не удалось прочитать сообщение' }, 400);
   }

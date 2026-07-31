@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeWeight, prepareDailyEntryForSave, snapshotDailyEntry, timeBetween, validateDailyEntryMetrics } from '../src/features/daily-entry/model';
+import {
+  normalizeWeight,
+  prepareDailyEntryForSave,
+  snapshotDailyEntry,
+  timeBetween,
+  validateDailyEntryMetrics,
+} from '../src/features/daily-entry/model';
 import { emptyDailyEntry, type DailyBlockId } from '../src/types';
 
 describe('daily entry model', () => {

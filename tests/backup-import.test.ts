@@ -41,47 +41,53 @@ describe('backup import', () => {
     await db.dailyEntries.put({
       ...emptyDailyEntry('2026-07-21'),
       importantFact: 'Эта запись должна быть заменена',
-      updatedAt: '2026-07-21T10:00:00.000Z'
+      updatedAt: '2026-07-21T10:00:00.000Z',
     });
 
     const oldBackup = {
       version: 1,
       exportedAt: '2025-02-02T10:00:00.000Z',
-      dailyEntries: [{
-        date: '2025-02-01',
-        bedtime: '23:40',
-        wakeTime: '07:30',
-        sleepMinutes: 430,
-        sleepQuality: 4,
-        energy: 3,
-        careerState: 'external',
-        activities: ['walk'],
-        nutritionState: 'neutral',
-        lifeAreas: ['family'],
-        importantFact: 'Старая запись сохранена',
-        experimentCompleted: null,
-        updatedAt: '2025-02-01T20:00:00.000Z'
-      }],
-      results: [{
-        id: 1,
-        date: '2025-02-01',
-        area: 'career',
-        title: 'Получен ответ',
-        createdAt: '2025-02-01T20:00:00.000Z'
-      }],
-      weeklyReviews: [{
-        weekStart: '2025-01-27',
-        results: ['Получен ответ'],
-        support: 'Режим',
-        obstacle: '',
-        nextLever: 'Продолжить',
-        updatedAt: '2025-02-02T20:00:00.000Z'
-      }],
+      dailyEntries: [
+        {
+          date: '2025-02-01',
+          bedtime: '23:40',
+          wakeTime: '07:30',
+          sleepMinutes: 430,
+          sleepQuality: 4,
+          energy: 3,
+          careerState: 'external',
+          activities: ['walk'],
+          nutritionState: 'neutral',
+          lifeAreas: ['family'],
+          importantFact: 'Старая запись сохранена',
+          experimentCompleted: null,
+          updatedAt: '2025-02-01T20:00:00.000Z',
+        },
+      ],
+      results: [
+        {
+          id: 1,
+          date: '2025-02-01',
+          area: 'career',
+          title: 'Получен ответ',
+          createdAt: '2025-02-01T20:00:00.000Z',
+        },
+      ],
+      weeklyReviews: [
+        {
+          weekStart: '2025-01-27',
+          results: ['Получен ответ'],
+          support: 'Режим',
+          obstacle: '',
+          nextLever: 'Продолжить',
+          updatedAt: '2025-02-02T20:00:00.000Z',
+        },
+      ],
       settings: {
         id: 'main',
         settingsVersion: 1,
-        activeLifeAreas: ['family', 'spiritual']
-      }
+        activeLifeAreas: ['family', 'spiritual'],
+      },
     } as unknown as ExportPayload;
 
     const store = useAppStore();
@@ -96,13 +102,13 @@ describe('backup import', () => {
       lifeAreasRecorded: true,
       contextFactorsRecorded: false,
       timeInBedMinutes: null,
-      importantFact: 'Старая запись сохранена'
+      importantFact: 'Старая запись сохранена',
     });
     expect(store.results).toHaveLength(1);
     expect(store.lifeEvents).toEqual([]);
     expect(store.monthlyReviews).toEqual([]);
     expect(store.weeklyReviews[0].ifThenPlan).toBe('');
-    expect(store.settings.settingsVersion).toBe(10);
+    expect(store.settings.settingsVersion).toBe(11);
     expect(store.settings.activeDailyBlocks).toEqual(['sleep', 'context', 'career', 'movement', 'nutrition']);
     expect(store.settings.activeLifeAreas).toEqual(['family']);
 
@@ -120,7 +126,7 @@ describe('backup import', () => {
     await store.saveEntry({
       ...emptyDailyEntry('2026-07-21'),
       importantFact: 'Не удалять',
-      updatedAt: ''
+      updatedAt: '',
     });
 
     await expect(store.importData({ version: 99 } as unknown as ExportPayload)).rejects.toThrow('Неподдерживаемый формат резервной копии');
@@ -133,16 +139,18 @@ describe('backup import', () => {
     await store.saveEntry({
       ...emptyDailyEntry('2026-07-21'),
       importantFact: 'Сохранить при ошибке',
-      updatedAt: ''
+      updatedAt: '',
     });
 
-    await expect(store.importData({
-      version: 3,
-      dailyEntries: [{ date: '2026-02-31' }],
-      results: [],
-      weeklyReviews: [],
-      settings: {}
-    })).rejects.toThrow('Некорректная дата в dailyEntries[0].date');
+    await expect(
+      store.importData({
+        version: 3,
+        dailyEntries: [{ date: '2026-02-31' }],
+        results: [],
+        weeklyReviews: [],
+        settings: {},
+      }),
+    ).rejects.toThrow('Некорректная дата в dailyEntries[0].date');
 
     expect(await db.dailyEntries.get('2026-07-21')).toMatchObject({ importantFact: 'Сохранить при ошибке' });
   });
@@ -152,24 +160,26 @@ describe('backup import', () => {
     await store.importData({
       version: 3,
       exportedAt: '2026-07-22T10:00:00.000Z',
-      dailyEntries: [{
-        date: '2026-07-20',
-        bedtime: '29:70',
-        wakeTime: '07:30',
-        sleepMinutes: '480',
-        timeInBedMinutes: 2000,
-        sleepQuality: 8,
-        energy: 0,
-        activities: ['walk', 'unknown'],
-        specialDay: 'unknown',
-        weightKg: 999,
-        experimentCompleted: 'yes'
-      }],
+      dailyEntries: [
+        {
+          date: '2026-07-20',
+          bedtime: '29:70',
+          wakeTime: '07:30',
+          sleepMinutes: '480',
+          timeInBedMinutes: 2000,
+          sleepQuality: 8,
+          energy: 0,
+          activities: ['walk', 'unknown'],
+          specialDay: 'unknown',
+          weightKg: 999,
+          experimentCompleted: 'yes',
+        },
+      ],
       results: [{ date: '2026-07-20', area: 'career', title: 'Итог', createdAt: '' }],
       lifeEvents: [{ date: '2026-07-20', type: 'unknown', title: 'Событие', note: '', createdAt: '' }],
       weeklyReviews: [],
       monthlyReviews: [],
-      settings: {}
+      settings: {},
     });
 
     expect(store.dailyEntries[0]).toMatchObject({
@@ -182,7 +192,7 @@ describe('backup import', () => {
       activities: ['walk'],
       specialDay: null,
       weightKg: null,
-      experimentCompleted: null
+      experimentCompleted: null,
     });
     expect(store.lifeEvents[0].type).toBe('other');
   });

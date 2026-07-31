@@ -4,7 +4,9 @@ test.use({ viewport: { width: 390, height: 844 }, isMobile: true });
 
 test('saves a dirty daily entry from the mobile action', async ({ page }) => {
   await page.goto('/');
-  const mobileSave = page.getByRole('button', { name: 'Сохранить день' }).last();
+  const introClose = page.getByRole('button', { name: 'Закрыть объяснение' });
+  if (await introClose.isVisible()) await introClose.click();
+  const mobileSave = page.locator('.mobile-save-button');
   await expect(mobileSave).toBeHidden();
 
   await page.getByPlaceholder('Например: разговор заметно изменил настроение на весь день').fill('Проверка мобильного сохранения');

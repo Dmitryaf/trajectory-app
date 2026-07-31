@@ -26,7 +26,7 @@ const emptyMeta: CloudSyncMeta = {
   lastSyncedAt: '',
   pending: false,
   conflict: false,
-  error: ''
+  error: '',
 };
 
 export function isCloudSyncConfigured(): boolean {
@@ -83,7 +83,11 @@ export async function signInToCloud(email: string, password: string): Promise<Se
   return data.session;
 }
 
-export async function signUpToCloud(email: string, password: string, inviteCode: string): Promise<{ session: Session | null; confirmationRequired: boolean }> {
+export async function signUpToCloud(
+  email: string,
+  password: string,
+  inviteCode: string,
+): Promise<{ session: Session | null; confirmationRequired: boolean }> {
   const { data, error } = await getSupabaseClient().auth.signUp({
     email,
     password,
@@ -157,13 +161,11 @@ export async function loadCloudSnapshot(): Promise<CloudSnapshot | null> {
 export async function saveCloudSnapshot(payload: unknown): Promise<string> {
   const session = await requireSession();
   const updatedAt = new Date().toISOString();
-  const { error } = await getSupabaseClient()
-    .from('trajectory_snapshots')
-    .upsert({
-      user_id: session.user.id,
-      payload,
-      updated_at: updatedAt,
-    });
+  const { error } = await getSupabaseClient().from('trajectory_snapshots').upsert({
+    user_id: session.user.id,
+    payload,
+    updated_at: updatedAt,
+  });
 
   if (error) throw error;
   saveCloudSyncMeta(session.user.id, {
@@ -171,7 +173,7 @@ export async function saveCloudSnapshot(payload: unknown): Promise<string> {
     lastSyncedAt: new Date().toISOString(),
     pending: false,
     conflict: false,
-    error: ''
+    error: '',
   });
   return updatedAt;
 }
@@ -194,7 +196,7 @@ export function saveCloudSyncMeta(userId: string, patch: Partial<CloudSyncMeta>)
 export function markCloudSyncPending(userId: string, error: string) {
   return saveCloudSyncMeta(userId, {
     pending: true,
-    error
+    error,
   });
 }
 
@@ -203,7 +205,7 @@ export function markCloudSyncConflict(userId: string, cloudUpdatedAt: string) {
     lastCloudUpdatedAt: cloudUpdatedAt,
     pending: false,
     conflict: true,
-    error: ''
+    error: '',
   });
 }
 
@@ -213,7 +215,7 @@ export function markCloudSyncSynced(userId: string, cloudUpdatedAt: string) {
     lastSyncedAt: new Date().toISOString(),
     pending: false,
     conflict: false,
-    error: ''
+    error: '',
   });
 }
 
