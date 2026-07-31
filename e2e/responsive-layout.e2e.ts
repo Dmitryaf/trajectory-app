@@ -101,3 +101,19 @@ test('keeps desktop navigation visible while the page scrolls', async ({ page })
   await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight }));
   await expect.poll(async () => (await navigation.boundingBox())?.y).toBe(initialTop);
 });
+
+test('keeps desktop navigation clear of the header controls', async ({ page }) => {
+  for (const width of [980, 1100, 1280, 1514]) {
+    await page.setViewportSize({ width, height: 720 });
+    await page.goto('/');
+
+    const brandBox = await page.locator('.brand').boundingBox();
+    const navigationBox = await page.locator('.bottom-nav').boundingBox();
+    const actionsBox = await page.locator('.header-actions').boundingBox();
+    expect(brandBox).not.toBeNull();
+    expect(navigationBox).not.toBeNull();
+    expect(actionsBox).not.toBeNull();
+    expect(brandBox!.x + brandBox!.width + 8, `brand and navigation overlap at ${width}px`).toBeLessThanOrEqual(navigationBox!.x);
+    expect(navigationBox!.x + navigationBox!.width + 8, `navigation and actions overlap at ${width}px`).toBeLessThanOrEqual(actionsBox!.x);
+  }
+});
