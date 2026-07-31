@@ -148,6 +148,7 @@ export type ExperimentRecord = Omit<Experiment, 'active'> & {
 export type AppSettings = {
   id: 'main';
   settingsVersion: number;
+  introSeen: boolean;
   activeDailyBlocks: DailyBlockId[];
   activeLifeAreas: LifeAreaId[];
   customActivityOptions: Option<ActivityId>[];
@@ -311,6 +312,7 @@ const dailyRecordedFieldIds: DailyRecordedFieldId[] = [
 export const defaultSettings: AppSettings = {
   id: 'main',
   settingsVersion: 10,
+  introSeen: false,
   activeDailyBlocks: dailyBlockOptions.map((option) => option.id),
   activeLifeAreas: ['family', 'reading', 'creativity', 'rest'],
   customActivityOptions: [],
@@ -401,6 +403,7 @@ export function normalizeSettings(settings: LegacyAppSettings | null | undefined
     ...structuredClone(defaultSettings),
     id: 'main',
     settingsVersion: defaultSettings.settingsVersion,
+    introSeen: source.introSeen === true,
     activeDailyBlocks,
     activeLifeAreas: (source.settingsVersion ?? 1) < 2 ? activeLifeAreas.filter((area) => area !== 'spiritual') : activeLifeAreas,
     customActivityOptions,

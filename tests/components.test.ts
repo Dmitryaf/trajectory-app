@@ -8,6 +8,7 @@ import AccountMenu from '../src/components/AccountMenu.vue';
 import AuthGate from '../src/components/AuthGate.vue';
 import ChipGroup from '../src/components/ChipGroup.vue';
 import DurationInput from '../src/components/DurationInput.vue';
+import HowItWorksDialog from '../src/components/HowItWorksDialog.vue';
 import PeriodNavigator from '../src/components/PeriodNavigator.vue';
 import PasswordResetView from '../src/views/PasswordResetView.vue';
 import { useAuthStore } from '../src/stores/auth';
@@ -74,6 +75,35 @@ describe('period navigation', () => {
     expect(wrapper.emitted('previous')).toHaveLength(1);
     expect(wrapper.emitted('current')).toHaveLength(1);
     expect(wrapper.emitted('next')).toHaveLength(1);
+  });
+});
+
+describe('app explanation', () => {
+  it('opens for a first visit and explains the whole path in plain language', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', component: { template: '<div />' } },
+        { path: '/settings', component: { template: '<div />' } },
+      ],
+    });
+    await router.push('/');
+    await router.isReady();
+    const wrapper = mount(HowItWorksDialog, {
+      props: { openForFirstVisit: true },
+      attachTo: document.body,
+      global: { plugins: [router] },
+    });
+    await flushPromises();
+
+    expect(document.body.textContent).toContain('Зачем нужна «Траектория»');
+    expect(document.body.textContent).toContain('Итог — конкретное сделанное дело или полученный результат');
+    expect(document.body.textContent).toContain('Эксперимент: проверить одно изменение');
+    expect(document.body.textContent).toContain('что оставить, что изменить или что проверить дальше');
+
+    (document.querySelector('[aria-label="Закрыть объяснение"]') as HTMLButtonElement).click();
+    await flushPromises();
+    expect(wrapper.emitted('intro-seen')).toHaveLength(1);
   });
 });
 

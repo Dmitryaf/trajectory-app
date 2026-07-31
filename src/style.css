@@ -187,8 +187,8 @@ textarea {
 .header-actions {
   min-width: 0;
   display: flex;
-  flex-direction: column;
-  padding-top: 15px;
+  flex-direction: row;
+  align-items: center;
   gap: 8px;
 }
 .header-settings-link {
@@ -225,7 +225,8 @@ textarea {
   background: #dff5ec;
   color: #145e49;
 }
-.beta-feedback-link {
+.beta-feedback-link,
+.help-link {
   min-height: 44px;
   display: inline-flex;
   align-items: center;
@@ -244,14 +245,26 @@ textarea {
     border-color var(--motion-fast),
     box-shadow var(--motion-fast);
 }
-.beta-feedback-link span {
+.beta-feedback-link span,
+.help-link span {
   color: var(--accent-dark);
   font-size: 15px;
 }
-.beta-feedback-link strong {
+.beta-feedback-link strong,
+.help-link strong {
   font-weight: 850;
 }
-.beta-feedback-link:hover {
+.help-link {
+  width: 38px;
+  min-height: 38px;
+  justify-content: center;
+  padding: 0;
+}
+.help-link strong {
+  display: none;
+}
+.beta-feedback-link:hover,
+.help-link:hover {
   transform: translateY(-2px);
   border-color: #8fcdb5;
   box-shadow: 0 15px 34px rgba(16, 45, 44, 0.18);
@@ -321,6 +334,105 @@ textarea {
 }
 .feedback-dialog__actions button {
   min-width: 120px;
+}
+.help-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(11, 28, 27, 0.52);
+  backdrop-filter: blur(5px);
+}
+.help-dialog {
+  width: min(620px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  padding: 28px;
+  border: 1px solid rgba(213, 224, 217, 0.95);
+  border-radius: 26px;
+  background: #fff;
+  box-shadow: 0 30px 80px rgba(8, 28, 25, 0.24);
+}
+.help-dialog__heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+}
+.help-dialog__heading h2 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 26px;
+}
+.help-dialog__close {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: #5f6d68;
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+}
+.help-dialog__lead {
+  margin: 14px 0 20px;
+  color: #51625d;
+  line-height: 1.55;
+}
+.help-steps {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.help-steps li {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  background: #f5f7f4;
+}
+.help-steps li > span {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: #ddf4ea;
+  color: #17634e;
+  font-weight: 850;
+}
+.help-steps strong,
+.help-steps p {
+  display: block;
+}
+.help-steps p {
+  margin: 3px 0 0;
+  color: #687570;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.help-dialog__note {
+  margin: 18px 0 0;
+  padding: 13px 15px;
+  border-left: 3px solid #79cfad;
+  border-radius: 0 12px 12px 0;
+  background: #f0faf6;
+  color: #315b4e;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.help-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
 }
 .account-menu {
   position: relative;
@@ -538,6 +650,56 @@ textarea {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.82);
 }
+.first-entry-guide {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 18px;
+  padding: 20px;
+  border: 1px solid #bfe2d4;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #effbf6, #fff);
+  box-shadow: var(--shadow-soft);
+}
+.first-entry-guide h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.first-entry-guide p {
+  max-width: 610px;
+  margin: 6px 0 0;
+  color: #60706a;
+  line-height: 1.5;
+}
+.first-entry-guide .secondary-button {
+  flex: 0 0 auto;
+}
+.period-empty-guide,
+.journal-guide-card {
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border: 1px solid #d9e5df;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: var(--shadow-soft);
+}
+.period-empty-guide p,
+.journal-guide-card p {
+  margin: 6px 0 0;
+  color: #65736e;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.period-empty-guide .secondary-button {
+  margin-top: 12px;
+}
+.journal-guide-card {
+  margin-top: 18px;
+}
+.journal-guide-card b {
+  color: #2f4d45;
+}
 .today-pulse {
   align-items: flex-start;
   background: linear-gradient(135deg, #f5fbf8, #fff);
@@ -690,6 +852,22 @@ textarea {
   align-items: flex-start;
   margin-bottom: 20px;
 }
+.form-card__heading > div {
+  min-width: 0;
+}
+.card-settings-link {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 5px 8px;
+  border-radius: 9px;
+  color: #356c5b;
+  font-size: 11px;
+  font-weight: 750;
+  text-decoration: none;
+}
+.card-settings-link:hover {
+  background: #edf7f3;
+}
 .form-card__heading h2,
 .form-card__heading p {
   margin-bottom: 0;
@@ -762,16 +940,36 @@ textarea {
 }
 .sleep-field-grid {
   display: flex;
+  min-width: 0;
   flex-wrap: wrap;
   gap: 14px;
   align-items: flex-start;
 }
 .sleep-field-grid > div {
+  min-width: 0;
   flex: 0 1 185px;
+}
+.sleep-field-grid > div > input,
+.form-card input[type='time'] {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 .form-context {
   margin: 0 0 12px;
   color: #667187;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.empty-block-note {
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+}
+.empty-block-note p {
+  margin: 0 0 12px;
+  color: #65736e;
   font-size: 13px;
   line-height: 1.5;
 }
@@ -3578,7 +3776,8 @@ textarea {
 }
 
 @media (min-width: 980px) {
-  .beta-feedback-link {
+  .beta-feedback-link,
+  .help-link {
     min-height: 38px;
     padding: 8px 12px;
   }
@@ -3662,6 +3861,15 @@ textarea {
   .beta-feedback-link strong {
     display: none;
   }
+  .help-link {
+    width: 36px;
+    min-height: 36px;
+    justify-content: center;
+    padding: 0;
+  }
+  .help-link strong {
+    display: none;
+  }
   .feedback-backdrop {
     align-items: end;
     padding: 10px;
@@ -3677,6 +3885,30 @@ textarea {
   }
   .feedback-dialog__actions button {
     min-width: 0;
+  }
+  .help-backdrop {
+    align-items: end;
+    padding: 10px;
+  }
+  .help-dialog {
+    max-height: calc(100vh - 20px);
+    padding: 20px;
+    border-radius: 22px;
+  }
+  .help-dialog__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .first-entry-guide {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 18px;
+  }
+  .first-entry-guide .secondary-button {
+    width: 100%;
+  }
+  .card-settings-link {
+    padding: 5px 4px;
   }
   .app-main {
     padding: 10px 14px 105px;

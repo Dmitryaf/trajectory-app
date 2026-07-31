@@ -18,6 +18,10 @@ registerSW({ immediate: true });
 
 const router = createRouter({
   history: createWebHistory(),
+  scrollBehavior(to) {
+    if (to.hash) return { el: to.hash, top: 88, behavior: 'smooth' };
+    return { top: 0 };
+  },
   routes: [
     { path: '/', component: () => import('./views/TodayView.vue'), meta: { title: 'Сегодня' } },
     { path: '/results', component: () => import('./views/ResultsView.vue'), meta: { title: 'Итоги' } },
@@ -33,7 +37,6 @@ const router = createRouter({
 
 router.afterEach((to) => {
   document.title = `${String(to.meta.title)} · Траектория`;
-  window.scrollTo({ top: 0 });
 });
 
 router.isReady().then(() => window.sessionStorage.removeItem(preloadRecoveryKey));
