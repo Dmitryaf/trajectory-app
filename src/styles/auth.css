@@ -1,0 +1,203 @@
+.auth-shell {
+  display: grid;
+  min-height: calc(100vh - 210px);
+  place-items: center;
+  padding: 22px 0 48px;
+}
+.auth-card {
+  position: relative;
+  width: min(440px, calc(100vw - 28px));
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  padding: 36px;
+  border: 1px solid rgba(213, 224, 217, 0.95);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 30px 80px rgba(16, 45, 44, 0.16);
+}
+.auth-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 8px;
+  background: linear-gradient(90deg, #49c99b 0 58%, #ffd06e 58%);
+}
+.auth-card::after {
+  content: '';
+  position: absolute;
+  width: 160px;
+  height: 160px;
+  right: -100px;
+  top: -100px;
+  border: 1px solid rgba(73, 201, 155, 0.26);
+  border-radius: 50%;
+  box-shadow: 0 0 0 28px rgba(73, 201, 155, 0.04);
+  pointer-events: none;
+}
+.auth-card__brand {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 28px;
+}
+.auth-card__brand > div {
+  min-width: 0;
+}
+.auth-card__brand .brand__mark {
+  width: 52px;
+  height: 52px;
+  border-radius: 17px;
+}
+.auth-card__brand h1 {
+  margin: 0;
+  font-size: 38px;
+}
+.auth-card__brand p:last-child {
+  margin-bottom: 0;
+}
+.auth-form {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+}
+.auth-field-hint {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.auth-form .primary-button {
+  min-height: 50px;
+  margin-top: 4px;
+}
+.auth-mode {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 4px;
+  border-radius: 14px;
+  background: #f1f4f1;
+}
+.auth-mode button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+.auth-mode button.is-active {
+  background: #fff;
+  color: var(--navy);
+  box-shadow: 0 4px 12px rgba(16, 45, 44, 0.08);
+}
+.auth-reset {
+  display: block;
+  margin: 14px auto 0;
+  border: 0;
+  background: transparent;
+  color: #526d65;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 750;
+}
+.auth-reset:hover {
+  color: var(--accent-dark);
+}
+.auth-card p,
+.auth-footnote {
+  overflow-wrap: anywhere;
+}
+.auth-footnote {
+  margin: 14px 0 0;
+  color: #7a8497;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.auth-config-error {
+  width: min(560px, 100%);
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 18px;
+  align-items: start;
+  margin: 72px auto;
+  padding: 28px;
+  border: 1px solid #d8e5df;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow);
+}
+.auth-config-error__mark {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  background: #e8f5ef;
+  color: var(--accent-dark);
+  font-size: 22px;
+  font-weight: 900;
+}
+.auth-config-error h1 {
+  margin: 0 0 8px;
+  font-size: clamp(25px, 5vw, 34px);
+}
+.auth-config-error p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.password-reset-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 28px 14px;
+  background: radial-gradient(circle at 20% 15%, rgba(73, 201, 155, 0.13), transparent 32%), var(--surface);
+}
+.password-reset-card {
+  position: relative;
+  width: min(460px, 100%);
+  overflow: hidden;
+  padding: 36px;
+  border: 1px solid rgba(213, 224, 217, 0.95);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 30px 80px rgba(16, 45, 44, 0.16);
+}
+.password-reset-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 8px;
+  background: linear-gradient(90deg, #49c99b 0 58%, #ffd06e 58%);
+}
+.password-reset-card .auth-card__brand {
+  margin-bottom: 30px;
+}
+.password-reset-card .auth-card__brand strong {
+  color: var(--navy);
+  font-size: 18px;
+}
+.password-reset-card h1 {
+  margin: 5px 0 10px;
+  font-size: clamp(30px, 7vw, 42px);
+  line-height: 1.05;
+}
+.password-reset-card__intro {
+  margin: 0 0 24px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.password-reset-card > .primary-button {
+  width: 100%;
+}
