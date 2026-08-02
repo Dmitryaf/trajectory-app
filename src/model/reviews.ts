@@ -1,5 +1,16 @@
 import { lifeEventTypeOptions } from './options';
-import type { LifeEventRecord, LifeEventType, MonthlyReview, WeeklyReview } from './schema';
+import type { LifeEventRecord, LifeEventType, MonthlyReview, ResultRecord, WeeklyReview } from './schema';
+
+export function normalizeResult(result: Partial<ResultRecord> & { date: string; title: string }): ResultRecord {
+  return {
+    date: result.date,
+    area: typeof result.area === 'string' ? result.area : 'career',
+    title: typeof result.title === 'string' ? result.title : '',
+    note: typeof result.note === 'string' ? result.note : '',
+    createdAt: typeof result.createdAt === 'string' ? result.createdAt : '',
+    ...(typeof result.id === 'number' ? { id: result.id } : {}),
+  };
+}
 
 export function normalizeLifeEvent(event: Partial<LifeEventRecord> & { date: string; title: string }): LifeEventRecord {
   let type: LifeEventType = 'other';

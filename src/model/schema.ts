@@ -89,6 +89,7 @@ export type ResultRecord = {
   date: string;
   area: LifeAreaId | 'career' | 'sport' | 'nutrition' | 'sleep' | 'health';
   title: string;
+  note: string;
   createdAt: string;
 };
 

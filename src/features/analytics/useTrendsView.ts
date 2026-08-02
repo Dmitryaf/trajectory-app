@@ -260,7 +260,13 @@ export function useTrendsView() {
     (
       [
         ...lifeEvents.value.map((event) => ({ date: event.date, type: 'Событие', tone: 'event', title: event.title, detail: event.note })),
-        ...results.value.map((result) => ({ date: result.date, type: 'Итог', tone: 'result', title: result.title, detail: '' })),
+        ...results.value.map((result) => ({
+          date: result.date,
+          type: 'Итог',
+          tone: 'result',
+          title: result.title,
+          detail: result.note,
+        })),
         ...store.weeklyReviews.flatMap((review) => {
           const date = savedDate(review.updatedAt, endOfWeek(review.weekStart));
           const items = [];

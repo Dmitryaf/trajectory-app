@@ -105,6 +105,7 @@ describe('backup import', () => {
       importantFact: 'Старая запись сохранена',
     });
     expect(store.results).toHaveLength(1);
+    expect(store.results[0].note).toBe('');
     expect(store.lifeEvents).toEqual([]);
     expect(store.monthlyReviews).toEqual([]);
     expect(store.weeklyReviews[0].ifThenPlan).toBe('');
@@ -116,7 +117,7 @@ describe('backup import', () => {
     expect(storedDates).toEqual(['2025-02-01']);
 
     const exported = store.exportData();
-    expect(exported.version).toBe(5);
+    expect(exported.version).toBe(6);
     expect(exported.dailyEntries[0].careerStates).toEqual(['external']);
     expect(exported.monthlyReviews).toEqual([]);
   });

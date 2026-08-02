@@ -181,7 +181,16 @@ describe('analytics', () => {
     };
     const payload = buildAiReportPayload('week', '2026-07-16', {
       entries: [entry('2026-07-13', { contextFactors: ['custom:context:rain'] })],
-      results: [],
+      results: [
+        {
+          id: 1,
+          date: '2026-07-16',
+          area: 'career',
+          title: 'Завершил прототип',
+          note: 'Показал сценарий двум пользователям и записал вопросы',
+          createdAt: '2026-07-16T10:00:00.000Z',
+        },
+      ],
       lifeEvents: [],
       reviews: [{ ...normalizeWeeklyReview({ weekStart: '2026-07-06' }), nextLever: 'Ложиться раньше' }],
       monthlyReviews: [],
@@ -200,6 +209,7 @@ describe('analytics', () => {
     expect(prompt).toContain('ДАННЫЕ ДЛЯ АНАЛИЗА');
     expect(prompt).toContain('Шум за окном');
     expect(prompt).toContain('Ложиться раньше');
+    expect(prompt).toContain('подробности: Показал сценарий двум пользователям и записал вопросы');
     expect(prompt).toContain('Наблюдаемый результат цели: Показать работающий сценарий трём людям.');
     expect(prompt).toContain('Цель нужно пересмотреть 2026-07-31.');
     expect(prompt).toContain('Если данных мало, прямо скажи об этом вместо совета.');
@@ -379,7 +389,7 @@ describe('analytics', () => {
         entry('2026-07-15', { sleepMinutes: 480 }),
         entry('2026-07-16', { sleepMinutes: 450 }),
       ],
-      [{ id: 1, date: '2026-07-16', area: 'career', title: 'Отправил отклики', createdAt: '2026-07-16T10:00:00.000Z' }],
+      [{ id: 1, date: '2026-07-16', area: 'career', title: 'Отправил отклики', note: '', createdAt: '2026-07-16T10:00:00.000Z' }],
       [{ id: 1, date: '2026-07-15', type: 'decision', title: 'Сменил фокус', note: '', createdAt: '2026-07-15T10:00:00.000Z' }],
     );
 
@@ -422,7 +432,16 @@ describe('analytics', () => {
         entry('2026-07-15', { sleepMinutes: 480 }),
         entry('2026-07-16', { sleepMinutes: 450 }),
       ],
-      [{ id: 1, date: '2026-07-16', area: 'career', title: 'Закончил отклики недели', createdAt: '2026-07-16T10:00:00.000Z' }],
+      [
+        {
+          id: 1,
+          date: '2026-07-16',
+          area: 'career',
+          title: 'Закончил отклики недели',
+          note: '',
+          createdAt: '2026-07-16T10:00:00.000Z',
+        },
+      ],
       [{ id: 1, date: '2026-07-15', type: 'event', title: 'Сложный внешний день', note: '', createdAt: '2026-07-15T10:00:00.000Z' }],
     );
 
@@ -559,7 +578,7 @@ describe('analytics', () => {
         entry('2026-07-16', { sleepMinutes: 420, energy: 3, actionDirection: 'external' }),
         entry('2026-07-17', { sleepMinutes: 360, energy: 2, actionDirection: 'external' }),
       ],
-      [{ id: 1, date: '2026-07-17', area: 'career', title: 'Получил ответ', createdAt: '2026-07-17T10:00:00.000Z' }],
+      [{ id: 1, date: '2026-07-17', area: 'career', title: 'Получил ответ', note: '', createdAt: '2026-07-17T10:00:00.000Z' }],
       undefined,
       14,
       '2026-07-20',

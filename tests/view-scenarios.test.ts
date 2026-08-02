@@ -391,6 +391,7 @@ describe('journal scenarios', () => {
       date: '2026-07-21',
       area: 'career' as const,
       title: `Итог ${index + 1}`,
+      note: '',
       createdAt: `2026-07-21T${String(index + 10).padStart(2, '0')}:00:00.000Z`,
     }));
     const wrapper = mount(ResultsView, { global: { plugins: [pinia] } });
@@ -409,9 +410,16 @@ describe('journal scenarios', () => {
   it('adds an outcome and filters the existing archive by text', async () => {
     const { pinia, store } = createStore();
     store.results = [
-      { id: 3, date: '2026-07-21', area: 'career', title: 'Сегодняшний итог', createdAt: '2026-07-21T10:00:00.000Z' },
-      { id: 1, date: '2026-07-20', area: 'reading', title: 'Дочитал книгу', createdAt: '2026-07-20T10:00:00.000Z' },
-      { id: 2, date: '2026-07-19', area: 'career', title: 'Получил ответ', createdAt: '2026-07-19T10:00:00.000Z' },
+      {
+        id: 3,
+        date: '2026-07-21',
+        area: 'career',
+        title: 'Сегодняшний итог',
+        note: 'Разобрался, почему откладывал эту задачу',
+        createdAt: '2026-07-21T10:00:00.000Z',
+      },
+      { id: 1, date: '2026-07-20', area: 'reading', title: 'Дочитал книгу', note: '', createdAt: '2026-07-20T10:00:00.000Z' },
+      { id: 2, date: '2026-07-19', area: 'career', title: 'Получил ответ', note: '', createdAt: '2026-07-19T10:00:00.000Z' },
     ];
     const addResult = vi.spyOn(store, 'addResult').mockResolvedValue(undefined);
     const wrapper = mount(ResultsView, { global: { plugins: [pinia] } });
@@ -429,12 +437,16 @@ describe('journal scenarios', () => {
     expect(wrapper.get('[aria-label="Конечная дата итогов"]').element).toHaveProperty('value', '');
     expect(wrapper.get('.archive-date-filter__state').text()).toBe('Показаны записи за всё время');
     expect(wrapper.get('.archive-filter__all-time').attributes('disabled')).toBeDefined();
+    await wrapper.get('[aria-label="Поиск по итогам"]').setValue('откладывал');
+    expect(wrapper.text()).toContain('Сегодняшний итог');
     await wrapper.get('[aria-label="Поиск по итогам"]').setValue('книгу');
     expect(wrapper.text()).toContain('Дочитал книгу');
     expect(wrapper.text()).not.toContain('Получил ответ');
 
     await wrapper.get('[aria-label="Поиск по итогам"]').setValue('');
     await wrapper.get('.result-composer input[type="text"]').setValue('Закончил курс');
+    await wrapper.get('.result-note-field summary').trigger('click');
+    await wrapper.get('.result-note-field textarea').setValue('Собрал финальный проект и получил обратную связь');
     await wrapper.get('.result-composer .primary-button').trigger('click');
     await flushPromises();
 
@@ -442,6 +454,7 @@ describe('journal scenarios', () => {
       date: '2026-07-21',
       area: 'career',
       title: 'Закончил курс',
+      note: 'Собрал финальный проект и получил обратную связь',
     });
   });
 
@@ -694,6 +707,7 @@ describe('trends scenarios', () => {
       date: `2026-07-${String(21 - index).padStart(2, '0')}`,
       area: 'career' as const,
       title: `Итог ${index + 1}`,
+      note: '',
       createdAt: `2026-07-${String(21 - index).padStart(2, '0')}T12:00:00.000Z`,
     }));
     const wrapper = mount(TrendsView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });

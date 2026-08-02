@@ -126,7 +126,8 @@ function buildReadableSections(payload: AiReportPayload): string[] {
     'Завершённые итоги',
     limitedValues(
       payload.results.map((result) => {
-        return `${result.date} — ${labelFor(payload.labels.resultAreas, result.area)}: ${cleanText(result.title)}`;
+        const note = cleanText(result.note);
+        return `${result.date} — ${labelFor(payload.labels.resultAreas, result.area)}: ${cleanText(result.title)}${note ? `; подробности: ${note}` : ''}`;
       }),
       payload.period === 'range' ? 80 : 60,
       payload.period === 'range' ? 400 : 800,

@@ -3,6 +3,7 @@ import {
   normalizeDailyEntry,
   normalizeLifeEvent,
   normalizeMonthlyReview,
+  normalizeResult,
   normalizeSettings,
   normalizeWeeklyReview,
   type AppSettings,
@@ -14,7 +15,7 @@ import {
 } from '../../types';
 
 export type ExportPayload = {
-  version: 1 | 2 | 3 | 4 | 5;
+  version: 1 | 2 | 3 | 4 | 5 | 6;
   exportedAt: string;
   dailyEntries: DailyEntry[];
   results: ResultRecord[];
@@ -29,7 +30,7 @@ type UnknownRecord = Record<string, unknown>;
 export function normalizeSnapshot(input: unknown): ExportPayload {
   const source = requireRecord(input, 'резервная копия');
   const version = source.version;
-  if (version !== 1 && version !== 2 && version !== 3 && version !== 4 && version !== 5) {
+  if (version !== 1 && version !== 2 && version !== 3 && version !== 4 && version !== 5 && version !== 6) {
     throw new Error('Неподдерживаемый формат резервной копии');
   }
 
@@ -37,7 +38,7 @@ export function normalizeSnapshot(input: unknown): ExportPayload {
     const entry = requireRecord(value, `dailyEntries[${index}]`);
     return normalizeDailyEntry({ ...entry, date: requireDate(entry.date, `dailyEntries[${index}].date`) });
   });
-  const results = requireArray(source.results, 'results').map((value, index) => normalizeResult(value, index));
+  const results = requireArray(source.results, 'results').map((value, index) => normalizeSnapshotResult(value, index));
   const lifeEvents = optionalArray(source.lifeEvents, 'lifeEvents').map((value, index) => {
     const event = requireRecord(value, `lifeEvents[${index}]`);
     return normalizeLifeEvent({
@@ -71,20 +72,21 @@ export function normalizeSnapshot(input: unknown): ExportPayload {
   };
 }
 
-function normalizeResult(value: unknown, index: number): ResultRecord {
+function normalizeSnapshotResult(value: unknown, index: number): ResultRecord {
   const result = requireRecord(value, `results[${index}]`);
   const id = result.id;
   if (id !== undefined && (!Number.isInteger(id) || (id as number) <= 0)) {
     throw new Error(`Некорректное поле results[${index}].id`);
   }
 
-  return {
+  return normalizeResult({
     ...(typeof id === 'number' ? { id } : {}),
     date: requireDate(result.date, `results[${index}].date`),
     area: requireString(result.area, `results[${index}].area`) as ResultRecord['area'],
     title: requireString(result.title, `results[${index}].title`),
+    note: typeof result.note === 'string' ? result.note : '',
     createdAt: typeof result.createdAt === 'string' ? result.createdAt : '',
-  };
+  });
 }
 
 function requireRecord(value: unknown, field: string): UnknownRecord {
