@@ -8,6 +8,7 @@ import {
   normalizeDailyEntry,
   normalizeLifeEvent,
   normalizeMonthlyReview,
+  normalizeResult,
   normalizeSettings,
   normalizeWeeklyReview,
   type AppSettings,
@@ -57,7 +58,7 @@ export const useAppStore = defineStore('app', {
           db.settings.get('main'),
         ]);
         this.dailyEntries = dailyEntries.map((entry) => normalizeDailyEntry(entry));
-        this.results = results.sort((a, b) => b.date.localeCompare(a.date));
+        this.results = results.map((result) => normalizeResult(result)).sort((a, b) => b.date.localeCompare(a.date));
         this.lifeEvents = lifeEvents.map((event) => normalizeLifeEvent(event)).sort((a, b) => b.date.localeCompare(a.date));
         this.weeklyReviews = weeklyReviews.map((review) => normalizeWeeklyReview(review));
         this.monthlyReviews = monthlyReviews.map((review) => normalizeMonthlyReview(review));
@@ -81,17 +82,19 @@ export const useAppStore = defineStore('app', {
       return saved;
     },
     async addResult(result: Omit<ResultRecord, 'id' | 'createdAt'>) {
-      const record: ResultRecord = plainCopy({
-        ...result,
-        createdAt: new Date().toISOString(),
-      });
+      const record: ResultRecord = plainCopy(
+        normalizeResult({
+          ...result,
+          createdAt: new Date().toISOString(),
+        }),
+      );
       const id = await db.results.add(record);
       this.results.unshift({ ...record, id });
       void this.syncCloudSnapshot();
     },
     async updateResult(result: ResultRecord) {
       if (result.id === undefined) return;
-      const record = plainCopy(result);
+      const record = plainCopy(normalizeResult(result));
       await db.results.put(record);
       const index = this.results.findIndex((item) => item.id === record.id);
       if (index >= 0) this.results[index] = record;
@@ -161,7 +164,7 @@ export const useAppStore = defineStore('app', {
     },
     exportData(): ExportPayload {
       return {
-        version: 5,
+        version: 6,
         exportedAt: new Date().toISOString(),
         dailyEntries: this.dailyEntries,
         results: this.results,

@@ -120,9 +120,10 @@ export function useDailyEntryForm(store: AppStore) {
       applyEntry(savedEntry);
       originalEntrySnapshot.value = snapshotDailyEntry(form, currentMetrics());
       saved.value = true;
-      notifySaved(
-        wasExistingEntry ? `Запись за ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })} обновлена` : 'День сохранён',
-      );
+      const localSaveMessage = wasExistingEntry
+        ? `Запись за ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })} обновлена на устройстве`
+        : 'День сохранён на устройстве';
+      notifySaved(store.cloudSyncStatus === 'disabled' ? localSaveMessage : `${localSaveMessage} · облако обновляется`);
       if (savedTimer !== undefined) window.clearTimeout(savedTimer);
       savedTimer = window.setTimeout(() => (saved.value = false), 2200);
     } catch (error) {

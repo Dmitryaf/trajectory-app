@@ -45,6 +45,7 @@ export type AiReportPayload = {
   lifeEvents: LifeEventRecord[];
   weeklyReview?: WeeklyReview;
   previousWeeklyReview?: WeeklyReview;
+  weeklyReviews?: WeeklyReview[];
   monthlyReview?: MonthlyReview;
   previousMonthlyReview?: MonthlyReview;
   monthlyReviews?: MonthlyReview[];
@@ -94,6 +95,18 @@ export function buildAiReportRangePayload(rangeMonths: number, anchor: string, s
     rangeMonths,
     monthlyReviews: source.monthlyReviews
       .filter((review) => review.monthStart >= start && review.monthStart <= end)
+      .sort((a, b) => a.monthStart.localeCompare(b.monthStart)),
+  });
+}
+
+export function buildAiReportCustomRangePayload(start: string, end: string, source: AiReportSourceData): AiReportPayload {
+  const dataThrough = end < todayKey() ? end : todayKey();
+  return buildPayload('range', start, end, dataThrough, source, {
+    weeklyReviews: source.reviews
+      .filter((review) => addDays(review.weekStart, 6) >= start && review.weekStart <= dataThrough)
+      .sort((a, b) => a.weekStart.localeCompare(b.weekStart)),
+    monthlyReviews: source.monthlyReviews
+      .filter((review) => endOfMonth(review.monthStart) >= start && review.monthStart <= dataThrough)
       .sort((a, b) => a.monthStart.localeCompare(b.monthStart)),
   });
 }

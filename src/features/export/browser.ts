@@ -1,6 +1,7 @@
 import {
   buildAiReportPayload,
   buildAiReportPrompt,
+  buildAiReportCustomRangePayload,
   buildAiReportRangePayload,
   type AiReportPayload,
   type AiReportSourceData,
@@ -15,8 +16,12 @@ export function buildRangePackage(rangeMonths: number, anchor: string, source: A
   return buildAiReportRangePayload(rangeMonths, anchor, source);
 }
 
+export function buildCustomRangePackage(start: string, end: string, source: AiReportSourceData) {
+  return buildAiReportCustomRangePayload(start, end, source);
+}
+
 export function downloadAiPackage(payload: AiReportPayload) {
-  const suffix = payload.period === 'range' ? `${payload.rangeMonths}-months` : payload.period;
+  const suffix = payload.period === 'range' ? (payload.rangeMonths ? `${payload.rangeMonths}-months` : 'period') : payload.period;
   downloadJson(payload, `trajectory-analysis-${suffix}-${payload.start}-${payload.dataThrough}.json`);
 }
 

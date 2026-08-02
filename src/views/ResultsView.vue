@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import AutoGrowTextarea from '../components/AutoGrowTextarea.vue';
 import ChipGroup from '../components/ChipGroup.vue';
 import ArchiveDateRange from '../features/journal/ArchiveDateRange.vue';
 import ArchivePagination from '../features/journal/ArchivePagination.vue';
@@ -11,11 +12,13 @@ import { resultAreaOptions, type ResultRecord } from '../types';
 
 const store = useAppStore();
 const title = ref('');
+const note = ref('');
 const date = ref(todayKey());
 const area = ref<ResultRecord['area']>('career');
 const editingId = ref<number | null>(null);
 const editingCreatedAt = ref('');
 const saving = ref(false);
+const expandedNotes = ref<string[]>([]);
 const recentResults = computed(() => [...store.results].sort((a, b) => b.date.localeCompare(a.date)));
 const resultOptions = computed(() => [...resultAreaOptions, ...store.settings.customLifeAreaOptions]);
 const resultEntryOptions = computed(() => [
@@ -32,7 +35,7 @@ const {
   pageCount,
   visibleItems: visibleResults,
 } = useArchiveList(recentResults, {
-  getSearchText: (result) => result.title,
+  getSearchText: (result) => `${result.title} ${result.note}`,
   getCategory: (result) => result.area,
 });
 
@@ -43,7 +46,7 @@ async function saveResult() {
   const wasEditing = editingId.value !== null;
   try {
     if (editingId.value === null) {
-      await store.addResult({ date: date.value, area: area.value, title: clean });
+      await store.addResult({ date: date.value, area: area.value, title: clean, note: note.value.trim() });
     } else {
       await store.updateResult({
         id: editingId.value,
@@ -51,6 +54,7 @@ async function saveResult() {
         date: date.value,
         area: area.value,
         title: clean,
+        note: note.value.trim(),
       });
     }
     resetForm();
@@ -67,6 +71,7 @@ function edit(result: ResultRecord) {
   editingId.value = result.id;
   editingCreatedAt.value = result.createdAt;
   title.value = result.title;
+  note.value = result.note;
   date.value = result.date;
   area.value = result.area;
 }
@@ -75,6 +80,7 @@ function resetForm() {
   editingId.value = null;
   editingCreatedAt.value = '';
   title.value = '';
+  note.value = '';
   date.value = todayKey();
   area.value = 'career';
 }
@@ -88,6 +94,21 @@ async function remove(id?: number) {
 
 function areaMeta(value: ResultRecord['area']) {
   return resultOptions.value.find((option) => option.id === value) ?? { id: value, label: value, icon: '+' };
+}
+
+function resultKey(result: ResultRecord) {
+  return String(result.id ?? result.createdAt);
+}
+
+function noteIsExpanded(result: ResultRecord) {
+  return expandedNotes.value.includes(resultKey(result));
+}
+
+function toggleNote(result: ResultRecord) {
+  const key = resultKey(result);
+  expandedNotes.value = expandedNotes.value.includes(key)
+    ? expandedNotes.value.filter((item) => item !== key)
+    : [...expandedNotes.value, key];
 }
 </script>
 
@@ -123,6 +144,15 @@ function areaMeta(value: ResultRecord['area']) {
           {{ editingId === null ? 'Добавить итог' : 'Сохранить итог' }}
         </button>
       </div>
+      <details class="result-note-field" :open="Boolean(note)">
+        <summary>{{ note ? 'Подробности' : 'Добавить подробности' }} <span>необязательно</span></summary>
+        <AutoGrowTextarea
+          v-model="note"
+          :rows="3"
+          :max-length="2000"
+          placeholder="Что произошло, почему это важно или какой контекст стоит сохранить"
+        />
+      </details>
       <button v-if="editingId !== null" class="secondary-button composer-cancel" type="button" @click="resetForm">
         Отменить редактирование
       </button>
@@ -148,12 +178,30 @@ function areaMeta(value: ResultRecord['area']) {
         <TransitionGroup name="archive-list" tag="div" class="results-list">
           <article v-for="result in visibleResults" :key="result.id ?? result.createdAt" class="result-item">
             <span class="result-item__icon">{{ areaMeta(result.area).icon }}</span>
-            <div>
+            <div class="result-item__content">
               <strong>{{ result.title }}</strong
               ><small
                 >{{ areaMeta(result.area).label }} ·
                 {{ formatDate(result.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</small
               >
+              <p
+                v-if="result.note"
+                :id="`result-note-${resultKey(result)}`"
+                class="result-item__note"
+                :class="{ 'result-item__note--clamped': result.note.length > 240 && !noteIsExpanded(result) }"
+              >
+                {{ result.note }}
+              </p>
+              <button
+                v-if="result.note.length > 240"
+                class="result-item__note-toggle"
+                type="button"
+                :aria-expanded="noteIsExpanded(result)"
+                :aria-controls="`result-note-${resultKey(result)}`"
+                @click="toggleNote(result)"
+              >
+                {{ noteIsExpanded(result) ? 'Свернуть' : 'Показать полностью' }}
+              </button>
             </div>
             <div class="item-actions">
               <button class="ghost-button" type="button" aria-label="Редактировать итог" @click="edit(result)">✎</button>

@@ -23,17 +23,6 @@ const appDataReady = ref(false);
 const appDataLoadError = ref('');
 const appDataLoadingText = ref('Загружаю записи…');
 const effectiveLoadError = computed(() => store.loadError || appDataLoadError.value);
-const isEmptyAccount = computed(
-  () =>
-    store.dailyEntries.length === 0 &&
-    store.results.length === 0 &&
-    store.lifeEvents.length === 0 &&
-    store.weeklyReviews.length === 0 &&
-    store.monthlyReviews.length === 0,
-);
-const shouldIntroduceApp = computed(
-  () => router.currentRoute.value.path === '/' && store.loaded && isEmptyAccount.value && !store.settings.introSeen,
-);
 let appDataLoadPromise: Promise<void> | null = null;
 const refreshCloudAfterResume = createResumeCloudRefresh(async () => {
   await reconcileCloudSnapshotOnStartup(store, auth.requiresAuth ? auth.session?.user.id : null);
@@ -142,15 +131,6 @@ async function signOut() {
   }
 }
 
-async function markIntroSeen() {
-  if (store.settings.introSeen) return;
-  try {
-    await store.saveSettings({ ...store.settings, introSeen: true });
-  } catch (error) {
-    notifyUnknownError(error, 'Не удалось сохранить отметку о первом запуске');
-  }
-}
-
 const navItems = [
   { to: '/', label: 'Сегодня', icon: '●' },
   { to: '/week', label: 'Неделя', icon: '▦' },
@@ -169,7 +149,7 @@ const navItems = [
         <span><strong>Траектория</strong><small>факты, а не оценка</small></span>
       </RouterLink>
       <div v-if="canOpenApp && appDataReady && store.loaded && !effectiveLoadError" class="header-actions">
-        <HowItWorksDialog :open-for-first-visit="shouldIntroduceApp" @intro-seen="markIntroSeen" />
+        <HowItWorksDialog />
         <FeedbackDialog v-if="feedbackEnabled" :access-token="auth.session?.access_token ?? ''" />
         <RouterLink v-if="!auth.requiresAuth" to="/settings" class="header-settings-link" aria-label="Открыть настройки" title="Настройки">
           <span>⚙</span><strong>Настройки</strong>

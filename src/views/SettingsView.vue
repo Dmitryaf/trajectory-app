@@ -15,6 +15,9 @@ const {
   newContextFactorLabel,
   newPassword,
   newPasswordConfirmation,
+  analysisStart,
+  analysisEnd,
+  analysisMaxDate,
   auth,
   allCareerOptions,
   activeActivityOptions,
@@ -47,6 +50,8 @@ const {
   restoreBackupFromCloud,
   copyAnalysisPrompt,
   downloadAnalysisData,
+  copyCustomAnalysisPrompt,
+  downloadCustomAnalysisData,
   importData,
   clearAll,
   deleteAccount,
@@ -73,7 +78,7 @@ const {
       </div>
       <ChipGroup v-model="settings.activeDailyBlocks as DailyBlockId[]" :options="dailyBlockOptions" multiple />
       <p v-if="!settings.activeDailyBlocks.length" class="data-note">
-        Останутся общие блоки: действия по текущей цели, области жизни и факт дня.
+        Останутся общие блоки: действия по текущей цели, области жизни и заметка дня.
       </p>
       <button class="primary-button" type="button" @click="save('Блоки ежедневной записи сохранены')">Сохранить блоки</button>
     </article>
@@ -347,13 +352,13 @@ const {
         ><input v-model="settings.experiment.active" type="checkbox"
       /></label>
       <label class="field-label" for="experiment-title">Что хотите попробовать</label>
-      <input
+      <textarea
         id="experiment-title"
         v-model="settings.experiment.title"
-        type="text"
-        maxlength="140"
+        rows="3"
+        maxlength="400"
         placeholder="Не читать новости после 22:00"
-      />
+      ></textarea>
       <label class="field-label" for="experiment-hypothesis">Что хотите узнать <span class="field-optional">необязательно</span></label>
       <textarea
         id="experiment-hypothesis"
@@ -396,8 +401,8 @@ const {
       <div class="form-card__heading">
         <span class="section-icon section-icon--blue">↓</span>
         <div>
-          <h2>Резервная копия</h2>
-          <p>JSON-копия нужна как ручная страховка независимо от облачной синхронизации.</p>
+          <h2>Копия отдельным файлом</h2>
+          <p>Для обычной работы скачивать файл не требуется. Он нужен только как дополнительная личная копия или для переноса данных.</p>
         </div>
       </div>
       <div class="data-actions">
@@ -417,7 +422,13 @@ const {
     <article class="settings-card settings-card--cloud">
       <div class="form-card__heading">
         <span class="section-icon section-icon--green">↥</span>
-        <div><h2>Облачная копия</h2></div>
+        <div>
+          <h2>Автоматическая облачная копия</h2>
+          <p>
+            После каждого изменения приложение сохраняет данные на устройстве и обновляет облачную копию. Экспортировать их вручную не
+            нужно.
+          </p>
+        </div>
       </div>
       <div v-if="!auth.configured" class="cloud-sync-note">
         <strong>Облачная копия недоступна</strong>
@@ -468,7 +479,7 @@ const {
           <p>Обнови страницу и войди снова. До входа приложение не загружает записи.</p>
         </div>
         <div class="data-actions">
-          <button class="secondary-button" type="button" :disabled="!cloudSession" @click="saveBackupToCloud">Сохранить в облако</button>
+          <button class="secondary-button" type="button" :disabled="!cloudSession" @click="saveBackupToCloud">Обновить копию сейчас</button>
           <button class="secondary-button" type="button" :disabled="!cloudSession" @click="restoreBackupFromCloud">
             Загрузить из облака
           </button>
@@ -500,6 +511,36 @@ const {
         <button class="secondary-button" type="button" @click="downloadAnalysisData('week')">Данные недели</button>
         <button class="secondary-button" type="button" @click="downloadAnalysisData('month')">Данные месяца</button>
       </div>
+      <details class="analysis-range">
+        <summary>Выбрать другой период</summary>
+        <div class="analysis-range__content">
+          <p>Например, можно захватить часть прошлого месяца и несколько дней текущего.</p>
+          <div class="form-row">
+            <div>
+              <label class="field-label" for="analysis-start">Начало периода</label>
+              <input id="analysis-start" v-model="analysisStart" type="date" :max="analysisEnd" aria-label="Начало периода анализа" />
+            </div>
+            <div>
+              <label class="field-label" for="analysis-end">Конец периода</label>
+              <input
+                id="analysis-end"
+                v-model="analysisEnd"
+                type="date"
+                :min="analysisStart"
+                :max="analysisMaxDate"
+                aria-label="Конец периода анализа"
+              />
+            </div>
+          </div>
+          <div class="ai-actions">
+            <button class="secondary-button" type="button" @click="copyCustomAnalysisPrompt">Скопировать промпт периода</button>
+            <button class="secondary-button" type="button" @click="downloadCustomAnalysisData">Скачать данные периода</button>
+          </div>
+          <p class="data-note">
+            В промпт входят записи по каждому дню выбранного периода, включая личные заметки. JSON остаётся полной копией без сокращений.
+          </p>
+        </div>
+      </details>
       <p class="data-note">
         В пакет входят личные заметки выбранного периода. Перед передачей внешнему сервису можно просмотреть скачанный JSON.
       </p>
