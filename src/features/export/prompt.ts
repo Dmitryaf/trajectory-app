@@ -23,7 +23,9 @@ export function buildAiReportPrompt(payload: AiReportPayload, settings: AppSetti
       ? `неделю ${formatDate(payload.start, { day: 'numeric', month: 'short' })} — ${formatDate(payload.end, { day: 'numeric', month: 'short' })}`
       : payload.period === 'month'
         ? `месяц ${formatDate(payload.start, { month: 'long', year: 'numeric' })}`
-        : `${payload.rangeMonths ?? 'несколько'} месяцев: ${formatDate(payload.start, { month: 'short', year: 'numeric' })} — ${formatDate(payload.end, { month: 'short', year: 'numeric' })}`;
+        : payload.rangeMonths
+          ? `${payload.rangeMonths} месяцев: ${formatDate(payload.start, { month: 'short', year: 'numeric' })} — ${formatDate(payload.end, { month: 'short', year: 'numeric' })}`
+          : `период ${formatDate(payload.start, { day: 'numeric', month: 'long', year: 'numeric' })} — ${formatDate(payload.end, { day: 'numeric', month: 'long', year: 'numeric' })}`;
 
   const sections = buildReadableSections(payload);
 
@@ -110,12 +112,12 @@ function buildReadableSections(payload: AiReportPayload): string[] {
   appendSection(lines, 'Сохранённые обзоры', limitedValues(reviewLines(payload), 18, 1_600));
   appendSection(
     lines,
-    payload.period === 'range' ? 'Покрытие по месяцам' : 'Записи по дням',
-    payload.period === 'range'
+    payload.period === 'range' && payload.rangeMonths ? 'Покрытие по месяцам' : 'Записи по дням',
+    payload.period === 'range' && payload.rangeMonths
       ? monthlyEntryLines(payload)
       : limitedValues(
           payload.entries.map((entry) => formatEntry(entry, payload)),
-          payload.period === 'week' ? 7 : 31,
+          payload.period === 'week' ? 7 : payload.period === 'month' ? 31 : payload.entries.length,
           1_600,
         ),
   );
@@ -132,7 +134,7 @@ function buildReadableSections(payload: AiReportPayload): string[] {
   );
   appendSection(
     lines,
-    'События и важные мысли',
+    'События, мысли и наблюдения',
     limitedValues(
       payload.lifeEvents.map((event) => {
         const note = cleanText(event.note);
@@ -350,6 +352,7 @@ function reviewLines(payload: AiReportPayload): string[] {
   const lines: string[] = [];
   if (payload.previousWeeklyReview) lines.push(formatWeeklyReview('Предыдущая неделя', payload.previousWeeklyReview));
   if (payload.weeklyReview) lines.push(formatWeeklyReview('Текущая неделя', payload.weeklyReview));
+  for (const review of payload.weeklyReviews ?? []) lines.push(formatWeeklyReview(review.weekStart, review));
   if (payload.previousMonthlyReview) lines.push(formatMonthlyReview('Предыдущий месяц', payload.previousMonthlyReview));
   if (payload.monthlyReview) lines.push(formatMonthlyReview('Текущий месяц', payload.monthlyReview));
   for (const review of payload.monthlyReviews ?? []) lines.push(formatMonthlyReview(review.monthStart, review));

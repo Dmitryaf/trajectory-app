@@ -3,10 +3,10 @@ import ChipGroup from '../../components/ChipGroup.vue';
 import { useAppStore } from '../../stores/app';
 import { useAuthStore } from '../../stores/auth';
 import { copyText, downloadJson } from '../export/browser';
-import { buildAiReportPayload, buildAiReportPrompt, type AiReportPeriod } from '../export/report';
+import { buildAiReportCustomRangePayload, buildAiReportPayload, buildAiReportPrompt, type AiReportPeriod } from '../export/report';
 import { createExperimentRecord, emptyExperiment, experimentDecisionOptions, experimentPeriodsOverlap } from '../experiments/model';
 import { loadCloudSnapshot, markCloudSyncSynced } from '../../services/cloudSync';
-import { todayKey } from '../../services/dates';
+import { addDays, todayKey } from '../../services/dates';
 import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../../services/notifications';
 import { plainCopy } from '../../services/plain';
 import {
@@ -36,6 +36,9 @@ export function useSettingsForm() {
   const newContextFactorLabel = ref('');
   const newPassword = ref('');
   const newPasswordConfirmation = ref('');
+  const analysisStart = ref(addDays(todayKey(), -30));
+  const analysisEnd = ref(todayKey());
+  const analysisMaxDate = todayKey();
   const auth = useAuthStore();
   const allCareerOptions = computed(() => {
     const usedIds = new Set([
@@ -355,15 +358,61 @@ export function useSettingsForm() {
     }
   }
 
+  async function copyCustomAnalysisPrompt() {
+    if (!analysisRangeIsValid()) return;
+    try {
+      const payload = createCustomAnalysisPayload();
+      await copyText(buildAiReportPrompt(payload, store.settings));
+      notifySaved('Промпт выбранного периода скопирован');
+    } catch (error) {
+      notifyUnknownError(error, 'Не удалось скопировать промпт');
+    }
+  }
+
+  function downloadCustomAnalysisData() {
+    if (!analysisRangeIsValid()) return;
+    try {
+      const payload = createCustomAnalysisPayload();
+      downloadJson(payload, `trajectory-analysis-period-${payload.start}-${payload.dataThrough}.json`);
+      notifyInfo('Данные выбранного периода скачаны');
+    } catch (error) {
+      notifyUnknownError(error, 'Не удалось скачать данные для анализа');
+    }
+  }
+
   function createAnalysisPayload(period: Exclude<AiReportPeriod, 'range'>) {
-    return buildAiReportPayload(period, todayKey(), {
+    return buildAiReportPayload(period, todayKey(), analysisSource());
+  }
+
+  function createCustomAnalysisPayload() {
+    return buildAiReportCustomRangePayload(analysisStart.value, analysisEnd.value, analysisSource());
+  }
+
+  function analysisSource() {
+    return {
       entries: store.dailyEntries,
       results: store.results,
       lifeEvents: store.lifeEvents,
       reviews: store.weeklyReviews,
       monthlyReviews: store.monthlyReviews,
       settings: store.settings,
-    });
+    };
+  }
+
+  function analysisRangeIsValid() {
+    if (!analysisStart.value || !analysisEnd.value) {
+      notifyError('Укажите начало и конец периода');
+      return false;
+    }
+    if (analysisStart.value > analysisEnd.value) {
+      notifyError('Начало периода должно быть не позже окончания');
+      return false;
+    }
+    if (analysisEnd.value > todayKey()) {
+      notifyError('Период анализа не может заканчиваться в будущем');
+      return false;
+    }
+    return true;
   }
 
   async function importData(event: Event) {
@@ -430,6 +479,9 @@ export function useSettingsForm() {
     newContextFactorLabel,
     newPassword,
     newPasswordConfirmation,
+    analysisStart,
+    analysisEnd,
+    analysisMaxDate,
     auth,
     allCareerOptions,
     activeActivityOptions,
@@ -462,6 +514,8 @@ export function useSettingsForm() {
     restoreBackupFromCloud,
     copyAnalysisPrompt,
     downloadAnalysisData,
+    copyCustomAnalysisPrompt,
+    downloadCustomAnalysisData,
     importData,
     clearAll,
     deleteAccount,

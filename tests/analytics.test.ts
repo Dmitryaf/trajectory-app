@@ -8,6 +8,7 @@ import { buildRangeReviewCues, buildReviewCues } from '../src/features/analytics
 import { weekSummaryText } from '../src/services/analytics';
 import {
   AI_PROMPT_CHARACTER_LIMIT,
+  buildAiReportCustomRangePayload,
   buildAiReportPayload,
   buildAiReportPrompt,
   buildAiReportRangePayload,
@@ -239,6 +240,39 @@ describe('analytics', () => {
     expect(payload.start).toBe('2026-05-01');
     expect(payload.dataThrough).toBe('2026-07-16');
     expect(payload.entries.map((item) => item.date)).toEqual(['2026-05-01']);
+  });
+
+  it('keeps every daily reflection inside an exact custom analysis period', () => {
+    const payload = buildAiReportCustomRangePayload('2026-06-15', '2026-07-02', {
+      entries: [
+        entry('2026-06-14', { importantFact: 'За пределами периода' }),
+        entry('2026-06-16', {
+          contextNote: 'Поймал себя на том, что откладываю отдых, даже когда устал.',
+          importantFact: 'Обычный разговор помог сформулировать важную мысль.',
+        }),
+        entry('2026-07-02', { importantFact: 'Второй день нового месяца тоже должен попасть в анализ.' }),
+        entry('2026-07-03', { importantFact: 'Тоже за пределами периода' }),
+      ],
+      results: [],
+      lifeEvents: [],
+      reviews: [{ ...normalizeWeeklyReview({ weekStart: '2026-06-15' }), nextLever: 'Оставлять время на отдых' }],
+      monthlyReviews: [{ ...normalizeMonthlyReview({ monthStart: '2026-06-01' }), mainPattern: 'Часто откладывал отдых' }],
+      settings: defaultSettings,
+    });
+
+    expect(payload.start).toBe('2026-06-15');
+    expect(payload.end).toBe('2026-07-02');
+    expect(payload.entries.map((item) => item.date)).toEqual(['2026-06-16', '2026-07-02']);
+    expect(payload.weeklyReviews).toHaveLength(1);
+    expect(payload.monthlyReviews).toHaveLength(1);
+
+    const prompt = buildAiReportPrompt(payload, defaultSettings);
+    expect(prompt).toContain('Записи по дням');
+    expect(prompt).not.toContain('Покрытие по месяцам');
+    expect(prompt).toContain('Поймал себя на том, что откладываю отдых');
+    expect(prompt).toContain('Обычный разговор помог сформулировать важную мысль');
+    expect(prompt).toContain('Второй день нового месяца тоже должен попасть в анализ');
+    expect(prompt).not.toContain('За пределами периода');
   });
 
   it('summarizes long ranges by month and bounds verbose records', () => {

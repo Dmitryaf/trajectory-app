@@ -15,6 +15,9 @@ const {
   newContextFactorLabel,
   newPassword,
   newPasswordConfirmation,
+  analysisStart,
+  analysisEnd,
+  analysisMaxDate,
   auth,
   allCareerOptions,
   activeActivityOptions,
@@ -47,6 +50,8 @@ const {
   restoreBackupFromCloud,
   copyAnalysisPrompt,
   downloadAnalysisData,
+  copyCustomAnalysisPrompt,
+  downloadCustomAnalysisData,
   importData,
   clearAll,
   deleteAccount,
@@ -506,6 +511,36 @@ const {
         <button class="secondary-button" type="button" @click="downloadAnalysisData('week')">Данные недели</button>
         <button class="secondary-button" type="button" @click="downloadAnalysisData('month')">Данные месяца</button>
       </div>
+      <details class="analysis-range">
+        <summary>Выбрать другой период</summary>
+        <div class="analysis-range__content">
+          <p>Например, можно захватить часть прошлого месяца и несколько дней текущего.</p>
+          <div class="form-row">
+            <div>
+              <label class="field-label" for="analysis-start">Начало периода</label>
+              <input id="analysis-start" v-model="analysisStart" type="date" :max="analysisEnd" aria-label="Начало периода анализа" />
+            </div>
+            <div>
+              <label class="field-label" for="analysis-end">Конец периода</label>
+              <input
+                id="analysis-end"
+                v-model="analysisEnd"
+                type="date"
+                :min="analysisStart"
+                :max="analysisMaxDate"
+                aria-label="Конец периода анализа"
+              />
+            </div>
+          </div>
+          <div class="ai-actions">
+            <button class="secondary-button" type="button" @click="copyCustomAnalysisPrompt">Скопировать промпт периода</button>
+            <button class="secondary-button" type="button" @click="downloadCustomAnalysisData">Скачать данные периода</button>
+          </div>
+          <p class="data-note">
+            В промпт входят записи по каждому дню выбранного периода, включая личные заметки. JSON остаётся полной копией без сокращений.
+          </p>
+        </div>
+      </details>
       <p class="data-note">
         В пакет входят личные заметки выбранного периода. Перед передачей внешнему сервису можно просмотреть скачанный JSON.
       </p>

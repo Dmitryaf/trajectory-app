@@ -620,6 +620,23 @@ describe('settings scenarios', () => {
     );
   });
 
+  it('validates an exact period before preparing external analysis', async () => {
+    const { pinia } = createStore();
+    const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
+    const start = wrapper.get('[aria-label="Начало периода анализа"]');
+    const end = wrapper.get('[aria-label="Конец периода анализа"]');
+
+    expect(start.element).toHaveProperty('value', '2026-06-21');
+    expect(end.element).toHaveProperty('value', '2026-07-21');
+    expect(end.attributes('max')).toBe('2026-07-21');
+
+    await start.setValue('2026-07-10');
+    await end.setValue('2026-07-09');
+    await wrapper.get('.analysis-range').findAll('button')[0]!.trigger('click');
+
+    expect(notifyError).toHaveBeenCalledWith('Начало периода должно быть не позже окончания');
+  });
+
   it('saves a free-form experiment and completes it into history', async () => {
     const { pinia, store } = createStore();
     const saveSettings = vi.spyOn(store, 'saveSettings').mockResolvedValue(undefined);
