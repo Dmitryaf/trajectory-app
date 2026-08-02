@@ -73,7 +73,7 @@ const {
       </div>
       <ChipGroup v-model="settings.activeDailyBlocks as DailyBlockId[]" :options="dailyBlockOptions" multiple />
       <p v-if="!settings.activeDailyBlocks.length" class="data-note">
-        Останутся общие блоки: действия по текущей цели, области жизни и факт дня.
+        Останутся общие блоки: действия по текущей цели, области жизни и заметка дня.
       </p>
       <button class="primary-button" type="button" @click="save('Блоки ежедневной записи сохранены')">Сохранить блоки</button>
     </article>
@@ -347,13 +347,13 @@ const {
         ><input v-model="settings.experiment.active" type="checkbox"
       /></label>
       <label class="field-label" for="experiment-title">Что хотите попробовать</label>
-      <input
+      <textarea
         id="experiment-title"
         v-model="settings.experiment.title"
-        type="text"
-        maxlength="140"
+        rows="3"
+        maxlength="400"
         placeholder="Не читать новости после 22:00"
-      />
+      ></textarea>
       <label class="field-label" for="experiment-hypothesis">Что хотите узнать <span class="field-optional">необязательно</span></label>
       <textarea
         id="experiment-hypothesis"

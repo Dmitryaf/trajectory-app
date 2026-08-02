@@ -289,7 +289,7 @@ function formatEntry(entry: DailyEntry, payload: AiReportPayload): string {
     const areas = entry.lifeAreas.map((id) => labelFor(payload.labels.lifeAreas, id));
     values.push(`области жизни: ${areas.length ? areas.join(', ') : 'ничего не отмечено'}`);
   }
-  if (cleanText(entry.importantFact)) values.push(`факт дня: ${cleanText(entry.importantFact)}`);
+  if (cleanText(entry.importantFact)) values.push(`заметка пользователя: ${cleanText(entry.importantFact)}`);
   if (entry.experimentCompleted !== null) values.push(`условие эксперимента: ${entry.experimentCompleted ? 'выполнено' : 'не выполнено'}`);
   return `${entry.date} — ${values.length ? values.join('; ') : 'есть запись без заполненных показателей'}.`;
 }

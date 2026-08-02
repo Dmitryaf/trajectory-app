@@ -85,7 +85,11 @@ test('opens period review forms from the summary shortcuts', async ({ page }) =>
     ['/month', '#month-review'],
   ] as const) {
     await page.goto(route);
-    await page.locator(`a[href="${target}"]`).click();
+    const shortcut = page.locator(`a[href="${target}"]`);
+    for (let index = 0; index < 8 && !(await shortcut.isVisible()); index += 1) {
+      await page.getByRole('button', { name: 'Предыдущий период' }).click();
+    }
+    await shortcut.click();
     await expect(page).toHaveURL(new RegExp(`${target}$`));
     await expect(page.locator(target)).toBeInViewport();
   }

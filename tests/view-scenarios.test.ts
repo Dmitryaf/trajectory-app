@@ -14,7 +14,7 @@ import WeekView from '../src/views/WeekView.vue';
 import { notifyError, notifySaved, notifyUnknownError } from '../src/services/notifications';
 import { useAppStore } from '../src/stores/app';
 import { useAuthStore } from '../src/stores/auth';
-import { defaultSettings, emptyDailyEntry } from '../src/types';
+import { defaultSettings, emptyDailyEntry, emptyWeeklyReview } from '../src/types';
 
 vi.mock('../src/services/notifications', () => ({
   notifyError: vi.fn(),
@@ -56,11 +56,12 @@ describe('daily entry scenario', () => {
       global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
     });
 
-    expect(wrapper.text()).toContain('Запишите несколько фактов о сегодняшнем дне');
+    expect(wrapper.text()).toContain('Отметьте несколько деталей сегодняшнего дня');
     expect(wrapper.text()).toContain('Разделы на главной можно добавить или убрать в настройках');
     expect(wrapper.text()).toContain('Настроить блоки на главной');
     expect(wrapper.text()).toContain('Зачем это заполнять?');
     expect(wrapper.text()).not.toContain('Вчера без записи');
+    expect(wrapper.find('.quick-capture').exists()).toBe(false);
     expect(wrapper.text()).toContain('Сначала выберите, над чем сейчас хотите работать.');
     expect(wrapper.text()).not.toContain('Конкретное действие');
   });
@@ -75,6 +76,19 @@ describe('daily entry scenario', () => {
     expect(wrapper.text()).toContain('Хотите добавить или убрать разделы?');
     expect(wrapper.text()).toContain('Настроить главную');
     expect(wrapper.text()).not.toContain('С чего начать');
+  });
+
+  it('shows only one current cue and keeps a weekly plan visible without daily tracking', () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [{ ...emptyDailyEntry('2026-07-20'), importantFact: 'Обычная запись' }];
+    store.weeklyReviews = [{ ...emptyWeeklyReview('2026-07-20'), ifThenPlan: 'Если застряну, выйду на короткую прогулку' }];
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+
+    expect(wrapper.get('[aria-label="Текущий план недели"]').text()).toContain('Если застряну, выйду на короткую прогулку');
+    expect(wrapper.find('.today-pulse[aria-label="Пульс недели"]').exists()).toBe(false);
+    expect(wrapper.find('.recovery-nudge').exists()).toBe(false);
   });
 
   it('validates sleep duration and saves the completed day with current criteria', async () => {
@@ -125,7 +139,7 @@ describe('daily entry scenario', () => {
     await wrapper.get('#sleep-hours').setValue('7');
     expect(wrapper.text()).toContain('Как понять, что получилось: Получить проверяемый результат');
     expect(wrapper.text()).toContain('Проверить цель: 1 августа 2026 г.');
-    const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Факт дня');
+    const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Заметка дня');
     expect(factCard).toBeDefined();
     await factCard!.get('textarea').setValue('Завершил важный разговор');
     await wrapper.get('form').trigger('submit');
@@ -238,11 +252,11 @@ describe('daily entry scenario', () => {
     expect(headings).not.toContain('Работа');
     expect(headings).not.toContain('Физическая активность');
     expect(headings).not.toContain('Питание');
-    expect(headings).toContain('Факт дня');
+    expect(headings).toContain('Заметка дня');
     expect(wrapper.text()).toContain('Для этой записи цель не была сохранена.');
     expect(wrapper.findAll('#goal-actions .chip').map((chip) => chip.text())).toContain('◫ Подготовка');
 
-    const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Факт дня');
+    const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Заметка дня');
     await factCard!.get('textarea').setValue('Обновил только общий факт');
     await wrapper.get('form').trigger('submit');
     await flushPromises();
@@ -283,7 +297,7 @@ describe('daily entry scenario', () => {
     const wrapper = mount(TodayView, {
       global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
     });
-    const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Факт дня');
+    const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Заметка дня');
     await factCard!.get('textarea').setValue('Несохранённый факт');
 
     const unloadEvent = new Event('beforeunload', { cancelable: true });
@@ -308,7 +322,7 @@ describe('daily entry scenario', () => {
     const wrapper = mount(TodayView, {
       global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
     });
-    const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Факт дня');
+    const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Заметка дня');
     await factCard!.get('textarea').setValue('Не потерять эту запись');
     expect(wrapper.find('.mobile-save-button').exists()).toBe(true);
     await wrapper.get('form').trigger('submit');
@@ -353,7 +367,7 @@ describe('daily entry scenario', () => {
     await router.push('/');
     await router.isReady();
     const wrapper = mount({ template: '<RouterView />' }, { global: { plugins: [pinia, router], stubs: { RouterLink: routerLinkStub } } });
-    const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Факт дня');
+    const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Заметка дня');
     await factCard!.get('textarea').setValue('Несохранённая запись');
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
 
@@ -449,7 +463,7 @@ describe('journal scenarios', () => {
     const addLifeEvent = vi.spyOn(store, 'addLifeEvent').mockResolvedValue(undefined);
     const wrapper = mount(EventsView, { global: { plugins: [pinia] } });
 
-    expect(wrapper.text()).toContain('Событие — важная для вас ситуация, которая произошла.');
+    expect(wrapper.text()).toContain('Событие — ситуация, которую важно помнить.');
     expect(wrapper.get('[aria-label="Начальная дата событий"]').element).toHaveProperty('value', '2026-07-21');
     expect(wrapper.get('[aria-label="Конечная дата событий"]').element).toHaveProperty('value', '');
     expect(wrapper.text()).toContain('Сегодняшнее решение');
@@ -468,7 +482,7 @@ describe('journal scenarios', () => {
     expect(wrapper.text()).not.toContain('Встреча');
 
     await wrapper.get('[aria-label="Поиск по событиям"]').setValue('');
-    const insightChoice = wrapper.findAll('.result-composer .chip').find((chip) => chip.text().includes('Важная мысль'));
+    const insightChoice = wrapper.findAll('.result-composer .chip').find((chip) => chip.text().includes('Мысль или наблюдение'));
     expect(insightChoice).toBeDefined();
     await insightChoice!.trigger('click');
     await wrapper.get('.result-composer input[type="text"]').setValue('Понял причину усталости');
@@ -610,9 +624,12 @@ describe('settings scenarios', () => {
     const saveSettings = vi.spyOn(store, 'saveSettings').mockResolvedValue(undefined);
     const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
     const card = wrapper.get('.settings-card--experiment');
+    const experimentTitle =
+      'В течение недели после 22:00 оставлять телефон заряжаться в другой комнате и вместо новостей читать бумажную книгу не меньше десяти минут.';
 
     await card.get('input[type="checkbox"]').setValue(true);
-    await card.get('#experiment-title').setValue('Спокойный вечер');
+    expect(card.get('#experiment-title').attributes('maxlength')).toBe('400');
+    await card.get('#experiment-title').setValue(experimentTitle);
     await card.get('.primary-button').trigger('click');
     expect(notifyError).toHaveBeenCalledWith('Укажите, с какого и до какого дня идёт эксперимент');
     expect(saveSettings).not.toHaveBeenCalled();
@@ -625,7 +642,7 @@ describe('settings scenarios', () => {
     expect(saveSettings).toHaveBeenCalledWith(
       expect.objectContaining({
         experiment: expect.objectContaining({
-          title: 'Спокойный вечер',
+          title: experimentTitle,
           targetMetricId: null,
           minimumMeaningfulChange: null,
           startDate: '2026-07-15',
@@ -642,7 +659,7 @@ describe('settings scenarios', () => {
     expect(saveSettings).toHaveBeenLastCalledWith(
       expect.objectContaining({
         experiment: expect.objectContaining({ active: false, title: '' }),
-        experimentHistory: [expect.objectContaining({ title: 'Спокойный вечер', conclusion: 'Вечером было спокойнее' })],
+        experimentHistory: [expect.objectContaining({ title: experimentTitle, conclusion: 'Вечером было спокойнее' })],
       }),
     );
   });
@@ -651,6 +668,7 @@ describe('settings scenarios', () => {
 describe('trends scenarios', () => {
   it('keeps the change history compact until the user expands it', async () => {
     const { pinia, store } = createStore();
+    store.dailyEntries = [{ ...emptyDailyEntry('2026-07-21'), importantFact: 'Есть данные для трендов' }];
     store.results = Array.from({ length: 10 }, (_, index) => ({
       id: index + 1,
       date: `2026-07-${String(21 - index).padStart(2, '0')}`,
@@ -671,7 +689,9 @@ describe('trends scenarios', () => {
 
 describe('period review navigation', () => {
   it('links the week and month summaries to their review forms', () => {
-    const { pinia } = createStore();
+    vi.setSystemTime(new Date(2026, 7, 30, 12));
+    const { pinia, store } = createStore();
+    store.dailyEntries = [{ ...emptyDailyEntry('2026-08-30'), importantFact: 'Есть данные для обзора' }];
     const global = { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } };
     const week = mount(WeekView, { global });
     const month = mount(MonthView, { global });
@@ -680,5 +700,38 @@ describe('period review navigation', () => {
     expect(week.get('#week-review').classes()).toContain('review-card');
     expect(month.get('.review-jump').attributes('href')).toBe('#month-review');
     expect(month.get('#month-review').classes()).toContain('review-card');
+  });
+
+  it('keeps current-period reviews optional and out of the way until the end', () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [{ ...emptyDailyEntry('2026-07-21'), importantFact: 'Обычная запись' }];
+    const global = { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } };
+    const week = mount(WeekView, { global });
+    const month = mount(MonthView, { global });
+
+    expect(week.get('#week-review').classes()).toContain('period-review-note');
+    expect(week.text()).toContain('Его можно пропустить');
+    expect(month.get('#month-review').classes()).toContain('period-review-note');
+    expect(month.text()).toContain('Его можно пропустить');
+    expect(week.find('.review-card').exists()).toBe(false);
+    expect(month.find('.review-card').exists()).toBe(false);
+  });
+
+  it('does not show empty analytics or review forms as work to complete', () => {
+    const { pinia } = createStore();
+    const global = { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } };
+    const week = mount(WeekView, { global });
+    const month = mount(MonthView, { global });
+    const trends = mount(TrendsView, { global });
+
+    for (const wrapper of [week, month, trends]) {
+      expect(wrapper.find('.period-empty-guide').exists()).toBe(true);
+      expect(wrapper.find('.metrics-grid').exists()).toBe(false);
+      expect(wrapper.find('.dashboard-card').exists()).toBe(false);
+    }
+    expect(week.find('#week-review').exists()).toBe(false);
+    expect(month.find('#month-review').exists()).toBe(false);
+    expect(week.find('.review-jump').exists()).toBe(false);
+    expect(month.find('.review-jump').exists()).toBe(false);
   });
 });

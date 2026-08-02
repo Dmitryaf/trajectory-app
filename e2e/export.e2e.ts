@@ -2,10 +2,18 @@ import { expect, test } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
 test('copies a readable prompt and downloads the lossless weekly package', async ({ page }) => {
+  await page.goto('/settings');
+  await page.locator('input[type="file"]').setInputFiles('demo/trajectory-test-user-2026-07-20.json');
+  await page.getByText('Резервная копия восстановлена', { exact: true }).waitFor();
   await page.goto('/week');
   await expect(page.getByRole('heading', { name: 'Неделя', exact: true })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Скопировать промпт' }).click();
+  const copyButton = page.getByRole('button', { name: 'Скопировать промпт' });
+  for (let index = 0; index < 8 && !(await copyButton.isVisible()); index += 1) {
+    await page.getByRole('button', { name: 'Предыдущий период' }).click();
+  }
+
+  await copyButton.click();
   const prompt = await page.evaluate(() => navigator.clipboard.readText());
 
   expect(prompt).toContain('ДАННЫЕ ДЛЯ АНАЛИЗА');

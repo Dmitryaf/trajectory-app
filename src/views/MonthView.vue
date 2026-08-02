@@ -17,7 +17,17 @@ import {
   specialDayLabel,
   summarize,
 } from '../services/analytics';
-import { dateRange, endOfMonth, formatDate, formatMinutes, fromDateKey, startOfMonth, todayKey, toDateKey } from '../services/dates';
+import {
+  addDays,
+  dateRange,
+  endOfMonth,
+  formatDate,
+  formatMinutes,
+  fromDateKey,
+  startOfMonth,
+  todayKey,
+  toDateKey,
+} from '../services/dates';
 import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../features/export/browser';
 import { buildWeightSeries } from '../features/analytics/weightSeries';
 import { useAppStore } from '../stores/app';
@@ -50,6 +60,11 @@ const reviewCues = computed(() =>
   buildReviewCues('month', entries.value, results.value, lifeEvents.value, externalCareerIds.value, contextFactorItems.value),
 );
 const reviewQuestions = buildReviewQuestions('month');
+const hasSavedReview = computed(() => Boolean(store.reviewByMonth(start.value)));
+const reviewAvailable = computed(
+  () =>
+    hasSavedReview.value || end.value < todayKey() || (start.value === startOfMonth(todayKey()) && todayKey() >= addDays(end.value, -2)),
+);
 const monthDates = computed(() => dateRange(start.value, end.value));
 const chartDates = computed(() => monthDates.value.filter((date) => date <= todayKey()));
 const entriesByDate = computed(() => new Map(entries.value.map((entry) => [entry.date, entry])));
@@ -301,7 +316,9 @@ function shiftMonth(offset: number) {
         <h1>Месяц</h1>
         <p>Сравните недели, важные события и результаты. Решите, что продолжить или изменить.</p>
       </div>
-      <a class="review-jump" href="#month-review">К итогу <span aria-hidden="true">↓</span></a>
+      <a v-if="summary.coveredEntriesCount > 0" class="review-jump" href="#month-review"
+        >{{ reviewAvailable ? 'К итогу' : 'Итог позже' }} <span aria-hidden="true">↓</span></a
+      >
     </div>
     <PeriodNavigator
       :title="formatDate(start, { month: 'long', year: 'numeric' })"
@@ -317,336 +334,348 @@ function shiftMonth(offset: number) {
       <RouterLink class="secondary-button" to="/">Перейти к записи за день</RouterLink>
     </section>
 
-    <div class="metrics-grid">
-      <MetricCard
-        label="Заполненных дней"
-        :value="summary.coveredEntriesCount"
-        :hint="`${summary.ordinaryCoreEntriesCount} с основными полями`"
-        accent="#1d5148"
-      />
-      <MetricCard
-        label="Средний сон"
-        :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))"
-        :hint="`${summary.sleepSamples} дн. без особых`"
-        accent="#7467e8"
-      />
-      <MetricCard
-        label="Работа"
-        :value="`${summary.careerDays}/${summary.careerSamples}`"
-        hint="дни с работой / дни с отметкой"
-        accent="#3f82d5"
-      />
-      <MetricCard
-        label="Шаги к цели"
-        :value="`${summary.externalActionDays}/${summary.preparationDays}`"
-        :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`"
-        accent="#2eaa7f"
-      />
-      <MetricCard
-        label="Питание"
-        :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`"
-        :hint="
-          summary.averageWeightKg === null
-            ? `${summary.nutritionSamples} дн. с отметкой`
-            : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг · ${summary.weightSamples} изм.`
-        "
-        accent="#d9952f"
-      />
-      <MetricCard label="Особых дней" :value="summary.specialDays" :hint="`${results.length} итогов`" accent="#eb7458" />
-    </div>
-
-    <article class="dashboard-card">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">Карта месяца</span>
-          <h2>Энергия, сон и контекст по дням</h2>
-        </div>
-      </div>
-      <div class="month-calendar">
-        <div v-for="weekday in monthWeekdays" :key="weekday" class="month-calendar__head">{{ weekday }}</div>
-        <article
-          v-for="day in monthCalendarDays"
-          :key="day.id"
-          class="month-day"
-          :class="
-            day.blank
-              ? 'month-day--blank'
-              : [
-                  `month-day--${day.energyLevel}`,
-                  { 'month-day--short-sleep': day.hasShortSleep, 'month-day--special': day.entry?.specialDay },
-                ]
+    <template v-else>
+      <div class="metrics-grid">
+        <MetricCard
+          label="Заполненных дней"
+          :value="summary.coveredEntriesCount"
+          :hint="`${summary.ordinaryCoreEntriesCount} с основными полями`"
+          accent="#1d5148"
+        />
+        <MetricCard
+          label="Средний сон"
+          :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))"
+          :hint="`${summary.sleepSamples} дн. без особых`"
+          accent="#7467e8"
+        />
+        <MetricCard
+          label="Работа"
+          :value="`${summary.careerDays}/${summary.careerSamples}`"
+          hint="дни с работой / дни с отметкой"
+          accent="#3f82d5"
+        />
+        <MetricCard
+          label="Шаги к цели"
+          :value="`${summary.externalActionDays}/${summary.preparationDays}`"
+          :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`"
+          accent="#2eaa7f"
+        />
+        <MetricCard
+          label="Питание"
+          :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`"
+          :hint="
+            summary.averageWeightKg === null
+              ? `${summary.nutritionSamples} дн. с отметкой`
+              : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг · ${summary.weightSamples} изм.`
           "
-          :title="day.blank ? '' : day.title"
-        >
-          <template v-if="!day.blank">
-            <strong>{{ formatDate(day.date, { day: 'numeric' }) }}</strong>
-            <span v-if="day.entry?.energy" class="month-day__energy">{{ day.entry.energy }}/5</span>
-            <div class="month-day__marks">
-              <i v-if="day.hasCareer" class="legend-dot legend-dot--career"></i>
-              <i v-if="day.hasExternalAction" class="legend-dot legend-dot--direction"></i>
-              <i v-if="day.hasDrift" class="legend-dot legend-dot--drift"></i>
-              <i v-if="day.hasMovement" class="legend-dot legend-dot--movement"></i>
-              <i v-if="day.hasNutritionSupport" class="legend-dot legend-dot--nutrition"></i>
-              <i v-if="day.hasNutritionBlock" class="legend-dot legend-dot--nutrition-block"></i>
-              <i v-if="day.entry?.specialDay" class="legend-dot legend-dot--special"></i>
+          accent="#d9952f"
+        />
+        <MetricCard label="Особых дней" :value="summary.specialDays" :hint="`${results.length} итогов`" accent="#eb7458" />
+      </div>
+
+      <details class="period-details">
+        <summary>Показать календарь месяца</summary>
+        <div class="period-details__content">
+          <article class="dashboard-card">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Карта месяца</span>
+                <h2>Энергия, сон и контекст по дням</h2>
+              </div>
             </div>
-          </template>
-        </article>
-      </div>
-      <div class="chart-legend">
-        <span><i class="legend-dot legend-dot--energy-low"></i>низкая энергия</span>
-        <span><i class="legend-dot legend-dot--energy-high"></i>высокая энергия</span>
-        <span><i class="legend-dot legend-dot--career"></i>работа</span>
-        <span><i class="legend-dot legend-dot--direction"></i>шаг к цели</span>
-        <span><i class="legend-dot legend-dot--drift"></i>в сторону</span>
-        <span><i class="legend-dot legend-dot--movement"></i>физическая активность</span>
-        <span><i class="legend-dot legend-dot--nutrition"></i>питание поддержало</span>
-        <span><i class="legend-dot legend-dot--nutrition-block"></i>питание мешало</span>
-        <span><i class="legend-dot legend-dot--special"></i>особый день</span>
-      </div>
-    </article>
-
-    <article id="month-review" class="review-card">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">Сохранить вывод</span>
-          <h2>Итог месяца</h2>
+            <div class="month-calendar">
+              <div v-for="weekday in monthWeekdays" :key="weekday" class="month-calendar__head">{{ weekday }}</div>
+              <article
+                v-for="day in monthCalendarDays"
+                :key="day.id"
+                class="month-day"
+                :class="
+                  day.blank
+                    ? 'month-day--blank'
+                    : [
+                        `month-day--${day.energyLevel}`,
+                        { 'month-day--short-sleep': day.hasShortSleep, 'month-day--special': day.entry?.specialDay },
+                      ]
+                "
+                :title="day.blank ? '' : day.title"
+              >
+                <template v-if="!day.blank">
+                  <strong>{{ formatDate(day.date, { day: 'numeric' }) }}</strong>
+                  <span v-if="day.entry?.energy" class="month-day__energy">{{ day.entry.energy }}/5</span>
+                  <div class="month-day__marks">
+                    <i v-if="day.hasCareer" class="legend-dot legend-dot--career"></i>
+                    <i v-if="day.hasExternalAction" class="legend-dot legend-dot--direction"></i>
+                    <i v-if="day.hasDrift" class="legend-dot legend-dot--drift"></i>
+                    <i v-if="day.hasMovement" class="legend-dot legend-dot--movement"></i>
+                    <i v-if="day.hasNutritionSupport" class="legend-dot legend-dot--nutrition"></i>
+                    <i v-if="day.hasNutritionBlock" class="legend-dot legend-dot--nutrition-block"></i>
+                    <i v-if="day.entry?.specialDay" class="legend-dot legend-dot--special"></i>
+                  </div>
+                </template>
+              </article>
+            </div>
+            <div class="chart-legend">
+              <span><i class="legend-dot legend-dot--energy-low"></i>низкая энергия</span>
+              <span><i class="legend-dot legend-dot--energy-high"></i>высокая энергия</span>
+              <span><i class="legend-dot legend-dot--career"></i>работа</span>
+              <span><i class="legend-dot legend-dot--direction"></i>шаг к цели</span>
+              <span><i class="legend-dot legend-dot--drift"></i>в сторону</span>
+              <span><i class="legend-dot legend-dot--movement"></i>физическая активность</span>
+              <span><i class="legend-dot legend-dot--nutrition"></i>питание поддержало</span>
+              <span><i class="legend-dot legend-dot--nutrition-block"></i>питание мешало</span>
+              <span><i class="legend-dot legend-dot--special"></i>особый день</span>
+            </div>
+          </article>
         </div>
-        <small>{{ formatDate(end, { day: 'numeric', month: 'long' }) }}</small>
-      </div>
-      <label class="field-label">Что чаще всего повторялось?</label
-      ><textarea v-model="review.mainPattern" rows="2" placeholder="Повторяющееся действие, состояние или условие"></textarea>
-      <label class="field-label">Что поддерживало?</label
-      ><textarea v-model="review.support" rows="2" placeholder="Условия, решения или люди, которые помогали"></textarea>
-      <label class="field-label">Что мешало сильнее всего?</label
-      ><textarea v-model="review.obstacle" rows="2" placeholder="Один главный повторяющийся фактор"></textarea>
-      <label class="field-label">Что изменило месяц?</label
-      ><textarea
-        v-model="review.courseChange"
-        rows="2"
-        placeholder="Событие, решение или итог, после которого данные стали выглядеть иначе"
-      ></textarea>
-      <label class="field-label">Главная цель следующего месяца</label
-      ><textarea v-model="review.nextFocus" rows="2" placeholder="Одна цель и понятный результат, который можно заметить"></textarea>
-      <label class="field-label">План если-то</label
-      ><textarea
-        v-model="review.ifThenPlan"
-        rows="2"
-        placeholder="Если снова появится главное препятствие, то я сделаю конкретное действие"
-      ></textarea>
-      <button class="primary-button" type="button" @click="saveReview">Сохранить итог месяца</button>
-    </article>
+      </details>
 
-    <article class="dashboard-card">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">Короткий разбор</span>
-          <h2>Месячный обзор</h2>
-        </div>
-        <div class="period-actions">
-          <button class="secondary-button" type="button" @click="copyPrompt">Скопировать промпт</button>
-          <button class="secondary-button" type="button" @click="downloadJson">Скачать данные</button>
-        </div>
-      </div>
-      <div class="review-cue-grid">
-        <article v-for="cue in reviewCues" :key="cue.id" class="review-cue" :class="`review-cue--${cue.tone}`">
-          <strong>{{ cue.title }}</strong>
-          <p>{{ cue.text }}</p>
-        </article>
-      </div>
-      <ol class="review-question-list">
-        <li v-for="question in reviewQuestions" :key="question">{{ question }}</li>
-      </ol>
-    </article>
-
-    <article v-if="observations.length" class="dashboard-card">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">Автоматические наблюдения</span>
-          <h2>Что видно по данным</h2>
-        </div>
-      </div>
-      <div class="observation-grid">
-        <article v-for="observation in observations" :key="observation.id" class="observation-card">
-          <strong>{{ observation.title }}</strong>
-          <p>{{ observation.text }}</p>
-        </article>
-      </div>
-    </article>
-
-    <article class="dashboard-card">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">Сон обычных дней</span>
-          <h2>Динамика сна</h2>
-        </div>
-        <small>{{ sleepRegularityText() }}</small>
-      </div>
-      <EChartPanel
-        v-if="sleepEntries.length"
-        :option="sleepEnergyOption"
-        :height="320"
-        aria-label="Динамика сна, времени в кровати и энергии"
-      />
-      <div v-else class="empty-chart">Добавьте данные о сне — здесь будет видно, как он менялся.</div>
-    </article>
-
-    <article v-if="weightEntries.length" class="dashboard-card">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">Вес</span>
-          <h2>Измерения и семидневный тренд</h2>
-        </div>
-        <small>данные по {{ formatDate(chartDates.at(-1) || end, { day: 'numeric', month: 'short' }) }} · особые дни исключены</small>
-      </div>
-      <EChartPanel :option="weightOption" :height="280" aria-label="Вес и среднее значение за семь дней" />
-    </article>
-
-    <article v-if="factors.length" class="dashboard-card">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">Факторы состояния</span>
-          <h2>Что повторялось в течение дня</h2>
-        </div>
-        <span class="count-badge">{{ factors.length }}</span>
-      </div>
-      <div class="factor-summary-head"><span>фактор</span><span>дни</span><span>сон: с / без</span><span>энергия: с / без</span></div>
-      <div class="factor-summary-list">
-        <article v-for="factor in factors" :key="factor.id" class="factor-summary-item">
-          <span class="factor-summary-item__name"
-            ><i>{{ factor.icon }}</i
-            >{{ factor.label }}</span
-          >
-          <strong>{{ factor.count }}</strong>
-          <small>{{ factorSleepText(factor) }}</small>
-          <small>{{ factorEnergyText(factor) }}</small>
-        </article>
-      </div>
-    </article>
-
-    <div class="month-layout">
-      <article class="dashboard-card">
+      <article v-if="reviewAvailable" id="month-review" class="review-card">
         <div class="section-heading">
           <div>
-            <span class="eyebrow">Сколько дней появлялось</span>
-            <h2>Области жизни</h2>
+            <span class="eyebrow">Сохранить вывод</span>
+            <h2>Итог месяца</h2>
           </div>
+          <small>{{ formatDate(end, { day: 'numeric', month: 'long' }) }}</small>
         </div>
-        <div class="coverage-list">
-          <div v-for="area in activeAreas" :key="area.id" class="coverage-row">
-            <span class="coverage-row__label"
-              ><i>{{ area.icon }}</i
-              >{{ area.label }}</span
-            >
-            <div class="coverage-row__track">
-              <span
-                :style="{ width: `${summary.lifeAreaSamples ? ((summary.areaCounts[area.id] ?? 0) / summary.lifeAreaSamples) * 100 : 0}%` }"
-              ></span>
-            </div>
-            <strong>{{ summary.areaCounts[area.id] ?? 0 }}/{{ summary.lifeAreaSamples }}</strong>
-          </div>
-        </div>
+        <label class="field-label">Что чаще всего повторялось?</label
+        ><textarea v-model="review.mainPattern" rows="2" placeholder="Повторяющееся действие, состояние или условие"></textarea>
+        <label class="field-label">Что поддерживало?</label
+        ><textarea v-model="review.support" rows="2" placeholder="Условия, решения или люди, которые помогали"></textarea>
+        <label class="field-label">Что мешало сильнее всего?</label
+        ><textarea v-model="review.obstacle" rows="2" placeholder="Один главный повторяющийся фактор"></textarea>
+        <label class="field-label">Что изменило месяц?</label
+        ><textarea
+          v-model="review.courseChange"
+          rows="2"
+          placeholder="Событие, решение или итог, после которого данные стали выглядеть иначе"
+        ></textarea>
+        <label class="field-label">Главное направление следующего месяца</label
+        ><textarea v-model="review.nextFocus" rows="2" placeholder="Что стоит продолжить, изменить или проверить"></textarea>
+        <button class="primary-button" type="button" @click="saveReview">Сохранить итог месяца</button>
       </article>
+      <section v-else id="month-review" class="period-review-note">
+        <strong>Итог появится ближе к концу месяца</strong>
+        <p>Его можно пропустить — дневные записи и сводка месяца останутся на месте.</p>
+      </section>
 
       <article class="dashboard-card">
         <div class="section-heading">
           <div>
-            <span class="eyebrow">Завершённые факты</span>
-            <h2>Итоги месяца</h2>
+            <span class="eyebrow">Короткий разбор</span>
+            <h2>Месячный обзор</h2>
           </div>
-          <span class="count-badge">{{ results.length }}</span>
+          <div class="period-actions">
+            <button class="secondary-button" type="button" @click="copyPrompt">Скопировать промпт</button>
+            <button class="secondary-button" type="button" @click="downloadJson">Скачать данные</button>
+          </div>
         </div>
-        <TransitionGroup v-if="results.length" name="reveal-list" tag="ul" class="compact-results"
-          ><li v-for="result in displayedResults" :key="result.id ?? result.createdAt">
-            <span>✓</span>
-            <div>
-              {{ result.title }}<small>{{ formatDate(result.date, { day: 'numeric', month: 'short' }) }}</small>
-            </div>
-          </li></TransitionGroup
-        >
-        <button
-          v-if="results.length > 5"
-          class="secondary-button load-more"
-          type="button"
-          :aria-expanded="showAllResults"
-          @click="showAllResults = !showAllResults"
-        >
-          {{ showAllResults ? 'Свернуть' : `Показать все (${results.length})` }}
-        </button>
-        <div v-if="!results.length" class="empty-state empty-state--compact"><p>Пока нет зафиксированных итогов.</p></div>
+        <div class="review-cue-grid">
+          <article v-for="cue in reviewCues" :key="cue.id" class="review-cue" :class="`review-cue--${cue.tone}`">
+            <strong>{{ cue.title }}</strong>
+            <p>{{ cue.text }}</p>
+          </article>
+        </div>
+        <ol class="review-question-list">
+          <li v-for="question in reviewQuestions" :key="question">{{ question }}</li>
+        </ol>
       </article>
-    </div>
 
-    <article v-if="actionNotes.length" class="dashboard-card">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">Действия по цели</span>
-          <h2>Конкретные действия и подготовка</h2>
+      <article v-if="observations.length" class="dashboard-card">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Автоматические наблюдения</span>
+            <h2>Что видно по данным</h2>
+          </div>
         </div>
-        <span class="count-badge">{{ actionNotes.length }}</span>
-      </div>
-      <div class="note-list note-list--columns">
-        <article v-for="entry in actionNotes" :key="entry.date" class="note-item">
-          <time>{{ formatDate(entry.date, { day: 'numeric', month: 'short' }) }}</time>
-          <p>
-            <strong>{{ actionDirectionLabel(entry.actionDirection) }}</strong
-            ><span v-if="entry.focusTitle"><br />Цель: {{ entry.focusTitle }}</span
-            ><span v-if="entry.actionNote"><br />{{ entry.actionNote }}</span>
-          </p>
-        </article>
-      </div>
-    </article>
+        <div class="observation-grid">
+          <article v-for="observation in observations.slice(0, 3)" :key="observation.id" class="observation-card">
+            <strong>{{ observation.title }}</strong>
+            <p>{{ observation.text }}</p>
+          </article>
+        </div>
+      </article>
 
-    <article v-if="lifeEvents.length" class="dashboard-card">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">Важный контекст</span>
-          <h2>События месяца</h2>
-        </div>
-        <span class="count-badge">{{ lifeEvents.length }}</span>
-      </div>
-      <div class="note-list note-list--columns">
-        <article v-for="event in lifeEvents" :key="event.id" class="note-item">
-          <time>{{ formatDate(event.date, { day: 'numeric', month: 'short' }) }}</time>
-          <p>
-            <strong>{{ event.title }}</strong
-            ><span v-if="event.note"><br />{{ event.note }}</span>
-          </p>
-        </article>
-      </div>
-    </article>
+      <details class="period-details">
+        <summary>Показать графики и записи месяца</summary>
+        <div class="period-details__content">
+          <article class="dashboard-card">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Сон обычных дней</span>
+                <h2>Динамика сна</h2>
+              </div>
+              <small>{{ sleepRegularityText() }}</small>
+            </div>
+            <EChartPanel
+              v-if="sleepEntries.length"
+              :option="sleepEnergyOption"
+              :height="320"
+              aria-label="Динамика сна, времени в кровати и энергии"
+            />
+            <div v-else class="empty-chart">Добавьте данные о сне — здесь будет видно, как он менялся.</div>
+          </article>
 
-    <article v-if="contextNotes.length" class="dashboard-card">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">Условия дня</span>
-          <h2>Заметки за месяц</h2>
-        </div>
-        <span class="count-badge">{{ contextNotes.length }}</span>
-      </div>
-      <div class="note-list note-list--columns">
-        <article v-for="entry in contextNotes" :key="entry.date" class="note-item">
-          <time>{{ formatDate(entry.date, { day: 'numeric', month: 'short' }) }}</time>
-          <p>{{ entry.contextNote }}</p>
-        </article>
-      </div>
-    </article>
+          <article v-if="weightEntries.length" class="dashboard-card">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Вес</span>
+                <h2>Измерения и семидневный тренд</h2>
+              </div>
+              <small>данные по {{ formatDate(chartDates.at(-1) || end, { day: 'numeric', month: 'short' }) }} · особые дни исключены</small>
+            </div>
+            <EChartPanel :option="weightOption" :height="280" aria-label="Вес и среднее значение за семь дней" />
+          </article>
 
-    <article v-if="specialDays.length" class="dashboard-card">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">Поправка на контекст</span>
-          <h2>Особые дни месяца</h2>
+          <article v-if="factors.length" class="dashboard-card">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Факторы состояния</span>
+                <h2>Что повторялось в течение дня</h2>
+              </div>
+              <span class="count-badge">{{ factors.length }}</span>
+            </div>
+            <div class="factor-summary-head"><span>фактор</span><span>дни</span><span>сон: с / без</span><span>энергия: с / без</span></div>
+            <div class="factor-summary-list">
+              <article v-for="factor in factors" :key="factor.id" class="factor-summary-item">
+                <span class="factor-summary-item__name"
+                  ><i>{{ factor.icon }}</i
+                  >{{ factor.label }}</span
+                >
+                <strong>{{ factor.count }}</strong>
+                <small>{{ factorSleepText(factor) }}</small>
+                <small>{{ factorEnergyText(factor) }}</small>
+              </article>
+            </div>
+          </article>
+
+          <div class="month-layout">
+            <article class="dashboard-card">
+              <div class="section-heading">
+                <div>
+                  <span class="eyebrow">Сколько дней появлялось</span>
+                  <h2>Области жизни</h2>
+                </div>
+              </div>
+              <div class="coverage-list">
+                <div v-for="area in activeAreas" :key="area.id" class="coverage-row">
+                  <span class="coverage-row__label"
+                    ><i>{{ area.icon }}</i
+                    >{{ area.label }}</span
+                  >
+                  <div class="coverage-row__track">
+                    <span
+                      :style="{
+                        width: `${summary.lifeAreaSamples ? ((summary.areaCounts[area.id] ?? 0) / summary.lifeAreaSamples) * 100 : 0}%`,
+                      }"
+                    ></span>
+                  </div>
+                  <strong>{{ summary.areaCounts[area.id] ?? 0 }}/{{ summary.lifeAreaSamples }}</strong>
+                </div>
+              </div>
+            </article>
+
+            <article class="dashboard-card">
+              <div class="section-heading">
+                <div>
+                  <span class="eyebrow">Завершённые факты</span>
+                  <h2>Итоги месяца</h2>
+                </div>
+                <span class="count-badge">{{ results.length }}</span>
+              </div>
+              <TransitionGroup v-if="results.length" name="reveal-list" tag="ul" class="compact-results"
+                ><li v-for="result in displayedResults" :key="result.id ?? result.createdAt">
+                  <span>✓</span>
+                  <div>
+                    {{ result.title }}<small>{{ formatDate(result.date, { day: 'numeric', month: 'short' }) }}</small>
+                  </div>
+                </li></TransitionGroup
+              >
+              <button
+                v-if="results.length > 5"
+                class="secondary-button load-more"
+                type="button"
+                :aria-expanded="showAllResults"
+                @click="showAllResults = !showAllResults"
+              >
+                {{ showAllResults ? 'Свернуть' : `Показать все (${results.length})` }}
+              </button>
+              <div v-if="!results.length" class="empty-state empty-state--compact"><p>Пока нет зафиксированных итогов.</p></div>
+            </article>
+          </div>
+
+          <article v-if="actionNotes.length" class="dashboard-card">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Действия по цели</span>
+                <h2>Конкретные действия и подготовка</h2>
+              </div>
+              <span class="count-badge">{{ actionNotes.length }}</span>
+            </div>
+            <div class="note-list note-list--columns">
+              <article v-for="entry in actionNotes" :key="entry.date" class="note-item">
+                <time>{{ formatDate(entry.date, { day: 'numeric', month: 'short' }) }}</time>
+                <p>
+                  <strong>{{ actionDirectionLabel(entry.actionDirection) }}</strong
+                  ><span v-if="entry.focusTitle"><br />Цель: {{ entry.focusTitle }}</span
+                  ><span v-if="entry.actionNote"><br />{{ entry.actionNote }}</span>
+                </p>
+              </article>
+            </div>
+          </article>
+
+          <article v-if="lifeEvents.length" class="dashboard-card">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Важный контекст</span>
+                <h2>События месяца</h2>
+              </div>
+              <span class="count-badge">{{ lifeEvents.length }}</span>
+            </div>
+            <div class="note-list note-list--columns">
+              <article v-for="event in lifeEvents" :key="event.id" class="note-item">
+                <time>{{ formatDate(event.date, { day: 'numeric', month: 'short' }) }}</time>
+                <p>
+                  <strong>{{ event.title }}</strong
+                  ><span v-if="event.note"><br />{{ event.note }}</span>
+                </p>
+              </article>
+            </div>
+          </article>
+
+          <article v-if="contextNotes.length" class="dashboard-card">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Условия дня</span>
+                <h2>Заметки за месяц</h2>
+              </div>
+              <span class="count-badge">{{ contextNotes.length }}</span>
+            </div>
+            <div class="note-list note-list--columns">
+              <article v-for="entry in contextNotes" :key="entry.date" class="note-item">
+                <time>{{ formatDate(entry.date, { day: 'numeric', month: 'short' }) }}</time>
+                <p>{{ entry.contextNote }}</p>
+              </article>
+            </div>
+          </article>
+
+          <article v-if="specialDays.length" class="dashboard-card">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Поправка на контекст</span>
+                <h2>Особые дни месяца</h2>
+              </div>
+              <span class="count-badge">{{ specialDays.length }}</span>
+            </div>
+            <div class="special-day-list special-day-list--columns">
+              <article v-for="entry in specialDays" :key="entry.date" class="special-day-item">
+                <time>{{ formatDate(entry.date, { day: 'numeric', month: 'short' }) }}</time>
+                <strong>{{ specialDayLabel(entry.specialDay) }}</strong>
+                <p v-if="entry.specialDayNote">{{ entry.specialDayNote }}</p>
+              </article>
+            </div>
+          </article>
         </div>
-        <span class="count-badge">{{ specialDays.length }}</span>
-      </div>
-      <div class="special-day-list special-day-list--columns">
-        <article v-for="entry in specialDays" :key="entry.date" class="special-day-item">
-          <time>{{ formatDate(entry.date, { day: 'numeric', month: 'short' }) }}</time>
-          <strong>{{ specialDayLabel(entry.specialDay) }}</strong>
-          <p v-if="entry.specialDayNote">{{ entry.specialDayNote }}</p>
-        </article>
-      </div>
-    </article>
+      </details>
+    </template>
   </section>
 </template>
