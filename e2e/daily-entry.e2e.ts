@@ -22,6 +22,6 @@ test('saves a dirty daily entry from the mobile action', async ({ page }) => {
   expect(saveBox!.y + saveBox!.height).toBeLessThan(navigationBox!.y);
 
   await mobileSave.click();
-  await expect(page.getByText('День сохранён', { exact: true })).toBeVisible();
+  await expect(page.getByText('День сохранён на устройстве', { exact: true })).toBeVisible();
   await expect(mobileSave).toBeHidden();
 });

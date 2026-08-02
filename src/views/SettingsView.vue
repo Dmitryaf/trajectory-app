@@ -396,8 +396,8 @@ const {
       <div class="form-card__heading">
         <span class="section-icon section-icon--blue">↓</span>
         <div>
-          <h2>Резервная копия</h2>
-          <p>JSON-копия нужна как ручная страховка независимо от облачной синхронизации.</p>
+          <h2>Копия отдельным файлом</h2>
+          <p>Для обычной работы скачивать файл не требуется. Он нужен только как дополнительная личная копия или для переноса данных.</p>
         </div>
       </div>
       <div class="data-actions">
@@ -417,7 +417,13 @@ const {
     <article class="settings-card settings-card--cloud">
       <div class="form-card__heading">
         <span class="section-icon section-icon--green">↥</span>
-        <div><h2>Облачная копия</h2></div>
+        <div>
+          <h2>Автоматическая облачная копия</h2>
+          <p>
+            После каждого изменения приложение сохраняет данные на устройстве и обновляет облачную копию. Экспортировать их вручную не
+            нужно.
+          </p>
+        </div>
       </div>
       <div v-if="!auth.configured" class="cloud-sync-note">
         <strong>Облачная копия недоступна</strong>
@@ -468,7 +474,7 @@ const {
           <p>Обнови страницу и войди снова. До входа приложение не загружает записи.</p>
         </div>
         <div class="data-actions">
-          <button class="secondary-button" type="button" :disabled="!cloudSession" @click="saveBackupToCloud">Сохранить в облако</button>
+          <button class="secondary-button" type="button" :disabled="!cloudSession" @click="saveBackupToCloud">Обновить копию сейчас</button>
           <button class="secondary-button" type="button" :disabled="!cloudSession" @click="restoreBackupFromCloud">
             Загрузить из облака
           </button>

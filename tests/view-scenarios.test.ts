@@ -146,6 +146,7 @@ describe('daily entry scenario', () => {
     await flushPromises();
 
     expect(saveEntry).toHaveBeenCalledTimes(1);
+    expect(notifySaved).toHaveBeenCalledWith('День сохранён на устройстве');
     expect(saveEntry.mock.calls[0][0]).toMatchObject({
       date: '2026-07-21',
       entrySchemaVersion: 2,
@@ -626,6 +627,8 @@ describe('settings scenarios', () => {
     const card = wrapper.get('.settings-card--experiment');
     const experimentTitle =
       'В течение недели после 22:00 оставлять телефон заряжаться в другой комнате и вместо новостей читать бумажную книгу не меньше десяти минут.';
+
+    expect(wrapper.text()).toContain('Для обычной работы скачивать файл не требуется');
 
     await card.get('input[type="checkbox"]').setValue(true);
     expect(card.get('#experiment-title').attributes('maxlength')).toBe('400');
