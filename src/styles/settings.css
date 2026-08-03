@@ -275,13 +275,15 @@
   min-height: 42px;
   padding: 10px 14px;
 }
-.account-security {
+.account-security,
+.analysis-range {
   margin-top: 12px;
   border: 1px solid var(--line);
   border-radius: 15px;
   background: rgba(255, 255, 255, 0.72);
 }
-.account-security summary {
+.account-security summary,
+.analysis-range summary {
   cursor: pointer;
   padding: 13px 14px;
   color: #315b4e;
@@ -293,6 +295,14 @@
 }
 .account-security__form .secondary-button {
   width: fit-content;
+}
+.analysis-range__content {
+  padding: 2px 14px 14px;
+}
+.analysis-range__content > p:first-child {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 13px;
 }
 .ai-actions {
   display: grid;

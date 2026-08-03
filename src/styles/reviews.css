@@ -228,3 +228,34 @@
   background: #e4f5ee;
   color: #26654f;
 }
+
+.period-details {
+  margin-bottom: 16px;
+  border: 1px solid #dce5e1;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+}
+.period-details > summary {
+  padding: 16px 18px;
+  color: var(--navy);
+  font-weight: 750;
+  cursor: pointer;
+}
+.period-details[open] > summary {
+  border-bottom: 1px solid #e5ebe8;
+}
+.period-details__content {
+  padding: 16px 16px 0;
+}
+.period-review-note {
+  scroll-margin-top: 18px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  border: 1px solid #dce5e1;
+  border-radius: 18px;
+  background: #f6f9f8;
+}
+.period-review-note p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}

@@ -139,6 +139,8 @@ const reviewReminders = computed(() =>
       : null,
   ].filter((item): item is { id: string; title: string; text: string; to: string; label: string } => item !== null),
 );
+const activeReviewReminder = computed(() => reviewReminders.value[0] ?? null);
+const currentWeeklyPlan = computed(() => store.reviewByWeek(startOfWeek(todayKey()))?.ifThenPlan.trim() ?? '');
 const yesterday = computed(() => addDays(todayKey(), -1));
 const yesterdayMissing = computed(
   () => isToday.value && store.loaded && store.dailyEntries.length > 0 && !store.entryByDate(yesterday.value),
@@ -209,15 +211,15 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
       <input :value="selectedDate" class="date-input" type="date" :max="todayKey()" aria-label="Дата записи" @change="selectDate" />
     </div>
 
-    <nav class="quick-capture" aria-label="Быстрые записи">
+    <nav v-if="!isFirstEntry" class="quick-capture" aria-label="Быстрые записи">
       <RouterLink to="/results"><span>✓</span><strong>Сохранить завершённый результат</strong></RouterLink>
-      <RouterLink to="/events"><span>✦</span><strong>Записать важное событие или мысль</strong></RouterLink>
+      <RouterLink to="/events"><span>✦</span><strong>Записать мысль или событие</strong></RouterLink>
     </nav>
 
     <section v-if="isFirstEntry" class="first-entry-guide" aria-label="Первая запись">
       <div>
         <span class="eyebrow">С чего начать</span>
-        <h2>Запишите несколько фактов о сегодняшнем дне</h2>
+        <h2>Отметьте несколько деталей сегодняшнего дня</h2>
         <p>Не нужно заполнять всё. Разделы на главной можно добавить или убрать в настройках — уже сохранённые записи не пропадут.</p>
       </div>
       <div class="first-entry-guide__actions">
@@ -231,7 +233,35 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
       <RouterLink to="/settings#daily-blocks">Настроить главную →</RouterLink>
     </div>
 
-    <section v-if="isToday && currentWeekSummary.coveredEntriesCount" class="today-pulse" aria-label="Пульс недели">
+    <section v-if="!isFirstEntry && entryChangeNotice" class="entry-change-notice" aria-live="polite">
+      <strong>{{ hasSavedEntry ? 'Изменения не сохранены' : 'Новая запись не сохранена' }}</strong>
+      <p>{{ entryChangeNotice }}</p>
+    </section>
+
+    <section v-else-if="activeReviewReminder" class="review-nudge" aria-label="Период готов к обзору">
+      <div>
+        <strong>{{ activeReviewReminder.title }}</strong>
+        <p>{{ activeReviewReminder.text }}</p>
+      </div>
+      <RouterLink class="secondary-button" :to="activeReviewReminder.to">{{ activeReviewReminder.label }}</RouterLink>
+    </section>
+
+    <section v-else-if="yesterdayMissing" class="recovery-nudge" aria-label="Вчера без записи">
+      <div>
+        <strong>Вчера без записи</strong>
+        <p>Можно заполнить коротко сейчас или спокойно продолжить с сегодняшнего дня.</p>
+      </div>
+      <button class="secondary-button" type="button" @click="fillYesterday">Заполнить вчера</button>
+    </section>
+
+    <section v-else-if="isToday && currentWeeklyPlan" class="today-pulse" aria-label="Текущий план недели">
+      <div>
+        <span class="eyebrow">План недели</span>
+        <p>{{ currentWeeklyPlan }}</p>
+      </div>
+    </section>
+
+    <section v-else-if="isToday && currentWeekSummary.coveredEntriesCount" class="today-pulse" aria-label="Пульс недели">
       <div>
         <span class="eyebrow">Пульс недели</span>
         <p>
@@ -242,27 +272,6 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
         </p>
       </div>
       <p v-if="currentWeekObservation">{{ currentWeekObservation.text }}</p>
-    </section>
-
-    <section v-if="yesterdayMissing" class="recovery-nudge" aria-label="Вчера без записи">
-      <div>
-        <strong>Вчера без записи</strong>
-        <p>Можно заполнить коротко сейчас или спокойно продолжить с сегодняшнего дня.</p>
-      </div>
-      <button class="secondary-button" type="button" @click="fillYesterday">Заполнить вчера</button>
-    </section>
-
-    <section v-if="entryChangeNotice" class="entry-change-notice" aria-live="polite">
-      <strong>{{ hasSavedEntry ? 'Изменения не сохранены' : 'Новая запись не сохранена' }}</strong>
-      <p>{{ entryChangeNotice }}</p>
-    </section>
-
-    <section v-for="reminder in reviewReminders" :key="reminder.id" class="review-nudge" aria-label="Период готов к обзору">
-      <div>
-        <strong>{{ reminder.title }}</strong>
-        <p>{{ reminder.text }}</p>
-      </div>
-      <RouterLink class="secondary-button" :to="reminder.to">{{ reminder.label }}</RouterLink>
     </section>
 
     <form class="checkin-grid" :class="{ 'checkin-grid--dirty': isDirty }" @submit.prevent="save">
@@ -551,15 +560,15 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
         <div class="form-card__heading">
           <span class="section-icon">·</span>
           <div>
-            <h2>Факт дня</h2>
-            <p>Короткая деталь, которая поможет потом вспомнить этот день.</p>
+            <h2>Заметка дня</h2>
+            <p>Что сегодня произошло или что вы заметили — даже если день был обычным.</p>
           </div>
         </div>
         <textarea
           v-model="form.importantFact"
           rows="2"
           maxlength="240"
-          placeholder="Например: разговор заметно изменил настроение на весь день"
+          placeholder="Например: после прогулки стало легче собраться с мыслями"
         ></textarea>
       </article>
 

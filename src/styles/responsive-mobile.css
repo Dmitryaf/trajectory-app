@@ -236,6 +236,9 @@
   .checkin-grid--dirty {
     padding-bottom: 64px;
   }
+  .primary-button--save {
+    display: none;
+  }
   .mobile-save-button {
     position: fixed;
     left: 50%;
