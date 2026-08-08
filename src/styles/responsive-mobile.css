@@ -186,13 +186,46 @@
     min-height: calc(100vh - 170px);
     padding-top: 8px;
   }
+  .auth-layout {
+    gap: 16px;
+  }
+  .auth-presentation {
+    border-radius: 20px;
+  }
+  .auth-presentation__intro {
+    padding: 24px 20px 22px;
+  }
+  .auth-presentation__intro h1 {
+    font-size: 37px;
+  }
+  .auth-presentation__intro > p:not(.eyebrow) {
+    font-size: 15px;
+  }
+  .auth-presentation__actions,
+  .auth-presentation__actions button {
+    width: 100%;
+  }
+  .auth-preview {
+    padding: 22px 20px 24px;
+  }
+  .auth-preview__tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .auth-preview__content {
+    min-height: 0;
+    padding: 17px;
+  }
+  .auth-preview__content li {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
   .auth-card {
     width: 100%;
     padding: 20px;
     border-radius: 20px;
   }
   .auth-card__brand {
-    flex-direction: column;
+    align-items: flex-start;
     gap: 12px;
   }
   .auth-card__brand h1 {

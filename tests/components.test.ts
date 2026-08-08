@@ -140,6 +140,38 @@ describe('account menu', () => {
 });
 
 describe('beta authentication', () => {
+  it('explains the app with a clearly marked example before registration', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    auth.signupEnabled = true;
+    const wrapper = mount(AuthGate, { global: { plugins: [pinia] } });
+
+    expect(wrapper.text()).toContain('Увидьте, чем были наполнены ваши дни, недели и месяцы');
+    expect(wrapper.text()).toContain('Пример, не ваши данные');
+    expect(wrapper.text()).toContain('Приложение не оценивает ваши дни');
+    expect(wrapper.text()).toContain('Короткие записи за несколько дней');
+
+    await wrapper.get('[aria-label="Уровни примера"] button:nth-child(3)').trigger('click');
+    expect(wrapper.text()).toContain('Неделя видна целиком');
+    expect(wrapper.text()).toContain('Пока ничего не менять');
+  });
+
+  it('opens the requested auth form from the presentation', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    auth.signupEnabled = true;
+    const wrapper = mount(AuthGate, { attachTo: document.body, global: { plugins: [pinia] } });
+
+    await wrapper.get('.auth-presentation__actions .primary-button').trigger('click');
+
+    expect(wrapper.text()).toContain('Создайте аккаунт');
+    expect(wrapper.findAll('input')).toHaveLength(4);
+    expect(wrapper.get('input[type="email"]').element).toBe(document.activeElement);
+    wrapper.unmount();
+  });
+
   it('requires a matching password and invitation code for self-registration', async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
