@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
+import { recordFirstUseEvent } from '../features/first-use/funnel';
 import { useAuthStore } from '../stores/auth';
 
 type PreviewLevelId = 'today' | 'journal' | 'week' | 'month';
@@ -73,6 +74,8 @@ const status = ref('');
 const confirmationEmail = ref('');
 const activePreview = computed(() => previewLevels.find((level) => level.id === activePreviewId.value) ?? previewLevels[0]!);
 
+onMounted(() => recordFirstUseEvent('first_use_presentation_viewed'));
+
 const canSubmit = computed(() => {
   if (email.value.trim().length <= 3 || auth.loading) return false;
   if (mode.value === 'sign-in') return password.value.length >= 6;
@@ -115,6 +118,7 @@ async function submit() {
   try {
     if (mode.value === 'sign-up') {
       const result = await auth.signUp(email.value.trim(), password.value, inviteCode.value.trim());
+      recordFirstUseEvent('first_use_signup_completed');
       confirmationEmail.value = result.confirmationRequired ? email.value.trim() : '';
       status.value = result.confirmationRequired ? 'Аккаунт создан. Проверь почту и подтверди email.' : 'Аккаунт создан.';
     } else {

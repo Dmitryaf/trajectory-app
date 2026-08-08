@@ -2,8 +2,9 @@
 
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import WeeklyReviewJournalLinks from '../src/components/WeeklyReviewJournalLinks.vue';
+import { readFirstUseFunnel } from '../src/features/first-use/funnel';
 import { useAppStore } from '../src/stores/app';
 import { defaultSettings, emptyWeeklyReview, type LifeEventRecord, type ResultRecord } from '../src/types';
 
@@ -29,6 +30,8 @@ function setup(existingResults: ResultRecord[] = []) {
 }
 
 describe('weekly review journal links', () => {
+  beforeEach(() => window.localStorage.clear());
+
   it('saves only explicitly dated and classified items', async () => {
     const { store, wrapper } = setup();
     const items = wrapper.findAll('.weekly-review-journal__item');
@@ -47,6 +50,7 @@ describe('weekly review journal links', () => {
       note: '',
     });
     expect(result.text()).toContain('Уже есть в Журнале');
+    expect(readFirstUseFunnel().map((item) => item.name)).toContain('first_use_journal_record_saved');
 
     await event.get('input[type="date"]').setValue('2026-07-30');
     await event.get('select').setValue('event');

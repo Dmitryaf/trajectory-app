@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import FirstUseRecovery from '../src/components/FirstUseRecovery.vue';
+import { readFirstUseFunnel } from '../src/features/first-use/funnel';
 import { addDays, startOfWeek, todayKey } from '../src/services/dates';
 import { useAppStore } from '../src/stores/app';
 import { defaultSettings, emptyWeeklyReview, type AppSettings, type WeeklyReview } from '../src/types';
@@ -28,6 +29,7 @@ describe('first-use week recovery', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
     window.history.replaceState({}, '', '/');
+    window.localStorage.clear();
   });
 
   it('starts with the previous completed week', async () => {
@@ -42,6 +44,7 @@ describe('first-use week recovery', () => {
       weekStart: startOfWeek(addDays(todayKey(), -7)),
       lastStep: 'results',
     });
+    expect(readFirstUseFunnel().map((event) => event.name)).toContain('first_use_recovery_started');
     expect(wrapper.text()).toContain('Что вам удалось закончить или получить?');
   });
 
@@ -65,6 +68,7 @@ describe('first-use week recovery', () => {
     );
     expect(store.settings.firstUse.lastStep).toBe('highlights');
     expect(wrapper.text()).toContain('Что важного произошло?');
+    expect(readFirstUseFunnel().map((event) => event.name)).toContain('first_use_first_answer_saved');
   });
 
   it('keeps existing answers when a step is skipped', async () => {
@@ -113,6 +117,7 @@ describe('first-use week recovery', () => {
     expect(wrapper.text()).toContain('Вот чем была наполнена ваша неделя');
     expect(wrapper.text()).toContain('Закончил черновик');
     expect(wrapper.text()).toContain('Поговорил с другом');
+    expect(readFirstUseFunnel().map((event) => event.name)).toContain('first_use_overview_viewed');
     expect(wrapper.get('.first-use-recovery__footer .primary-button').attributes('disabled')).toBeUndefined();
     await wrapper.get('.first-use-recovery__footer .primary-button').trigger('click');
 

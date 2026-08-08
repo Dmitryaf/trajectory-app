@@ -11,6 +11,7 @@ import DurationInput from '../src/components/DurationInput.vue';
 import HowItWorksDialog from '../src/components/HowItWorksDialog.vue';
 import PeriodNavigator from '../src/components/PeriodNavigator.vue';
 import PasswordResetView from '../src/views/PasswordResetView.vue';
+import { readFirstUseFunnel } from '../src/features/first-use/funnel';
 import { useAuthStore } from '../src/stores/auth';
 
 describe('form components', () => {
@@ -141,6 +142,7 @@ describe('account menu', () => {
 
 describe('beta authentication', () => {
   it('explains the app with a clearly marked example before registration', async () => {
+    window.localStorage.clear();
     const pinia = createPinia();
     setActivePinia(pinia);
     const auth = useAuthStore();
@@ -151,6 +153,7 @@ describe('beta authentication', () => {
     expect(wrapper.text()).toContain('Пример, не ваши данные');
     expect(wrapper.text()).toContain('Приложение не оценивает ваши дни');
     expect(wrapper.text()).toContain('Короткие записи за несколько дней');
+    expect(readFirstUseFunnel().map((event) => event.name)).toContain('first_use_presentation_viewed');
 
     await wrapper.get('[aria-label="Уровни примера"] button:nth-child(3)').trigger('click');
     expect(wrapper.text()).toContain('Неделя видна целиком');
@@ -173,6 +176,7 @@ describe('beta authentication', () => {
   });
 
   it('requires a matching password and invitation code for self-registration', async () => {
+    window.localStorage.clear();
     const pinia = createPinia();
     setActivePinia(pinia);
     const auth = useAuthStore();
@@ -194,6 +198,7 @@ describe('beta authentication', () => {
     await wrapper.get('form').trigger('submit');
 
     expect(auth.signUp).toHaveBeenCalledWith('friend@example.com', 'safe-password', 'BETA-INVITE-2026');
+    expect(readFirstUseFunnel().map((event) => event.name)).toContain('first_use_signup_completed');
     expect(wrapper.text()).toContain('Проверь почту и подтверди email');
     expect(wrapper.text()).toContain('Отправить письмо ещё раз');
   });

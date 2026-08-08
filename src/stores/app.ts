@@ -19,6 +19,7 @@ import {
   type WeeklyReview,
 } from '../types';
 import { normalizeSnapshot, type ExportPayload } from '../features/backup/snapshot';
+import { clearFirstUseFunnel } from '../features/first-use/funnel';
 
 export type { ExportPayload } from '../features/backup/snapshot';
 
@@ -220,6 +221,7 @@ export const useAppStore = defineStore('app', {
       this.weeklyReviews = [];
       this.monthlyReviews = [];
       this.settings = structuredClone(defaultSettings);
+      clearFirstUseFunnel();
       await db.settings.put(plainCopy(this.settings));
       if (options.syncCloud) void this.syncCloudSnapshot({ force: true });
     },
