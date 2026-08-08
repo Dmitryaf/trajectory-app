@@ -192,12 +192,19 @@ describe('analytics', () => {
         },
       ],
       lifeEvents: [],
-      reviews: [{ ...normalizeWeeklyReview({ weekStart: '2026-07-06' }), nextLever: 'Ложиться раньше' }],
+      reviews: [
+        {
+          ...normalizeWeeklyReview({ weekStart: '2026-07-06' }),
+          highlights: ['Важный разговор изменил планы', '', ''],
+          stateContext: 'Неделя была неровной из-за болезни.',
+          nextLever: 'Ложиться раньше',
+        },
+      ],
       monthlyReviews: [],
       settings,
     });
 
-    expect(payload.version).toBe(9);
+    expect(payload.version).toBe(10);
     expect(payload.dataThrough).toBe('2026-07-19');
     expect(payload.labels.contextFactors).toContainEqual(expect.objectContaining({ id: 'custom:context:rain', label: 'Шум за окном' }));
     expect(payload.labels.activities).toContainEqual(expect.objectContaining({ id: 'custom:activity:swimming', label: 'Плавание' }));
@@ -209,6 +216,8 @@ describe('analytics', () => {
     expect(prompt).toContain('ДАННЫЕ ДЛЯ АНАЛИЗА');
     expect(prompt).toContain('Шум за окном');
     expect(prompt).toContain('Ложиться раньше');
+    expect(prompt).toContain('важные события и мысли: Важный разговор изменил планы');
+    expect(prompt).toContain('состояние и условия: Неделя была неровной из-за болезни.');
     expect(prompt).toContain('подробности: Показал сценарий двум пользователям и записал вопросы');
     expect(prompt).toContain('Наблюдаемый результат цели: Показать работающий сценарий трём людям.');
     expect(prompt).toContain('Цель нужно пересмотреть 2026-07-31.');
@@ -460,6 +469,8 @@ describe('analytics', () => {
 
     expect(review.ifThenPlan).toBe('');
     expect(review.previousPlanOutcome).toBe('');
+    expect(review.highlights).toEqual(['', '', '']);
+    expect(review.stateContext).toBe('');
     expect(review.updatedAt).toBe('');
   });
 

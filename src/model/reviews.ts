@@ -32,6 +32,8 @@ export function emptyWeeklyReview(weekStart: string): WeeklyReview {
     updatedAt: '',
     previousPlanOutcome: '',
     results: ['', '', ''],
+    highlights: ['', '', ''],
+    stateContext: '',
     support: '',
     obstacle: '',
     nextLever: '',
@@ -46,6 +48,10 @@ export function normalizeWeeklyReview(review: Partial<WeeklyReview> & { weekStar
     previousPlanOutcome: typeof review.previousPlanOutcome === 'string' ? review.previousPlanOutcome : '',
     updatedAt: typeof review.updatedAt === 'string' ? review.updatedAt : '',
     results: Array.isArray(review.results) ? review.results.filter((result): result is string => typeof result === 'string') : ['', '', ''],
+    highlights: Array.isArray(review.highlights)
+      ? review.highlights.filter((highlight): highlight is string => typeof highlight === 'string')
+      : ['', '', ''],
+    stateContext: typeof review.stateContext === 'string' ? review.stateContext : '',
     support: typeof review.support === 'string' ? review.support : '',
     obstacle: typeof review.obstacle === 'string' ? review.obstacle : '',
     nextLever: typeof review.nextLever === 'string' ? review.nextLever : '',

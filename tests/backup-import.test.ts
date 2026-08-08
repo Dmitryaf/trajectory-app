@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../src/db';
 import { useAppStore, type ExportPayload } from '../src/stores/app';
-import { emptyDailyEntry } from '../src/types';
+import { emptyDailyEntry, emptyWeeklyReview } from '../src/types';
 
 beforeEach(async () => {
   await db.delete();
@@ -109,6 +109,8 @@ describe('backup import', () => {
     expect(store.lifeEvents).toEqual([]);
     expect(store.monthlyReviews).toEqual([]);
     expect(store.weeklyReviews[0].ifThenPlan).toBe('');
+    expect(store.weeklyReviews[0].highlights).toEqual(['', '', '']);
+    expect(store.weeklyReviews[0].stateContext).toBe('');
     expect(store.settings.settingsVersion).toBe(11);
     expect(store.settings.activeDailyBlocks).toEqual(['sleep', 'context', 'career', 'movement', 'nutrition']);
     expect(store.settings.activeLifeAreas).toEqual(['family']);
@@ -117,9 +119,33 @@ describe('backup import', () => {
     expect(storedDates).toEqual(['2025-02-01']);
 
     const exported = store.exportData();
-    expect(exported.version).toBe(6);
+    expect(exported.version).toBe(7);
     expect(exported.dailyEntries[0].careerStates).toEqual(['external']);
     expect(exported.monthlyReviews).toEqual([]);
+  });
+
+  it('round-trips approximate weekly highlights and state context', async () => {
+    const store = useAppStore();
+    await store.saveReview({
+      ...emptyWeeklyReview('2026-07-20'),
+      highlights: ['Важный разговор изменил планы', 'Появилась новая мысль о проекте', ''],
+      stateContext: 'Неделя была тяжёлой из-за болезни и нехватки сна.',
+    });
+
+    const exported = store.exportData();
+    expect(exported.version).toBe(7);
+    expect(exported.weeklyReviews[0]).toMatchObject({
+      highlights: ['Важный разговор изменил планы', 'Появилась новая мысль о проекте', ''],
+      stateContext: 'Неделя была тяжёлой из-за болезни и нехватки сна.',
+    });
+
+    await store.clearAll({ syncCloud: false });
+    await store.importData(exported, { syncCloud: false });
+
+    expect(store.weeklyReviews[0]).toMatchObject({
+      highlights: ['Важный разговор изменил планы', 'Появилась новая мысль о проекте', ''],
+      stateContext: 'Неделя была тяжёлой из-за болезни и нехватки сна.',
+    });
   });
 
   it('rejects an unsupported backup before clearing current data', async () => {

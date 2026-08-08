@@ -107,6 +107,8 @@ export type WeeklyReview = {
   updatedAt: string;
   previousPlanOutcome: string;
   results: string[];
+  highlights: string[];
+  stateContext: string;
   support: string;
   obstacle: string;
   nextLever: string;
