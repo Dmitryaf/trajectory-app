@@ -14,7 +14,7 @@ import WeekView from '../src/views/WeekView.vue';
 import { notifyError, notifySaved, notifyUnknownError } from '../src/services/notifications';
 import { useAppStore } from '../src/stores/app';
 import { useAuthStore } from '../src/stores/auth';
-import { defaultSettings, emptyDailyEntry, emptyWeeklyReview } from '../src/types';
+import { defaultSettings, emptyDailyEntry, emptyMonthlyReview, emptyWeeklyReview } from '../src/types';
 
 vi.mock('../src/services/notifications', () => ({
   notifyError: vi.fn(),
@@ -801,6 +801,62 @@ describe('period review navigation', () => {
     await actions.get('[aria-label="Страницы действий месяца"] button:last-child').trigger('click');
     expect(actions.text()).toContain('Действие 8');
     expect(actions.text()).toContain('Действие 9');
+  });
+
+  it('shows journal records without pretending that daily analytics exist', () => {
+    const { pinia, store } = createStore();
+    store.results = [
+      {
+        id: 1,
+        date: '2026-07-21',
+        area: 'career',
+        title: 'Завершённый итог без дневной записи',
+        note: '',
+        createdAt: '2026-07-21T12:00:00.000Z',
+      },
+    ];
+    store.lifeEvents = [
+      {
+        id: 1,
+        date: '2026-07-21',
+        type: 'event',
+        title: 'Важное событие без дневной записи',
+        note: '',
+        createdAt: '2026-07-21T13:00:00.000Z',
+      },
+    ];
+    const global = { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } };
+    const week = mount(WeekView, { global });
+    const month = mount(MonthView, { global });
+
+    for (const wrapper of [week, month]) {
+      expect(wrapper.find('.period-empty-guide').exists()).toBe(false);
+      expect(wrapper.get('.period-data-guide').text()).toContain('нет дневных записей');
+      expect(wrapper.find('.metrics-grid').exists()).toBe(false);
+      expect(wrapper.text()).toContain('Завершённый итог без дневной записи');
+      expect(wrapper.text()).toContain('Важное событие без дневной записи');
+    }
+    expect((week.get('details.period-details').element as HTMLDetailsElement).open).toBe(true);
+    expect((month.get('details.period-records').element as HTMLDetailsElement).open).toBe(true);
+  });
+
+  it('keeps a saved period review visible without daily or journal records', () => {
+    const { pinia, store } = createStore();
+    store.weeklyReviews = [{ ...emptyWeeklyReview('2026-07-20'), results: ['Неделя не была пустой', '', ''] }];
+    store.monthlyReviews = [{ ...emptyMonthlyReview('2026-07-01'), mainPattern: 'Важный вывод месяца' }];
+    const global = { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } };
+    const week = mount(WeekView, { global });
+    const month = mount(MonthView, { global });
+
+    for (const wrapper of [week, month]) {
+      expect(wrapper.find('.period-empty-guide').exists()).toBe(false);
+      expect(wrapper.find('.period-data-guide').exists()).toBe(true);
+      expect(wrapper.find('.metrics-grid').exists()).toBe(false);
+      expect(wrapper.find('.review-card').exists()).toBe(true);
+      expect(wrapper.find('.period-details').exists()).toBe(false);
+    }
+    expect((week.get('.review-card input').element as HTMLInputElement).value).toBe('Неделя не была пустой');
+    expect((month.get('.review-card textarea').element as HTMLTextAreaElement).value).toBe('Важный вывод месяца');
   });
 
   it('links the week and month summaries to their review forms', () => {

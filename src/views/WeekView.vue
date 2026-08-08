@@ -102,6 +102,9 @@ const reviewCues = computed(() =>
 const reviewQuestions = buildReviewQuestions('week');
 const previousReview = computed(() => store.reviewByWeek(addDays(start.value, -7)));
 const hasSavedReview = computed(() => Boolean(store.reviewByWeek(start.value)));
+const hasDailyData = computed(() => summary.value.coveredEntriesCount > 0);
+const hasJournalData = computed(() => results.value.length > 0 || lifeEvents.value.length > 0);
+const hasPeriodData = computed(() => hasDailyData.value || hasJournalData.value || hasSavedReview.value);
 const reviewAvailable = computed(
   () => hasSavedReview.value || end.value < todayKey() || (start.value === startOfWeek(todayKey()) && todayKey() >= addDays(end.value, -1)),
 );
@@ -312,7 +315,7 @@ function downloadJson() {
         <h1>Неделя</h1>
         <p>Посмотрите, что повторялось за неделю, и выберите одно изменение на следующую.</p>
       </div>
-      <a v-if="summary.coveredEntriesCount > 0" class="review-jump" href="#week-review"
+      <a v-if="hasPeriodData" class="review-jump" href="#week-review"
         >{{ reviewAvailable ? 'К обзору' : 'Обзор позже' }} <span aria-hidden="true">↓</span></a
       >
     </div>
@@ -324,14 +327,19 @@ function downloadJson() {
       @current="anchor = todayKey()"
     />
 
-    <section v-if="summary.coveredEntriesCount === 0" class="period-empty-guide">
+    <section v-if="!hasPeriodData" class="period-empty-guide">
       <strong>За эту неделю пока нет записей</strong>
       <p>Заполняйте на главной несколько важных пунктов. Здесь они соберутся по дням и помогут сравнить сон, состояние и действия.</p>
       <RouterLink class="secondary-button" to="/">Перейти к записи за день</RouterLink>
     </section>
 
     <template v-else>
-      <div class="metrics-grid">
+      <section v-if="!hasDailyData" class="period-review-note period-data-guide">
+        <strong>За эту неделю нет дневных записей</strong>
+        <p>Итоги, события и сохранённый обзор показаны ниже. Данных для сравнения сна, состояния и действий пока нет.</p>
+      </section>
+
+      <div v-if="hasDailyData" class="metrics-grid">
         <MetricCard
           label="Средний сон"
           :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))"
@@ -365,12 +373,12 @@ function downloadJson() {
         <MetricCard label="Итогов" :value="results.length" accent="#e7a43b" />
       </div>
 
-      <article class="insight-card">
+      <article v-if="hasDailyData" class="insight-card">
         <span class="insight-card__mark">⌁</span>
         <p>{{ summaryText }}</p>
       </article>
 
-      <details class="period-details">
+      <details v-if="hasDailyData" class="period-details">
         <summary>Показать график недели</summary>
         <div class="period-details__content">
           <article class="dashboard-card">
@@ -389,7 +397,7 @@ function downloadJson() {
         </div>
       </details>
 
-      <article class="dashboard-card">
+      <article v-if="hasDailyData || hasJournalData" class="dashboard-card">
         <div class="section-heading">
           <div>
             <span class="eyebrow">Короткий разбор</span>
@@ -411,10 +419,10 @@ function downloadJson() {
         </ol>
       </article>
 
-      <details class="period-details">
-        <summary>Показать записи и карту недели</summary>
+      <details v-if="hasDailyData || hasJournalData" class="period-details" :open="!hasDailyData">
+        <summary>{{ hasDailyData ? 'Показать записи и карту недели' : 'Записи недели' }}</summary>
         <div class="period-details__content">
-          <article v-if="activeExperimentWeek || completedExperiments.length" class="dashboard-card">
+          <article v-if="hasDailyData && (activeExperimentWeek || completedExperiments.length)" class="dashboard-card">
             <div class="section-heading">
               <div>
                 <span class="eyebrow">Личные проверки</span>
@@ -448,7 +456,7 @@ function downloadJson() {
             </div>
           </article>
 
-          <article v-if="actionNotes.length" class="dashboard-card">
+          <article v-if="hasDailyData && actionNotes.length" class="dashboard-card">
             <div class="section-heading">
               <div>
                 <span class="eyebrow">Действия по цели</span>
@@ -468,7 +476,7 @@ function downloadJson() {
             </div>
           </article>
 
-          <article v-if="specialDays.length" class="dashboard-card">
+          <article v-if="hasDailyData && specialDays.length" class="dashboard-card">
             <div class="section-heading">
               <div>
                 <span class="eyebrow">Поправка на контекст</span>
@@ -485,7 +493,7 @@ function downloadJson() {
             </div>
           </article>
 
-          <article v-if="contextNotes.length" class="dashboard-card">
+          <article v-if="hasDailyData && contextNotes.length" class="dashboard-card">
             <div class="section-heading">
               <div>
                 <span class="eyebrow">Условия дня</span>
@@ -506,7 +514,7 @@ function downloadJson() {
             </div>
           </article>
 
-          <article class="dashboard-card">
+          <article v-if="hasDailyData" class="dashboard-card">
             <div class="section-heading">
               <div>
                 <span class="eyebrow">Присутствие областей</span>

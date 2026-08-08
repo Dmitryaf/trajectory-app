@@ -72,6 +72,9 @@ const reviewCues = computed(() =>
 );
 const reviewQuestions = buildReviewQuestions('month');
 const hasSavedReview = computed(() => Boolean(store.reviewByMonth(start.value)));
+const hasDailyData = computed(() => summary.value.coveredEntriesCount > 0);
+const hasJournalData = computed(() => results.value.length > 0 || lifeEvents.value.length > 0);
+const hasPeriodData = computed(() => hasDailyData.value || hasJournalData.value || hasSavedReview.value);
 const reviewAvailable = computed(
   () =>
     hasSavedReview.value || end.value < todayKey() || (start.value === startOfMonth(todayKey()) && todayKey() >= addDays(end.value, -2)),
@@ -365,7 +368,7 @@ function shiftMonth(offset: number) {
         <h1>Месяц</h1>
         <p>Сравните недели, важные события и результаты. Решите, что продолжить или изменить.</p>
       </div>
-      <a v-if="summary.coveredEntriesCount > 0" class="review-jump" href="#month-review"
+      <a v-if="hasPeriodData" class="review-jump" href="#month-review"
         >{{ reviewAvailable ? 'К итогу' : 'Итог позже' }} <span aria-hidden="true">↓</span></a
       >
     </div>
@@ -377,14 +380,19 @@ function shiftMonth(offset: number) {
       @current="anchor = todayKey()"
     />
 
-    <section v-if="summary.coveredEntriesCount === 0" class="period-empty-guide">
+    <section v-if="!hasPeriodData" class="period-empty-guide">
       <strong>За этот месяц пока нет записей</strong>
       <p>Данные появятся здесь после ежедневных записей. Итоги и важные события из Журнала тоже войдут в обзор месяца.</p>
       <RouterLink class="secondary-button" to="/">Перейти к записи за день</RouterLink>
     </section>
 
     <template v-else>
-      <div class="metrics-grid">
+      <section v-if="!hasDailyData" class="period-review-note period-data-guide">
+        <strong>За этот месяц нет дневных записей</strong>
+        <p>Итоги, события и сохранённый обзор показаны ниже. Данных для сравнения дней и построения графиков пока нет.</p>
+      </section>
+
+      <div v-if="hasDailyData" class="metrics-grid">
         <MetricCard
           label="Заполненных дней"
           :value="summary.coveredEntriesCount"
@@ -422,7 +430,7 @@ function shiftMonth(offset: number) {
         <MetricCard label="Особых дней" :value="summary.specialDays" :hint="`${results.length} итогов`" accent="#eb7458" />
       </div>
 
-      <details class="period-details">
+      <details v-if="hasDailyData" class="period-details">
         <summary>Показать календарь месяца</summary>
         <div class="period-details__content">
           <article class="dashboard-card">
@@ -507,7 +515,7 @@ function shiftMonth(offset: number) {
         <p>Его можно пропустить — дневные записи и сводка месяца останутся на месте.</p>
       </section>
 
-      <article class="dashboard-card">
+      <article v-if="hasDailyData || hasJournalData" class="dashboard-card">
         <div class="section-heading">
           <div>
             <span class="eyebrow">Короткий разбор</span>
@@ -544,7 +552,7 @@ function shiftMonth(offset: number) {
         </div>
       </article>
 
-      <details class="period-details">
+      <details v-if="hasDailyData" class="period-details">
         <summary>Показать графики месяца</summary>
         <div class="period-details__content">
           <article class="dashboard-card">
@@ -624,8 +632,8 @@ function shiftMonth(offset: number) {
         </div>
       </details>
 
-      <details class="period-details period-records">
-        <summary>Показать записи месяца</summary>
+      <details v-if="hasDailyData || hasJournalData" class="period-details period-records" :open="!hasDailyData">
+        <summary>{{ hasDailyData ? 'Показать записи месяца' : 'Записи месяца' }}</summary>
         <div class="period-details__content period-records__content">
           <article v-if="results.length" class="period-record-card">
             <div class="period-record-card__heading">
