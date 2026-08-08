@@ -36,6 +36,13 @@ function createStore() {
   const store = useAppStore();
   store.loaded = true;
   store.settings = structuredClone(defaultSettings);
+  store.settings.firstUse = {
+    status: 'completed',
+    weekStart: '2026-07-13',
+    lastStep: 'overview',
+    overviewSeen: true,
+    updatedAt: '2026-07-20T12:00:00.000Z',
+  };
   return { pinia, store };
 }
 

@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import ChipGroup from '../components/ChipGroup.vue';
 import DurationInput from '../components/DurationInput.vue';
+import FirstUseRecovery from '../components/FirstUseRecovery.vue';
 import HowItWorksDialog from '../components/HowItWorksDialog.vue';
 import ScalePicker from '../components/ScalePicker.vue';
 import { useDailyEntryForm } from '../features/daily-entry/useDailyEntryForm';
@@ -92,6 +93,9 @@ const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.cust
 const activeLifeOptions = computed(() => lifeAreaItems.value.filter((option) => store.settings.activeLifeAreas.includes(option.id)));
 const isToday = computed(() => selectedDate.value === todayKey());
 const isFirstEntry = computed(() => store.loaded && store.dailyEntries.length === 0);
+const firstUseTakesPriority = computed(
+  () => isToday.value && (store.settings.firstUse.status === 'not_started' || store.settings.firstUse.status === 'in_progress'),
+);
 const hasSelectedFocus = computed(() => Boolean((form.focusTitle || store.settings.activeFocusTitle).trim()));
 const hasRecordedGoalAction = computed(() => form.recordedFields.includes('actionDirection'));
 const showGoalActionChoices = computed(() => hasSelectedFocus.value || hasRecordedGoalAction.value);
@@ -215,12 +219,14 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
       </label>
     </div>
 
-    <nav v-if="!isFirstEntry" class="quick-capture" aria-label="Быстрые записи">
+    <FirstUseRecovery v-if="isToday" />
+
+    <nav v-if="!firstUseTakesPriority && !isFirstEntry" class="quick-capture" aria-label="Быстрые записи">
       <RouterLink to="/results"><span>✓</span><strong>Сохранить завершённый результат</strong></RouterLink>
       <RouterLink to="/events"><span>✦</span><strong>Записать мысль или событие</strong></RouterLink>
     </nav>
 
-    <section v-if="isFirstEntry" class="first-entry-guide" aria-label="Первая запись">
+    <section v-if="isFirstEntry && !firstUseTakesPriority" class="first-entry-guide" aria-label="Первая запись">
       <div>
         <span class="eyebrow">С чего начать</span>
         <h2>Отметьте несколько деталей сегодняшнего дня</h2>
@@ -232,17 +238,17 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
       </div>
     </section>
 
-    <div v-else class="daily-layout-settings">
+    <div v-else-if="!firstUseTakesPriority && !isFirstEntry" class="daily-layout-settings">
       <span>Хотите добавить или убрать разделы?</span>
       <RouterLink to="/settings#daily-blocks">Настроить главную →</RouterLink>
     </div>
 
-    <section v-if="!isFirstEntry && entryChangeNotice" class="entry-change-notice" aria-live="polite">
+    <section v-if="!firstUseTakesPriority && !isFirstEntry && entryChangeNotice" class="entry-change-notice" aria-live="polite">
       <strong>{{ hasSavedEntry ? 'Изменения не сохранены' : 'Новая запись не сохранена' }}</strong>
       <p>{{ entryChangeNotice }}</p>
     </section>
 
-    <section v-else-if="activeReviewReminder" class="review-nudge" aria-label="Период готов к обзору">
+    <section v-else-if="!firstUseTakesPriority && activeReviewReminder" class="review-nudge" aria-label="Период готов к обзору">
       <div>
         <strong>{{ activeReviewReminder.title }}</strong>
         <p>{{ activeReviewReminder.text }}</p>
@@ -250,7 +256,7 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
       <RouterLink class="secondary-button" :to="activeReviewReminder.to">{{ activeReviewReminder.label }}</RouterLink>
     </section>
 
-    <section v-else-if="yesterdayMissing" class="recovery-nudge" aria-label="Вчера без записи">
+    <section v-else-if="!firstUseTakesPriority && yesterdayMissing" class="recovery-nudge" aria-label="Вчера без записи">
       <div>
         <strong>Вчера без записи</strong>
         <p>Можно заполнить коротко сейчас или спокойно продолжить с сегодняшнего дня.</p>
@@ -258,14 +264,18 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
       <button class="secondary-button" type="button" @click="fillYesterday">Заполнить вчера</button>
     </section>
 
-    <section v-else-if="isToday && currentWeeklyPlan" class="today-pulse" aria-label="Текущий план недели">
+    <section v-else-if="!firstUseTakesPriority && isToday && currentWeeklyPlan" class="today-pulse" aria-label="Текущий план недели">
       <div>
         <span class="eyebrow">План недели</span>
         <p>{{ currentWeeklyPlan }}</p>
       </div>
     </section>
 
-    <section v-else-if="isToday && currentWeekSummary.coveredEntriesCount" class="today-pulse" aria-label="Пульс недели">
+    <section
+      v-else-if="!firstUseTakesPriority && isToday && currentWeekSummary.coveredEntriesCount"
+      class="today-pulse"
+      aria-label="Пульс недели"
+    >
       <div>
         <span class="eyebrow">Пульс недели</span>
         <p>
@@ -278,7 +288,7 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
       <p v-if="currentWeekObservation">{{ currentWeekObservation.text }}</p>
     </section>
 
-    <form class="checkin-grid" :class="{ 'checkin-grid--dirty': isDirty }" @submit.prevent="save">
+    <form v-if="!firstUseTakesPriority" class="checkin-grid" :class="{ 'checkin-grid--dirty': isDirty }" @submit.prevent="save">
       <div v-if="blockIsActive('sleep') || blockIsActive('context')" class="checkin-group-heading">
         <span>Состояние и условия</span>
       </div>
