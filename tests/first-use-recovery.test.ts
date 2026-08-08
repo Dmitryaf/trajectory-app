@@ -2,10 +2,9 @@
 
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import FirstUseRecovery from '../src/components/FirstUseRecovery.vue';
 import { readFirstUseFunnel } from '../src/features/first-use/funnel';
-import { addDays, startOfWeek, todayKey } from '../src/services/dates';
 import { useAppStore } from '../src/stores/app';
 import { defaultSettings, emptyWeeklyReview, type AppSettings, type WeeklyReview } from '../src/types';
 
@@ -27,25 +26,48 @@ function setupStore() {
 
 describe('first-use week recovery', () => {
   beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 7, 8, 12));
     document.body.innerHTML = '';
     window.history.replaceState({}, '', '/');
     window.localStorage.clear();
   });
 
-  it('starts with the previous completed week', async () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('recommends the current week near its end and saves its real boundary', async () => {
     const { pinia, store } = setupStore();
     const wrapper = mount(FirstUseRecovery, { global: { plugins: [pinia] } });
 
-    expect(wrapper.text()).toContain('Соберите последнюю завершённую неделю');
+    expect(wrapper.text()).toContain('Соберите недавнюю неделю');
+    expect(wrapper.text()).toContain('3 августа — 8 августа 2026 г.');
+    expect(wrapper.text()).toContain('27 июля — 2 августа 2026 г.');
+    expect(wrapper.get('[role="radio"][aria-checked="true"]').text()).toContain('Эта неделя');
     await wrapper.get('.first-use-card--choice .primary-button').trigger('click');
 
     expect(store.settings.firstUse).toMatchObject({
       status: 'in_progress',
-      weekStart: startOfWeek(addDays(todayKey(), -7)),
+      weekStart: '2026-08-03',
+      periodEnd: '2026-08-08',
       lastStep: 'results',
     });
     expect(readFirstUseFunnel().map((event) => event.name)).toContain('first_use_recovery_started');
     expect(wrapper.text()).toContain('Что вам удалось закончить или получить?');
+  });
+
+  it('recommends the completed week on Monday but lets the user choose the current one', async () => {
+    vi.setSystemTime(new Date(2026, 7, 10, 12));
+    const { pinia, store } = setupStore();
+    const wrapper = mount(FirstUseRecovery, { global: { plugins: [pinia] } });
+
+    expect(wrapper.get('[role="radio"][aria-checked="true"]').text()).toContain('Прошлая неделя');
+    await wrapper
+      .findAll('[role="radio"]')
+      .find((option) => option.text().includes('Эта неделя'))!
+      .trigger('click');
+    await wrapper.get('.first-use-card--choice .primary-button').trigger('click');
+
+    expect(store.settings.firstUse).toMatchObject({ weekStart: '2026-08-10', periodEnd: '2026-08-10' });
   });
 
   it('keeps the choice visible when starting cannot be saved', async () => {
@@ -57,7 +79,7 @@ describe('first-use week recovery', () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain('Не удалось начать. Попробуйте ещё раз.'));
 
     expect(store.settings.firstUse.status).toBe('not_started');
-    expect(wrapper.text()).toContain('Соберите последнюю завершённую неделю');
+    expect(wrapper.text()).toContain('Соберите недавнюю неделю');
     expect(wrapper.get('.first-use-card--choice .primary-button').attributes('disabled')).toBeUndefined();
     expect(readFirstUseFunnel().map((event) => event.name)).not.toContain('first_use_recovery_started');
   });
@@ -68,6 +90,7 @@ describe('first-use week recovery', () => {
     store.settings.firstUse = {
       status: 'in_progress',
       weekStart,
+      periodEnd: '2026-08-02',
       lastStep: 'results',
       overviewSeen: false,
       updatedAt: '',
@@ -78,7 +101,7 @@ describe('first-use week recovery', () => {
     await wrapper.get('.first-use-recovery__footer .primary-button').trigger('click');
 
     expect(store.saveReview).toHaveBeenCalledWith(
-      expect.objectContaining({ weekStart, results: ['Закончил черновик', 'Отправил письмо'] }),
+      expect.objectContaining({ weekStart, coveredThrough: '2026-08-02', results: ['Закончил черновик', 'Отправил письмо'] }),
     );
     expect(store.settings.firstUse.lastStep).toBe('highlights');
     expect(wrapper.text()).toContain('Что важного произошло?');
@@ -92,6 +115,7 @@ describe('first-use week recovery', () => {
     store.settings.firstUse = {
       status: 'in_progress',
       weekStart,
+      periodEnd: '2026-08-02',
       lastStep: 'results',
       overviewSeen: false,
       updatedAt: '',
@@ -118,6 +142,7 @@ describe('first-use week recovery', () => {
     store.settings.firstUse = {
       status: 'in_progress',
       weekStart,
+      periodEnd: '2026-08-02',
       lastStep: 'highlights',
       overviewSeen: false,
       updatedAt: '',
@@ -141,6 +166,7 @@ describe('first-use week recovery', () => {
     store.settings.firstUse = {
       status: 'in_progress',
       weekStart,
+      periodEnd: '2026-08-02',
       lastStep: 'overview',
       overviewSeen: true,
       updatedAt: '',
@@ -173,6 +199,7 @@ describe('first-use week recovery', () => {
     store.settings.firstUse = {
       status: 'in_progress',
       weekStart: '2026-07-27',
+      periodEnd: '2026-08-02',
       lastStep: 'decision',
       overviewSeen: false,
       updatedAt: '',
@@ -181,7 +208,7 @@ describe('first-use week recovery', () => {
 
     await wrapper.findAll('.first-use-recovery__choices button')[1]!.trigger('click');
 
-    expect(wrapper.text()).toContain('Какое одно изменение хотите попробовать на следующей неделе?');
+    expect(wrapper.text()).toContain('Какое одно изменение хотите попробовать?');
     expect(wrapper.text()).toContain('этот ответ появится как ваше прошлое решение');
   });
 
@@ -191,6 +218,7 @@ describe('first-use week recovery', () => {
     store.settings.firstUse = {
       status: 'completed',
       weekStart: '2026-07-27',
+      periodEnd: '2026-08-02',
       lastStep: 'overview',
       overviewSeen: true,
       updatedAt: '',

@@ -143,7 +143,9 @@ const recoveredReview = computed(() => {
     return null;
   return store.reviewByWeek(weekStart) ?? null;
 });
-const recoveredWeekEnd = computed(() => (recoveredReview.value ? addDays(recoveredReview.value.weekStart, 6) : ''));
+const recoveredWeekEnd = computed(() =>
+  recoveredReview.value ? recoveredReview.value.coveredThrough || addDays(recoveredReview.value.weekStart, 6) : '',
+);
 const isRecoveredReview = computed(
   () =>
     Boolean(savedReview.value) &&
@@ -152,9 +154,12 @@ const isRecoveredReview = computed(
     (store.settings.firstUse.status === 'in_progress' || store.settings.firstUse.status === 'completed'),
 );
 const navigatorSubtitle = computed(() => {
-  if (isRecoveredReview.value) return 'Ваша первая заполненная неделя';
+  if (isRecoveredReview.value) return 'Ваш первый обзор недели';
   return start.value === startOfWeek(todayKey()) ? 'Текущая неделя' : '';
 });
+const recoveredPeriodIsIncomplete = computed(
+  () => Boolean(savedReview.value?.coveredThrough) && savedReview.value!.coveredThrough < addDays(savedReview.value!.weekStart, 6),
+);
 const hasDailyData = computed(() => summary.value.coveredEntriesCount > 0);
 const hasJournalData = computed(() => results.value.length > 0 || lifeEvents.value.length > 0);
 const hasPeriodData = computed(() => hasDailyData.value || hasJournalData.value || hasSavedReview.value);
@@ -420,6 +425,10 @@ function downloadJson() {
             <p class="eyebrow">Восстановлено по вашим ответам</p>
             <h2>Вот чем была наполнена ваша неделя</h2>
             <p>Здесь собраны ваши факты, важные события и условия недели. Это не оценка и не автоматический вывод.</p>
+            <p v-if="recoveredPeriodIsIncomplete" class="restored-week-overview__coverage">
+              Ответы собраны по {{ formatDate(savedReview.coveredThrough, { day: 'numeric', month: 'long' }) }}. Остальные дни этой недели
+              не считаются пропущенными.
+            </p>
           </div>
         </div>
         <WeeklyReviewOverview :review="savedReview" />

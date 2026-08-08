@@ -15,7 +15,7 @@ import {
 } from '../../types';
 
 export type ExportPayload = {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
   exportedAt: string;
   dailyEntries: DailyEntry[];
   results: ResultRecord[];
@@ -38,7 +38,8 @@ export function normalizeSnapshot(input: unknown): ExportPayload {
     version !== 5 &&
     version !== 6 &&
     version !== 7 &&
-    version !== 8
+    version !== 8 &&
+    version !== 9
   ) {
     throw new Error('Неподдерживаемый формат резервной копии');
   }

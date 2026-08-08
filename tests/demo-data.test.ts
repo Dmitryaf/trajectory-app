@@ -10,9 +10,9 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as ExportPayload;
 
 describe('test user fixture', () => {
   it('uses the current import schema and normalized settings', () => {
-    expect(fixture.version).toBe(8);
+    expect(fixture.version).toBe(9);
     const settings = normalizeSettings(fixture.settings);
-    expect(settings.settingsVersion).toBe(12);
+    expect(settings.settingsVersion).toBe(13);
     expect(settings.firstUse).toMatchObject({ status: 'completed', lastStep: 'overview', overviewSeen: true });
     expect(settings.focusOutcomeCriterion).not.toBe('');
     expect(settings.focusReviewDate).toBe('2026-08-15');

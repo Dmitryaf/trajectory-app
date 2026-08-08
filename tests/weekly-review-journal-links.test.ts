@@ -34,7 +34,7 @@ describe('weekly review journal links', () => {
 
   it('saves only explicitly dated and classified items', async () => {
     const { store, wrapper } = setup();
-    expect(wrapper.text()).toContain('только из восстановленной недели: 27 июля — 2 августа 2026 г.');
+    expect(wrapper.text()).toContain('только из периода обзора: 27 июля — 2 августа 2026 г.');
     const items = wrapper.findAll('.weekly-review-journal__item');
     const result = items[0]!;
     const event = items[1]!;
@@ -64,6 +64,20 @@ describe('weekly review journal links', () => {
       note: '',
     });
     expect(event.text()).toContain('Уже есть в Журнале');
+  });
+
+  it('does not offer dates after an incomplete review boundary', async () => {
+    const { wrapper } = setup();
+    await wrapper.setProps({
+      review: {
+        ...emptyWeeklyReview('2026-07-27'),
+        coveredThrough: '2026-07-31',
+        results: ['Закончил черновик'],
+      },
+    });
+
+    expect(wrapper.text()).toContain('27 июля — 31 июля 2026 г.');
+    expect(wrapper.get('input[type="date"]').attributes('max')).toBe('2026-07-31');
   });
 
   it('does not create a duplicate with the same date and normalized title', async () => {

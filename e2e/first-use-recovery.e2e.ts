@@ -4,7 +4,10 @@ test('saves and resumes the first week recovery on a small screen', async ({ pag
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { name: 'Соберите последнюю завершённую неделю' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Соберите недавнюю неделю' })).toBeVisible();
+  await expect(page.getByRole('radio', { name: /Эта неделя/ })).toBeVisible();
+  await expect(page.getByRole('radio', { name: /Прошлая неделя/ })).toBeVisible();
+  await page.getByRole('radio', { name: /Эта неделя/ }).click();
   await expect(page.locator('.checkin-grid')).toBeHidden();
   await page.getByRole('button', { name: 'Начать обзор' }).click();
   await expect(page.getByRole('heading', { name: 'Что вам удалось закончить или получить?' })).toBeVisible();
@@ -78,7 +81,7 @@ test('saves and resumes the first week recovery on a small screen', async ({ pag
 
   await page.locator('.bottom-nav a[href="/"]').click();
   await page.locator('.bottom-nav a[href="/week"]').click();
-  await expect(page.locator('.period-nav__label')).toContainText('Ваша первая заполненная неделя');
+  await expect(page.locator('.period-nav__label')).toContainText('Ваш первый обзор недели');
   await expect(page.locator('#first-use-overview').getByText('К середине недели было мало сил')).toBeVisible();
 
   await page.getByRole('button', { name: 'Следующий период' }).click();

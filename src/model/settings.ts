@@ -18,11 +18,12 @@ import type {
 
 export const defaultSettings: AppSettings = {
   id: 'main',
-  settingsVersion: 12,
+  settingsVersion: 13,
   introSeen: false,
   firstUse: {
     status: 'not_started',
     weekStart: '',
+    periodEnd: '',
     lastStep: 'choice',
     overviewSeen: false,
     updatedAt: '',
@@ -56,7 +57,8 @@ export const defaultSettings: AppSettings = {
   experimentHistory: [],
 };
 
-type LegacyAppSettings = Partial<AppSettings> & {
+type LegacyAppSettings = Omit<Partial<AppSettings>, 'firstUse'> & {
+  firstUse?: Partial<FirstUseState>;
   customEveningFactorOptions?: unknown;
 };
 
@@ -143,14 +145,28 @@ function normalizeFirstUseState(value: unknown, isNewInstall: boolean): FirstUse
   const weekStart = validDate(source.weekStart);
   if ((status === 'in_progress' || status === 'completed') && !weekStart) return fallback;
   const hasRecoveryWeek = status === 'in_progress' || status === 'completed';
+  const periodEnd = validRecoveryPeriodEnd(source.periodEnd, weekStart);
 
   return {
     status,
     weekStart: hasRecoveryWeek ? weekStart : '',
+    periodEnd: hasRecoveryWeek ? periodEnd || recoveryWeekEnd(weekStart) : '',
     lastStep: hasRecoveryWeek && isFirstUseStep(source.lastStep) ? source.lastStep : 'choice',
     overviewSeen: status === 'completed' || source.overviewSeen === true,
     updatedAt: typeof source.updatedAt === 'string' ? source.updatedAt : '',
   };
+}
+
+function validRecoveryPeriodEnd(value: unknown, weekStart: string): string {
+  const periodEnd = validDate(value);
+  if (!periodEnd || !weekStart) return '';
+  return periodEnd >= weekStart && periodEnd <= recoveryWeekEnd(weekStart) ? periodEnd : '';
+}
+
+function recoveryWeekEnd(weekStart: string): string {
+  const date = new Date(`${weekStart}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + 6);
+  return date.toISOString().slice(0, 10);
 }
 
 function isFirstUseStatus(value: unknown): value is FirstUseStatus {

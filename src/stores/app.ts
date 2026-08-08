@@ -165,7 +165,7 @@ export const useAppStore = defineStore('app', {
     },
     exportData(): ExportPayload {
       return {
-        version: 8,
+        version: 9,
         exportedAt: new Date().toISOString(),
         dailyEntries: this.dailyEntries,
         results: this.results,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { contextFactorOptions, normalizeDailyEntry, normalizeSettings } from '../src/types';
+import { contextFactorOptions, normalizeDailyEntry, normalizeSettings, normalizeWeeklyReview } from '../src/types';
 import { contextFactorLabel } from '../src/services/analytics';
 
 describe('settings migrations', () => {
@@ -16,7 +16,7 @@ describe('settings migrations', () => {
     });
 
     expect(settings.customCareerOptions).toEqual([]);
-    expect(settings.settingsVersion).toBe(12);
+    expect(settings.settingsVersion).toBe(13);
     expect(settings.introSeen).toBe(false);
     expect(settings.firstUse.status).toBe('available');
     expect(settings.activeDailyBlocks).toContain('context');
@@ -42,6 +42,7 @@ describe('settings migrations', () => {
       firstUse: {
         status: 'in_progress',
         weekStart: '2026-07-20',
+        periodEnd: '2026-07-24',
         lastStep: 'state_context',
         overviewSeen: false,
         updatedAt: '2026-07-27T10:00:00.000Z',
@@ -52,6 +53,7 @@ describe('settings migrations', () => {
       firstUse: {
         status: 'in_progress',
         weekStart: '20.07.2026',
+        periodEnd: '2026-07-24',
         lastStep: 'highlights',
         overviewSeen: false,
         updatedAt: '',
@@ -61,11 +63,33 @@ describe('settings migrations', () => {
     expect(inProgress.firstUse).toEqual({
       status: 'in_progress',
       weekStart: '2026-07-20',
+      periodEnd: '2026-07-24',
       lastStep: 'state_context',
       overviewSeen: false,
       updatedAt: '2026-07-27T10:00:00.000Z',
     });
     expect(invalid.firstUse).toEqual(expect.objectContaining({ status: 'available', weekStart: '', lastStep: 'choice' }));
+  });
+
+  it('gives old first-use progress its completed calendar-week boundary', () => {
+    const settings = normalizeSettings({
+      settingsVersion: 12,
+      firstUse: {
+        status: 'completed',
+        weekStart: '2026-07-20',
+        lastStep: 'overview',
+        overviewSeen: true,
+        updatedAt: '',
+      },
+    });
+
+    expect(settings.firstUse.periodEnd).toBe('2026-07-26');
+  });
+
+  it('keeps only an evidenced boundary inside the review week', () => {
+    expect(normalizeWeeklyReview({ weekStart: '2026-07-20', coveredThrough: '2026-07-24' }).coveredThrough).toBe('2026-07-24');
+    expect(normalizeWeeklyReview({ weekStart: '2026-07-20', coveredThrough: '2026-07-27' }).coveredThrough).toBe('');
+    expect(normalizeWeeklyReview({ weekStart: '2026-07-20' }).coveredThrough).toBe('');
   });
 
   it('keeps optional goal evidence and ignores an invalid review date', () => {
