@@ -425,6 +425,15 @@
 .secondary-button {
   color: var(--navy);
   background: #e9eeea;
+  text-decoration: none;
+}
+.context-action {
+  min-height: 40px;
+  padding: 9px 13px;
+  border-radius: 12px;
+  box-shadow: none;
+  font-size: 13px;
+  line-height: 1.2;
 }
 .danger-button {
   color: #a6392c;

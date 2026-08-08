@@ -183,7 +183,7 @@ async function requestPasswordReset() {
         <section class="auth-preview" aria-labelledby="auth-preview-title">
           <div class="auth-preview__heading">
             <div>
-              <span>Пример, не ваши данные</span>
+              <span>Пример</span>
               <h2 id="auth-preview-title">Как одна неделя складывается в общую картину</h2>
             </div>
           </div>

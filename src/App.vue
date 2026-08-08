@@ -49,6 +49,11 @@ function handleOnline() {
   void refreshCloudAfterResume(currentCloudRefreshState(), true);
 }
 
+async function keepUnauthenticatedRouteAtEntry() {
+  if (!auth.initialized || !auth.requiresAuth || auth.isAuthenticated || auth.recoveryRequired) return;
+  if (router.currentRoute.value.path !== '/') await router.replace('/');
+}
+
 onMounted(async () => {
   window.addEventListener('focus', handleWindowFocus);
   window.addEventListener('online', handleOnline);
@@ -56,6 +61,8 @@ onMounted(async () => {
   await auth.init();
   if (auth.recoveryRequired && router.currentRoute.value.path !== '/password-reset') {
     await router.replace('/password-reset');
+  } else {
+    await keepUnauthenticatedRouteAtEntry();
   }
   if (canOpenApp.value) await loadAppData();
 });
@@ -82,6 +89,11 @@ watch(
       await router.replace('/password-reset');
     }
   },
+);
+
+watch(
+  () => [auth.initialized, auth.requiresAuth, auth.isAuthenticated, auth.recoveryRequired, router.currentRoute.value.path] as const,
+  () => void keepUnauthenticatedRouteAtEntry(),
 );
 
 async function loadAppData() {

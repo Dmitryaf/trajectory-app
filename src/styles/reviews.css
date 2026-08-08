@@ -375,6 +375,16 @@
   margin: 6px 0 0;
   color: var(--muted);
 }
+.recovered-week-link {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+.recovered-week-link .context-action {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
 .weekly-review-overview {
   display: grid;
   gap: 10px;
@@ -508,6 +518,10 @@
   color: #a44343;
 }
 @media (max-width: 720px) {
+  .recovered-week-link {
+    align-items: stretch;
+    flex-direction: column;
+  }
   .restored-week-overview {
     padding: 20px;
   }

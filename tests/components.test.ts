@@ -150,7 +150,8 @@ describe('beta authentication', () => {
     const wrapper = mount(AuthGate, { global: { plugins: [pinia] } });
 
     expect(wrapper.text()).toContain('Увидьте, чем были наполнены ваши дни, недели и месяцы');
-    expect(wrapper.text()).toContain('Пример, не ваши данные');
+    expect(wrapper.text()).toContain('Пример');
+    expect(wrapper.text()).not.toContain('не ваши данные');
     expect(wrapper.text()).toContain('Приложение не оценивает ваши дни');
     expect(wrapper.text()).toContain('Короткие записи за несколько дней');
     expect(readFirstUseFunnel().map((event) => event.name)).toContain('first_use_presentation_viewed');

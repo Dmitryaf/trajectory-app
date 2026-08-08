@@ -65,11 +65,12 @@ describe('daily entry scenario', () => {
 
     expect(wrapper.text()).toContain('Отметьте несколько деталей сегодняшнего дня');
     expect(wrapper.text()).toContain('Разделы на главной можно добавить или убрать в настройках');
-    expect(wrapper.text()).toContain('Настроить блоки на главной');
+    expect(wrapper.text()).toContain('Настроить блоки');
     expect(wrapper.text()).toContain('Зачем это заполнять?');
     expect(wrapper.text()).not.toContain('Вчера без записи');
     expect(wrapper.find('.quick-capture').exists()).toBe(false);
     expect(wrapper.text()).toContain('Сначала выберите, над чем сейчас хотите работать.');
+    expect(wrapper.get('#goal-actions .context-action').text()).toBe('Выбрать цель');
     expect(wrapper.text()).not.toContain('Конкретное действие');
   });
 
@@ -915,6 +916,19 @@ describe('period review navigation', () => {
     expect(reviewForm.findAll('input')).toHaveLength(6);
     expect(reviewForm.text()).toContain('До трёх событий, решений или мыслей');
     expect((reviewForm.findAll('textarea')[0]!.element as HTMLTextAreaElement).value).toBe('К середине недели было мало сил');
+  });
+
+  it('explains that the recovered overview belongs to a different week', () => {
+    const { pinia, store } = createStore();
+    store.weeklyReviews = [{ ...emptyWeeklyReview('2026-07-13'), results: ['Закончил черновик'] }];
+    const wrapper = mount(WeekView, {
+      global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } },
+    });
+
+    const notice = wrapper.get('.recovered-week-link');
+    expect(notice.text()).toContain('Ваш первый обзор сохранён');
+    expect(notice.text()).toContain('Сейчас открыта другая неделя');
+    expect(notice.get('a').attributes('href')).toBe('/week?week=2026-07-13#first-use-overview');
   });
 
   it('links the week and month summaries to their review forms', () => {

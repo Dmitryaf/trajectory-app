@@ -82,6 +82,7 @@ describe('first-use week recovery', () => {
     );
     expect(store.settings.firstUse.lastStep).toBe('highlights');
     expect(wrapper.text()).toContain('Что важного произошло?');
+    expect(wrapper.get('#first-use-highlights').attributes('placeholder')).toBeUndefined();
     expect(readFirstUseFunnel().map((event) => event.name)).toContain('first_use_first_answer_saved');
   });
 
@@ -161,7 +162,27 @@ describe('first-use week recovery', () => {
     expect(wrapper.get('.first-use-recovery__footer .primary-button').attributes('disabled')).toBeUndefined();
     await wrapper.get('.first-use-recovery__footer .primary-button').trigger('click');
 
+    expect(store.saveReview).toHaveBeenLastCalledWith(
+      expect.objectContaining({ weekStart, results: ['Закончил черновик'], highlights: ['Поговорил с другом'] }),
+    );
     expect(store.settings.firstUse).toMatchObject({ status: 'completed', lastStep: 'overview', overviewSeen: true });
+  });
+
+  it('explains how the next-week change will be used later', async () => {
+    const { pinia, store } = setupStore();
+    store.settings.firstUse = {
+      status: 'in_progress',
+      weekStart: '2026-07-27',
+      lastStep: 'decision',
+      overviewSeen: false,
+      updatedAt: '',
+    };
+    const wrapper = mount(FirstUseRecovery, { global: { plugins: [pinia] } });
+
+    await wrapper.findAll('.first-use-recovery__choices button')[1]!.trigger('click');
+
+    expect(wrapper.text()).toContain('Какое одно изменение хотите попробовать на следующей неделе?');
+    expect(wrapper.text()).toContain('этот ответ появится как ваше прошлое решение');
   });
 
   it('reopens completed answers when editing is requested from the week overview', async () => {
