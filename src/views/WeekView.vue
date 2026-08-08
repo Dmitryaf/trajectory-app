@@ -5,6 +5,8 @@ import type { EChartsCoreOption } from 'echarts/core';
 import EChartPanel from '../components/charts/EChartPanel.vue';
 import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
+import WeeklyReviewJournalLinks from '../components/WeeklyReviewJournalLinks.vue';
+import WeeklyReviewOverview from '../components/WeeklyReviewOverview.vue';
 import {
   actionDirectionLabel,
   buildReviewCues,
@@ -18,7 +20,7 @@ import {
   summarize,
   weekSummaryText,
 } from '../services/analytics';
-import { addDays, endOfWeek, formatDate, formatMinutes, startOfWeek, todayKey } from '../services/dates';
+import { addDays, endOfWeek, formatDate, formatMinutes, fromDateKey, startOfWeek, todayKey, toDateKey } from '../services/dates';
 import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../features/export/browser';
 import { experimentDecisionLabel } from '../features/experiments/model';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
@@ -33,8 +35,15 @@ import {
   type WeeklyReview,
 } from '../types';
 
+const props = defineProps<{ initialWeek?: string }>();
 const store = useAppStore();
-const anchor = ref(todayKey());
+
+function validAnchor(value: string | undefined) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return todayKey();
+  return toDateKey(fromDateKey(value)) === value ? value : todayKey();
+}
+
+const anchor = ref(validAnchor(props.initialWeek));
 const start = computed(() => startOfWeek(anchor.value));
 const end = computed(() => endOfWeek(anchor.value));
 const archiveEnd = computed(() => (end.value > todayKey() ? todayKey() : end.value));
@@ -101,7 +110,15 @@ const reviewCues = computed(() =>
 );
 const reviewQuestions = buildReviewQuestions('week');
 const previousReview = computed(() => store.reviewByWeek(addDays(start.value, -7)));
-const hasSavedReview = computed(() => Boolean(store.reviewByWeek(start.value)));
+const savedReview = computed(() => store.reviewByWeek(start.value));
+const hasSavedReview = computed(() => Boolean(savedReview.value));
+const isRecoveredReview = computed(
+  () =>
+    Boolean(savedReview.value) &&
+    store.settings.firstUse.weekStart === start.value &&
+    store.settings.firstUse.overviewSeen &&
+    (store.settings.firstUse.status === 'in_progress' || store.settings.firstUse.status === 'completed'),
+);
 const hasDailyData = computed(() => summary.value.coveredEntriesCount > 0);
 const hasJournalData = computed(() => results.value.length > 0 || lifeEvents.value.length > 0);
 const hasPeriodData = computed(() => hasDailyData.value || hasJournalData.value || hasSavedReview.value);
@@ -269,8 +286,16 @@ const review = reactive<WeeklyReview>(emptyWeeklyReview(start.value));
 function loadReview() {
   const existing = store.reviewByWeek(start.value);
   Object.assign(review, emptyWeeklyReview(start.value), existing ? plainCopy(existing) : {});
+  while (review.results.length < 3) review.results.push('');
+  while (review.highlights.length < 3) review.highlights.push('');
 }
 watch(start, loadReview, { immediate: true });
+watch(
+  () => props.initialWeek,
+  (value) => {
+    anchor.value = validAnchor(value);
+  },
+);
 
 async function saveReview() {
   await store.saveReview(plainCopy(review));
@@ -313,7 +338,7 @@ function downloadJson() {
       <div>
         <span class="eyebrow">Недельная сводка</span>
         <h1>Неделя</h1>
-        <p>Посмотрите, что повторялось за неделю, и выберите одно изменение на следующую.</p>
+        <p>Посмотрите, чем была наполнена неделя, и решите, хотите ли что-то менять.</p>
       </div>
       <a v-if="hasPeriodData" class="review-jump" href="#week-review"
         >{{ reviewAvailable ? 'К обзору' : 'Обзор позже' }} <span aria-hidden="true">↓</span></a
@@ -338,6 +363,22 @@ function downloadJson() {
         <strong>За эту неделю нет дневных записей</strong>
         <p>Итоги, события и сохранённый обзор показаны ниже. Данных для сравнения сна, состояния и действий пока нет.</p>
       </section>
+
+      <article v-if="isRecoveredReview && savedReview" id="first-use-overview" class="restored-week-overview">
+        <div class="restored-week-overview__heading">
+          <div>
+            <p class="eyebrow">Восстановлено по вашим ответам</p>
+            <h2>Вот чем была наполнена ваша неделя</h2>
+            <p>Здесь собраны ваши факты, важные события и условия недели. Это не оценка и не автоматический вывод.</p>
+          </div>
+        </div>
+        <WeeklyReviewOverview :review="savedReview" />
+        <WeeklyReviewJournalLinks :review="savedReview" />
+        <div class="restored-week-overview__actions">
+          <RouterLink class="primary-button" to="/">Записать сегодняшний день</RouterLink>
+          <RouterLink class="secondary-button" to="/?first-use=edit">Исправить ответы</RouterLink>
+        </div>
+      </article>
 
       <div v-if="hasDailyData" class="metrics-grid">
         <MetricCard
@@ -615,20 +656,30 @@ function downloadJson() {
             placeholder="Сработало, не сработало или данных пока недостаточно — и почему"
           ></textarea>
         </template>
-        <label class="field-label">До трёх важных моментов недели</label>
+        <label class="field-label">До трёх итогов или сделанных дел</label>
         <input
           v-for="(_, index) in review.results"
           :key="index"
           v-model="review.results[index]"
           type="text"
-          :placeholder="`${index + 1}. Итог, мысль или событие`"
+          :placeholder="`${index + 1}. Итог или важный факт`"
         />
+        <label class="field-label">До трёх событий, решений или мыслей</label>
+        <input
+          v-for="(_, index) in review.highlights"
+          :key="`highlight-${index}`"
+          v-model="review.highlights[index]"
+          type="text"
+          :placeholder="`${index + 1}. Что важно запомнить`"
+        />
+        <label class="field-label">Как вы себя чувствовали и что влияло на неделю?</label>
+        <textarea v-model="review.stateContext" rows="2" placeholder="Силы, настроение и важные обстоятельства"></textarea>
         <label class="field-label">Что помогало?</label
         ><textarea v-model="review.support" rows="2" placeholder="Люди, режим, место, привычка или решение"></textarea>
         <label class="field-label">Что мешало сильнее всего?</label
         ><textarea v-model="review.obstacle" rows="2" placeholder="Один главный фактор"></textarea>
-        <label class="field-label">Одно изменение на следующую неделю</label
-        ><textarea v-model="review.nextLever" rows="2" placeholder="Что конкретно изменить, оставить или убрать"></textarea>
+        <label class="field-label">Что продолжить или изменить на следующей неделе?</label
+        ><textarea v-model="review.nextLever" rows="2" placeholder="Можно продолжить как есть или пока ничего не решать"></textarea>
         <label class="field-label">План если-то</label
         ><textarea
           v-model="review.ifThenPlan"

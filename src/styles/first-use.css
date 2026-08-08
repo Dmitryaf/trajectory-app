@@ -188,27 +188,6 @@
 .first-use-overview > p {
   margin-bottom: 8px;
 }
-.first-use-overview__group {
-  padding: 13px 15px;
-  border-radius: 14px;
-  background: #f3f7f4;
-}
-.first-use-overview__group > strong {
-  display: block;
-  margin-bottom: 4px;
-  color: var(--navy);
-  font-size: 13px;
-}
-.first-use-overview__group p,
-.first-use-overview__group ul {
-  margin: 0;
-  color: #45554f;
-  font-size: 13px;
-  line-height: 1.5;
-}
-.first-use-overview__group ul {
-  padding-left: 18px;
-}
 .first-use-overview__empty {
   padding: 13px 15px;
   border-radius: 14px;

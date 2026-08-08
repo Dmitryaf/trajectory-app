@@ -27,6 +27,7 @@ function setupStore() {
 describe('first-use week recovery', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
+    window.history.replaceState({}, '', '/');
   });
 
   it('starts with the previous completed week', async () => {
@@ -116,5 +117,25 @@ describe('first-use week recovery', () => {
     await wrapper.get('.first-use-recovery__footer .primary-button').trigger('click');
 
     expect(store.settings.firstUse).toMatchObject({ status: 'completed', lastStep: 'overview', overviewSeen: true });
+  });
+
+  it('reopens completed answers when editing is requested from the week overview', async () => {
+    window.history.replaceState({}, '', '/?first-use=edit');
+    const { pinia, store } = setupStore();
+    store.settings.firstUse = {
+      status: 'completed',
+      weekStart: '2026-07-27',
+      lastStep: 'overview',
+      overviewSeen: true,
+      updatedAt: '',
+    };
+    store.weeklyReviews = [{ ...emptyWeeklyReview('2026-07-27'), results: ['Закончил черновик'] }];
+
+    const wrapper = mount(FirstUseRecovery, { global: { plugins: [pinia] } });
+    await vi.waitFor(() => expect(store.settings.firstUse.status).toBe('in_progress'));
+
+    expect(store.settings.firstUse).toMatchObject({ lastStep: 'results', overviewSeen: true });
+    expect(wrapper.text()).toContain('Что вам удалось закончить или получить?');
+    expect((wrapper.get('#first-use-results').element as HTMLTextAreaElement).value).toBe('Закончил черновик');
   });
 });

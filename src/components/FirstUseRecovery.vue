@@ -1,13 +1,18 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, getCurrentInstance, onMounted, reactive, ref, watch } from 'vue';
+import type { Router } from 'vue-router';
 import { addDays, formatDate, startOfWeek, todayKey } from '../services/dates';
 import { plainCopy } from '../services/plain';
 import { useAppStore } from '../stores/app';
 import { emptyWeeklyReview, type FirstUseState, type FirstUseStep, type WeeklyReview } from '../types';
+import WeeklyReviewJournalLinks from './WeeklyReviewJournalLinks.vue';
+import WeeklyReviewOverview from './WeeklyReviewOverview.vue';
 
 type DecisionChoice = '' | 'continue' | 'change' | 'later';
 
 const store = useAppStore();
+const router = getCurrentInstance()?.appContext.config.globalProperties.$router as Router | undefined;
+const editRequested = new URL(window.location.href).searchParams.get('first-use') === 'edit';
 const hiddenForNow = ref(false);
 const saving = ref(false);
 const saveError = ref('');
@@ -51,6 +56,10 @@ watch(
   { immediate: true },
 );
 
+onMounted(() => {
+  if (editRequested && firstUse.value.status === 'completed' && firstUse.value.weekStart) void reopenRecovery();
+});
+
 function lines(value: string) {
   return value
     .split('\n')
@@ -89,6 +98,24 @@ async function beginRecovery() {
     await saveFirstUse({ status: 'in_progress', weekStart, lastStep: 'results', overviewSeen: false, updatedAt: '' });
   } catch {
     saveError.value = 'Не удалось начать. Попробуйте ещё раз.';
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function reopenRecovery() {
+  saveError.value = '';
+  saving.value = true;
+  try {
+    await saveFirstUse({
+      status: 'in_progress',
+      weekStart: firstUse.value.weekStart,
+      lastStep: 'results',
+      overviewSeen: true,
+      updatedAt: '',
+    });
+  } catch {
+    saveError.value = 'Не удалось открыть ответы. Попробуйте ещё раз.';
   } finally {
     saving.value = false;
   }
@@ -177,13 +204,15 @@ async function completeRecovery() {
   saveError.value = '';
   saving.value = true;
   try {
+    const weekStart = firstUse.value.weekStart;
     await saveFirstUse({
       status: 'completed',
-      weekStart: firstUse.value.weekStart,
+      weekStart,
       lastStep: 'overview',
       overviewSeen: true,
       updatedAt: '',
     });
+    if (router) await router.push({ path: '/week', query: { week: weekStart }, hash: '#first-use-overview' });
   } catch {
     saveError.value = 'Не удалось завершить обзор. Ответы уже сохранены — попробуйте ещё раз.';
   } finally {
@@ -193,7 +222,23 @@ async function completeRecovery() {
 </script>
 
 <template>
-  <section v-if="isChoice" class="first-use-card first-use-card--choice" aria-labelledby="first-use-choice-title">
+  <section
+    v-if="editRequested && firstUse.status === 'completed'"
+    class="first-use-card first-use-card--choice"
+    aria-labelledby="first-use-edit-title"
+  >
+    <div>
+      <p class="eyebrow">Ответы прошлой недели</p>
+      <h2 id="first-use-edit-title">Открываем сохранённые ответы</h2>
+      <p>Вы сможете пройти по тем же вопросам и исправить нужные пункты.</p>
+    </div>
+    <div v-if="saveError" class="first-use-card__actions">
+      <button class="primary-button" type="button" :disabled="saving" @click="reopenRecovery">Попробовать ещё раз</button>
+    </div>
+    <p v-if="saveError" class="first-use-card__error" role="alert">{{ saveError }}</p>
+  </section>
+
+  <section v-else-if="isChoice" class="first-use-card first-use-card--choice" aria-labelledby="first-use-choice-title">
     <div>
       <p class="eyebrow">Первый обзор</p>
       <h2 id="first-use-choice-title">Соберите картину прошлой недели</h2>
@@ -304,35 +349,8 @@ async function completeRecovery() {
     <div v-else class="first-use-recovery__step first-use-overview">
       <h2 id="first-use-step-title">Вот чем была наполнена ваша неделя</h2>
       <p>Мы собрали ваши ответы вместе. Это не оценка недели, а её факты и важный контекст.</p>
-
-      <div v-if="review.results.some(Boolean)" class="first-use-overview__group">
-        <strong>Итоги</strong>
-        <ul>
-          <li v-for="(item, index) in review.results.filter(Boolean)" :key="`${index}-${item}`">{{ item }}</li>
-        </ul>
-      </div>
-      <div v-if="review.highlights.some(Boolean)" class="first-use-overview__group">
-        <strong>Что произошло</strong>
-        <ul>
-          <li v-for="(item, index) in review.highlights.filter(Boolean)" :key="`${index}-${item}`">{{ item }}</li>
-        </ul>
-      </div>
-      <div v-if="review.stateContext" class="first-use-overview__group">
-        <strong>Как вы себя чувствовали</strong>
-        <p>{{ review.stateContext }}</p>
-      </div>
-      <div v-if="review.support" class="first-use-overview__group">
-        <strong>Что помогало</strong>
-        <p>{{ review.support }}</p>
-      </div>
-      <div v-if="review.obstacle" class="first-use-overview__group">
-        <strong>Что мешало</strong>
-        <p>{{ review.obstacle }}</p>
-      </div>
-      <div v-if="review.nextLever" class="first-use-overview__group">
-        <strong>Ваше решение</strong>
-        <p>{{ review.nextLever }}</p>
-      </div>
+      <WeeklyReviewOverview :review="review" />
+      <WeeklyReviewJournalLinks :review="review" />
 
       <p v-if="meaningfulAnswerCount < 2" class="first-use-overview__empty">
         Чтобы получилась полезная картина, добавьте ещё хотя бы два факта или важных условия недели.

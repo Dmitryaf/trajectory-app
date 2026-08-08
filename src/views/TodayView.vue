@@ -93,8 +93,13 @@ const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.cust
 const activeLifeOptions = computed(() => lifeAreaItems.value.filter((option) => store.settings.activeLifeAreas.includes(option.id)));
 const isToday = computed(() => selectedDate.value === todayKey());
 const isFirstEntry = computed(() => store.loaded && store.dailyEntries.length === 0);
+const firstUseEditRequested = new URL(window.location.href).searchParams.get('first-use') === 'edit';
 const firstUseTakesPriority = computed(
-  () => isToday.value && (store.settings.firstUse.status === 'not_started' || store.settings.firstUse.status === 'in_progress'),
+  () =>
+    isToday.value &&
+    (store.settings.firstUse.status === 'not_started' ||
+      store.settings.firstUse.status === 'in_progress' ||
+      (firstUseEditRequested && store.settings.firstUse.status === 'completed')),
 );
 const hasSelectedFocus = computed(() => Boolean((form.focusTitle || store.settings.activeFocusTitle).trim()));
 const hasRecordedGoalAction = computed(() => form.recordedFields.includes('actionDirection'));

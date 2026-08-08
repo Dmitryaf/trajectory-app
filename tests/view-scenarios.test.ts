@@ -866,6 +866,38 @@ describe('period review navigation', () => {
     expect((month.get('.review-card textarea').element as HTMLTextAreaElement).value).toBe('Важный вывод месяца');
   });
 
+  it('opens the recovered week on its exact dates and keeps all answers editable', () => {
+    const { pinia, store } = createStore();
+    store.weeklyReviews = [
+      {
+        ...emptyWeeklyReview('2026-07-13'),
+        results: ['Закончил черновик'],
+        highlights: ['Состоялся важный разговор'],
+        stateContext: 'К середине недели было мало сил',
+        support: 'Свободный вечер',
+        obstacle: 'Недосып',
+        nextLever: 'Пока без решения',
+      },
+    ];
+    const wrapper = mount(WeekView, {
+      props: { initialWeek: '2026-07-13' },
+      global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } },
+    });
+
+    const overview = wrapper.get('#first-use-overview');
+    expect(overview.text()).toContain('Восстановлено по вашим ответам');
+    expect(overview.text()).toContain('Закончил черновик');
+    expect(overview.text()).toContain('Состоялся важный разговор');
+    expect(overview.text()).toContain('К середине недели было мало сил');
+    expect(overview.get('a[href="/"]').text()).toBe('Записать сегодняшний день');
+    expect(overview.get('a[href="/?first-use=edit"]').text()).toBe('Исправить ответы');
+
+    const reviewForm = wrapper.get('#week-review');
+    expect(reviewForm.findAll('input')).toHaveLength(6);
+    expect(reviewForm.text()).toContain('До трёх событий, решений или мыслей');
+    expect((reviewForm.findAll('textarea')[0]!.element as HTMLTextAreaElement).value).toBe('К середине недели было мало сил');
+  });
+
   it('links the week and month summaries to their review forms', () => {
     vi.setSystemTime(new Date(2026, 7, 30, 12));
     const { pinia, store } = createStore();
