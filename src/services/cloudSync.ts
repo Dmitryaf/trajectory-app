@@ -1,4 +1,4 @@
-import { createClient, type AuthChangeEvent, type Session, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient, isAuthRetryableFetchError, type AuthChangeEvent, type Session, type SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -71,6 +71,16 @@ export async function getVerifiedCloudSession(): Promise<Session | null> {
   if (error) throw error;
 
   return session;
+}
+
+export async function getStartupCloudSession(): Promise<Session | null> {
+  const session = await getCloudSession();
+  if (!session) return null;
+
+  const { error } = await getSupabaseClient().auth.getUser();
+  if (!error || isAuthRetryableFetchError(error)) return session;
+
+  throw error;
 }
 
 export function onCloudAuthChange(callback: (event: AuthChangeEvent, session: Session | null) => void) {
