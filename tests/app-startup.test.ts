@@ -60,6 +60,7 @@ describe('application startup', () => {
 
     expect(router.currentRoute.value.fullPath).toBe('/');
     expect(wrapper.find('.auth-shell').exists()).toBe(true);
+    expect(wrapper.find('.app-main').classes()).toContain('app-main--auth');
     wrapper.unmount();
   });
 

@@ -423,6 +423,9 @@
   margin: 0 auto;
   padding: 22px 24px 120px;
 }
+.app-main--auth {
+  max-width: 1168px;
+}
 .page {
   min-width: 0;
   animation: page-in 0.25s ease-out;
