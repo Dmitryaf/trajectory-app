@@ -247,6 +247,122 @@
 .period-details__content {
   padding: 16px 16px 0;
 }
+.period-records__content {
+  display: grid;
+  gap: 12px;
+  padding-bottom: 16px;
+}
+.period-record-card {
+  min-width: 0;
+  padding: 17px;
+  border: 1px solid #dce7e2;
+  border-radius: 17px;
+  background: linear-gradient(135deg, #fbfdfc, #f4faf7);
+}
+.period-details__content > .period-record-card {
+  margin-bottom: 16px;
+}
+.period-records__content > .period-record-card {
+  margin-bottom: 0;
+}
+.period-record-card--disclosure {
+  padding: 0;
+  overflow: hidden;
+}
+.period-record-card--disclosure > summary {
+  display: grid;
+  gap: 11px;
+  padding: 17px;
+  cursor: pointer;
+  list-style: none;
+}
+.period-record-card--disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.period-record-card--disclosure[open] > summary {
+  border-bottom: 1px solid #dce7e2;
+  background: #fff;
+}
+.period-record-card__heading {
+  display: flex;
+  min-width: 0;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
+.period-record-card__heading h2,
+.period-record-card__heading strong {
+  display: block;
+  margin: 0;
+  color: var(--navy);
+  font-size: 18px;
+  line-height: 1.2;
+}
+.period-record-card__heading .eyebrow {
+  margin-bottom: 5px;
+}
+.period-record-card__breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.period-record-card__breakdown span {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #e8f3ee;
+  color: #3c6659;
+  font-size: 11px;
+  font-weight: 750;
+}
+.period-record-preview {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.period-record-preview li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 9px 10px;
+  border: 1px solid #e1ebe6;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #38564d;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.period-record-preview li > span {
+  color: #298564;
+  font-weight: 850;
+  text-align: center;
+}
+.period-record-preview li > div,
+.period-record-preview small {
+  min-width: 0;
+}
+.period-record-preview small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.period-record-card__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+}
+.period-record-card__details {
+  padding: 16px 17px;
+  background: rgba(255, 255, 255, 0.55);
+}
+.period-record-card__details .archive-pagination {
+  margin-top: 14px;
+}
 .period-review-note {
   scroll-margin-top: 18px;
   padding: 18px 20px;

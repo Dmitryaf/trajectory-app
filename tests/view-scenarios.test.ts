@@ -76,6 +76,10 @@ describe('daily entry scenario', () => {
     expect(wrapper.text()).toContain('Хотите добавить или убрать разделы?');
     expect(wrapper.text()).toContain('Настроить главную');
     expect(wrapper.text()).not.toContain('С чего начать');
+    expect(wrapper.text()).toContain('Состояние и условия');
+    expect(wrapper.text()).toContain('Действия и области жизни');
+    expect(wrapper.text()).toContain('Короткий итог дня');
+    expect(wrapper.text()).not.toContain('Сон перед этой датой и сколько сил было в этот день.');
   });
 
   it('shows only one current cue and keeps a weekly plan visible without daily tracking', () => {
@@ -445,8 +449,11 @@ describe('journal scenarios', () => {
 
     await wrapper.get('[aria-label="Поиск по итогам"]').setValue('');
     await wrapper.get('.result-composer input[type="text"]').setValue('Закончил курс');
-    await wrapper.get('.result-note-field summary').trigger('click');
-    await wrapper.get('.result-note-field textarea').setValue('Собрал финальный проект и получил обратную связь');
+    const note = wrapper.get('.result-composer textarea');
+    await note.setValue('Собрал финальный проект и получил обратную связь');
+    await note.setValue('');
+    expect(note.element).toBeInstanceOf(HTMLTextAreaElement);
+    await note.setValue('Собрал финальный проект и получил обратную связь');
     await wrapper.get('.result-composer .primary-button').trigger('click');
     await flushPromises();
 
@@ -722,6 +729,80 @@ describe('trends scenarios', () => {
 });
 
 describe('period review navigation', () => {
+  it('uses the compact archive previews for weekly results and events', () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [{ ...emptyDailyEntry('2026-07-21'), importantFact: 'Есть данные недели' }];
+    store.results = Array.from({ length: 4 }, (_, index) => ({
+      id: index + 1,
+      date: '2026-07-21',
+      area: 'career' as const,
+      title: `Итог недели ${index + 1}`,
+      note: '',
+      createdAt: `2026-07-21T${String(12 + index).padStart(2, '0')}:00:00.000Z`,
+    }));
+    store.lifeEvents = Array.from({ length: 4 }, (_, index) => ({
+      id: index + 1,
+      date: '2026-07-21',
+      type: 'event' as const,
+      title: `Событие недели ${index + 1}`,
+      note: '',
+      createdAt: `2026-07-21T${String(12 + index).padStart(2, '0')}:00:00.000Z`,
+    }));
+    const wrapper = mount(WeekView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+
+    expect(wrapper.get('.period-record-card__link[href="/results?from=2026-07-20&to=2026-07-21"]').text()).toContain('Открыть все итоги');
+    expect(wrapper.get('.period-record-card__link[href="/events?from=2026-07-20&to=2026-07-21"]').text()).toContain('Открыть все события');
+    expect(wrapper.text()).toContain('Итог недели 3');
+    expect(wrapper.text()).not.toContain('Итог недели 4');
+    expect(wrapper.text()).toContain('Событие недели 3');
+    expect(wrapper.text()).not.toContain('Событие недели 4');
+  });
+
+  it('keeps monthly records compact and routes complete archives to the selected period', async () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = Array.from({ length: 9 }, (_, index) => {
+      const day = String(21 - index).padStart(2, '0');
+      return {
+        ...emptyDailyEntry(`2026-07-${day}`),
+        actionDirection: index % 2 === 0 ? 'preparation' : 'external',
+        actionNote: `Действие ${index + 1}`,
+        contextNote: `Контекст ${index + 1}`,
+      };
+    });
+    store.results = Array.from({ length: 4 }, (_, index) => ({
+      id: index + 1,
+      date: `2026-07-${String(21 - index).padStart(2, '0')}`,
+      area: 'career' as const,
+      title: `Итог месяца ${index + 1}`,
+      note: '',
+      createdAt: `2026-07-${String(21 - index).padStart(2, '0')}T12:00:00.000Z`,
+    }));
+    store.lifeEvents = Array.from({ length: 4 }, (_, index) => ({
+      id: index + 1,
+      date: `2026-07-${String(21 - index).padStart(2, '0')}`,
+      type: 'event' as const,
+      title: `Событие месяца ${index + 1}`,
+      note: '',
+      createdAt: `2026-07-${String(21 - index).padStart(2, '0')}T12:00:00.000Z`,
+    }));
+    const wrapper = mount(MonthView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+
+    expect(wrapper.text()).toContain('Показать графики месяца');
+    expect(wrapper.text()).toContain('Показать записи месяца');
+    expect(wrapper.get('.period-record-card__link[href="/results?from=2026-07-01&to=2026-07-21"]').text()).toContain('Открыть все итоги');
+    expect(wrapper.get('.period-record-card__link[href="/events?from=2026-07-01&to=2026-07-21"]').text()).toContain('Открыть все события');
+    expect(wrapper.text()).toContain('Итог месяца 3');
+    expect(wrapper.text()).not.toContain('Итог месяца 4');
+
+    const actions = wrapper.get('.period-record-card--disclosure');
+    await actions.get('summary').trigger('click');
+    expect(actions.findAll('.note-item')).toHaveLength(7);
+    expect(actions.text()).toContain('1 из 2');
+    await actions.get('[aria-label="Страницы действий месяца"] button:last-child').trigger('click');
+    expect(actions.text()).toContain('Действие 8');
+    expect(actions.text()).toContain('Действие 9');
+  });
+
   it('links the week and month summaries to their review forms', () => {
     vi.setSystemTime(new Date(2026, 7, 30, 12));
     const { pinia, store } = createStore();

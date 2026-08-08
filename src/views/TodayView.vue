@@ -208,7 +208,11 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
         <span class="eyebrow">Ежедневная запись</span>
         <h1>{{ isToday ? 'Сегодня' : formatDate(selectedDate, { day: 'numeric', month: 'long', weekday: 'long' }) }}</h1>
       </div>
-      <input :value="selectedDate" class="date-input" type="date" :max="todayKey()" aria-label="Дата записи" @change="selectDate" />
+      <label class="entry-date-picker">
+        <span>Запись за дату</span>
+        <input :value="selectedDate" class="date-input" type="date" :max="todayKey()" aria-label="Дата записи" @change="selectDate" />
+        <small>Можно выбрать любой прошедший день</small>
+      </label>
     </div>
 
     <nav v-if="!isFirstEntry" class="quick-capture" aria-label="Быстрые записи">
@@ -275,12 +279,15 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
     </section>
 
     <form class="checkin-grid" :class="{ 'checkin-grid--dirty': isDirty }" @submit.prevent="save">
+      <div v-if="blockIsActive('sleep') || blockIsActive('context')" class="checkin-group-heading">
+        <span>Состояние и условия</span>
+      </div>
       <article v-if="blockIsActive('sleep')" id="sleep" class="form-card form-card--sleep form-card--wide">
         <div class="form-card__heading">
           <span class="section-icon section-icon--purple">◒</span>
           <div>
             <h2>Сон и состояние</h2>
-            <p>Сон перед этой датой и сколько сил было в этот день.</p>
+            <p v-if="isFirstEntry">Сон перед этой датой и сколько сил было в этот день.</p>
           </div>
           <RouterLink class="card-settings-link" to="/settings#daily-blocks">Настроить</RouterLink>
         </div>
@@ -320,7 +327,7 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
           <span class="section-icon section-icon--orange">⌁</span>
           <div>
             <h2>Что могло повлиять на день</h2>
-            <p>Отметьте условия, которые стоит сравнить с другими днями.</p>
+            <p v-if="isFirstEntry">Отметьте условия, которые стоит сравнить с другими днями.</p>
           </div>
           <RouterLink class="card-settings-link" to="/settings#context-options">Настроить</RouterLink>
         </div>
@@ -361,12 +368,15 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
         </div>
       </article>
 
+      <div class="checkin-group-heading">
+        <span>Действия и области жизни</span>
+      </div>
       <article v-if="blockIsActive('career')" id="career" class="form-card">
         <div class="form-card__heading">
           <span class="section-icon section-icon--blue">↗</span>
           <div>
             <h2>Работа</h2>
-            <p>Что сегодня было связано с работой, учёбой для неё или своим проектом.</p>
+            <p v-if="isFirstEntry">Что сегодня было связано с работой, учёбой для неё или своим проектом.</p>
           </div>
           <RouterLink class="card-settings-link" to="/settings#work-settings">Настроить</RouterLink>
         </div>
@@ -453,7 +463,7 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
           <span class="section-icon section-icon--green">△</span>
           <div>
             <h2>Физическая активность</h2>
-            <p>Отметьте, была ли сегодня активность и какая.</p>
+            <p v-if="isFirstEntry">Отметьте, была ли сегодня активность и какая.</p>
           </div>
           <RouterLink class="card-settings-link" to="/settings#movement-options">Настроить</RouterLink>
         </div>
@@ -515,7 +525,7 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
           <span class="section-icon section-icon--amber">✦</span>
           <div>
             <h2>Области жизни</h2>
-            <p>Что было заметной частью этого дня. Это не оценка успешности.</p>
+            <p v-if="isFirstEntry">Что было заметной частью этого дня. Это не оценка успешности.</p>
           </div>
           <RouterLink class="card-settings-link" to="/settings#life-areas">Настроить</RouterLink>
         </div>
@@ -556,12 +566,15 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
         </div>
       </article>
 
+      <div class="checkin-group-heading">
+        <span>Короткий итог дня</span>
+      </div>
       <article class="form-card">
         <div class="form-card__heading">
           <span class="section-icon">·</span>
           <div>
             <h2>Заметка дня</h2>
-            <p>Что сегодня произошло или что вы заметили — даже если день был обычным.</p>
+            <p v-if="isFirstEntry">Что сегодня произошло или что вы заметили — даже если день был обычным.</p>
           </div>
         </div>
         <textarea

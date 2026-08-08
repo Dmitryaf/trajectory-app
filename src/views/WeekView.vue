@@ -24,12 +24,20 @@ import { experimentDecisionLabel } from '../features/experiments/model';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { plainCopy } from '../services/plain';
 import { useAppStore } from '../stores/app';
-import { contextFactorOptions, emptyWeeklyReview, lifeAreaOptions, type WeeklyReview } from '../types';
+import {
+  contextFactorOptions,
+  emptyWeeklyReview,
+  lifeAreaOptions,
+  lifeEventTypeOptions,
+  resultAreaOptions,
+  type WeeklyReview,
+} from '../types';
 
 const store = useAppStore();
 const anchor = ref(todayKey());
 const start = computed(() => startOfWeek(anchor.value));
 const end = computed(() => endOfWeek(anchor.value));
+const archiveEnd = computed(() => (end.value > todayKey() ? todayKey() : end.value));
 const days = computed(() => Array.from({ length: 7 }, (_, index) => addDays(start.value, index)));
 const entries = computed(() => entriesForWeek(store.dailyEntries, anchor.value));
 const entriesByDate = computed(() => new Map(entries.value.map((entry) => [entry.date, entry])));
@@ -43,8 +51,26 @@ const externalCareerIds = computed(() => [
 ]);
 const summary = computed(() => summarize(entries.value, externalCareerIds.value));
 const results = computed(() => resultsForPeriod(store.results, start.value, end.value));
+const displayedResults = computed(() => results.value.slice(0, 3));
 const lifeEvents = computed(() =>
   store.lifeEvents.filter((event) => event.date >= start.value && event.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)),
+);
+const displayedLifeEvents = computed(() => lifeEvents.value.slice(0, 3));
+const resultAreaItems = computed(() => [...resultAreaOptions, ...store.settings.customLifeAreaOptions]);
+const resultAreaSummary = computed(() => {
+  const knownAreas = resultAreaItems.value;
+  const unknownAreas = [...new Set(results.value.map((result) => result.area))]
+    .filter((area) => !knownAreas.some((option) => option.id === area))
+    .map((area) => ({ id: area, label: area, icon: '·' }));
+
+  return [...knownAreas, ...unknownAreas]
+    .map((option) => ({ ...option, count: results.value.filter((result) => result.area === option.id).length }))
+    .filter((option) => option.count > 0);
+});
+const eventTypeSummary = computed(() =>
+  lifeEventTypeOptions
+    .map((option) => ({ ...option, count: lifeEvents.value.filter((event) => event.type === option.id).length }))
+    .filter((option) => option.count > 0),
 );
 const activeExperimentWeek = computed(() => {
   const experiment = store.settings.experiment;
@@ -510,35 +536,52 @@ function downloadJson() {
             </div>
           </article>
 
-          <article v-if="results.length" class="dashboard-card">
-            <div class="section-heading">
+          <article v-if="results.length" class="period-record-card">
+            <div class="period-record-card__heading">
               <div>
                 <span class="eyebrow">Завершённые факты</span>
                 <h2>Итоги недели</h2>
               </div>
+              <span class="count-badge">{{ results.length }}</span>
             </div>
-            <ul class="compact-results">
-              <li v-for="result in results" :key="result.id"><span>✓</span>{{ result.title }}</li>
+            <div class="period-record-card__breakdown" aria-label="Итоги по областям">
+              <span v-for="area in resultAreaSummary" :key="area.id">{{ area.icon }} {{ area.label }} · {{ area.count }}</span>
+            </div>
+            <ul class="period-record-preview">
+              <li v-for="result in displayedResults" :key="result.id ?? result.createdAt">
+                <span>✓</span>
+                <div>
+                  {{ result.title }}<small>{{ formatDate(result.date, { weekday: 'short', day: 'numeric' }) }}</small>
+                </div>
+              </li>
             </ul>
+            <RouterLink class="secondary-button period-record-card__link" :to="`/results?from=${start}&to=${archiveEnd}`">
+              Открыть все итоги
+            </RouterLink>
           </article>
 
-          <article v-if="lifeEvents.length" class="dashboard-card">
-            <div class="section-heading">
+          <article v-if="lifeEvents.length" class="period-record-card">
+            <div class="period-record-card__heading">
               <div>
                 <span class="eyebrow">Важный контекст</span>
                 <h2>События недели</h2>
               </div>
               <span class="count-badge">{{ lifeEvents.length }}</span>
             </div>
-            <div class="note-list">
-              <article v-for="event in lifeEvents" :key="event.id" class="note-item">
-                <time>{{ formatDate(event.date, { weekday: 'short', day: 'numeric' }) }}</time>
-                <p>
-                  <strong>{{ event.title }}</strong
-                  ><span v-if="event.note"><br />{{ event.note }}</span>
-                </p>
-              </article>
+            <div class="period-record-card__breakdown" aria-label="События по типам">
+              <span v-for="type in eventTypeSummary" :key="type.id">{{ type.icon }} {{ type.label }} · {{ type.count }}</span>
             </div>
+            <ul class="period-record-preview">
+              <li v-for="event in displayedLifeEvents" :key="event.id ?? event.createdAt">
+                <span>{{ eventTypeSummary.find((type) => type.id === event.type)?.icon ?? '·' }}</span>
+                <div>
+                  {{ event.title }}<small>{{ formatDate(event.date, { weekday: 'short', day: 'numeric' }) }}</small>
+                </div>
+              </li>
+            </ul>
+            <RouterLink class="secondary-button period-record-card__link" :to="`/events?from=${start}&to=${archiveEnd}`">
+              Открыть все события
+            </RouterLink>
           </article>
         </div>
       </details>

@@ -5,6 +5,7 @@ import type { EChartsCoreOption } from 'echarts/core';
 import EChartPanel from '../components/charts/EChartPanel.vue';
 import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
+import ArchivePagination from '../features/journal/ArchivePagination.vue';
 import {
   actionDirectionLabel,
   buildObservations,
@@ -30,15 +31,25 @@ import {
 } from '../services/dates';
 import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../features/export/browser';
 import { buildWeightSeries } from '../features/analytics/weightSeries';
+import { pageCount, pageItems } from '../services/pagination';
 import { useAppStore } from '../stores/app';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { plainCopy } from '../services/plain';
-import { contextFactorOptions, emptyMonthlyReview, lifeAreaOptions, type MonthlyReview } from '../types';
+import {
+  actionDirectionOptions,
+  contextFactorOptions,
+  emptyMonthlyReview,
+  lifeAreaOptions,
+  lifeEventTypeOptions,
+  resultAreaOptions,
+  type MonthlyReview,
+} from '../types';
 
 const store = useAppStore();
 const anchor = ref(todayKey());
 const start = computed(() => startOfMonth(anchor.value));
 const end = computed(() => endOfMonth(anchor.value));
+const archiveEnd = computed(() => (end.value > todayKey() ? todayKey() : end.value));
 const entries = computed(() => entriesForMonth(store.dailyEntries, anchor.value));
 const externalCareerIds = computed(() => [
   'external',
@@ -51,11 +62,11 @@ const contextFactorItems = computed(() => [...contextFactorOptions, ...store.set
 const observations = computed(() => buildObservations(entries.value, contextFactorItems.value));
 const factors = computed(() => factorSummaries(entries.value, contextFactorItems.value));
 const results = computed(() => resultsForPeriod(store.results, start.value, end.value));
-const showAllResults = ref(false);
-const displayedResults = computed(() => (showAllResults.value ? results.value : results.value.slice(0, 5)));
+const displayedResults = computed(() => results.value.slice(0, 3));
 const lifeEvents = computed(() =>
   store.lifeEvents.filter((event) => event.date >= start.value && event.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)),
 );
+const displayedLifeEvents = computed(() => lifeEvents.value.slice(0, 3));
 const reviewCues = computed(() =>
   buildReviewCues('month', entries.value, results.value, lifeEvents.value, externalCareerIds.value, contextFactorItems.value),
 );
@@ -175,6 +186,37 @@ const actionNotes = computed(() =>
   entries.value.filter((entry) => entry.actionDirection !== null).sort((a, b) => b.date.localeCompare(a.date)),
 );
 const specialDays = computed(() => entries.value.filter((entry) => entry.specialDay !== null).sort((a, b) => b.date.localeCompare(a.date)));
+const contextEntries = computed(() =>
+  entries.value.filter((entry) => entry.contextNote.trim() || entry.specialDay !== null).sort((a, b) => b.date.localeCompare(a.date)),
+);
+const actionPage = ref(1);
+const contextPage = ref(1);
+const recordPageSize = 7;
+const visibleActionNotes = computed(() => pageItems(actionNotes.value, actionPage.value, recordPageSize));
+const actionPageCount = computed(() => pageCount(actionNotes.value.length, recordPageSize));
+const visibleContextEntries = computed(() => pageItems(contextEntries.value, contextPage.value, recordPageSize));
+const contextPageCount = computed(() => pageCount(contextEntries.value.length, recordPageSize));
+const actionDirectionSummary = computed(() =>
+  actionDirectionOptions
+    .map((option) => ({ ...option, count: actionNotes.value.filter((entry) => entry.actionDirection === option.id).length }))
+    .filter((option) => option.count > 0),
+);
+const resultAreaItems = computed(() => [...resultAreaOptions, ...store.settings.customLifeAreaOptions]);
+const resultAreaSummary = computed(() => {
+  const knownAreas = resultAreaItems.value;
+  const unknownAreas = [...new Set(results.value.map((result) => result.area))]
+    .filter((area) => !knownAreas.some((option) => option.id === area))
+    .map((area) => ({ id: area, label: area, icon: '·' }));
+
+  return [...knownAreas, ...unknownAreas]
+    .map((option) => ({ ...option, count: results.value.filter((result) => result.area === option.id).length }))
+    .filter((option) => option.count > 0);
+});
+const eventTypeSummary = computed(() =>
+  lifeEventTypeOptions
+    .map((option) => ({ ...option, count: lifeEvents.value.filter((event) => event.type === option.id).length }))
+    .filter((option) => option.count > 0),
+);
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
 const activeAreas = computed(() => lifeAreaItems.value.filter((option) => store.settings.activeLifeAreas.includes(option.id)));
 const monthCalendarDays = computed(() => {
@@ -208,10 +250,17 @@ const review = reactive<MonthlyReview>(emptyMonthlyReview(start.value));
 function loadReview() {
   const existing = store.reviewByMonth(start.value);
   Object.assign(review, emptyMonthlyReview(start.value), existing ? plainCopy(existing) : {});
-  showAllResults.value = false;
+  actionPage.value = 1;
+  contextPage.value = 1;
 }
 
 watch(start, loadReview, { immediate: true });
+watch(actionPageCount, (count) => {
+  actionPage.value = Math.min(actionPage.value, count);
+});
+watch(contextPageCount, (count) => {
+  contextPage.value = Math.min(contextPage.value, count);
+});
 
 async function saveReview() {
   await store.saveMonthlyReview(plainCopy(review));
@@ -496,7 +545,7 @@ function shiftMonth(offset: number) {
       </article>
 
       <details class="period-details">
-        <summary>Показать графики и записи месяца</summary>
+        <summary>Показать графики месяца</summary>
         <div class="period-details__content">
           <article class="dashboard-card">
             <div class="section-heading">
@@ -548,132 +597,136 @@ function shiftMonth(offset: number) {
             </div>
           </article>
 
-          <div class="month-layout">
-            <article class="dashboard-card">
-              <div class="section-heading">
-                <div>
-                  <span class="eyebrow">Сколько дней появлялось</span>
-                  <h2>Области жизни</h2>
-                </div>
-              </div>
-              <div class="coverage-list">
-                <div v-for="area in activeAreas" :key="area.id" class="coverage-row">
-                  <span class="coverage-row__label"
-                    ><i>{{ area.icon }}</i
-                    >{{ area.label }}</span
-                  >
-                  <div class="coverage-row__track">
-                    <span
-                      :style="{
-                        width: `${summary.lifeAreaSamples ? ((summary.areaCounts[area.id] ?? 0) / summary.lifeAreaSamples) * 100 : 0}%`,
-                      }"
-                    ></span>
-                  </div>
-                  <strong>{{ summary.areaCounts[area.id] ?? 0 }}/{{ summary.lifeAreaSamples }}</strong>
-                </div>
-              </div>
-            </article>
-
-            <article class="dashboard-card">
-              <div class="section-heading">
-                <div>
-                  <span class="eyebrow">Завершённые факты</span>
-                  <h2>Итоги месяца</h2>
-                </div>
-                <span class="count-badge">{{ results.length }}</span>
-              </div>
-              <TransitionGroup v-if="results.length" name="reveal-list" tag="ul" class="compact-results"
-                ><li v-for="result in displayedResults" :key="result.id ?? result.createdAt">
-                  <span>✓</span>
-                  <div>
-                    {{ result.title }}<small>{{ formatDate(result.date, { day: 'numeric', month: 'short' }) }}</small>
-                  </div>
-                </li></TransitionGroup
-              >
-              <button
-                v-if="results.length > 5"
-                class="secondary-button load-more"
-                type="button"
-                :aria-expanded="showAllResults"
-                @click="showAllResults = !showAllResults"
-              >
-                {{ showAllResults ? 'Свернуть' : `Показать все (${results.length})` }}
-              </button>
-              <div v-if="!results.length" class="empty-state empty-state--compact"><p>Пока нет зафиксированных итогов.</p></div>
-            </article>
-          </div>
-
-          <article v-if="actionNotes.length" class="dashboard-card">
+          <article class="dashboard-card">
             <div class="section-heading">
               <div>
-                <span class="eyebrow">Действия по цели</span>
-                <h2>Конкретные действия и подготовка</h2>
+                <span class="eyebrow">Сколько дней появлялось</span>
+                <h2>Области жизни</h2>
               </div>
-              <span class="count-badge">{{ actionNotes.length }}</span>
             </div>
-            <div class="note-list note-list--columns">
-              <article v-for="entry in actionNotes" :key="entry.date" class="note-item">
-                <time>{{ formatDate(entry.date, { day: 'numeric', month: 'short' }) }}</time>
-                <p>
-                  <strong>{{ actionDirectionLabel(entry.actionDirection) }}</strong
-                  ><span v-if="entry.focusTitle"><br />Цель: {{ entry.focusTitle }}</span
-                  ><span v-if="entry.actionNote"><br />{{ entry.actionNote }}</span>
-                </p>
-              </article>
+            <div class="coverage-list">
+              <div v-for="area in activeAreas" :key="area.id" class="coverage-row">
+                <span class="coverage-row__label"
+                  ><i>{{ area.icon }}</i
+                  >{{ area.label }}</span
+                >
+                <div class="coverage-row__track">
+                  <span
+                    :style="{
+                      width: `${summary.lifeAreaSamples ? ((summary.areaCounts[area.id] ?? 0) / summary.lifeAreaSamples) * 100 : 0}%`,
+                    }"
+                  ></span>
+                </div>
+                <strong>{{ summary.areaCounts[area.id] ?? 0 }}/{{ summary.lifeAreaSamples }}</strong>
+              </div>
             </div>
           </article>
+        </div>
+      </details>
 
-          <article v-if="lifeEvents.length" class="dashboard-card">
-            <div class="section-heading">
+      <details class="period-details period-records">
+        <summary>Показать записи месяца</summary>
+        <div class="period-details__content period-records__content">
+          <article v-if="results.length" class="period-record-card">
+            <div class="period-record-card__heading">
+              <div>
+                <span class="eyebrow">Завершённые факты</span>
+                <h2>Итоги месяца</h2>
+              </div>
+              <span class="count-badge">{{ results.length }}</span>
+            </div>
+            <div class="period-record-card__breakdown" aria-label="Итоги по областям">
+              <span v-for="area in resultAreaSummary" :key="area.id">{{ area.icon }} {{ area.label }} · {{ area.count }}</span>
+            </div>
+            <ul class="period-record-preview">
+              <li v-for="result in displayedResults" :key="result.id ?? result.createdAt">
+                <span>✓</span>
+                <div>
+                  {{ result.title }}<small>{{ formatDate(result.date, { day: 'numeric', month: 'short' }) }}</small>
+                </div>
+              </li>
+            </ul>
+            <RouterLink class="secondary-button period-record-card__link" :to="`/results?from=${start}&to=${archiveEnd}`">
+              Открыть все итоги
+            </RouterLink>
+          </article>
+
+          <details v-if="actionNotes.length" class="period-record-card period-record-card--disclosure">
+            <summary>
+              <span class="period-record-card__heading">
+                <span><span class="eyebrow">Действия по цели</span><strong>Конкретные действия и подготовка</strong></span>
+                <span class="count-badge">{{ actionNotes.length }}</span>
+              </span>
+              <span class="period-record-card__breakdown" aria-label="Действия по направлению">
+                <span v-for="direction in actionDirectionSummary" :key="direction.id"
+                  >{{ direction.icon }} {{ direction.label }} · {{ direction.count }}</span
+                >
+              </span>
+            </summary>
+            <div class="period-record-card__details">
+              <div class="note-list note-list--columns">
+                <article v-for="entry in visibleActionNotes" :key="entry.date" class="note-item">
+                  <time>{{ formatDate(entry.date, { day: 'numeric', month: 'short' }) }}</time>
+                  <p>
+                    <strong>{{ actionDirectionLabel(entry.actionDirection) }}</strong
+                    ><span v-if="entry.focusTitle"><br />Цель: {{ entry.focusTitle }}</span
+                    ><span v-if="entry.actionNote"><br />{{ entry.actionNote }}</span>
+                  </p>
+                </article>
+              </div>
+              <ArchivePagination v-model:page="actionPage" :page-count="actionPageCount" context-label="действий месяца" />
+            </div>
+          </details>
+
+          <article v-if="lifeEvents.length" class="period-record-card">
+            <div class="period-record-card__heading">
               <div>
                 <span class="eyebrow">Важный контекст</span>
                 <h2>События месяца</h2>
               </div>
               <span class="count-badge">{{ lifeEvents.length }}</span>
             </div>
-            <div class="note-list note-list--columns">
-              <article v-for="event in lifeEvents" :key="event.id" class="note-item">
-                <time>{{ formatDate(event.date, { day: 'numeric', month: 'short' }) }}</time>
-                <p>
-                  <strong>{{ event.title }}</strong
-                  ><span v-if="event.note"><br />{{ event.note }}</span>
-                </p>
-              </article>
+            <div class="period-record-card__breakdown" aria-label="События по типам">
+              <span v-for="type in eventTypeSummary" :key="type.id">{{ type.icon }} {{ type.label }} · {{ type.count }}</span>
             </div>
+            <ul class="period-record-preview">
+              <li v-for="event in displayedLifeEvents" :key="event.id ?? event.createdAt">
+                <span>{{ eventTypeSummary.find((type) => type.id === event.type)?.icon ?? '·' }}</span>
+                <div>
+                  {{ event.title }}<small>{{ formatDate(event.date, { day: 'numeric', month: 'short' }) }}</small>
+                </div>
+              </li>
+            </ul>
+            <RouterLink class="secondary-button period-record-card__link" :to="`/events?from=${start}&to=${archiveEnd}`">
+              Открыть все события
+            </RouterLink>
           </article>
 
-          <article v-if="contextNotes.length" class="dashboard-card">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Условия дня</span>
-                <h2>Заметки за месяц</h2>
+          <details v-if="contextEntries.length" class="period-record-card period-record-card--disclosure">
+            <summary>
+              <span class="period-record-card__heading">
+                <span><span class="eyebrow">Условия и исключения</span><strong>Контекст месяца</strong></span>
+                <span class="count-badge">{{ contextEntries.length }}</span>
+              </span>
+              <span class="period-record-card__breakdown">
+                <span>Заметок: {{ contextNotes.length }}</span
+                ><span>Особых дней: {{ specialDays.length }}</span>
+              </span>
+            </summary>
+            <div class="period-record-card__details">
+              <div class="note-list note-list--columns">
+                <article v-for="entry in visibleContextEntries" :key="entry.date" class="note-item">
+                  <time>{{ formatDate(entry.date, { day: 'numeric', month: 'short' }) }}</time>
+                  <p>
+                    <strong v-if="entry.specialDay">{{ specialDayLabel(entry.specialDay) }}</strong
+                    ><span v-if="entry.specialDayNote"><br />{{ entry.specialDayNote }}</span
+                    ><span v-if="entry.contextNote"><br />{{ entry.contextNote }}</span>
+                  </p>
+                </article>
               </div>
-              <span class="count-badge">{{ contextNotes.length }}</span>
+              <ArchivePagination v-model:page="contextPage" :page-count="contextPageCount" context-label="записей контекста" />
             </div>
-            <div class="note-list note-list--columns">
-              <article v-for="entry in contextNotes" :key="entry.date" class="note-item">
-                <time>{{ formatDate(entry.date, { day: 'numeric', month: 'short' }) }}</time>
-                <p>{{ entry.contextNote }}</p>
-              </article>
-            </div>
-          </article>
-
-          <article v-if="specialDays.length" class="dashboard-card">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Поправка на контекст</span>
-                <h2>Особые дни месяца</h2>
-              </div>
-              <span class="count-badge">{{ specialDays.length }}</span>
-            </div>
-            <div class="special-day-list special-day-list--columns">
-              <article v-for="entry in specialDays" :key="entry.date" class="special-day-item">
-                <time>{{ formatDate(entry.date, { day: 'numeric', month: 'short' }) }}</time>
-                <strong>{{ specialDayLabel(entry.specialDay) }}</strong>
-                <p v-if="entry.specialDayNote">{{ entry.specialDayNote }}</p>
-              </article>
-            </div>
-          </article>
+          </details>
         </div>
       </details>
     </template>

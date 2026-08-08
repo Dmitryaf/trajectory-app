@@ -4,6 +4,7 @@ import AutoGrowTextarea from '../components/AutoGrowTextarea.vue';
 import ChipGroup from '../components/ChipGroup.vue';
 import ArchiveDateRange from '../features/journal/ArchiveDateRange.vue';
 import ArchivePagination from '../features/journal/ArchivePagination.vue';
+import { archiveRangeFromQuery } from '../features/journal/archiveQuery';
 import { useArchiveList } from '../features/journal/useArchiveList';
 import { formatDate, todayKey } from '../services/dates';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
@@ -19,6 +20,7 @@ const editingId = ref<number | null>(null);
 const editingCreatedAt = ref('');
 const saving = ref(false);
 const expandedNotes = ref<string[]>([]);
+const archiveRange = archiveRangeFromQuery();
 const recentResults = computed(() => [...store.results].sort((a, b) => b.date.localeCompare(a.date)));
 const resultOptions = computed(() => [...resultAreaOptions, ...store.settings.customLifeAreaOptions]);
 const resultEntryOptions = computed(() => [
@@ -37,6 +39,7 @@ const {
 } = useArchiveList(recentResults, {
   getSearchText: (result) => `${result.title} ${result.note}`,
   getCategory: (result) => result.area,
+  ...archiveRange,
 });
 
 async function saveResult() {
@@ -144,15 +147,12 @@ function toggleNote(result: ResultRecord) {
           {{ editingId === null ? 'Добавить итог' : 'Сохранить итог' }}
         </button>
       </div>
-      <details class="result-note-field" :open="Boolean(note)">
-        <summary>{{ note ? 'Подробности' : 'Добавить подробности' }} <span>необязательно</span></summary>
-        <AutoGrowTextarea
-          v-model="note"
-          :rows="3"
-          :max-length="2000"
-          placeholder="Что произошло, почему это важно или какой контекст стоит сохранить"
-        />
-      </details>
+      <AutoGrowTextarea
+        v-model="note"
+        :rows="4"
+        :max-length="2000"
+        placeholder="Что произошло, почему это важно или какой контекст стоит сохранить"
+      />
       <button v-if="editingId !== null" class="secondary-button composer-cancel" type="button" @click="resetForm">
         Отменить редактирование
       </button>

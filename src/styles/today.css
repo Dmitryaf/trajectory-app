@@ -1,10 +1,10 @@
 .page--today > .page-heading {
   position: relative;
-  min-height: 176px;
+  min-height: 140px;
   align-items: center;
   overflow: hidden;
   margin-top: 4px;
-  padding: 28px 30px 46px;
+  padding: 20px 30px 28px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 30px;
   background: linear-gradient(135deg, #102d2c 0%, #19443f 60%, #22564d 100%);
@@ -44,6 +44,19 @@
 }
 .page--today > .page-heading .eyebrow {
   color: #89dfbd;
+}
+.entry-date-picker {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  color: #d9f4e8;
+  font-size: 12px;
+  font-weight: 800;
+}
+.entry-date-picker small {
+  color: rgba(217, 244, 232, 0.78);
+  font-size: 11px;
+  font-weight: 650;
 }
 .page--today > .page-heading .date-input {
   border-color: rgba(255, 255, 255, 0.2);
@@ -139,6 +152,9 @@
   line-height: 1.55;
 }
 .period-empty-guide .secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin-top: 12px;
 }
 .journal-guide-card {
@@ -257,4 +273,23 @@
 .checkin-grid {
   display: grid;
   gap: 20px;
+}
+.checkin-group-heading {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 2px -6px;
+  color: #4f6a61;
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.checkin-group-heading::after {
+  content: '';
+  min-width: 24px;
+  height: 1px;
+  flex: 1;
+  background: #d8e4df;
 }

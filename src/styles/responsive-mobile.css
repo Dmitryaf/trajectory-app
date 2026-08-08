@@ -108,9 +108,9 @@
     margin: 10px 2px 22px;
   }
   .page--today > .page-heading {
-    min-height: 156px;
+    min-height: 132px;
     margin: 4px 0 0;
-    padding: 24px 22px 42px;
+    padding: 20px 18px 30px;
     border-radius: 24px;
   }
   .page--today > .page-heading h1 {
@@ -168,6 +168,13 @@
   .page-heading .date-input::-webkit-calendar-picker-indicator {
     margin: 0;
     opacity: 1;
+  }
+  .entry-date-picker {
+    gap: 3px;
+  }
+  .entry-date-picker > span,
+  .entry-date-picker > small {
+    display: none;
   }
   h1 {
     font-size: 36px;
@@ -509,6 +516,19 @@
   }
   .month-layout {
     grid-template-columns: 1fr;
+  }
+  .period-record-card,
+  .period-record-card--disclosure > summary,
+  .period-record-card__details {
+    padding-right: 13px;
+    padding-left: 13px;
+  }
+  .period-record-card__heading {
+    gap: 10px;
+  }
+  .period-record-card__heading h2,
+  .period-record-card__heading strong {
+    font-size: 16px;
   }
   .section-heading:has(.event-picker) {
     align-items: stretch;
