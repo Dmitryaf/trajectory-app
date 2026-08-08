@@ -4,7 +4,7 @@ import {
   clearCloudSyncMeta,
   clearLocalCloudSession,
   deleteCloudAccount,
-  getVerifiedCloudSession,
+  getStartupCloudSession,
   isBetaSignupConfigured,
   isCloudAuthRequired,
   isCloudSyncConfigured,
@@ -74,7 +74,7 @@ export const useAuthStore = defineStore('auth', {
           }
         });
         unsubscribeAuth = () => listener.data.subscription.unsubscribe();
-        this.session = await getVerifiedCloudSession();
+        this.session = await getStartupCloudSession();
         this.initialized = true;
       } catch (error) {
         this.session = null;
