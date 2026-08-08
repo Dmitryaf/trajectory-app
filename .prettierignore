@@ -11,6 +11,7 @@ supabase/.temp/
 test-results/
 
 package-lock.json
+.ai-rules/lock.json
 demo/*.json
 public/sw.js
 public/workbox-*.js
