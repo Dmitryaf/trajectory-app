@@ -26,7 +26,12 @@ const router = createRouter({
     { path: '/', component: () => import('./views/TodayView.vue'), meta: { title: 'Сегодня' } },
     { path: '/results', component: () => import('./views/ResultsView.vue'), meta: { title: 'Итоги' } },
     { path: '/events', component: () => import('./views/EventsView.vue'), meta: { title: 'События' } },
-    { path: '/week', component: () => import('./views/WeekView.vue'), meta: { title: 'Неделя' } },
+    {
+      path: '/week',
+      component: () => import('./views/WeekView.vue'),
+      props: (route) => ({ initialWeek: typeof route.query.week === 'string' ? route.query.week : '' }),
+      meta: { title: 'Неделя' },
+    },
     { path: '/month', component: () => import('./views/MonthView.vue'), meta: { title: 'Месяц' } },
     { path: '/trends', component: () => import('./views/TrendsView.vue'), meta: { title: 'Тренды' } },
     { path: '/more', component: () => import('./views/MoreView.vue'), meta: { title: 'Журнал' } },

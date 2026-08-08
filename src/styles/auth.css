@@ -1,8 +1,155 @@
 .auth-shell {
   display: grid;
   min-height: calc(100vh - 210px);
-  place-items: center;
+  place-items: start center;
   padding: 22px 0 48px;
+}
+.auth-layout {
+  width: 100%;
+  display: grid;
+  gap: 24px;
+  align-items: start;
+}
+.auth-presentation {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(199, 221, 212, 0.95);
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at 100% 0, rgba(73, 201, 155, 0.18), transparent 35%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(238, 248, 243, 0.96));
+  box-shadow: 0 26px 70px rgba(16, 45, 44, 0.12);
+}
+.auth-presentation__intro {
+  padding: 34px 34px 28px;
+}
+.auth-presentation__intro h1 {
+  max-width: 700px;
+  margin: 0 0 16px;
+  font-size: clamp(38px, 5vw, 52px);
+  line-height: 0.98;
+}
+.auth-presentation__intro > p:not(.eyebrow) {
+  max-width: 670px;
+  margin: 0;
+  color: #53625e;
+  font-size: 16px;
+}
+.auth-presentation__intro .auth-presentation__choice {
+  margin-top: 12px;
+  color: var(--navy);
+  font-weight: 750;
+}
+.auth-presentation__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+.auth-presentation__actions button {
+  min-width: 150px;
+}
+.auth-preview {
+  padding: 26px 34px 34px;
+  border-top: 1px solid rgba(199, 221, 212, 0.95);
+  background: rgba(255, 255, 255, 0.62);
+}
+.auth-preview__heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+.auth-preview__heading span {
+  display: inline-flex;
+  margin-bottom: 8px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #e6f4ee;
+  color: #276755;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.auth-preview__heading h2 {
+  max-width: 620px;
+  margin: 0;
+  font-size: clamp(23px, 3vw, 31px);
+}
+.auth-preview__tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  padding: 5px;
+  border-radius: 15px;
+  background: #e9f0ec;
+}
+.auth-preview__tabs button {
+  min-width: 0;
+  min-height: 42px;
+  padding: 8px 6px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: #62726d;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+.auth-preview__tabs button.is-active {
+  background: var(--navy);
+  color: #fff;
+  box-shadow: 0 7px 16px rgba(16, 45, 44, 0.18);
+}
+.auth-preview__content {
+  min-height: 276px;
+  margin-top: 12px;
+  padding: 22px;
+  border: 1px solid rgba(209, 225, 218, 0.96);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+}
+.auth-preview__content .eyebrow {
+  margin-bottom: 5px;
+}
+.auth-preview__content h3 {
+  margin: 0 0 5px;
+  color: var(--navy);
+  font-size: 19px;
+}
+.auth-preview__content > p:not(.eyebrow) {
+  margin: 0;
+  font-size: 13px;
+}
+.auth-preview__content ul {
+  display: grid;
+  gap: 8px;
+  margin: 17px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.auth-preview__content li {
+  display: grid;
+  grid-template-columns: minmax(88px, 0.36fr) minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f3f7f4;
+  color: #42534e;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.auth-preview__content li strong {
+  color: var(--navy);
+}
+.auth-preview__content > small {
+  display: block;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
 }
 .auth-card {
   position: relative;
@@ -54,6 +201,15 @@
 .auth-card__brand h1 {
   margin: 0;
   font-size: 38px;
+}
+.auth-card__brand .eyebrow {
+  margin-bottom: 4px;
+}
+.auth-card__brand h2 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 25px;
+  line-height: 1.1;
 }
 .auth-card__brand p:last-child {
   margin-bottom: 0;
@@ -115,6 +271,20 @@
 .auth-card p,
 .auth-footnote {
   overflow-wrap: anywhere;
+}
+@media (min-width: 880px) {
+  .auth-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
+  }
+  .auth-card {
+    width: 100%;
+  }
+}
+@media (min-width: 1000px) {
+  .auth-layout {
+    width: min(1120px, calc(100vw - 48px));
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
+  }
 }
 .auth-footnote {
   margin: 14px 0 0;

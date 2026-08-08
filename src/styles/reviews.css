@@ -247,6 +247,122 @@
 .period-details__content {
   padding: 16px 16px 0;
 }
+.period-records__content {
+  display: grid;
+  gap: 12px;
+  padding-bottom: 16px;
+}
+.period-record-card {
+  min-width: 0;
+  padding: 17px;
+  border: 1px solid #dce7e2;
+  border-radius: 17px;
+  background: linear-gradient(135deg, #fbfdfc, #f4faf7);
+}
+.period-details__content > .period-record-card {
+  margin-bottom: 16px;
+}
+.period-records__content > .period-record-card {
+  margin-bottom: 0;
+}
+.period-record-card--disclosure {
+  padding: 0;
+  overflow: hidden;
+}
+.period-record-card--disclosure > summary {
+  display: grid;
+  gap: 11px;
+  padding: 17px;
+  cursor: pointer;
+  list-style: none;
+}
+.period-record-card--disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.period-record-card--disclosure[open] > summary {
+  border-bottom: 1px solid #dce7e2;
+  background: #fff;
+}
+.period-record-card__heading {
+  display: flex;
+  min-width: 0;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
+.period-record-card__heading h2,
+.period-record-card__heading strong {
+  display: block;
+  margin: 0;
+  color: var(--navy);
+  font-size: 18px;
+  line-height: 1.2;
+}
+.period-record-card__heading .eyebrow {
+  margin-bottom: 5px;
+}
+.period-record-card__breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.period-record-card__breakdown span {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #e8f3ee;
+  color: #3c6659;
+  font-size: 11px;
+  font-weight: 750;
+}
+.period-record-preview {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.period-record-preview li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 9px 10px;
+  border: 1px solid #e1ebe6;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #38564d;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.period-record-preview li > span {
+  color: #298564;
+  font-weight: 850;
+  text-align: center;
+}
+.period-record-preview li > div,
+.period-record-preview small {
+  min-width: 0;
+}
+.period-record-preview small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.period-record-card__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+}
+.period-record-card__details {
+  padding: 16px 17px;
+  background: rgba(255, 255, 255, 0.55);
+}
+.period-record-card__details .archive-pagination {
+  margin-top: 14px;
+}
 .period-review-note {
   scroll-margin-top: 18px;
   padding: 18px 20px;
@@ -258,4 +374,154 @@
 .period-review-note p {
   margin: 6px 0 0;
   color: var(--muted);
+}
+.weekly-review-overview {
+  display: grid;
+  gap: 10px;
+}
+.weekly-review-overview__group {
+  padding: 13px 15px;
+  border: 1px solid #e0ebe6;
+  border-radius: 14px;
+  background: #f3f7f4;
+}
+.weekly-review-overview__group > strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--navy);
+  font-size: 13px;
+}
+.weekly-review-overview__group p,
+.weekly-review-overview__group ul {
+  margin: 0;
+  color: #45554f;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.weekly-review-overview__group ul {
+  padding-left: 18px;
+}
+.restored-week-overview {
+  margin: 18px 0;
+  padding: 24px;
+  border: 1px solid #bfe0d2;
+  border-radius: 24px;
+  background: radial-gradient(circle at 100% 0, rgba(73, 201, 155, 0.16), transparent 34%), linear-gradient(145deg, #fff, #f3faf7);
+  box-shadow: 0 18px 44px rgba(16, 45, 44, 0.1);
+  scroll-margin-top: 96px;
+}
+.restored-week-overview__heading {
+  display: flex;
+  gap: 18px;
+  align-items: start;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.restored-week-overview__heading h2 {
+  margin: 0 0 7px;
+  font-size: clamp(26px, 4vw, 36px);
+}
+.restored-week-overview__heading p:not(.eyebrow) {
+  max-width: 620px;
+  margin: 0;
+}
+.restored-week-overview__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+.weekly-review-journal {
+  margin-top: 14px;
+  border: 1px solid #d9e5e0;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+}
+.weekly-review-journal > summary {
+  padding: 14px 16px;
+  color: var(--navy);
+  font-weight: 800;
+  cursor: pointer;
+}
+.weekly-review-journal__content {
+  padding: 0 16px 16px;
+}
+.weekly-review-journal__content > p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.weekly-review-journal__list {
+  display: grid;
+  gap: 10px;
+}
+.weekly-review-journal__item {
+  padding: 13px;
+  border: 1px solid #e2e9e6;
+  border-radius: 14px;
+  background: #fff;
+}
+.weekly-review-journal__item-heading {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+.weekly-review-journal__item-heading span,
+.weekly-review-journal__fields label > span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+.weekly-review-journal__item-heading strong {
+  color: var(--navy);
+  font-size: 14px;
+}
+.weekly-review-journal__fields {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.7fr) minmax(180px, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+.weekly-review-journal__fields label {
+  display: grid;
+  gap: 5px;
+}
+.weekly-review-journal__fields input,
+.weekly-review-journal__fields select {
+  width: 100%;
+  min-width: 0;
+}
+.weekly-review-journal__fields .secondary-button {
+  min-height: 44px;
+}
+.weekly-review-journal__status,
+.weekly-review-journal__error {
+  margin: 8px 0 0;
+  font-size: 12px;
+  font-weight: 750;
+}
+.weekly-review-journal__status {
+  color: #16715e;
+}
+.weekly-review-journal__error {
+  color: #a44343;
+}
+@media (max-width: 720px) {
+  .restored-week-overview {
+    padding: 20px;
+  }
+  .restored-week-overview__actions {
+    flex-direction: column;
+  }
+  .restored-week-overview__actions .primary-button,
+  .restored-week-overview__actions .secondary-button {
+    width: 100%;
+  }
+  .weekly-review-journal__fields {
+    grid-template-columns: 1fr;
+  }
+  .weekly-review-journal__fields .secondary-button {
+    width: 100%;
+  }
 }

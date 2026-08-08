@@ -24,6 +24,22 @@ test('keeps every primary screen inside the minimum viewport width', async ({ pa
   }
 });
 
+test('keeps empty-period actions below their explanatory text', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+
+  for (const route of ['/week', '/month']) {
+    await page.goto(route);
+    const paragraph = page.locator('.period-empty-guide p');
+    const action = page.locator('.period-empty-guide .secondary-button');
+    const paragraphBox = await paragraph.boundingBox();
+    const actionBox = await action.boundingBox();
+
+    expect(paragraphBox).not.toBeNull();
+    expect(actionBox).not.toBeNull();
+    expect(actionBox!.y).toBeGreaterThanOrEqual(paragraphBox!.y + paragraphBox!.height + 10);
+  }
+});
+
 test('keeps mobile form controls inside their cards', async ({ page }) => {
   for (const width of [320, 390]) {
     await page.setViewportSize({ width, height: 844 });
@@ -39,6 +55,39 @@ test('keeps mobile form controls inside their cards', async ({ page }) => {
     );
     expect(overflow, `form controls should stay inside cards at ${width}px`).toEqual([]);
   }
+});
+
+test('keeps the returning daily form compact and visibly grouped', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/');
+
+  const headingBox = await page.locator('.page--today > .page-heading').boundingBox();
+  expect(headingBox).not.toBeNull();
+  expect(headingBox!.height).toBeLessThanOrEqual(150);
+  await expect(page.getByText('Запись за дату', { exact: true })).toBeVisible();
+  await expect(page.getByText('Состояние и условия', { exact: true })).toBeVisible();
+  await expect(page.getByText('Действия и области жизни', { exact: true })).toBeVisible();
+  await expect(page.getByText('Короткий итог дня', { exact: true })).toBeVisible();
+  await expect(page.getByText('Сон перед этой датой и сколько сил было в этот день.', { exact: true })).toBeHidden();
+});
+
+test('keeps result details editable when Backspace clears the field', async ({ page }) => {
+  await page.goto('/results');
+  const details = page.locator('.result-composer textarea');
+
+  await expect(details).toBeVisible();
+  await expect(details).toHaveAttribute('rows', '4');
+  await details.fill('Т');
+  await details.press('Backspace');
+  await expect(details).toHaveValue('');
+  await expect(details).toBeFocused();
+  await details.press('Backspace');
+  await expect(page).toHaveURL(/\/results$/);
+  await expect(page.locator('.result-composer details')).toHaveCount(0);
+
+  await page.goto('/events');
+  await expect(page.locator('.result-composer textarea')).toBeVisible();
+  await expect(page.locator('.result-composer textarea')).toHaveAttribute('rows', '4');
 });
 
 test('explains the app from the permanent help button', async ({ page }) => {
@@ -93,6 +142,43 @@ test('opens period review forms from the summary shortcuts', async ({ page }) =>
     await expect(page).toHaveURL(new RegExp(`${target}$`));
     await expect(page.locator(target)).toBeInViewport();
   }
+});
+
+test('keeps monthly records compact and opens the matching archives', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/month');
+  await page.getByRole('button', { name: 'Предыдущий период' }).click();
+  await page.getByText('Показать записи месяца', { exact: true }).click();
+
+  const records = page.locator('.period-records');
+  await expect(records.getByText('Итоги месяца', { exact: true })).toBeVisible();
+  await expect(records.locator('.period-record-preview').first().locator('li')).toHaveCount(3);
+  const lastPreviewBox = await records.locator('.period-record-preview').first().locator('li').last().boundingBox();
+  const archiveLinkBox = await records.getByRole('link', { name: 'Открыть все итоги' }).boundingBox();
+  expect(lastPreviewBox).not.toBeNull();
+  expect(archiveLinkBox).not.toBeNull();
+  expect(archiveLinkBox!.y).toBeGreaterThanOrEqual(lastPreviewBox!.y + lastPreviewBox!.height + 10);
+  await records.getByText('Конкретные действия и подготовка', { exact: true }).click();
+  await expect(records.getByRole('navigation', { name: 'Страницы действий месяца' })).toBeVisible();
+
+  await records.getByRole('link', { name: 'Открыть все итоги' }).click();
+  await expect(page).toHaveURL(/\/results\?from=2026-07-01&to=2026-07-31$/);
+  await expect(page.getByLabel('Начальная дата итогов')).toHaveValue('2026-07-01');
+  await expect(page.getByLabel('Конечная дата итогов')).toHaveValue('2026-07-31');
+});
+
+test('shows weekly results and events as compact archive previews', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/week');
+  await page.getByRole('button', { name: 'Предыдущий период' }).click();
+  await page.getByRole('button', { name: 'Предыдущий период' }).click();
+  await page.getByText('Показать записи и карту недели', { exact: true }).click();
+
+  const records = page.locator('.period-details').filter({ hasText: 'Показать записи и карту недели' });
+  await expect(records.getByText('Итоги недели', { exact: true })).toBeVisible();
+  await expect(records.getByText('События недели', { exact: true })).toBeVisible();
+  await expect(records.getByRole('link', { name: 'Открыть все итоги' })).toHaveAttribute('href', '/results?from=2026-07-20&to=2026-07-26');
+  await expect(records.getByRole('link', { name: 'Открыть все события' })).toHaveAttribute('href', '/events?from=2026-07-20&to=2026-07-26');
 });
 
 test('keeps desktop navigation visible while the page scrolls', async ({ page }) => {

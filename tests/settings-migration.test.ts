@@ -16,8 +16,9 @@ describe('settings migrations', () => {
     });
 
     expect(settings.customCareerOptions).toEqual([]);
-    expect(settings.settingsVersion).toBe(11);
+    expect(settings.settingsVersion).toBe(12);
     expect(settings.introSeen).toBe(false);
+    expect(settings.firstUse.status).toBe('available');
     expect(settings.activeDailyBlocks).toContain('context');
     expect(settings.activeDailyBlocks).toContain('career');
     expect(settings.customContextFactorOptions).toEqual([]);
@@ -31,6 +32,40 @@ describe('settings migrations', () => {
   it('keeps work optional for a new account without changing old account settings', () => {
     expect(normalizeSettings(undefined).activeDailyBlocks).not.toContain('career');
     expect(normalizeSettings({ settingsVersion: 10 }).activeDailyBlocks).toContain('career');
+    expect(normalizeSettings(undefined).firstUse.status).toBe('not_started');
+    expect(normalizeSettings({ settingsVersion: 11 }).firstUse.status).toBe('available');
+  });
+
+  it('preserves resumable first-use progress and rejects an invalid recovery week', () => {
+    const inProgress = normalizeSettings({
+      settingsVersion: 12,
+      firstUse: {
+        status: 'in_progress',
+        weekStart: '2026-07-20',
+        lastStep: 'state_context',
+        overviewSeen: false,
+        updatedAt: '2026-07-27T10:00:00.000Z',
+      },
+    });
+    const invalid = normalizeSettings({
+      settingsVersion: 12,
+      firstUse: {
+        status: 'in_progress',
+        weekStart: '20.07.2026',
+        lastStep: 'highlights',
+        overviewSeen: false,
+        updatedAt: '',
+      },
+    });
+
+    expect(inProgress.firstUse).toEqual({
+      status: 'in_progress',
+      weekStart: '2026-07-20',
+      lastStep: 'state_context',
+      overviewSeen: false,
+      updatedAt: '2026-07-27T10:00:00.000Z',
+    });
+    expect(invalid.firstUse).toEqual(expect.objectContaining({ status: 'available', weekStart: '', lastStep: 'choice' }));
   });
 
   it('keeps optional goal evidence and ignores an invalid review date', () => {

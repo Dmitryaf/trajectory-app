@@ -12,8 +12,10 @@ const sync = vi.hoisted(() => ({
   prepareLocalCacheOwner: vi.fn(),
   reconcileCloudSnapshotOnStartup: vi.fn(),
 }));
+const funnel = vi.hoisted(() => ({ recordFirstUseReturnEvents: vi.fn() }));
 
 vi.mock('../src/features/sync/startup', () => sync);
+vi.mock('../src/features/first-use/funnel', () => funnel);
 vi.mock('../src/features/sync/resume', () => ({
   createResumeCloudRefresh: () => vi.fn().mockResolvedValue(false),
 }));
@@ -79,6 +81,7 @@ describe('application startup', () => {
 
     expect(wrapper.find('[data-testid="working-screen"]').exists()).toBe(true);
     expect(wrapper.find('.bottom-nav').exists()).toBe(true);
+    expect(funnel.recordFirstUseReturnEvents).toHaveBeenCalledOnce();
     wrapper.unmount();
   });
 });

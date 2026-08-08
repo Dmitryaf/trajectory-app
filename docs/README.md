@@ -37,9 +37,11 @@
 
 - [BACKLOG.md](./planning/BACKLOG.md) — единый актуальный бэклог.
 - [BETA_NOTES_2026-07-30.md](./planning/BETA_NOTES_2026-07-30.md) — разбор заметок первой недели беты.
+- [FIRST_USE_STRATEGY.md](./planning/FIRST_USE_STRATEGY.md) — подтверждённая аудитория, обещание и сценарий первого полезного результата.
 
 ### `audits/` — датированные снимки состояния
 
+- [2026-08-08-new-user-review.md](./audits/2026-08-08-new-user-review.md) — независимое ревью первого пользовательского сценария.
 - [2026-07-30-git-state.md](./audits/2026-07-30-git-state.md) — датированный аудит Git на момент переработки документации.
 - [SYSTEM_AUDIT_2026-07-22.md](./audits/SYSTEM_AUDIT_2026-07-22.md) — системный аудит на указанную дату.
 - [DAILY_ENTRY_AUDIT.md](./audits/DAILY_ENTRY_AUDIT.md) — аудит ежедневной записи.

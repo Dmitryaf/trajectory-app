@@ -108,9 +108,9 @@
     margin: 10px 2px 22px;
   }
   .page--today > .page-heading {
-    min-height: 156px;
+    min-height: 132px;
     margin: 4px 0 0;
-    padding: 24px 22px 42px;
+    padding: 20px 18px 30px;
     border-radius: 24px;
   }
   .page--today > .page-heading h1 {
@@ -169,6 +169,13 @@
     margin: 0;
     opacity: 1;
   }
+  .entry-date-picker {
+    gap: 3px;
+  }
+  .entry-date-picker > span,
+  .entry-date-picker > small {
+    display: none;
+  }
   h1 {
     font-size: 36px;
   }
@@ -179,13 +186,46 @@
     min-height: calc(100vh - 170px);
     padding-top: 8px;
   }
+  .auth-layout {
+    gap: 16px;
+  }
+  .auth-presentation {
+    border-radius: 20px;
+  }
+  .auth-presentation__intro {
+    padding: 24px 20px 22px;
+  }
+  .auth-presentation__intro h1 {
+    font-size: 37px;
+  }
+  .auth-presentation__intro > p:not(.eyebrow) {
+    font-size: 15px;
+  }
+  .auth-presentation__actions,
+  .auth-presentation__actions button {
+    width: 100%;
+  }
+  .auth-preview {
+    padding: 22px 20px 24px;
+  }
+  .auth-preview__tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .auth-preview__content {
+    min-height: 0;
+    padding: 17px;
+  }
+  .auth-preview__content li {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
   .auth-card {
     width: 100%;
     padding: 20px;
     border-radius: 20px;
   }
   .auth-card__brand {
-    flex-direction: column;
+    align-items: flex-start;
     gap: 12px;
   }
   .auth-card__brand h1 {
@@ -509,6 +549,19 @@
   }
   .month-layout {
     grid-template-columns: 1fr;
+  }
+  .period-record-card,
+  .period-record-card--disclosure > summary,
+  .period-record-card__details {
+    padding-right: 13px;
+    padding-left: 13px;
+  }
+  .period-record-card__heading {
+    gap: 10px;
+  }
+  .period-record-card__heading h2,
+  .period-record-card__heading strong {
+    font-size: 16px;
   }
   .section-heading:has(.event-picker) {
     align-items: stretch;

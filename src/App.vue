@@ -7,6 +7,7 @@ import AuthGate from './components/AuthGate.vue';
 import AccountMenu from './components/AccountMenu.vue';
 import HowItWorksDialog from './components/HowItWorksDialog.vue';
 import PasswordResetView from './views/PasswordResetView.vue';
+import { recordFirstUseReturnEvents } from './features/first-use/funnel';
 import { createResumeCloudRefresh } from './features/sync/resume';
 import { prepareLocalCacheOwner, reconcileCloudSnapshotOnStartup } from './features/sync/startup';
 import { notifyInfo, notifyUnknownError } from './services/notifications';
@@ -97,6 +98,7 @@ async function loadAppData() {
       await store.load();
       if (userId) appDataLoadingText.value = 'Сверяю записи с облаком…';
       await reconcileCloudSnapshotOnStartup(store, userId);
+      recordFirstUseReturnEvents();
     } catch (error) {
       console.error('Не удалось подготовить записи', error);
       appDataLoadError.value = error instanceof Error ? error.message : 'Не удалось подготовить записи';

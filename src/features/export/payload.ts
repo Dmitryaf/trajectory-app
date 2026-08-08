@@ -28,7 +28,7 @@ export const AI_PROMPT_CHARACTER_LIMIT = 48_000;
 
 export type AiReportPayload = {
   app: 'trajectory';
-  version: 9;
+  version: 10;
   period: AiReportPeriod;
   rangeMonths?: number;
   start: string;
@@ -128,7 +128,7 @@ function buildPayload(
 
   return {
     app: 'trajectory',
-    version: 9,
+    version: 10,
     period,
     start,
     end,

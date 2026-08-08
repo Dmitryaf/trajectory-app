@@ -202,6 +202,14 @@ const weeklyReviews = weekStarts.map((weekStart, index) => ({
     resultTitles[(index * 2 + 1) % resultTitles.length][1],
     index % 2 === 0 ? 'Сохранил время на восстановление' : '',
   ],
+  highlights: [
+    index % 2 === 0
+      ? 'Заметил, что короткие завершённые шаги легче вспомнить при обзоре'
+      : 'Пересмотрел порядок дел после изменения недели',
+    index % 3 === 0 ? 'Усталость сильнее влияла на оценку недели к вечеру' : '',
+    '',
+  ],
+  stateContext: index % 3 === 0 ? 'Неделя была неровной из-за позднего завершения работы.' : 'Состояние в целом было устойчивым.',
   support: index % 2 === 0 ? 'Один небольшой раздел на день' : 'Заранее определённый первый шаг',
   obstacle: index % 3 === 0 ? 'Позднее завершение работы' : 'Слишком широкий список задач',
   nextLever: index % 2 === 0 ? 'Отправлять готовый фрагмент до обеда' : 'Закрывать подготовку коротким итогом',
@@ -235,7 +243,7 @@ const monthlyReviews = [
 ];
 
 const payload = {
-  version: 5,
+  version: 8,
   exportedAt: '2026-07-20T18:00:00.000Z',
   dailyEntries,
   results,
@@ -244,7 +252,14 @@ const payload = {
   monthlyReviews,
   settings: {
     id: 'main',
-    settingsVersion: 10,
+    settingsVersion: 12,
+    firstUse: {
+      status: 'completed',
+      weekStart: '2026-07-13',
+      lastStep: 'overview',
+      overviewSeen: true,
+      updatedAt: '2026-07-20T18:00:00.000Z',
+    },
     activeDailyBlocks: ['sleep', 'context', 'career', 'movement', 'nutrition'],
     activeLifeAreas: ['family', 'reading', 'creativity', 'rest', 'friends', 'custom:life:music'],
     customActivityOptions: [{ id: 'custom:activity:swimming', label: 'Плавание', icon: '+', custom: true, archived: false }],

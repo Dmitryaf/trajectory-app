@@ -4,6 +4,7 @@ import AutoGrowTextarea from '../components/AutoGrowTextarea.vue';
 import ChipGroup from '../components/ChipGroup.vue';
 import ArchiveDateRange from '../features/journal/ArchiveDateRange.vue';
 import ArchivePagination from '../features/journal/ArchivePagination.vue';
+import { archiveRangeFromQuery } from '../features/journal/archiveQuery';
 import { useArchiveList } from '../features/journal/useArchiveList';
 import { formatDate, todayKey } from '../services/dates';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
@@ -19,6 +20,7 @@ const editingId = ref<number | null>(null);
 const editingCreatedAt = ref('');
 const saving = ref(false);
 const expandedNotes = ref<string[]>([]);
+const archiveRange = archiveRangeFromQuery();
 
 const recentEvents = computed(() =>
   [...store.lifeEvents].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)),
@@ -35,6 +37,7 @@ const {
 } = useArchiveList(recentEvents, {
   getSearchText: (event) => `${event.title} ${event.note}`,
   getCategory: (event) => event.type,
+  ...archiveRange,
 });
 
 async function saveEvent() {

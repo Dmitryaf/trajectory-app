@@ -364,6 +364,8 @@ function formatWeeklyReview(label: string, review: WeeklyReview): string {
   const values = [
     review.previousPlanOutcome && `проверка прошлого решения: ${cleanText(review.previousPlanOutcome)}`,
     review.results.filter(Boolean).length && `итоги: ${review.results.filter(Boolean).map(cleanText).join('; ')}`,
+    review.highlights.filter(Boolean).length && `важные события и мысли: ${review.highlights.filter(Boolean).map(cleanText).join('; ')}`,
+    review.stateContext && `состояние и условия: ${cleanText(review.stateContext)}`,
     review.support && `помогало: ${cleanText(review.support)}`,
     review.obstacle && `мешало: ${cleanText(review.obstacle)}`,
     review.nextLever && `следующее изменение: ${cleanText(review.nextLever)}`,

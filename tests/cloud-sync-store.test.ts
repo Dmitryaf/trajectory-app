@@ -1,8 +1,11 @@
+import 'fake-indexeddb/auto';
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { db } from '../src/db';
 import { useAppStore } from '../src/stores/app';
 import { useAuthStore } from '../src/stores/auth';
 import { markCloudSyncPending, saveCloudSnapshot } from '../src/services/cloudSync';
+import { emptyWeeklyReview } from '../src/types';
 
 vi.mock('../src/services/cloudSync', () => ({
   clearCloudSyncMeta: vi.fn(),
@@ -20,9 +23,15 @@ vi.mock('../src/services/cloudSync', () => ({
 }));
 
 describe('cloud synchronization state', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await db.delete();
+    await db.open();
     setActivePinia(createPinia());
     vi.clearAllMocks();
+  });
+
+  afterAll(async () => {
+    await db.delete();
   });
 
   it('marks local data as pending before the cloud request starts', async () => {
@@ -30,11 +39,57 @@ describe('cloud synchronization state', () => {
     auth.session = { user: { id: 'user-1' } } as typeof auth.session;
     vi.mocked(saveCloudSnapshot).mockResolvedValue('2026-07-22T10:00:00.000Z');
 
-    await useAppStore().syncCloudSnapshot();
+    const store = useAppStore();
+    store.weeklyReviews = [
+      {
+        ...emptyWeeklyReview('2026-07-20'),
+        highlights: ['Важный разговор', '', ''],
+        stateContext: 'Неделя была неровной.',
+      },
+    ];
+
+    await store.syncCloudSnapshot();
 
     expect(markCloudSyncPending).toHaveBeenCalledWith('user-1', 'Локальные изменения ожидают синхронизации');
     expect(vi.mocked(markCloudSyncPending).mock.invocationCallOrder[0]).toBeLessThan(
       vi.mocked(saveCloudSnapshot).mock.invocationCallOrder[0],
     );
+    expect(saveCloudSnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({
+        version: 8,
+        settings: expect.objectContaining({ firstUse: expect.objectContaining({ status: 'not_started' }) }),
+        weeklyReviews: [
+          expect.objectContaining({
+            highlights: ['Важный разговор', '', ''],
+            stateContext: 'Неделя была неровной.',
+          }),
+        ],
+      }),
+    );
+    expect(vi.mocked(saveCloudSnapshot).mock.calls[0]![0]).not.toHaveProperty('firstUseFunnel');
+  });
+
+  it('keeps first-use progress locally when the cloud copy fails', async () => {
+    const auth = useAuthStore();
+    auth.session = { user: { id: 'user-1' } } as typeof auth.session;
+    vi.mocked(saveCloudSnapshot).mockRejectedValue(new Error('network unavailable'));
+    const store = useAppStore();
+
+    await store.saveSettings({
+      ...store.settings,
+      firstUse: {
+        status: 'in_progress',
+        weekStart: '2026-07-27',
+        lastStep: 'highlights',
+        overviewSeen: false,
+        updatedAt: '2026-08-03T12:00:00.000Z',
+      },
+    });
+    await vi.waitFor(() => expect(store.cloudSyncStatus).toBe('pending'));
+
+    expect(store.settings.firstUse).toMatchObject({ status: 'in_progress', lastStep: 'highlights' });
+    expect((await db.settings.get('main'))?.firstUse).toMatchObject({ status: 'in_progress', lastStep: 'highlights' });
+    expect(store.cloudSyncMessage).toBe('Изменения сохранены локально. Облако обновится после повторной синхронизации.');
+    expect(store.cloudSyncError).toBe('network unavailable');
   });
 });
