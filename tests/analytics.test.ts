@@ -195,6 +195,7 @@ describe('analytics', () => {
       reviews: [
         {
           ...normalizeWeeklyReview({ weekStart: '2026-07-06' }),
+          coveredThrough: '2026-07-10',
           highlights: ['Важный разговор изменил планы', '', ''],
           stateContext: 'Неделя была неровной из-за болезни.',
           nextLever: 'Ложиться раньше',
@@ -218,6 +219,7 @@ describe('analytics', () => {
     expect(prompt).toContain('Ложиться раньше');
     expect(prompt).toContain('важные события и мысли: Важный разговор изменил планы');
     expect(prompt).toContain('состояние и условия: Неделя была неровной из-за болезни.');
+    expect(prompt).toContain('ответы собраны по 2026-07-10');
     expect(prompt).toContain('подробности: Показал сценарий двум пользователям и записал вопросы');
     expect(prompt).toContain('Наблюдаемый результат цели: Показать работающий сценарий трём людям.');
     expect(prompt).toContain('Цель нужно пересмотреть 2026-07-31.');

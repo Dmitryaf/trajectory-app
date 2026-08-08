@@ -104,6 +104,7 @@ export type LifeEventRecord = {
 
 export type WeeklyReview = {
   weekStart: string;
+  coveredThrough: string;
   updatedAt: string;
   previousPlanOutcome: string;
   results: string[];
@@ -152,6 +153,7 @@ export type FirstUseStep = 'choice' | 'results' | 'highlights' | 'state_context'
 export type FirstUseState = {
   status: FirstUseStatus;
   weekStart: string;
+  periodEnd: string;
   lastStep: FirstUseStep;
   overviewSeen: boolean;
   updatedAt: string;

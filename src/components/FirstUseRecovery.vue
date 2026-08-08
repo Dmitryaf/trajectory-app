@@ -2,7 +2,8 @@
 import { computed, getCurrentInstance, onMounted, reactive, ref, watch } from 'vue';
 import type { Router } from 'vue-router';
 import { recordFirstUseEvent } from '../features/first-use/funnel';
-import { addDays, formatDate, startOfWeek, todayKey } from '../services/dates';
+import { firstUsePeriodOptions, recommendedFirstUsePeriod, type FirstUsePeriodOption } from '../features/first-use/period';
+import { addDays, formatDate } from '../services/dates';
 import { plainCopy } from '../services/plain';
 import { useAppStore } from '../stores/app';
 import { emptyWeeklyReview, type FirstUseState, type FirstUseStep, type WeeklyReview } from '../types';
@@ -26,6 +27,8 @@ const obstacle = ref('');
 const decision = ref<DecisionChoice>('');
 const decisionText = ref('');
 const ifThenPlan = ref('');
+const periodOptions = firstUsePeriodOptions();
+const selectedWeekStart = ref(recommendedFirstUsePeriod().weekStart);
 
 const steps: FirstUseStep[] = ['results', 'highlights', 'state_context', 'support_obstacle', 'decision'];
 const firstUse = computed(() => store.settings.firstUse);
@@ -36,10 +39,13 @@ const showAvailablePrompt = computed(() => firstUse.value.status === 'available'
 const isRecovery = computed(() => firstUse.value.status === 'in_progress' && !isChoice.value);
 const currentStep = computed(() => firstUse.value.lastStep);
 const currentStepIndex = computed(() => steps.indexOf(currentStep.value));
-const targetWeekStart = computed(() => firstUse.value.weekStart || startOfWeek(addDays(todayKey(), -7)));
-const weekEnd = computed(() => addDays(targetWeekStart.value, 6));
+const selectedPeriod = computed(() => periodOptions.find((option) => option.weekStart === selectedWeekStart.value) ?? periodOptions[0]!);
+const targetWeekStart = computed(() => firstUse.value.weekStart || selectedPeriod.value.weekStart);
+const targetPeriodEnd = computed(() => firstUse.value.periodEnd || selectedPeriod.value.periodEnd);
+const calendarWeekEnd = computed(() => addDays(targetWeekStart.value, 6));
+const periodIsIncomplete = computed(() => targetPeriodEnd.value < calendarWeekEnd.value);
 const weekLabel = computed(
-  () => `${formatDate(targetWeekStart.value)} — ${formatDate(weekEnd.value, { day: 'numeric', month: 'long', year: 'numeric' })}`,
+  () => `${formatDate(targetWeekStart.value)} — ${formatDate(targetPeriodEnd.value, { day: 'numeric', month: 'long', year: 'numeric' })}`,
 );
 const meaningfulAnswerCount = computed(
   () =>
@@ -52,7 +58,7 @@ const currentAnswerIsValid = computed(
 );
 
 watch(
-  () => `${firstUse.value.status}:${firstUse.value.weekStart}:${firstUse.value.lastStep}`,
+  () => `${firstUse.value.status}:${firstUse.value.weekStart}:${firstUse.value.periodEnd}:${firstUse.value.lastStep}`,
   () => loadDraft(),
   { immediate: true },
 );
@@ -75,10 +81,23 @@ function lines(value: string) {
     .filter(Boolean);
 }
 
+function periodTitle(option: FirstUsePeriodOption) {
+  return option.id === 'current' ? 'Эта неделя' : 'Прошлая неделя';
+}
+
+function periodRange(option: FirstUsePeriodOption) {
+  return `${formatDate(option.weekStart)} — ${formatDate(option.periodEnd, { day: 'numeric', month: 'long', year: 'numeric' })}`;
+}
+
+function periodStatus(option: FirstUsePeriodOption) {
+  return option.completed ? 'Завершённая неделя' : `До сегодня · ${option.coveredDays} из 7 дней`;
+}
+
 function loadDraft() {
   if (!firstUse.value.weekStart) return;
   const existing = store.reviewByWeek(firstUse.value.weekStart);
   Object.assign(review, emptyWeeklyReview(firstUse.value.weekStart), existing ? plainCopy(existing) : {});
+  review.coveredThrough = firstUse.value.periodEnd;
   resultsText.value = review.results.filter(Boolean).join('\n');
   highlightsText.value = review.highlights.filter(Boolean).join('\n');
   stateContext.value = review.stateContext;
@@ -103,7 +122,8 @@ async function beginRecovery() {
   saving.value = true;
   try {
     const weekStart = targetWeekStart.value;
-    await saveFirstUse({ status: 'in_progress', weekStart, lastStep: 'results', overviewSeen: false, updatedAt: '' });
+    const periodEnd = targetPeriodEnd.value;
+    await saveFirstUse({ status: 'in_progress', weekStart, periodEnd, lastStep: 'results', overviewSeen: false, updatedAt: '' });
     recordFirstUseEvent('first_use_recovery_started');
   } catch {
     saveError.value = 'Не удалось начать. Попробуйте ещё раз.';
@@ -119,6 +139,7 @@ async function reopenRecovery() {
     await saveFirstUse({
       status: 'in_progress',
       weekStart: firstUse.value.weekStart,
+      periodEnd: firstUse.value.periodEnd,
       lastStep: 'results',
       overviewSeen: true,
       updatedAt: '',
@@ -134,7 +155,7 @@ async function continueWithToday() {
   saveError.value = '';
   saving.value = true;
   try {
-    await saveFirstUse({ status: 'available', weekStart: '', lastStep: 'choice', overviewSeen: false, updatedAt: '' });
+    await saveFirstUse({ status: 'available', weekStart: '', periodEnd: '', lastStep: 'choice', overviewSeen: false, updatedAt: '' });
   } catch {
     saveError.value = 'Не удалось сохранить выбор. Попробуйте ещё раз.';
   } finally {
@@ -146,7 +167,7 @@ async function dismiss() {
   saveError.value = '';
   saving.value = true;
   try {
-    await saveFirstUse({ status: 'dismissed', weekStart: '', lastStep: 'choice', overviewSeen: false, updatedAt: '' });
+    await saveFirstUse({ status: 'dismissed', weekStart: '', periodEnd: '', lastStep: 'choice', overviewSeen: false, updatedAt: '' });
   } catch {
     saveError.value = 'Не удалось сохранить выбор. Попробуйте ещё раз.';
   } finally {
@@ -196,6 +217,7 @@ async function moveTo(nextStep: FirstUseStep, saveAnswer: boolean) {
     await saveFirstUse({
       status: 'in_progress',
       weekStart: firstUse.value.weekStart,
+      periodEnd: firstUse.value.periodEnd,
       lastStep: nextStep,
       overviewSeen: nextStep === 'overview' || firstUse.value.overviewSeen,
       updatedAt: '',
@@ -228,6 +250,7 @@ async function completeRecovery() {
     await saveFirstUse({
       status: 'completed',
       weekStart,
+      periodEnd: firstUse.value.periodEnd,
       lastStep: 'overview',
       overviewSeen: true,
       updatedAt: '',
@@ -248,7 +271,7 @@ async function completeRecovery() {
     aria-labelledby="first-use-edit-title"
   >
     <div>
-      <p class="eyebrow">Ответы прошлой недели</p>
+      <p class="eyebrow">Сохранённые ответы</p>
       <h2 id="first-use-edit-title">Открываем сохранённые ответы</h2>
       <p>Вы сможете пройти по тем же вопросам и исправить нужные пункты.</p>
     </div>
@@ -261,11 +284,24 @@ async function completeRecovery() {
   <section v-else-if="isChoice" class="first-use-card first-use-card--choice" aria-labelledby="first-use-choice-title">
     <div>
       <p class="eyebrow">Первый обзор</p>
-      <h2 id="first-use-choice-title">Соберите последнюю завершённую неделю</h2>
-      <p>
-        <strong>{{ weekLabel }}</strong
-        >. Текущая неделя ещё идёт — её можно заполнять на главной.
-      </p>
+      <h2 id="first-use-choice-title">Соберите недавнюю неделю</h2>
+      <p>Выберите период, который сейчас проще вспомнить. Будущие дни в обзор не попадут.</p>
+      <div class="first-use-periods" role="radiogroup" aria-label="Период первого обзора">
+        <button
+          v-for="option in periodOptions"
+          :key="option.id"
+          type="button"
+          role="radio"
+          :aria-checked="selectedWeekStart === option.weekStart"
+          @click="selectedWeekStart = option.weekStart"
+        >
+          <span>
+            <strong>{{ periodTitle(option) }}</strong>
+            <small>{{ periodRange(option) }}</small>
+          </span>
+          <em>{{ option.recommended ? `Советуем · ${periodStatus(option)}` : periodStatus(option) }}</em>
+        </button>
+      </div>
       <p>Вспомните несколько итогов, событий и то, как вы себя чувствовали. Это займёт несколько коротких шагов.</p>
       <p class="first-use-card__note">Точные цифры и записи за каждый день не нужны.</p>
     </div>
@@ -278,10 +314,26 @@ async function completeRecovery() {
     <p v-if="saveError" class="first-use-card__error" role="alert">{{ saveError }}</p>
   </section>
 
-  <section v-else-if="showAvailablePrompt" class="first-use-card first-use-card--available" aria-label="Обзор завершённой недели">
+  <section v-else-if="showAvailablePrompt" class="first-use-card first-use-card--available" aria-label="Первый обзор недели">
     <div>
-      <strong>Собрать последнюю завершённую неделю?</strong>
-      <p>{{ weekLabel }}. Несколько коротких вопросов помогут увидеть её целиком.</p>
+      <strong>Собрать недавнюю неделю?</strong>
+      <p>Выберите период. Несколько коротких вопросов помогут увидеть его целиком.</p>
+      <div class="first-use-periods first-use-periods--compact" role="radiogroup" aria-label="Период первого обзора">
+        <button
+          v-for="option in periodOptions"
+          :key="option.id"
+          type="button"
+          role="radio"
+          :aria-checked="selectedWeekStart === option.weekStart"
+          @click="selectedWeekStart = option.weekStart"
+        >
+          <span>
+            <strong>{{ periodTitle(option) }}</strong>
+            <small>{{ periodRange(option) }}</small>
+          </span>
+          <em>{{ option.recommended ? `Советуем · ${periodStatus(option)}` : periodStatus(option) }}</em>
+        </button>
+      </div>
     </div>
     <div class="first-use-card__actions">
       <button class="secondary-button context-action" type="button" :disabled="saving" @click="beginRecovery">Открыть обзор</button>
@@ -295,7 +347,7 @@ async function completeRecovery() {
     <header class="first-use-recovery__header">
       <div>
         <p class="eyebrow">{{ currentStep === 'overview' ? 'Ваш обзор' : `Шаг ${currentStepIndex + 1} из ${steps.length}` }}</p>
-        <span>{{ weekLabel }}</span>
+        <span>{{ weekLabel }}{{ periodIsIncomplete ? ' · до сегодняшнего дня' : '' }}</span>
       </div>
       <div v-if="currentStep !== 'overview'" class="first-use-recovery__progress" aria-hidden="true">
         <i :style="{ width: `${((currentStepIndex + 1) / steps.length) * 100}%` }"></i>
@@ -344,15 +396,15 @@ async function completeRecovery() {
     </div>
 
     <div v-else-if="currentStep === 'decision'" class="first-use-recovery__step">
-      <h2 id="first-use-step-title">Как поступить на следующей неделе?</h2>
+      <h2 id="first-use-step-title">Что хотите делать дальше?</h2>
       <p>Можно продолжить как есть, попробовать одно изменение или пока ничего не решать.</p>
-      <div class="first-use-recovery__choices" aria-label="Решение на следующую неделю">
+      <div class="first-use-recovery__choices" aria-label="Решение после обзора">
         <button type="button" :aria-pressed="decision === 'continue'" @click="decision = 'continue'">Продолжить как есть</button>
         <button type="button" :aria-pressed="decision === 'change'" @click="decision = 'change'">Что-то изменить</button>
         <button type="button" :aria-pressed="decision === 'later'" @click="decision = 'later'">Пока без решения</button>
       </div>
       <template v-if="decision === 'change'">
-        <label class="field-label" for="first-use-decision">Какое одно изменение хотите попробовать на следующей неделе?</label>
+        <label class="field-label" for="first-use-decision">Какое одно изменение хотите попробовать?</label>
         <textarea id="first-use-decision" v-model="decisionText" rows="3"></textarea>
         <p class="first-use-recovery__field-note">
           В следующем обзоре этот ответ появится как ваше прошлое решение — так будет проще посмотреть, что получилось.
@@ -371,6 +423,9 @@ async function completeRecovery() {
     <div v-else class="first-use-recovery__step first-use-overview">
       <h2 id="first-use-step-title">Вот чем была наполнена ваша неделя</h2>
       <p>Ответы уже сохранены. Это не оценка недели, а её факты и важный контекст.</p>
+      <p v-if="periodIsIncomplete" class="first-use-overview__coverage">
+        Обзор собран по {{ formatDate(targetPeriodEnd, { day: 'numeric', month: 'long' }) }}. Неделя ещё идёт — позже её можно дополнить.
+      </p>
       <WeeklyReviewOverview :review="review" />
       <WeeklyReviewJournalLinks :review="review" />
 

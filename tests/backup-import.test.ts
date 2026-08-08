@@ -111,7 +111,7 @@ describe('backup import', () => {
     expect(store.weeklyReviews[0].ifThenPlan).toBe('');
     expect(store.weeklyReviews[0].highlights).toEqual(['', '', '']);
     expect(store.weeklyReviews[0].stateContext).toBe('');
-    expect(store.settings.settingsVersion).toBe(12);
+    expect(store.settings.settingsVersion).toBe(13);
     expect(store.settings.firstUse.status).toBe('available');
     expect(store.settings.activeDailyBlocks).toEqual(['sleep', 'context', 'career', 'movement', 'nutrition']);
     expect(store.settings.activeLifeAreas).toEqual(['family']);
@@ -120,7 +120,7 @@ describe('backup import', () => {
     expect(storedDates).toEqual(['2025-02-01']);
 
     const exported = store.exportData();
-    expect(exported.version).toBe(8);
+    expect(exported.version).toBe(9);
     expect(exported).not.toHaveProperty('firstUseFunnel');
     expect(exported.dailyEntries[0].careerStates).toEqual(['external']);
     expect(exported.monthlyReviews).toEqual([]);
@@ -130,6 +130,7 @@ describe('backup import', () => {
     const store = useAppStore();
     await store.saveReview({
       ...emptyWeeklyReview('2026-07-20'),
+      coveredThrough: '2026-07-24',
       highlights: ['Важный разговор изменил планы', 'Появилась новая мысль о проекте', ''],
       stateContext: 'Неделя была тяжёлой из-за болезни и нехватки сна.',
     });
@@ -138,6 +139,7 @@ describe('backup import', () => {
       firstUse: {
         status: 'in_progress',
         weekStart: '2026-07-20',
+        periodEnd: '2026-07-24',
         lastStep: 'state_context',
         overviewSeen: false,
         updatedAt: '2026-07-27T10:00:00.000Z',
@@ -145,10 +147,11 @@ describe('backup import', () => {
     });
 
     const exported = store.exportData();
-    expect(exported.version).toBe(8);
+    expect(exported.version).toBe(9);
     expect(exported.weeklyReviews[0]).toMatchObject({
       highlights: ['Важный разговор изменил планы', 'Появилась новая мысль о проекте', ''],
       stateContext: 'Неделя была тяжёлой из-за болезни и нехватки сна.',
+      coveredThrough: '2026-07-24',
     });
 
     await store.clearAll({ syncCloud: false });
@@ -157,10 +160,12 @@ describe('backup import', () => {
     expect(store.weeklyReviews[0]).toMatchObject({
       highlights: ['Важный разговор изменил планы', 'Появилась новая мысль о проекте', ''],
       stateContext: 'Неделя была тяжёлой из-за болезни и нехватки сна.',
+      coveredThrough: '2026-07-24',
     });
     expect(store.settings.firstUse).toMatchObject({
       status: 'in_progress',
       weekStart: '2026-07-20',
+      periodEnd: '2026-07-24',
       lastStep: 'state_context',
     });
   });

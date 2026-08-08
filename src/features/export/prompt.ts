@@ -371,7 +371,8 @@ function formatWeeklyReview(label: string, review: WeeklyReview): string {
     review.nextLever && `следующее изменение: ${cleanText(review.nextLever)}`,
     review.ifThenPlan && `план если-то: ${cleanText(review.ifThenPlan)}`,
   ].filter(Boolean);
-  return `${label} (${review.weekStart}): ${values.length ? values.join('; ') : 'обзор сохранён без текста'}.`;
+  const coverage = review.coveredThrough ? `, ответы собраны по ${review.coveredThrough}` : '';
+  return `${label} (${review.weekStart}${coverage}): ${values.length ? values.join('; ') : 'обзор сохранён без текста'}.`;
 }
 
 function formatMonthlyReview(label: string, review: MonthlyReview): string {

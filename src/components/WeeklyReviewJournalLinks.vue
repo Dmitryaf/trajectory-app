@@ -30,7 +30,7 @@ const items = computed<JournalItem[]>(() => [
     .map((title, index) => ({ key: `event-${index}-${title.trim()}`, kind: 'event' as const, title: title.trim() }))
     .filter((item) => item.title),
 ]);
-const weekEnd = computed(() => addDays(props.review.weekStart, 6));
+const weekEnd = computed(() => props.review.coveredThrough || addDays(props.review.weekStart, 6));
 const weekLabel = computed(
   () =>
     `${formatDate(props.review.weekStart, { day: 'numeric', month: 'long' })} — ${formatDate(weekEnd.value, {
@@ -126,8 +126,8 @@ async function saveToJournal(item: JournalItem) {
     <summary>Добавить точные даты в Журнал</summary>
     <div class="weekly-review-journal__content">
       <p>
-        Здесь можно выбрать дату только из восстановленной недели: {{ weekLabel }}. Если пункт относится к другому периоду, оставьте его в
-        обзоре без вымышленной даты.
+        Здесь можно выбрать дату только из периода обзора: {{ weekLabel }}. Если пункт относится к другому времени, оставьте его в обзоре
+        без вымышленной даты.
       </p>
       <div class="weekly-review-journal__list">
         <article v-for="item in items" :key="item.key" class="weekly-review-journal__item">

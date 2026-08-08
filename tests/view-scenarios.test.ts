@@ -39,6 +39,7 @@ function createStore() {
   store.settings.firstUse = {
     status: 'completed',
     weekStart: '2026-07-13',
+    periodEnd: '2026-07-19',
     lastStep: 'overview',
     overviewSeen: true,
     updatedAt: '2026-07-20T12:00:00.000Z',
@@ -95,6 +96,7 @@ describe('daily entry scenario', () => {
     store.settings.firstUse = {
       status: 'available',
       weekStart: '',
+      periodEnd: '',
       lastStep: 'choice',
       overviewSeen: false,
       updatedAt: '',
@@ -104,7 +106,7 @@ describe('daily entry scenario', () => {
       global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
     });
 
-    expect(wrapper.text()).toContain('Собрать последнюю завершённую неделю?');
+    expect(wrapper.text()).toContain('Собрать недавнюю неделю?');
     expect(wrapper.text()).toContain('Не сейчас');
     expect(wrapper.find('.checkin-grid').exists()).toBe(true);
   });
@@ -918,6 +920,26 @@ describe('period review navigation', () => {
     expect((reviewForm.findAll('textarea')[0]!.element as HTMLTextAreaElement).value).toBe('К середине недели было мало сил');
   });
 
+  it('shows the real boundary of an incomplete recovered week', () => {
+    const { pinia, store } = createStore();
+    store.settings.firstUse.periodEnd = '2026-07-17';
+    store.weeklyReviews = [
+      {
+        ...emptyWeeklyReview('2026-07-13'),
+        coveredThrough: '2026-07-17',
+        results: ['Закончил черновик'],
+      },
+    ];
+    const wrapper = mount(WeekView, {
+      props: { initialWeek: '2026-07-13' },
+      global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } },
+    });
+
+    expect(wrapper.get('#first-use-overview').text()).toContain('Ответы собраны по 17 июля');
+    expect(wrapper.get('#first-use-overview').text()).toContain('Остальные дни этой недели не считаются пропущенными');
+    expect(wrapper.get('#first-use-overview input[type="date"]').attributes('max')).toBe('2026-07-17');
+  });
+
   it('returns to the recovered overview while the following week is still empty', () => {
     const { pinia, store } = createStore();
     store.weeklyReviews = [{ ...emptyWeeklyReview('2026-07-13'), results: ['Закончил черновик'] }];
@@ -925,7 +947,7 @@ describe('period review navigation', () => {
       global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } },
     });
 
-    expect(wrapper.get('.period-nav__label').text()).toContain('Ваша первая заполненная неделя');
+    expect(wrapper.get('.period-nav__label').text()).toContain('Ваш первый обзор недели');
     expect(wrapper.get('#first-use-overview').text()).toContain('Закончил черновик');
     expect(wrapper.find('.period-empty-guide').exists()).toBe(false);
   });
