@@ -104,7 +104,7 @@ describe('daily entry scenario', () => {
       global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
     });
 
-    expect(wrapper.text()).toContain('Хотите собрать прошлую неделю?');
+    expect(wrapper.text()).toContain('Собрать последнюю завершённую неделю?');
     expect(wrapper.text()).toContain('Не сейчас');
     expect(wrapper.find('.checkin-grid').exists()).toBe(true);
   });
@@ -918,17 +918,30 @@ describe('period review navigation', () => {
     expect((reviewForm.findAll('textarea')[0]!.element as HTMLTextAreaElement).value).toBe('К середине недели было мало сил');
   });
 
-  it('explains that the recovered overview belongs to a different week', () => {
+  it('returns to the recovered overview while the following week is still empty', () => {
     const { pinia, store } = createStore();
     store.weeklyReviews = [{ ...emptyWeeklyReview('2026-07-13'), results: ['Закончил черновик'] }];
     const wrapper = mount(WeekView, {
       global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } },
     });
 
-    const notice = wrapper.get('.recovered-week-link');
-    expect(notice.text()).toContain('Ваш первый обзор сохранён');
-    expect(notice.text()).toContain('Сейчас открыта другая неделя');
-    expect(notice.get('a').attributes('href')).toBe('/week?week=2026-07-13#first-use-overview');
+    expect(wrapper.get('.period-nav__label').text()).toContain('Ваша первая заполненная неделя');
+    expect(wrapper.get('#first-use-overview').text()).toContain('Закончил черновик');
+    expect(wrapper.find('.period-empty-guide').exists()).toBe(false);
+  });
+
+  it('keeps the current week as the default after it gets its own data', () => {
+    const { pinia, store } = createStore();
+    store.weeklyReviews = [{ ...emptyWeeklyReview('2026-07-13'), results: ['Закончил черновик'] }];
+    store.dailyEntries = [{ ...emptyDailyEntry('2026-07-21'), importantFact: 'Первая запись текущей недели' }];
+    const wrapper = mount(WeekView, {
+      global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } },
+    });
+
+    expect(wrapper.get('.period-nav__label').text()).toContain('Текущая неделя');
+    expect(wrapper.find('.metrics-grid').exists()).toBe(true);
+    expect(wrapper.find('.period-empty-guide').exists()).toBe(false);
+    expect(wrapper.get('.recovered-week-link').text()).toContain('Ваш первый обзор сохранён');
   });
 
   it('links the week and month summaries to their review forms', () => {

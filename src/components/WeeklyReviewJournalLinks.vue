@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
 import { recordFirstUseEvent } from '../features/first-use/funnel';
-import { addDays } from '../services/dates';
+import { addDays, formatDate } from '../services/dates';
 import { useAppStore } from '../stores/app';
 import { lifeEventTypeOptions, resultAreaOptions, type LifeEventType, type ResultRecord, type WeeklyReview } from '../types';
 
@@ -31,6 +31,14 @@ const items = computed<JournalItem[]>(() => [
     .filter((item) => item.title),
 ]);
 const weekEnd = computed(() => addDays(props.review.weekStart, 6));
+const weekLabel = computed(
+  () =>
+    `${formatDate(props.review.weekStart, { day: 'numeric', month: 'long' })} — ${formatDate(weekEnd.value, {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })}`,
+);
 const resultOptions = computed(() => [...resultAreaOptions, ...store.settings.customLifeAreaOptions.filter((option) => !option.archived)]);
 
 watch(
@@ -117,7 +125,10 @@ async function saveToJournal(item: JournalItem) {
   <details v-if="items.length" class="weekly-review-journal">
     <summary>Добавить точные даты в Журнал</summary>
     <div class="weekly-review-journal__content">
-      <p>Сохраните отдельно только те пункты, для которых помните день. Остальные уже останутся в обзоре недели без вымышленной даты.</p>
+      <p>
+        Здесь можно выбрать дату только из восстановленной недели: {{ weekLabel }}. Если пункт относится к другому периоду, оставьте его в
+        обзоре без вымышленной даты.
+      </p>
       <div class="weekly-review-journal__list">
         <article v-for="item in items" :key="item.key" class="weekly-review-journal__item">
           <div class="weekly-review-journal__item-heading">
