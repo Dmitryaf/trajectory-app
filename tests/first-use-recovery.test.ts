@@ -36,7 +36,7 @@ describe('first-use week recovery', () => {
     const { pinia, store } = setupStore();
     const wrapper = mount(FirstUseRecovery, { global: { plugins: [pinia] } });
 
-    expect(wrapper.text()).toContain('Соберите картину прошлой недели');
+    expect(wrapper.text()).toContain('Соберите последнюю завершённую неделю');
     await wrapper.get('.first-use-card--choice .primary-button').trigger('click');
 
     expect(store.settings.firstUse).toMatchObject({
@@ -57,7 +57,7 @@ describe('first-use week recovery', () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain('Не удалось начать. Попробуйте ещё раз.'));
 
     expect(store.settings.firstUse.status).toBe('not_started');
-    expect(wrapper.text()).toContain('Соберите картину прошлой недели');
+    expect(wrapper.text()).toContain('Соберите последнюю завершённую неделю');
     expect(wrapper.get('.first-use-card--choice .primary-button').attributes('disabled')).toBeUndefined();
     expect(readFirstUseFunnel().map((event) => event.name)).not.toContain('first_use_recovery_started');
   });

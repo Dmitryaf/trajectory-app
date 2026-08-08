@@ -34,6 +34,7 @@ describe('weekly review journal links', () => {
 
   it('saves only explicitly dated and classified items', async () => {
     const { store, wrapper } = setup();
+    expect(wrapper.text()).toContain('только из восстановленной недели: 27 июля — 2 августа 2026 г.');
     const items = wrapper.findAll('.weekly-review-journal__item');
     const result = items[0]!;
     const event = items[1]!;

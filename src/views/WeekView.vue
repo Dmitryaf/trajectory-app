@@ -43,7 +43,32 @@ function validAnchor(value: string | undefined) {
   return toDateKey(fromDateKey(value)) === value ? value : todayKey();
 }
 
-const anchor = ref(validAnchor(props.initialWeek));
+function hasDataForWeek(anchorValue: string) {
+  const weekStart = startOfWeek(anchorValue);
+  const weekEnd = endOfWeek(anchorValue);
+  return Boolean(
+    entriesForWeek(store.dailyEntries, anchorValue).length ||
+    resultsForPeriod(store.results, weekStart, weekEnd).length ||
+    store.lifeEvents.some((event) => event.date >= weekStart && event.date <= weekEnd) ||
+    store.reviewByWeek(weekStart),
+  );
+}
+
+function initialAnchor(value: string | undefined) {
+  if (value) return validAnchor(value);
+  const currentWeek = startOfWeek(todayKey());
+  const previousWeek = addDays(currentWeek, -7);
+  const firstUse = store.settings.firstUse;
+  const shouldOpenRecoveredWeek =
+    firstUse.status === 'completed' &&
+    firstUse.overviewSeen &&
+    firstUse.weekStart === previousWeek &&
+    Boolean(store.reviewByWeek(firstUse.weekStart)) &&
+    !hasDataForWeek(currentWeek);
+  return shouldOpenRecoveredWeek ? firstUse.weekStart : todayKey();
+}
+
+const anchor = ref(initialAnchor(props.initialWeek));
 const start = computed(() => startOfWeek(anchor.value));
 const end = computed(() => endOfWeek(anchor.value));
 const archiveEnd = computed(() => (end.value > todayKey() ? todayKey() : end.value));
@@ -126,6 +151,10 @@ const isRecoveredReview = computed(
     store.settings.firstUse.overviewSeen &&
     (store.settings.firstUse.status === 'in_progress' || store.settings.firstUse.status === 'completed'),
 );
+const navigatorSubtitle = computed(() => {
+  if (isRecoveredReview.value) return 'Ваша первая заполненная неделя';
+  return start.value === startOfWeek(todayKey()) ? 'Текущая неделя' : '';
+});
 const hasDailyData = computed(() => summary.value.coveredEntriesCount > 0);
 const hasJournalData = computed(() => results.value.length > 0 || lifeEvents.value.length > 0);
 const hasPeriodData = computed(() => hasDailyData.value || hasJournalData.value || hasSavedReview.value);
@@ -300,7 +329,7 @@ watch(start, loadReview, { immediate: true });
 watch(
   () => props.initialWeek,
   (value) => {
-    anchor.value = validAnchor(value);
+    anchor.value = initialAnchor(value);
   },
 );
 
@@ -353,7 +382,7 @@ function downloadJson() {
     </div>
     <PeriodNavigator
       :title="`${formatDate(start, { day: 'numeric', month: 'short' })} — ${formatDate(end, { day: 'numeric', month: 'short' })}`"
-      :subtitle="start === startOfWeek(todayKey()) ? 'Текущая неделя' : ''"
+      :subtitle="navigatorSubtitle"
       @previous="anchor = addDays(anchor, -7)"
       @next="anchor = addDays(anchor, 7)"
       @current="anchor = todayKey()"

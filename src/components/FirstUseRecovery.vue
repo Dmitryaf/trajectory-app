@@ -36,11 +36,11 @@ const showAvailablePrompt = computed(() => firstUse.value.status === 'available'
 const isRecovery = computed(() => firstUse.value.status === 'in_progress' && !isChoice.value);
 const currentStep = computed(() => firstUse.value.lastStep);
 const currentStepIndex = computed(() => steps.indexOf(currentStep.value));
-const weekEnd = computed(() => (firstUse.value.weekStart ? addDays(firstUse.value.weekStart, 6) : ''));
-const weekLabel = computed(() => {
-  if (!firstUse.value.weekStart) return '';
-  return `${formatDate(firstUse.value.weekStart)} — ${formatDate(weekEnd.value, { day: 'numeric', month: 'long', year: 'numeric' })}`;
-});
+const targetWeekStart = computed(() => firstUse.value.weekStart || startOfWeek(addDays(todayKey(), -7)));
+const weekEnd = computed(() => addDays(targetWeekStart.value, 6));
+const weekLabel = computed(
+  () => `${formatDate(targetWeekStart.value)} — ${formatDate(weekEnd.value, { day: 'numeric', month: 'long', year: 'numeric' })}`,
+);
 const meaningfulAnswerCount = computed(
   () =>
     review.results.filter(Boolean).length +
@@ -102,7 +102,7 @@ async function beginRecovery() {
   saveError.value = '';
   saving.value = true;
   try {
-    const weekStart = firstUse.value.weekStart || startOfWeek(addDays(todayKey(), -7));
+    const weekStart = targetWeekStart.value;
     await saveFirstUse({ status: 'in_progress', weekStart, lastStep: 'results', overviewSeen: false, updatedAt: '' });
     recordFirstUseEvent('first_use_recovery_started');
   } catch {
@@ -261,7 +261,11 @@ async function completeRecovery() {
   <section v-else-if="isChoice" class="first-use-card first-use-card--choice" aria-labelledby="first-use-choice-title">
     <div>
       <p class="eyebrow">Первый обзор</p>
-      <h2 id="first-use-choice-title">Соберите картину прошлой недели</h2>
+      <h2 id="first-use-choice-title">Соберите последнюю завершённую неделю</h2>
+      <p>
+        <strong>{{ weekLabel }}</strong
+        >. Текущая неделя ещё идёт — её можно заполнять на главной.
+      </p>
       <p>Вспомните несколько итогов, событий и то, как вы себя чувствовали. Это займёт несколько коротких шагов.</p>
       <p class="first-use-card__note">Точные цифры и записи за каждый день не нужны.</p>
     </div>
@@ -274,10 +278,10 @@ async function completeRecovery() {
     <p v-if="saveError" class="first-use-card__error" role="alert">{{ saveError }}</p>
   </section>
 
-  <section v-else-if="showAvailablePrompt" class="first-use-card first-use-card--available" aria-label="Обзор прошлой недели">
+  <section v-else-if="showAvailablePrompt" class="first-use-card first-use-card--available" aria-label="Обзор завершённой недели">
     <div>
-      <strong>Хотите собрать прошлую неделю?</strong>
-      <p>Несколько коротких вопросов помогут увидеть её целиком.</p>
+      <strong>Собрать последнюю завершённую неделю?</strong>
+      <p>{{ weekLabel }}. Несколько коротких вопросов помогут увидеть её целиком.</p>
     </div>
     <div class="first-use-card__actions">
       <button class="secondary-button context-action" type="button" :disabled="saving" @click="beginRecovery">Открыть обзор</button>
