@@ -12,7 +12,7 @@ const sync = vi.hoisted(() => ({
   prepareLocalCacheOwner: vi.fn(),
   reconcileCloudSnapshotOnStartup: vi.fn(),
 }));
-const funnel = vi.hoisted(() => ({ recordFirstUseReturnEvents: vi.fn() }));
+const funnel = vi.hoisted(() => ({ recordFirstUseEvent: vi.fn(), recordFirstUseReturnEvents: vi.fn() }));
 
 vi.mock('../src/features/sync/startup', () => sync);
 vi.mock('../src/features/first-use/funnel', () => funnel);
@@ -25,6 +25,44 @@ vi.mock('../src/services/notifications', () => ({
 }));
 
 describe('application startup', () => {
+  it('returns an unauthenticated deep link to the sign-in entry route', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.authRequired = true;
+    auth.initialized = true;
+    auth.session = null;
+    vi.spyOn(auth, 'init').mockResolvedValue(undefined);
+
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', component: { template: '<div>Главная</div>' } },
+        { path: '/trends', component: { template: '<div>Тренды</div>' } },
+        { path: '/password-reset', component: { template: '<div>Новый пароль</div>' } },
+      ],
+    });
+    await router.push('/trends');
+    await router.isReady();
+
+    const wrapper = mount(App, {
+      global: {
+        plugins: [pinia, router],
+        stubs: {
+          FeedbackDialog: true,
+          Toaster: true,
+        },
+      },
+    });
+
+    await flushPromises();
+
+    expect(router.currentRoute.value.fullPath).toBe('/');
+    expect(wrapper.find('.auth-shell').exists()).toBe(true);
+    wrapper.unmount();
+  });
+
   it('does not mount working screens before the required cloud reconciliation finishes', async () => {
     let finishCloudCheck!: () => void;
     sync.prepareLocalCacheOwner.mockResolvedValue(undefined);
