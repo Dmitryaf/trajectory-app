@@ -172,7 +172,7 @@ const navItems = [
       </div>
     </header>
 
-    <main class="app-main">
+    <main class="app-main" :class="{ 'app-main--auth': auth.initialized && auth.requiresAuth && !auth.isAuthenticated }">
       <div v-if="!auth.initialized" class="loading-card" role="status" aria-live="polite">
         <span class="loading-card__mark" aria-hidden="true"><i></i></span>
         <strong>Проверяю доступ…</strong>
