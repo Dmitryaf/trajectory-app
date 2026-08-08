@@ -243,7 +243,7 @@ const monthlyReviews = [
 ];
 
 const payload = {
-  version: 7,
+  version: 8,
   exportedAt: '2026-07-20T18:00:00.000Z',
   dailyEntries,
   results,
@@ -252,7 +252,14 @@ const payload = {
   monthlyReviews,
   settings: {
     id: 'main',
-    settingsVersion: 10,
+    settingsVersion: 12,
+    firstUse: {
+      status: 'completed',
+      weekStart: '2026-07-13',
+      lastStep: 'overview',
+      overviewSeen: true,
+      updatedAt: '2026-07-20T18:00:00.000Z',
+    },
     activeDailyBlocks: ['sleep', 'context', 'career', 'movement', 'nutrition'],
     activeLifeAreas: ['family', 'reading', 'creativity', 'rest', 'friends', 'custom:life:music'],
     customActivityOptions: [{ id: 'custom:activity:swimming', label: 'Плавание', icon: '+', custom: true, archived: false }],

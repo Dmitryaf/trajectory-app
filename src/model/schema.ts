@@ -145,10 +145,23 @@ export type ExperimentRecord = Omit<Experiment, 'active'> & {
   completedAt: string;
 };
 
+export type FirstUseStatus = 'not_started' | 'available' | 'in_progress' | 'completed' | 'dismissed';
+
+export type FirstUseStep = 'choice' | 'results' | 'highlights' | 'state_context' | 'support_obstacle' | 'decision' | 'overview';
+
+export type FirstUseState = {
+  status: FirstUseStatus;
+  weekStart: string;
+  lastStep: FirstUseStep;
+  overviewSeen: boolean;
+  updatedAt: string;
+};
+
 export type AppSettings = {
   id: 'main';
   settingsVersion: number;
   introSeen: boolean;
+  firstUse: FirstUseState;
   activeDailyBlocks: DailyBlockId[];
   activeLifeAreas: LifeAreaId[];
   customActivityOptions: Option<ActivityId>[];
