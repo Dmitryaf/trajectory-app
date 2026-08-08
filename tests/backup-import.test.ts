@@ -121,6 +121,7 @@ describe('backup import', () => {
 
     const exported = store.exportData();
     expect(exported.version).toBe(8);
+    expect(exported).not.toHaveProperty('firstUseFunnel');
     expect(exported.dailyEntries[0].careerStates).toEqual(['external']);
     expect(exported.monthlyReviews).toEqual([]);
   });

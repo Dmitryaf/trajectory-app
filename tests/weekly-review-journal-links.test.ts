@@ -85,4 +85,23 @@ describe('weekly review journal links', () => {
     await result.get('button').trigger('click');
     expect(store.addResult).not.toHaveBeenCalled();
   });
+
+  it('keeps the selected date and category when saving fails, then allows retrying', async () => {
+    const { store, wrapper } = setup();
+    vi.mocked(store.addResult).mockRejectedValueOnce(new Error('IndexedDB unavailable'));
+    const result = wrapper.findAll('.weekly-review-journal__item')[0]!;
+    await result.get('input[type="date"]').setValue('2026-07-29');
+    await result.get('select').setValue('career');
+
+    await result.get('button').trigger('click');
+    await vi.waitFor(() => expect(result.text()).toContain('Не удалось сохранить. Попробуйте ещё раз.'));
+
+    expect((result.get('input[type="date"]').element as HTMLInputElement).value).toBe('2026-07-29');
+    expect((result.get('select').element as HTMLSelectElement).value).toBe('career');
+    expect(result.get('button').attributes('disabled')).toBeUndefined();
+    expect(readFirstUseFunnel().map((item) => item.name)).not.toContain('first_use_journal_record_saved');
+
+    await result.get('button').trigger('click');
+    await vi.waitFor(() => expect(result.text()).toContain('Уже есть в Журнале'));
+  });
 });

@@ -89,6 +89,25 @@ describe('daily entry scenario', () => {
     expect(wrapper.text()).not.toContain('Сон перед этой датой и сколько сил было в этот день.');
   });
 
+  it('offers recovery to an existing user without blocking the daily form', () => {
+    const { pinia, store } = createStore();
+    store.settings.firstUse = {
+      status: 'available',
+      weekStart: '',
+      lastStep: 'choice',
+      overviewSeen: false,
+      updatedAt: '',
+    };
+    store.dailyEntries = [emptyDailyEntry('2026-07-20')];
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+
+    expect(wrapper.text()).toContain('Хотите собрать прошлую неделю?');
+    expect(wrapper.text()).toContain('Не сейчас');
+    expect(wrapper.find('.checkin-grid').exists()).toBe(true);
+  });
+
   it('shows only one current cue and keeps a weekly plan visible without daily tracking', () => {
     const { pinia, store } = createStore();
     store.dailyEntries = [{ ...emptyDailyEntry('2026-07-20'), importantFact: 'Обычная запись' }];

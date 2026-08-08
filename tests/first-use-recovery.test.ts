@@ -48,6 +48,20 @@ describe('first-use week recovery', () => {
     expect(wrapper.text()).toContain('Что вам удалось закончить или получить?');
   });
 
+  it('keeps the choice visible when starting cannot be saved', async () => {
+    const { pinia, store } = setupStore();
+    store.saveSettings = vi.fn().mockRejectedValue(new Error('IndexedDB unavailable'));
+    const wrapper = mount(FirstUseRecovery, { global: { plugins: [pinia] } });
+
+    await wrapper.get('.first-use-card--choice .primary-button').trigger('click');
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Не удалось начать. Попробуйте ещё раз.'));
+
+    expect(store.settings.firstUse.status).toBe('not_started');
+    expect(wrapper.text()).toContain('Соберите картину прошлой недели');
+    expect(wrapper.get('.first-use-card--choice .primary-button').attributes('disabled')).toBeUndefined();
+    expect(readFirstUseFunnel().map((event) => event.name)).not.toContain('first_use_recovery_started');
+  });
+
   it('saves an answer in the weekly review before opening the next step', async () => {
     const { pinia, store } = setupStore();
     const weekStart = '2026-07-27';
@@ -69,6 +83,32 @@ describe('first-use week recovery', () => {
     expect(store.settings.firstUse.lastStep).toBe('highlights');
     expect(wrapper.text()).toContain('Что важного произошло?');
     expect(readFirstUseFunnel().map((event) => event.name)).toContain('first_use_first_answer_saved');
+  });
+
+  it('keeps an unsaved answer on the same step and allows retrying', async () => {
+    const { pinia, store } = setupStore();
+    const weekStart = '2026-07-27';
+    store.settings.firstUse = {
+      status: 'in_progress',
+      weekStart,
+      lastStep: 'results',
+      overviewSeen: false,
+      updatedAt: '',
+    };
+    vi.mocked(store.saveReview).mockRejectedValueOnce(new Error('IndexedDB unavailable'));
+    const wrapper = mount(FirstUseRecovery, { global: { plugins: [pinia] } });
+
+    await wrapper.get('#first-use-results').setValue('Ответ не должен пропасть');
+    await wrapper.get('.first-use-recovery__footer .primary-button').trigger('click');
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Не удалось сохранить ответ'));
+
+    expect(store.settings.firstUse.lastStep).toBe('results');
+    expect((wrapper.get('#first-use-results').element as HTMLTextAreaElement).value).toBe('Ответ не должен пропасть');
+    expect(readFirstUseFunnel().map((event) => event.name)).not.toContain('first_use_first_answer_saved');
+
+    await wrapper.get('.first-use-recovery__footer .primary-button').trigger('click');
+    await vi.waitFor(() => expect(store.settings.firstUse.lastStep).toBe('highlights'));
+    expect(store.reviewByWeek(weekStart)?.results).toEqual(['Ответ не должен пропасть']);
   });
 
   it('keeps existing answers when a step is skipped', async () => {
