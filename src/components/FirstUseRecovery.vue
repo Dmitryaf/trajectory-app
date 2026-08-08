@@ -224,6 +224,7 @@ async function completeRecovery() {
   saving.value = true;
   try {
     const weekStart = firstUse.value.weekStart;
+    await store.saveReview(plainCopy(review));
     await saveFirstUse({
       status: 'completed',
       weekStart,
@@ -233,7 +234,7 @@ async function completeRecovery() {
     });
     if (router) await router.push({ path: '/week', query: { week: weekStart }, hash: '#first-use-overview' });
   } catch {
-    saveError.value = 'Не удалось завершить обзор. Ответы уже сохранены — попробуйте ещё раз.';
+    saveError.value = 'Не удалось завершить обзор. Ответы остались на экране — попробуйте ещё раз.';
   } finally {
     saving.value = false;
   }
@@ -266,7 +267,7 @@ async function completeRecovery() {
     </div>
     <div class="first-use-card__actions">
       <button class="primary-button" type="button" :disabled="saving" @click="beginRecovery">
-        {{ firstUse.status === 'in_progress' ? 'Продолжить' : 'Собрать неделю' }}
+        {{ firstUse.status === 'in_progress' ? 'Продолжить' : 'Начать обзор' }}
       </button>
       <button class="secondary-button" type="button" :disabled="saving" @click="continueWithToday">Начать с сегодняшнего дня</button>
     </div>
@@ -279,7 +280,7 @@ async function completeRecovery() {
       <p>Несколько коротких вопросов помогут увидеть её целиком.</p>
     </div>
     <div class="first-use-card__actions">
-      <button class="secondary-button" type="button" :disabled="saving" @click="beginRecovery">Собрать неделю</button>
+      <button class="secondary-button context-action" type="button" :disabled="saving" @click="beginRecovery">Открыть обзор</button>
       <button class="first-use-card__text-button" type="button" @click="hiddenForNow = true">Не сейчас</button>
       <button class="first-use-card__text-button" type="button" :disabled="saving" @click="dismiss">Больше не показывать</button>
     </div>
@@ -308,12 +309,7 @@ async function completeRecovery() {
       <h2 id="first-use-step-title">Что важного произошло?</h2>
       <p>События, решения, мысли или разговоры, которые хочется помнить.</p>
       <label class="field-label" for="first-use-highlights">По одному пункту в строке</label>
-      <textarea
-        id="first-use-highlights"
-        v-model="highlightsText"
-        rows="5"
-        placeholder="Например: решил не брать ещё одну задачу"
-      ></textarea>
+      <textarea id="first-use-highlights" v-model="highlightsText" rows="5"></textarea>
     </div>
 
     <div v-else-if="currentStep === 'state_context'" class="first-use-recovery__step">
@@ -344,16 +340,19 @@ async function completeRecovery() {
     </div>
 
     <div v-else-if="currentStep === 'decision'" class="first-use-recovery__step">
-      <h2 id="first-use-step-title">Хотите что-то решить на следующую неделю?</h2>
-      <p>Правильного ответа нет. Можно ничего не менять.</p>
+      <h2 id="first-use-step-title">Как поступить на следующей неделе?</h2>
+      <p>Можно продолжить как есть, попробовать одно изменение или пока ничего не решать.</p>
       <div class="first-use-recovery__choices" aria-label="Решение на следующую неделю">
         <button type="button" :aria-pressed="decision === 'continue'" @click="decision = 'continue'">Продолжить как есть</button>
         <button type="button" :aria-pressed="decision === 'change'" @click="decision = 'change'">Что-то изменить</button>
         <button type="button" :aria-pressed="decision === 'later'" @click="decision = 'later'">Пока без решения</button>
       </div>
       <template v-if="decision === 'change'">
-        <label class="field-label" for="first-use-decision">Что хотите изменить?</label>
-        <textarea id="first-use-decision" v-model="decisionText" rows="3" placeholder="Одно небольшое изменение"></textarea>
+        <label class="field-label" for="first-use-decision">Какое одно изменение хотите попробовать на следующей неделе?</label>
+        <textarea id="first-use-decision" v-model="decisionText" rows="3"></textarea>
+        <p class="first-use-recovery__field-note">
+          В следующем обзоре этот ответ появится как ваше прошлое решение — так будет проще посмотреть, что получилось.
+        </p>
         <label class="field-label" for="first-use-plan">Необязательный план «если — то»</label>
         <textarea
           id="first-use-plan"
@@ -367,7 +366,7 @@ async function completeRecovery() {
 
     <div v-else class="first-use-recovery__step first-use-overview">
       <h2 id="first-use-step-title">Вот чем была наполнена ваша неделя</h2>
-      <p>Мы собрали ваши ответы вместе. Это не оценка недели, а её факты и важный контекст.</p>
+      <p>Ответы уже сохранены. Это не оценка недели, а её факты и важный контекст.</p>
       <WeeklyReviewOverview :review="review" />
       <WeeklyReviewJournalLinks :review="review" />
 

@@ -163,6 +163,12 @@
   font-size: 12px;
   font-weight: 750;
 }
+.first-use-recovery__field-note {
+  margin-top: 8px !important;
+  color: #66736f !important;
+  font-size: 12px;
+  line-height: 1.45;
+}
 .first-use-recovery__footer {
   display: flex;
   gap: 12px;

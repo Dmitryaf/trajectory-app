@@ -112,6 +112,13 @@ const reviewQuestions = buildReviewQuestions('week');
 const previousReview = computed(() => store.reviewByWeek(addDays(start.value, -7)));
 const savedReview = computed(() => store.reviewByWeek(start.value));
 const hasSavedReview = computed(() => Boolean(savedReview.value));
+const recoveredReview = computed(() => {
+  const weekStart = store.settings.firstUse.weekStart;
+  if (store.settings.firstUse.status !== 'completed' || !weekStart || weekStart === start.value || !store.settings.firstUse.overviewSeen)
+    return null;
+  return store.reviewByWeek(weekStart) ?? null;
+});
+const recoveredWeekEnd = computed(() => (recoveredReview.value ? addDays(recoveredReview.value.weekStart, 6) : ''));
 const isRecoveredReview = computed(
   () =>
     Boolean(savedReview.value) &&
@@ -351,6 +358,20 @@ function downloadJson() {
       @next="anchor = addDays(anchor, 7)"
       @current="anchor = todayKey()"
     />
+
+    <section v-if="recoveredReview && !hasSavedReview" class="period-review-note recovered-week-link">
+      <div>
+        <strong>Ваш первый обзор сохранён</strong>
+        <p>
+          Сейчас открыта другая неделя. Сохранённый обзор относится к
+          {{ formatDate(recoveredReview.weekStart, { day: 'numeric', month: 'long' }) }} —
+          {{ formatDate(recoveredWeekEnd, { day: 'numeric', month: 'long', year: 'numeric' }) }}.
+        </p>
+      </div>
+      <RouterLink class="secondary-button context-action" :to="`/week?week=${recoveredReview.weekStart}#first-use-overview`">
+        Открыть обзор
+      </RouterLink>
+    </section>
 
     <section v-if="!hasPeriodData" class="period-empty-guide">
       <strong>За эту неделю пока нет записей</strong>
@@ -645,11 +666,11 @@ function downloadJson() {
         </div>
         <template v-if="previousReview?.nextLever || previousReview?.ifThenPlan">
           <div class="previous-plan">
-            <span class="eyebrow">Проверка прошлого решения</span>
-            <p v-if="previousReview.nextLever"><strong>Изменение:</strong> {{ previousReview.nextLever }}</p>
+            <span class="eyebrow">Решение из прошлого обзора</span>
+            <p v-if="previousReview.nextLever"><strong>Вы решили:</strong> {{ previousReview.nextLever }}</p>
             <p v-if="previousReview.ifThenPlan"><strong>План:</strong> {{ previousReview.ifThenPlan }}</p>
           </div>
-          <label class="field-label">Что получилось на практике?</label
+          <label class="field-label">Что получилось с этим решением?</label
           ><textarea
             v-model="review.previousPlanOutcome"
             rows="2"

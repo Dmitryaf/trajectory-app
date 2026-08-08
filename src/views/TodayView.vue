@@ -238,7 +238,7 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
         <p>Не нужно заполнять всё. Разделы на главной можно добавить или убрать в настройках — уже сохранённые записи не пропадут.</p>
       </div>
       <div class="first-entry-guide__actions">
-        <RouterLink class="secondary-button" to="/settings#daily-blocks">Настроить блоки на главной</RouterLink>
+        <RouterLink class="secondary-button context-action" to="/settings#daily-blocks">Настроить блоки</RouterLink>
         <HowItWorksDialog button-label="Зачем это заполнять?" inline />
       </div>
     </section>
@@ -258,7 +258,7 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
         <strong>{{ activeReviewReminder.title }}</strong>
         <p>{{ activeReviewReminder.text }}</p>
       </div>
-      <RouterLink class="secondary-button" :to="activeReviewReminder.to">{{ activeReviewReminder.label }}</RouterLink>
+      <RouterLink class="secondary-button context-action" :to="activeReviewReminder.to">{{ activeReviewReminder.label }}</RouterLink>
     </section>
 
     <section v-else-if="!firstUseTakesPriority && yesterdayMissing" class="recovery-nudge" aria-label="Вчера без записи">
@@ -266,7 +266,7 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
         <strong>Вчера без записи</strong>
         <p>Можно заполнить коротко сейчас или спокойно продолжить с сегодняшнего дня.</p>
       </div>
-      <button class="secondary-button" type="button" @click="fillYesterday">Заполнить вчера</button>
+      <button class="secondary-button context-action" type="button" @click="fillYesterday">Добавить запись</button>
     </section>
 
     <section v-else-if="!firstUseTakesPriority && isToday && currentWeeklyPlan" class="today-pulse" aria-label="Текущий план недели">
@@ -426,9 +426,7 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
               }}
             </p>
           </div>
-          <RouterLink class="card-settings-link" to="/settings#goal-settings">{{
-            hasSelectedFocus ? 'Настроить' : 'Выбрать цель'
-          }}</RouterLink>
+          <RouterLink v-if="hasSelectedFocus" class="card-settings-link" to="/settings#goal-settings">Настроить</RouterLink>
         </div>
         <template v-if="showGoalActionChoices">
           <p v-if="form.focusOutcomeCriterion || store.settings.focusOutcomeCriterion" class="form-context">
@@ -469,7 +467,7 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
         </template>
         <div v-else class="empty-block-note">
           <p>После выбора цели здесь можно будет отмечать конкретные шаги, подготовку или дни, занятые другими делами.</p>
-          <RouterLink class="secondary-button" to="/settings#goal-settings">Выбрать текущую цель</RouterLink>
+          <RouterLink class="secondary-button context-action" to="/settings#goal-settings">Выбрать цель</RouterLink>
         </div>
       </article>
 

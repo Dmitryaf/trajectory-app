@@ -6,7 +6,7 @@ test('saves and resumes the first week recovery on a small screen', async ({ pag
 
   await expect(page.getByRole('heading', { name: 'Соберите картину прошлой недели' })).toBeVisible();
   await expect(page.locator('.checkin-grid')).toBeHidden();
-  await page.getByRole('button', { name: 'Собрать неделю' }).click();
+  await page.getByRole('button', { name: 'Начать обзор' }).click();
   await expect(page.getByRole('heading', { name: 'Что вам удалось закончить или получить?' })).toBeVisible();
 
   await page.getByLabel('По одному пункту в строке').fill('Закончил черновик\nОтправил важное письмо');
@@ -76,7 +76,16 @@ test('saves and resumes the first week recovery on a small screen', async ({ pag
   expect(localFunnel).not.toContain('Состоялся важный разговор');
   expect(localFunnel).not.toContain('К середине недели было мало сил');
 
-  await restoredOverview.getByRole('link', { name: 'Исправить ответы' }).click();
+  await page.locator('.bottom-nav a[href="/"]').click();
+  await page.locator('.bottom-nav a[href="/week"]').click();
+  const savedOverviewNotice = page.locator('.recovered-week-link');
+  await expect(savedOverviewNotice.getByText('Ваш первый обзор сохранён')).toBeVisible();
+  await expect(savedOverviewNotice.getByText('Сейчас открыта другая неделя', { exact: false })).toBeVisible();
+  await savedOverviewNotice.getByRole('link', { name: 'Открыть обзор' }).click();
+  await expect(page.locator('#first-use-overview').getByText('К середине недели было мало сил')).toBeVisible();
+
+  const reopenedOverview = page.locator('#first-use-overview');
+  await reopenedOverview.getByRole('link', { name: 'Исправить ответы' }).click();
   await expect(page).toHaveURL(/\/?first-use=edit$/);
   await expect(page.getByRole('heading', { name: 'Что вам удалось закончить или получить?' })).toBeVisible();
   await expect(page.getByLabel('По одному пункту в строке')).toHaveValue('Закончил черновик\nОтправил важное письмо');
