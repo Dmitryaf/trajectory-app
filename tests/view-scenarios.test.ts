@@ -992,6 +992,138 @@ describe('period review navigation', () => {
     expect(wrapper.text()).not.toContain('Событие недели 4');
   });
 
+  it('keeps the weekly decision before details and limits the first-level observations', () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = Array.from({ length: 5 }, (_, index) => ({
+      ...emptyDailyEntry(`2026-07-${String(20 + index).padStart(2, '0')}`),
+      recordedFields: ['sleepMinutes', 'energy', 'actionDirection', 'importantFact'],
+      sleepMinutes: 390,
+      energy: 3,
+      actionDirection: 'preparation' as const,
+      importantFact: `Факт ${index + 1}`,
+    }));
+    store.results = [
+      {
+        id: 1,
+        date: '2026-07-22',
+        area: 'career',
+        title: 'Завершённый итог',
+        note: '',
+        createdAt: '2026-07-22T12:00:00.000Z',
+      },
+    ];
+    store.lifeEvents = [
+      {
+        id: 1,
+        date: '2026-07-23',
+        type: 'event',
+        title: 'Важное событие',
+        note: '',
+        createdAt: '2026-07-23T12:00:00.000Z',
+      },
+    ];
+    store.weeklyReviews = [emptyWeeklyReview('2026-07-20')];
+    const wrapper = mount(WeekView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+
+    const review = wrapper.get('#week-review');
+    const details = wrapper.get('details.week-data-details');
+    const reviewContext = review.get('details.review-context-details');
+    expect(review.element.compareDocumentPosition(details.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(wrapper.findAll('.review-cue-grid--primary .review-cue')).toHaveLength(3);
+    expect(wrapper.findAll('.review-cue-grid--additional .review-cue').length).toBeGreaterThan(0);
+    expect((reviewContext.element as HTMLDetailsElement).open).toBe(false);
+    expect(reviewContext.get('summary').text()).toBe('Добавить итоги и контекст');
+    expect(
+      (review.get('textarea[placeholder="Можно продолжить как есть или пока ничего не решать"]').element as HTMLTextAreaElement).value,
+    ).toBe('');
+    expect((details.element as HTMLDetailsElement).open).toBe(false);
+    expect(details.get('summary').text()).toBe('Показать показатели и записи недели');
+    expect(details.find('.metrics-grid').exists()).toBe(true);
+    expect(details.find('.week-chart-guide').exists()).toBe(false);
+    expect(details.find('e-chart-panel-stub').exists()).toBe(true);
+  });
+
+  it('explains why the weekly graph is hidden when comparable data is scarce', () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [
+      {
+        ...emptyDailyEntry('2026-07-21'),
+        recordedFields: ['sleepMinutes', 'energy', 'importantFact'],
+        sleepMinutes: 420,
+        energy: 3,
+        importantFact: 'Одна заполненная запись',
+      },
+    ];
+    const wrapper = mount(WeekView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+    const details = wrapper.get('details.week-data-details');
+
+    expect(details.get('.week-chart-guide').text()).toContain('Для графика пока мало сопоставимых данных');
+    expect(details.get('.week-chart-guide').text()).toContain('Сейчас: 1 и 1');
+    expect(details.find('e-chart-panel-stub').exists()).toBe(false);
+  });
+
+  it('keeps the monthly decision before detailed analytics and compares filled weeks', () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = Array.from({ length: 14 }, (_, index) => ({
+      ...emptyDailyEntry('2026-07-' + String(index + 1).padStart(2, '0')),
+      recordedFields: ['sleepMinutes', 'energy', 'actionDirection', 'importantFact'],
+      sleepMinutes: 390 + Math.floor(index / 7) * 30,
+      energy: 2 + Math.floor(index / 7),
+      actionDirection: 'external' as const,
+      importantFact: 'Факт месяца ' + (index + 1),
+    }));
+    store.lifeEvents = [
+      {
+        id: 1,
+        date: '2026-07-10',
+        type: 'event',
+        title: 'Событие, которое изменило месяц',
+        note: '',
+        createdAt: '2026-07-10T12:00:00.000Z',
+      },
+    ];
+    store.monthlyReviews = [emptyMonthlyReview('2026-07-01')];
+    const wrapper = mount(MonthView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+
+    const review = wrapper.get('#month-review');
+    const facts = wrapper.get('details.month-facts-details');
+    const analysis = wrapper.get('details.month-analysis-details');
+    const reviewContext = review.get('details.month-review-context');
+    expect(review.element.compareDocumentPosition(analysis.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(wrapper.findAll('.month-week-overview .comparison-periods > span').length).toBeGreaterThanOrEqual(2);
+    expect(wrapper.findAll('.review-cue-grid--primary .review-cue')).toHaveLength(3);
+    expect(wrapper.get('.month-featured-events').text()).toContain('Событие, которое изменило месяц');
+    expect(wrapper.get('.period-records').text()).not.toContain('Событие, которое изменило месяц');
+    expect((reviewContext.element as HTMLDetailsElement).open).toBe(false);
+    expect(reviewContext.get('summary').text()).toBe('Добавить разбор месяца');
+    expect((facts.element as HTMLDetailsElement).open).toBe(false);
+    expect(facts.find('.metrics-grid').exists()).toBe(true);
+    expect(facts.find('.month-calendar').exists()).toBe(true);
+    expect((analysis.element as HTMLDetailsElement).open).toBe(false);
+    expect(analysis.find('.month-chart-guide').exists()).toBe(false);
+    expect(analysis.find('e-chart-panel-stub').exists()).toBe(true);
+  });
+
+  it('explains why monthly graphs are hidden when comparable data is scarce', () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [
+      {
+        ...emptyDailyEntry('2026-07-21'),
+        recordedFields: ['sleepMinutes', 'energy', 'importantFact'],
+        sleepMinutes: 420,
+        energy: 3,
+        importantFact: 'Одна запись месяца',
+      },
+    ];
+    const wrapper = mount(MonthView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+    const analysis = wrapper.get('details.month-analysis-details');
+
+    expect(wrapper.get('.month-week-overview').text()).toContain('Для сравнения нужны записи хотя бы за две недели');
+    expect(analysis.get('.month-chart-guide').text()).toContain('Для графиков пока мало сопоставимых данных');
+    expect(analysis.get('.month-chart-guide').text()).toContain('Сейчас: 1 и 1');
+    expect(analysis.find('e-chart-panel-stub').exists()).toBe(false);
+  });
+
   it('keeps monthly records compact and routes complete archives to the selected period', async () => {
     const { pinia, store } = createStore();
     store.dailyEntries = Array.from({ length: 9 }, (_, index) => {
@@ -1021,7 +1153,7 @@ describe('period review navigation', () => {
     }));
     const wrapper = mount(MonthView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
 
-    expect(wrapper.text()).toContain('Показать графики месяца');
+    expect(wrapper.text()).toContain('Показать графики и подробный разбор');
     expect(wrapper.text()).toContain('Показать записи месяца');
     expect(wrapper.get('.period-record-card__link[href="/results?from=2026-07-01&to=2026-07-21"]').text()).toContain('Открыть все итоги');
     expect(wrapper.get('.period-record-card__link[href="/events?from=2026-07-01&to=2026-07-21"]').text()).toContain('Открыть все события');
@@ -1070,7 +1202,7 @@ describe('period review navigation', () => {
       expect(wrapper.text()).toContain('Завершённый итог без дневной записи');
       expect(wrapper.text()).toContain('Важное событие без дневной записи');
     }
-    expect((week.get('details.period-details').element as HTMLDetailsElement).open).toBe(true);
+    expect((week.get('details.week-data-details').element as HTMLDetailsElement).open).toBe(true);
     expect((month.get('details.period-records').element as HTMLDetailsElement).open).toBe(true);
   });
 
@@ -1087,9 +1219,11 @@ describe('period review navigation', () => {
       expect(wrapper.find('.period-data-guide').exists()).toBe(true);
       expect(wrapper.find('.metrics-grid').exists()).toBe(false);
       expect(wrapper.find('.review-card').exists()).toBe(true);
-      expect(wrapper.find('.period-details').exists()).toBe(false);
+      expect(wrapper.find('.period-details:not(.review-context-details):not(.month-review-context)').exists()).toBe(false);
     }
     expect((week.get('.review-card input').element as HTMLInputElement).value).toBe('Неделя не была пустой');
+    expect((month.get('details.month-review-context').element as HTMLDetailsElement).open).toBe(true);
+    expect(month.get('details.month-review-context summary').text()).toBe('Разбор месяца');
     expect((month.get('.review-card textarea').element as HTMLTextAreaElement).value).toBe('Важный вывод месяца');
   });
 
@@ -1120,6 +1254,9 @@ describe('period review navigation', () => {
     expect(overview.get('a[href="/?first-use=edit"]').text()).toBe('Исправить ответы');
 
     const reviewForm = wrapper.get('#week-review');
+    const reviewContext = reviewForm.get('details.review-context-details');
+    expect((reviewContext.element as HTMLDetailsElement).open).toBe(true);
+    expect(reviewContext.get('summary').text()).toBe('Итоги и контекст');
     expect(reviewForm.findAll('input')).toHaveLength(6);
     expect(reviewForm.text()).toContain('До трёх событий, решений или мыслей');
     expect((reviewForm.findAll('textarea')[0]!.element as HTMLTextAreaElement).value).toBe('К середине недели было мало сил');

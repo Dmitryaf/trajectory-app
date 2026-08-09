@@ -148,6 +148,13 @@ test('keeps monthly records compact and opens the matching archives', async ({ p
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/month');
   await page.getByRole('button', { name: 'Предыдущий период' }).click();
+  await expect(page.locator('.month-featured-events')).toBeVisible();
+  await expect(page.locator('.month-featured-events').getByRole('link', { name: 'Открыть все события' })).toHaveAttribute(
+    'href',
+    '/events?from=2026-07-01&to=2026-07-31',
+  );
+  await expect(page.locator('.month-facts-details')).not.toHaveAttribute('open', '');
+  await expect(page.locator('.month-analysis-details')).not.toHaveAttribute('open', '');
   await page.getByText('Показать записи месяца', { exact: true }).click();
 
   const records = page.locator('.period-records');
@@ -172,9 +179,9 @@ test('shows weekly results and events as compact archive previews', async ({ pag
   await page.goto('/week');
   await page.getByRole('button', { name: 'Предыдущий период' }).click();
   await page.getByRole('button', { name: 'Предыдущий период' }).click();
-  await page.getByText('Показать записи и карту недели', { exact: true }).click();
+  await page.getByText('Показать показатели и записи недели', { exact: true }).click();
 
-  const records = page.locator('.period-details').filter({ hasText: 'Показать записи и карту недели' });
+  const records = page.locator('.week-data-details').filter({ hasText: 'Показать показатели и записи недели' });
   await expect(records.getByText('Итоги недели', { exact: true })).toBeVisible();
   await expect(records.getByText('События недели', { exact: true })).toBeVisible();
   await expect(records.getByRole('link', { name: 'Открыть все итоги' })).toHaveAttribute('href', '/results?from=2026-07-20&to=2026-07-26');
