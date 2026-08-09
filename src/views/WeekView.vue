@@ -7,6 +7,7 @@ import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
 import WeeklyReviewJournalLinks from '../components/WeeklyReviewJournalLinks.vue';
 import WeeklyReviewOverview from '../components/WeeklyReviewOverview.vue';
+import ArchivePagination from '../features/journal/ArchivePagination.vue';
 import {
   actionDirectionLabel,
   buildReviewCues,
@@ -24,6 +25,7 @@ import { addDays, endOfWeek, formatDate, formatMinutes, fromDateKey, startOfWeek
 import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../features/export/browser';
 import { experimentDecisionLabel } from '../features/experiments/model';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
+import { pageCount, pageItems } from '../services/pagination';
 import { plainCopy } from '../services/plain';
 import { useAppStore } from '../stores/app';
 import {
@@ -51,7 +53,6 @@ function initialAnchor(value: string | undefined) {
 const anchor = ref(initialAnchor(props.initialWeek));
 const start = computed(() => startOfWeek(anchor.value));
 const end = computed(() => endOfWeek(anchor.value));
-const archiveEnd = computed(() => (end.value > todayKey() ? todayKey() : end.value));
 const days = computed(() => Array.from({ length: 7 }, (_, index) => addDays(start.value, index)));
 const entries = computed(() => entriesForWeek(store.dailyEntries, anchor.value));
 const entriesByDate = computed(() => new Map(entries.value.map((entry) => [entry.date, entry])));
@@ -60,11 +61,16 @@ const contextFactorItems = computed(() => [...contextFactorOptions, ...store.set
 const externalCareerIds = computed(() => externalCareerIdsForOptions(store.settings.customCareerOptions));
 const summary = computed(() => summarize(entries.value, externalCareerIds.value));
 const results = computed(() => resultsForPeriod(store.results, start.value, end.value));
-const displayedResults = computed(() => results.value.slice(0, 3));
 const lifeEvents = computed(() =>
   store.lifeEvents.filter((event) => event.date >= start.value && event.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)),
 );
-const displayedLifeEvents = computed(() => lifeEvents.value.slice(0, 3));
+const resultPage = ref(1);
+const eventPage = ref(1);
+const recordPageSize = 5;
+const visibleResults = computed(() => pageItems(results.value, resultPage.value, recordPageSize));
+const resultPageCount = computed(() => pageCount(results.value.length, recordPageSize));
+const visibleLifeEvents = computed(() => pageItems(lifeEvents.value, eventPage.value, recordPageSize));
+const eventPageCount = computed(() => pageCount(lifeEvents.value.length, recordPageSize));
 const resultAreaItems = computed(() => [...resultAreaOptions, ...store.settings.customLifeAreaOptions]);
 const resultAreaSummary = computed(() => {
   const knownAreas = resultAreaItems.value;
@@ -315,8 +321,16 @@ function loadReview() {
   Object.assign(review, emptyWeeklyReview(start.value), existing ? plainCopy(existing) : {});
   while (review.results.length < 3) review.results.push('');
   while (review.highlights.length < 3) review.highlights.push('');
+  resultPage.value = 1;
+  eventPage.value = 1;
 }
 watch(start, loadReview, { immediate: true });
+watch(resultPageCount, (count) => {
+  resultPage.value = Math.min(resultPage.value, count);
+});
+watch(eventPageCount, (count) => {
+  eventPage.value = Math.min(eventPage.value, count);
+});
 watch(
   () => props.initialWeek,
   (value) => {
@@ -742,16 +756,14 @@ function downloadJson() {
               <span v-for="area in resultAreaSummary" :key="area.id">{{ area.icon }} {{ area.label }} · {{ area.count }}</span>
             </div>
             <ul class="period-record-preview">
-              <li v-for="result in displayedResults" :key="result.id ?? result.createdAt">
+              <li v-for="result in visibleResults" :key="result.id ?? result.createdAt">
                 <span>✓</span>
                 <div>
                   {{ result.title }}<small>{{ formatDate(result.date, { weekday: 'short', day: 'numeric' }) }}</small>
                 </div>
               </li>
             </ul>
-            <RouterLink class="secondary-button period-record-card__link" :to="`/results?from=${start}&to=${archiveEnd}`">
-              Открыть все итоги
-            </RouterLink>
+            <ArchivePagination v-model:page="resultPage" :page-count="resultPageCount" context-label="итогов недели" />
           </article>
 
           <article v-if="lifeEvents.length" class="period-record-card">
@@ -766,16 +778,14 @@ function downloadJson() {
               <span v-for="type in eventTypeSummary" :key="type.id">{{ type.icon }} {{ type.label }} · {{ type.count }}</span>
             </div>
             <ul class="period-record-preview">
-              <li v-for="event in displayedLifeEvents" :key="event.id ?? event.createdAt">
+              <li v-for="event in visibleLifeEvents" :key="event.id ?? event.createdAt">
                 <span>{{ eventTypeSummary.find((type) => type.id === event.type)?.icon ?? '·' }}</span>
                 <div>
                   {{ event.title }}<small>{{ formatDate(event.date, { weekday: 'short', day: 'numeric' }) }}</small>
                 </div>
               </li>
             </ul>
-            <RouterLink class="secondary-button period-record-card__link" :to="`/events?from=${start}&to=${archiveEnd}`">
-              Открыть все события
-            </RouterLink>
+            <ArchivePagination v-model:page="eventPage" :page-count="eventPageCount" context-label="событий недели" />
           </article>
         </div>
       </details>
