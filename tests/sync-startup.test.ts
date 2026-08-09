@@ -72,9 +72,8 @@ describe('startup cloud reconciliation', () => {
 
   it('uploads pending local changes when the known cloud revision is unchanged', async () => {
     const store = createStore();
-    const updatedAt = '2026-07-22T10:00:00.000Z';
-    const snapshot = { payload: {}, updatedAt, userId: 'user-1' };
-    const services = createServices(snapshot, { lastCloudUpdatedAt: updatedAt, pending: true });
+    const snapshot = { payload: {}, updatedAt: '2026-07-22T10:00:00.000+00:00', userId: 'user-1' };
+    const services = createServices(snapshot, { lastCloudUpdatedAt: '2026-07-22T10:00:00.000Z', pending: true });
 
     await reconcileCloudSnapshotOnStartup(store, 'user-1', services);
 
@@ -109,6 +108,63 @@ describe('startup cloud reconciliation', () => {
       'conflict',
       'В облаке появились более свежие данные. Открытые записи не заменены. Выберите нужную копию в разделе «Данные и синхронизация».',
       { updatedAt: snapshot.updatedAt },
+    );
+  });
+
+  it('does not report a conflict when Supabase returns the known revision with another UTC notation', async () => {
+    const store = createStore();
+    store.dailyEntries = [{ date: '2026-07-21' } as (typeof store.dailyEntries)[number]];
+    const snapshot = { payload: { version: 9 }, updatedAt: '2026-07-22T10:00:00.000+00:00', userId: 'user-1' };
+    const services = createServices(snapshot, { lastCloudUpdatedAt: '2026-07-22T10:00:00.000Z' });
+
+    await reconcileCloudSnapshotAfterResume(store, 'user-1', services);
+
+    expect(store.importData).not.toHaveBeenCalled();
+    expect(services.markConflict).not.toHaveBeenCalled();
+    expect(services.markSynced).toHaveBeenCalledWith('user-1', snapshot.updatedAt);
+    expect(store.setCloudSyncState).toHaveBeenCalledWith('synced', expect.stringContaining('Облако синхронизировано:'), {
+      updatedAt: snapshot.updatedAt,
+    });
+  });
+
+  it('clears a stale conflict when local and cloud data are identical', async () => {
+    const store = createStore();
+    store.settings.activeFocusTitle = 'Одна и та же цель';
+    const updatedAt = '2026-07-22T10:00:00.000+00:00';
+    const snapshot = { payload: { ...store.exportData(), exportedAt: '2026-07-22T10:00:00.000Z' }, updatedAt, userId: 'user-1' };
+    const services = createServices(snapshot, { lastCloudUpdatedAt: updatedAt, conflict: true });
+
+    await reconcileCloudSnapshotOnStartup(store, 'user-1', services);
+
+    expect(store.importData).not.toHaveBeenCalled();
+    expect(store.syncCloudSnapshot).not.toHaveBeenCalled();
+    expect(services.markConflict).not.toHaveBeenCalled();
+    expect(services.markSynced).toHaveBeenCalledWith('user-1', updatedAt);
+    expect(store.setCloudSyncState).toHaveBeenCalledWith('synced', expect.stringContaining('Облако синхронизировано:'), {
+      updatedAt,
+    });
+  });
+
+  it('keeps a confirmed conflict when local and cloud data differ', async () => {
+    const store = createStore();
+    store.settings.activeFocusTitle = 'Локальная цель';
+    const updatedAt = '2026-07-22T10:00:00.000+00:00';
+    const cloudPayload = {
+      ...store.exportData(),
+      settings: { ...store.settings, activeFocusTitle: 'Облачная цель' },
+    };
+    const snapshot = { payload: cloudPayload, updatedAt, userId: 'user-1' };
+    const services = createServices(snapshot, { lastCloudUpdatedAt: updatedAt, conflict: true });
+
+    await reconcileCloudSnapshotOnStartup(store, 'user-1', services);
+
+    expect(store.importData).not.toHaveBeenCalled();
+    expect(store.syncCloudSnapshot).not.toHaveBeenCalled();
+    expect(services.markSynced).not.toHaveBeenCalled();
+    expect(store.setCloudSyncState).toHaveBeenCalledWith(
+      'conflict',
+      'В этом браузере и в облаке есть разные данные. Выберите нужную копию в разделе «Данные и синхронизация».',
+      { updatedAt },
     );
   });
 
