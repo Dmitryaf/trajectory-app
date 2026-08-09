@@ -19,6 +19,7 @@ const betaSignupMigration = readFileSync(
   'utf8',
 );
 const deleteAccountFunction = readFileSync(new URL('../supabase/functions/delete-account/index.ts', import.meta.url), 'utf8');
+const deleteAccountHandler = readFileSync(new URL('../supabase/functions/delete-account/handler.ts', import.meta.url), 'utf8');
 const feedbackFunction = readFileSync(new URL('../api/feedback.ts', import.meta.url), 'utf8');
 const cloudSyncService = readFileSync(new URL('../src/services/cloudSync.ts', import.meta.url), 'utf8');
 const envExample = readFileSync(new URL('../.env.example', import.meta.url), 'utf8');
@@ -68,10 +69,12 @@ describe('deployment configuration', () => {
   });
 
   it('deletes only the authenticated caller through a server-side function', () => {
+    expect(deleteAccountFunction).toContain('createDeleteAccountHandler');
     expect(deleteAccountFunction).toContain('auth.getUser(accessToken)');
-    expect(deleteAccountFunction).toContain("body.confirmation !== 'DELETE_MY_ACCOUNT'");
-    expect(deleteAccountFunction).toContain('auth.admin.deleteUser(user.id)');
+    expect(deleteAccountFunction).toContain('auth.admin.deleteUser(userId)');
     expect(deleteAccountFunction).toContain("Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')");
+    expect(deleteAccountHandler).toContain("body.confirmation !== 'DELETE_MY_ACCOUNT'");
+    expect(deleteAccountHandler).toContain('dependencies.deleteUser(userResult.user.id');
     expect(cloudSyncService).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
   });
 });
