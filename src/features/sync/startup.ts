@@ -88,9 +88,13 @@ async function reconcileCloudSnapshot(
     }
 
     services.markConflict(userId, snapshot.updatedAt);
-    store.setCloudSyncState('conflict', 'В этом браузере и в облаке есть разные данные. Выбери действие в настройках.', {
-      updatedAt: snapshot.updatedAt,
-    });
+    store.setCloudSyncState(
+      'conflict',
+      'В этом браузере и в облаке есть разные данные. Выберите нужную копию в разделе «Данные и синхронизация».',
+      {
+        updatedAt: snapshot.updatedAt,
+      },
+    );
   } catch (error) {
     console.warn('Не удалось загрузить облачную копию', error);
     store.setCloudSyncState('pending', 'Локальные данные доступны. Облако пока не проверено.', {
@@ -103,7 +107,7 @@ function markResumeConflict(store: AppStore, userId: string, snapshot: CloudSnap
   services.markConflict(userId, snapshot.updatedAt);
   store.setCloudSyncState(
     'conflict',
-    'В облаке появились более свежие данные. Открытые записи не заменены. Выбери действие в настройках.',
+    'В облаке появились более свежие данные. Открытые записи не заменены. Выберите нужную копию в разделе «Данные и синхронизация».',
     {
       updatedAt: snapshot.updatedAt,
     },

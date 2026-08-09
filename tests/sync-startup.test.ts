@@ -65,7 +65,7 @@ describe('startup cloud reconciliation', () => {
     expect(services.markConflict).toHaveBeenCalledWith('user-1', snapshot.updatedAt);
     expect(store.setCloudSyncState).toHaveBeenCalledWith(
       'conflict',
-      'В этом браузере и в облаке есть разные данные. Выбери действие в настройках.',
+      'В этом браузере и в облаке есть разные данные. Выберите нужную копию в разделе «Данные и синхронизация».',
       { updatedAt: snapshot.updatedAt },
     );
   });
@@ -107,7 +107,7 @@ describe('startup cloud reconciliation', () => {
     expect(services.markConflict).toHaveBeenCalledWith('user-1', snapshot.updatedAt);
     expect(store.setCloudSyncState).toHaveBeenCalledWith(
       'conflict',
-      'В облаке появились более свежие данные. Открытые записи не заменены. Выбери действие в настройках.',
+      'В облаке появились более свежие данные. Открытые записи не заменены. Выберите нужную копию в разделе «Данные и синхронизация».',
       { updatedAt: snapshot.updatedAt },
     );
   });

@@ -162,6 +162,7 @@ test('switches settings scenarios with the keyboard on a mobile screen', async (
   await dataTab.focus();
   await dataTab.press('Enter');
   await expect(page.locator('#data-settings')).toBeVisible();
+  await expect(page.locator('#data-settings')).toHaveCSS('animation-name', 'page-in');
   await expect(page.locator('#daily-settings')).toBeHidden();
   await expect(page.locator('.settings-card--cloud')).toBeVisible();
   await expect(page.locator('.settings-card--account')).toBeHidden();

@@ -11,6 +11,7 @@ const settingsGroups: Array<{ id: SettingsGroup; label: string; hash: string }> 
   { id: 'data', label: 'Данные и синхронизация', hash: 'data-settings' },
   { id: 'account', label: 'Аккаунт и безопасность', hash: 'account-settings' },
 ];
+const settingsGroupStyle = { animation: 'page-in 0.25s ease-out' };
 const dailySectionHashes = new Set([
   'daily-settings',
   'daily-blocks',
@@ -139,7 +140,13 @@ const {
       </button>
     </nav>
 
-    <section v-show="activeSettingsGroup === 'daily'" id="daily-settings" aria-label="Настройка ежедневной записи">
+    <section
+      v-show="activeSettingsGroup === 'daily'"
+      id="daily-settings"
+      class="settings-group"
+      :style="settingsGroupStyle"
+      aria-label="Настройка ежедневной записи"
+    >
       <article id="daily-blocks" class="settings-card settings-card--daily-blocks">
         <div class="form-card__heading">
           <span class="section-icon section-icon--blue">☷</span>
@@ -473,7 +480,13 @@ const {
       </article>
     </section>
 
-    <section v-show="activeSettingsGroup === 'experiment'" id="experiment-settings-group" aria-label="Настройка личного эксперимента">
+    <section
+      v-show="activeSettingsGroup === 'experiment'"
+      id="experiment-settings-group"
+      class="settings-group"
+      :style="settingsGroupStyle"
+      aria-label="Настройка личного эксперимента"
+    >
       <article id="experiment-settings" class="settings-card settings-card--experiment">
         <div class="form-card__heading">
           <span class="section-icon section-icon--orange">⌁</span>
@@ -543,7 +556,13 @@ const {
       </article>
     </section>
 
-    <section v-show="activeSettingsGroup === 'data'" id="data-settings" aria-label="Данные и синхронизация">
+    <section
+      v-show="activeSettingsGroup === 'data'"
+      id="data-settings"
+      class="settings-group"
+      :style="settingsGroupStyle"
+      aria-label="Данные и синхронизация"
+    >
       <article id="backup-settings" class="settings-card settings-card--backup">
         <div class="form-card__heading">
           <span class="section-icon section-icon--blue">↓</span>
@@ -655,7 +674,13 @@ const {
       </article>
     </section>
 
-    <section v-show="activeSettingsGroup === 'account'" id="account-settings" aria-label="Аккаунт и безопасность">
+    <section
+      v-show="activeSettingsGroup === 'account'"
+      id="account-settings"
+      class="settings-group"
+      :style="settingsGroupStyle"
+      aria-label="Аккаунт и безопасность"
+    >
       <article class="settings-card settings-card--account settings-card--career">
         <div class="form-card__heading">
           <span class="section-icon section-icon--blue">◉</span>

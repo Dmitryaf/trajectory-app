@@ -209,7 +209,7 @@ const navItems = [
             <strong>{{ store.cloudSyncStatus === 'conflict' ? 'Нужен выбор по облаку' : 'Облако не обновлено' }}</strong>
             <p>{{ store.cloudSyncMessage }}</p>
           </div>
-          <RouterLink class="secondary-button" to="/settings">Настройки</RouterLink>
+          <RouterLink class="secondary-button" to="/settings#cloud-settings">Данные и синхронизация</RouterLink>
         </section>
         <RouterView />
       </template>
