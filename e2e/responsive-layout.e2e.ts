@@ -57,6 +57,36 @@ test('keeps mobile form controls inside their cards', async ({ page }) => {
   }
 });
 
+test('keeps trend evidence grouped behind compact mobile disclosures', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/trends');
+
+  const insights = page.locator('.dashboard-card--insights');
+  const quality = page.locator('.trends-quality-details');
+  await expect(insights).toBeVisible();
+  await expect(quality).not.toHaveAttribute('open', '');
+  const primaryCueCount = await page.locator('.review-cue-grid--primary .review-cue').count();
+  expect(primaryCueCount).toBeGreaterThan(0);
+  expect(primaryCueCount).toBeLessThanOrEqual(3);
+
+  const insightsBox = await insights.boundingBox();
+  const qualityBox = await quality.boundingBox();
+  expect(insightsBox).not.toBeNull();
+  expect(qualityBox).not.toBeNull();
+  expect(qualityBox!.y).toBeGreaterThan(insightsBox!.y);
+
+  await quality.locator(':scope > summary').click();
+  await expect(quality).toHaveAttribute('open', '');
+  await expect(quality.locator('.metrics-grid')).toBeVisible();
+  await expect(quality.locator('.trends-table-details')).toBeVisible();
+
+  const widths = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }));
+  expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+});
+
 test('keeps the returning daily form compact and visibly grouped', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto('/');
@@ -66,9 +96,25 @@ test('keeps the returning daily form compact and visibly grouped', async ({ page
   expect(headingBox!.height).toBeLessThanOrEqual(150);
   await expect(page.getByText('Запись за дату', { exact: true })).toBeVisible();
   await expect(page.getByText('Состояние и условия', { exact: true })).toBeVisible();
-  await expect(page.getByText('Действия и области жизни', { exact: true })).toBeVisible();
+  await expect(page.getByText('Текущая цель', { exact: true })).toBeVisible();
+  await expect(page.getByText('Остальные части дня', { exact: true })).toBeVisible();
   await expect(page.getByText('Короткий итог дня', { exact: true })).toBeVisible();
   await expect(page.getByText('Сон перед этой датой и сколько сил было в этот день.', { exact: true })).toBeHidden();
+
+  const goalCard = page.locator('#goal-actions');
+  const workCard = page.locator('#career');
+  const goalBox = await goalCard.boundingBox();
+  const workBox = await workCard.boundingBox();
+  expect(goalBox).not.toBeNull();
+  expect(workBox).not.toBeNull();
+  expect(goalBox!.y).toBeLessThan(workBox!.y);
+  await expect(workCard.locator('textarea')).toHaveCount(0);
+
+  const goalCriteria = goalCard.locator('.goal-context-details');
+  await expect(goalCriteria).not.toHaveAttribute('open', '');
+  await goalCriteria.locator('summary').focus();
+  await goalCriteria.locator('summary').press('Enter');
+  await expect(goalCriteria).toHaveAttribute('open', '');
 });
 
 test('keeps result details editable when Backspace clears the field', async ({ page }) => {
@@ -106,6 +152,29 @@ test('opens the exact settings section from a daily card', async ({ page }) => {
 
   await expect(page).toHaveURL(/\/settings#life-areas$/);
   await expect(page.locator('#life-areas')).toBeInViewport();
+});
+
+test('switches settings scenarios with the keyboard on a mobile screen', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/settings');
+
+  const dataTab = page.getByRole('button', { name: 'Данные и синхронизация' });
+  await dataTab.focus();
+  await dataTab.press('Enter');
+  await expect(page.locator('#data-settings')).toBeVisible();
+  await expect(page.locator('#daily-settings')).toBeHidden();
+  await expect(page.locator('.settings-card--cloud')).toBeVisible();
+  await expect(page.locator('.settings-card--account')).toBeHidden();
+
+  await page.getByRole('button', { name: 'Аккаунт и безопасность' }).click();
+  await expect(page.locator('#account-settings')).toBeVisible();
+  await expect(page.locator('#data-settings')).toBeHidden();
+
+  const widths = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }));
+  expect(widths.content).toBeLessThanOrEqual(widths.viewport);
 });
 
 test('sends feedback from the built-in form without asking for recipient details', async ({ page }) => {
@@ -148,6 +217,13 @@ test('keeps monthly records compact and opens the matching archives', async ({ p
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/month');
   await page.getByRole('button', { name: 'Предыдущий период' }).click();
+  await expect(page.locator('.month-featured-events')).toBeVisible();
+  await expect(page.locator('.month-featured-events').getByRole('link', { name: 'Открыть все события' })).toHaveAttribute(
+    'href',
+    '/events?from=2026-07-01&to=2026-07-31',
+  );
+  await expect(page.locator('.month-facts-details')).not.toHaveAttribute('open', '');
+  await expect(page.locator('.month-analysis-details')).not.toHaveAttribute('open', '');
   await page.getByText('Показать записи месяца', { exact: true }).click();
 
   const records = page.locator('.period-records');
@@ -172,9 +248,9 @@ test('shows weekly results and events as compact archive previews', async ({ pag
   await page.goto('/week');
   await page.getByRole('button', { name: 'Предыдущий период' }).click();
   await page.getByRole('button', { name: 'Предыдущий период' }).click();
-  await page.getByText('Показать записи и карту недели', { exact: true }).click();
+  await page.getByText('Показать показатели и записи недели', { exact: true }).click();
 
-  const records = page.locator('.period-details').filter({ hasText: 'Показать записи и карту недели' });
+  const records = page.locator('.week-data-details').filter({ hasText: 'Показать показатели и записи недели' });
   await expect(records.getByText('Итоги недели', { exact: true })).toBeVisible();
   await expect(records.getByText('События недели', { exact: true })).toBeVisible();
   await expect(records.getByRole('link', { name: 'Открыть все итоги' })).toHaveAttribute('href', '/results?from=2026-07-20&to=2026-07-26');

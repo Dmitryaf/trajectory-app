@@ -105,6 +105,7 @@ const firstUseTakesPriority = computed(
 const hasSelectedFocus = computed(() => Boolean((form.focusTitle || store.settings.activeFocusTitle).trim()));
 const hasRecordedGoalAction = computed(() => form.recordedFields.includes('actionDirection'));
 const showGoalActionChoices = computed(() => hasSelectedFocus.value || hasRecordedGoalAction.value);
+const showLifeAreas = computed(() => activeLifeOptions.value.length > 0 || form.lifeAreas.length > 0 || form.lifeAreasRecorded);
 const currentWeekEntries = computed(() => entriesForWeek(store.dailyEntries, todayKey()));
 const externalCareerIds = computed(() => externalCareerIdsForOptions(store.settings.customCareerOptions));
 const currentWeekSummary = computed(() => summarize(currentWeekEntries.value, externalCareerIds.value));
@@ -116,6 +117,14 @@ const isMonthReviewWindow = computed(() => isToday.value && todayKey() >= addDay
 const experimentAppliesToSelectedDate = computed(() => {
   return experimentAppliesToDate(store.settings.experiment, selectedDate.value);
 });
+const hasAdditionalDayBlocks = computed(
+  () =>
+    blockIsActive('career') ||
+    blockIsActive('movement') ||
+    blockIsActive('nutrition') ||
+    showLifeAreas.value ||
+    experimentAppliesToSelectedDate.value,
+);
 const reviewReminders = computed(() =>
   [
     isWeekReviewWindow.value &&
@@ -380,14 +389,95 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
       </article>
 
       <div class="checkin-group-heading">
-        <span>Действия и области жизни</span>
+        <span>Текущая цель</span>
+      </div>
+      <article id="goal-actions" class="form-card form-card--direction form-card--wide">
+        <div class="form-card__heading">
+          <span class="section-icon section-icon--blue">⌁</span>
+          <div>
+            <h2>Шаг по текущей цели</h2>
+            <p>
+              {{
+                hasSelectedFocus
+                  ? `Текущая цель: ${form.focusTitle || store.settings.activeFocusTitle}`
+                  : hasRecordedGoalAction
+                    ? 'Для этой записи цель не была сохранена.'
+                    : 'Сначала выберите, над чем сейчас хотите работать.'
+              }}
+            </p>
+          </div>
+          <RouterLink v-if="hasSelectedFocus" class="card-settings-link" to="/settings#goal-settings">Настроить</RouterLink>
+        </div>
+        <template v-if="showGoalActionChoices">
+          <p class="field-hint">Что лучше всего описывает этот день относительно выбранной цели?</p>
+          <ChipGroup
+            :model-value="form.actionDirection"
+            :options="actionDirectionItems"
+            allow-clear
+            @update:model-value="setActionDirection"
+          />
+          <button
+            class="none-option"
+            :class="{ selected: form.recordedFields.includes('actionDirection') && form.actionDirection === null }"
+            type="button"
+            @click="setNoActionDirection"
+          >
+            Шага по цели не было
+          </button>
+          <p v-if="form.actionDirection === 'recovery'" class="data-note">
+            Это значение сохранено из старой записи. Для новых дней восстановление отмечается в активности или условиях дня.
+          </p>
+          <template v-if="form.actionDirection">
+            <label class="field-label" for="goal-action-note">Что именно произошло?</label>
+            <textarea
+              id="goal-action-note"
+              v-model="form.actionNote"
+              rows="2"
+              maxlength="180"
+              placeholder="Коротко опишите одно действие или полученный результат"
+            ></textarea>
+          </template>
+          <details
+            v-if="
+              form.focusOutcomeCriterion ||
+              store.settings.focusOutcomeCriterion ||
+              form.focusReviewDate ||
+              store.settings.focusReviewDate ||
+              form.externalEvidenceCriterion ||
+              store.settings.externalEvidenceCriterion
+            "
+            class="analysis-range goal-context-details"
+          >
+            <summary>Показать критерии цели</summary>
+            <div class="analysis-range__content">
+              <p v-if="form.focusOutcomeCriterion || store.settings.focusOutcomeCriterion" class="form-context">
+                Как понять, что получилось: {{ form.focusOutcomeCriterion || store.settings.focusOutcomeCriterion }}
+              </p>
+              <p v-if="form.focusReviewDate || store.settings.focusReviewDate" class="form-context">
+                Проверить цель:
+                {{ formatDate(form.focusReviewDate || store.settings.focusReviewDate, { day: 'numeric', month: 'long', year: 'numeric' }) }}
+              </p>
+              <p v-if="form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion" class="form-context">
+                Что считать шагом: {{ form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion }}
+              </p>
+            </div>
+          </details>
+        </template>
+        <div v-else class="empty-block-note">
+          <p>После выбора цели здесь можно будет отмечать конкретные шаги, подготовку или дни, занятые другими делами.</p>
+          <RouterLink class="secondary-button context-action" to="/settings#goal-settings">Выбрать цель</RouterLink>
+        </div>
+      </article>
+
+      <div v-if="hasAdditionalDayBlocks" class="checkin-group-heading">
+        <span>Остальные части дня</span>
       </div>
       <article v-if="blockIsActive('career')" id="career" class="form-card">
         <div class="form-card__heading">
           <span class="section-icon section-icon--blue">↗</span>
           <div>
-            <h2>Работа</h2>
-            <p v-if="isFirstEntry">Что сегодня было связано с работой, учёбой для неё или своим проектом.</p>
+            <h2>Рабочий контекст</h2>
+            <p>Что было частью рабочего дня. Эта отметка сама по себе не считается шагом по текущей цели.</p>
           </div>
           <RouterLink class="card-settings-link" to="/settings#work-settings">Настроить</RouterLink>
         </div>
@@ -405,66 +495,7 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
         >
           Ничего из списка
         </button>
-      </article>
-
-      <article id="goal-actions" class="form-card form-card--direction form-card--wide">
-        <div class="form-card__heading">
-          <span class="section-icon section-icon--blue">⌁</span>
-          <div>
-            <h2>Действия по цели</h2>
-            <p>
-              {{
-                hasSelectedFocus
-                  ? `Текущая цель: ${form.focusTitle || store.settings.activeFocusTitle}`
-                  : hasRecordedGoalAction
-                    ? 'Для этой записи цель не была сохранена.'
-                    : 'Сначала выберите, над чем сейчас хотите работать.'
-              }}
-            </p>
-          </div>
-          <RouterLink v-if="hasSelectedFocus" class="card-settings-link" to="/settings#goal-settings">Настроить</RouterLink>
-        </div>
-        <template v-if="showGoalActionChoices">
-          <p v-if="form.focusOutcomeCriterion || store.settings.focusOutcomeCriterion" class="form-context">
-            Как понять, что получилось: {{ form.focusOutcomeCriterion || store.settings.focusOutcomeCriterion }}
-          </p>
-          <p v-if="form.focusReviewDate || store.settings.focusReviewDate" class="form-context">
-            Проверить цель:
-            {{ formatDate(form.focusReviewDate || store.settings.focusReviewDate, { day: 'numeric', month: 'long', year: 'numeric' }) }}
-          </p>
-          <p v-if="form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion" class="form-context">
-            Что считать шагом: {{ form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion }}
-          </p>
-          <p class="field-hint">Выберите, что лучше всего описывает этот день относительно цели.</p>
-          <ChipGroup
-            :model-value="form.actionDirection"
-            :options="actionDirectionItems"
-            allow-clear
-            @update:model-value="setActionDirection"
-          />
-          <button
-            class="none-option"
-            :class="{ selected: form.recordedFields.includes('actionDirection') && form.actionDirection === null }"
-            type="button"
-            @click="setNoActionDirection"
-          >
-            Действий по цели не было
-          </button>
-          <p v-if="form.actionDirection === 'recovery'" class="data-note">
-            Это значение сохранено из старой записи. Для новых дней восстановление отмечается в активности или условиях дня.
-          </p>
-          <textarea
-            v-if="form.actionDirection"
-            v-model="form.actionNote"
-            rows="2"
-            maxlength="180"
-            placeholder="Коротко: что именно вы сделали"
-          ></textarea>
-        </template>
-        <div v-else class="empty-block-note">
-          <p>После выбора цели здесь можно будет отмечать конкретные шаги, подготовку или дни, занятые другими делами.</p>
-          <RouterLink class="secondary-button context-action" to="/settings#goal-settings">Выбрать цель</RouterLink>
-        </div>
+        <p class="data-note">Конкретное действие по выбранной цели записывается только в блоке выше.</p>
       </article>
 
       <article v-if="blockIsActive('movement')" id="movement" class="form-card">
@@ -529,7 +560,7 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
         ></textarea>
       </article>
 
-      <article id="life-areas" class="form-card">
+      <article v-if="showLifeAreas" id="life-areas" class="form-card">
         <div class="form-card__heading">
           <span class="section-icon section-icon--amber">✦</span>
           <div>

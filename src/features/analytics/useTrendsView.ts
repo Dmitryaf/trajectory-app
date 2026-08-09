@@ -66,6 +66,9 @@ export function useTrendsView() {
   const cues = computed(() =>
     buildRangeReviewCues(range.value, entries.value, results.value, lifeEvents.value, externalCareerIds.value, contextFactorItems.value),
   );
+  const primaryCues = computed(() => cues.value.slice(0, 3));
+  const additionalCues = computed(() => cues.value.slice(3));
+  const hasEnoughDataForTrendCharts = computed(() => cues.value.find((cue) => cue.id === 'coverage')?.tone === 'good');
 
   function eventKey(event: (typeof store.lifeEvents)[number]): string {
     return `${event.date}|${event.createdAt}`;
@@ -109,6 +112,8 @@ export function useTrendsView() {
       };
     }),
   );
+  const hasWeightData = computed(() => monthRows.value.some((row) => row.summary.weightSamples > 0));
+  const hasActionData = computed(() => summary.value.actionDirectionSamples > 0 || results.value.length > 0);
 
   const eventLines = computed(() =>
     monthRows.value.flatMap((row) => {
@@ -505,6 +510,11 @@ export function useTrendsView() {
     summary,
     factors,
     cues,
+    primaryCues,
+    additionalCues,
+    hasEnoughDataForTrendCharts,
+    hasWeightData,
+    hasActionData,
     eventKey,
     selectedEvent,
     eventComparison,

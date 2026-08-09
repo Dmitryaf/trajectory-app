@@ -26,6 +26,7 @@ import {
   formatMinutes,
   fromDateKey,
   startOfMonth,
+  startOfWeek,
   todayKey,
   toDateKey,
 } from '../services/dates';
@@ -66,6 +67,12 @@ const displayedLifeEvents = computed(() => lifeEvents.value.slice(0, 3));
 const reviewCues = computed(() =>
   buildReviewCues('month', entries.value, results.value, lifeEvents.value, externalCareerIds.value, contextFactorItems.value),
 );
+const primaryReviewCues = computed(() => reviewCues.value.slice(0, 3));
+const additionalReviewCues = computed(() => reviewCues.value.slice(3));
+const hasEnoughDataForMonthCharts = computed(() => reviewCues.value.find((cue) => cue.id === 'coverage')?.tone === 'good');
+const additionalObservations = computed(() =>
+  observations.value.filter((observation) => !['special-days', 'context-factor'].includes(observation.id)),
+);
 const reviewQuestions = buildReviewQuestions('month');
 const hasSavedReview = computed(() => Boolean(store.reviewByMonth(start.value)));
 const hasDailyData = computed(() => summary.value.coveredEntriesCount > 0);
@@ -77,6 +84,18 @@ const reviewAvailable = computed(
 );
 const monthDates = computed(() => dateRange(start.value, end.value));
 const chartDates = computed(() => monthDates.value.filter((date) => date <= todayKey()));
+const monthWeekSummaries = computed(() =>
+  [...new Set(chartDates.value.map((date) => startOfWeek(date)))]
+    .map((weekStart) => {
+      const rangeStart = weekStart < start.value ? start.value : weekStart;
+      const naturalEnd = addDays(weekStart, 6);
+      const rangeEnd = naturalEnd > archiveEnd.value ? archiveEnd.value : naturalEnd;
+      const weekEntries = entries.value.filter((entry) => entry.date >= rangeStart && entry.date <= rangeEnd);
+      const weekSummary = summarize(weekEntries, externalCareerIds.value);
+      return { rangeStart, rangeEnd, summary: weekSummary };
+    })
+    .filter((week) => week.summary.coveredEntriesCount > 0),
+);
 const entriesByDate = computed(() => new Map(entries.value.map((entry) => [entry.date, entry])));
 const sleepEntries = computed(() =>
   [...entries.value]
@@ -246,6 +265,9 @@ const monthCalendarDays = computed(() => {
 const monthWeekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const review = reactive<MonthlyReview>(emptyMonthlyReview(start.value));
 const reviewSaving = ref(false);
+const reviewHasContext = computed(() =>
+  Boolean(review.mainPattern.trim() || review.support.trim() || review.obstacle.trim() || review.courseChange.trim()),
+);
 
 function loadReview() {
   const existing = store.reviewByMonth(start.value);
@@ -397,47 +419,75 @@ function shiftMonth(offset: number) {
         <p>Итоги, события и сохранённый обзор показаны ниже. Данных для сравнения дней и построения графиков пока нет.</p>
       </section>
 
-      <div v-if="hasDailyData" class="metrics-grid">
-        <MetricCard
-          label="Заполненных дней"
-          :value="summary.coveredEntriesCount"
-          :hint="`${summary.ordinaryCoreEntriesCount} с основными полями`"
-          accent="#1d5148"
-        />
-        <MetricCard
-          label="Средний сон"
-          :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))"
-          :hint="`${summary.sleepSamples} дн. без особых`"
-          accent="#7467e8"
-        />
-        <MetricCard
-          label="Работа"
-          :value="`${summary.careerDays}/${summary.careerSamples}`"
-          hint="дни с работой / дни с отметкой"
-          accent="#3f82d5"
-        />
-        <MetricCard
-          label="Шаги к цели"
-          :value="`${summary.externalActionDays}/${summary.preparationDays}`"
-          :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`"
-          accent="#2eaa7f"
-        />
-        <MetricCard
-          label="Питание"
-          :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`"
-          :hint="
-            summary.averageWeightKg === null
-              ? `${summary.nutritionSamples} дн. с отметкой`
-              : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг · ${summary.weightSamples} изм.`
-          "
-          accent="#d9952f"
-        />
-        <MetricCard label="Особых дней" :value="summary.specialDays" :hint="`${results.length} итогов`" accent="#eb7458" />
-      </div>
+      <article v-if="hasDailyData" class="dashboard-card month-week-overview">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Недели месяца</span>
+            <h2>Как менялись записи</h2>
+          </div>
+          <span class="count-badge">{{ summary.coveredEntriesCount }} дн.</span>
+        </div>
+        <div v-if="monthWeekSummaries.length >= 2" class="comparison-periods">
+          <span v-for="week in monthWeekSummaries" :key="week.rangeStart">
+            <strong>
+              {{ formatDate(week.rangeStart, { day: 'numeric', month: 'short' }) }}–{{
+                formatDate(week.rangeEnd, { day: 'numeric', month: 'short' })
+              }}
+            </strong>
+            · {{ week.summary.coveredEntriesCount }} дн. · сон
+            {{ formatMinutes(week.summary.averageSleep === null ? null : Math.round(week.summary.averageSleep)) }} ({{
+              week.summary.sleepSamples
+            }}) · энергия {{ week.summary.averageEnergy === null ? '—' : week.summary.averageEnergy.toFixed(1).replace('.0', '') }} ({{
+              week.summary.energySamples
+            }})<template v-if="week.summary.specialDays"> · особых: {{ week.summary.specialDays }}</template>
+          </span>
+        </div>
+        <div v-else class="period-review-note">
+          <strong>Для сравнения нужны записи хотя бы за две недели</strong>
+          <p>Сейчас данные есть только в одной части месяца. Подробности уже доступны ниже.</p>
+        </div>
+      </article>
 
-      <details v-if="hasDailyData" class="period-details">
-        <summary>Показать календарь месяца</summary>
+      <details v-if="hasDailyData" class="period-details month-facts-details">
+        <summary>Показать показатели и календарь месяца</summary>
         <div class="period-details__content">
+          <div class="metrics-grid">
+            <MetricCard
+              label="Заполненных дней"
+              :value="summary.coveredEntriesCount"
+              :hint="`${summary.ordinaryCoreEntriesCount} с основными полями`"
+              accent="#1d5148"
+            />
+            <MetricCard
+              label="Средний сон"
+              :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))"
+              :hint="`${summary.sleepSamples} дн. без особых`"
+              accent="#7467e8"
+            />
+            <MetricCard
+              label="Работа"
+              :value="`${summary.careerDays}/${summary.careerSamples}`"
+              hint="дни с работой / дни с отметкой"
+              accent="#3f82d5"
+            />
+            <MetricCard
+              label="Шаги к цели"
+              :value="`${summary.externalActionDays}/${summary.preparationDays}`"
+              :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`"
+              accent="#2eaa7f"
+            />
+            <MetricCard
+              label="Питание"
+              :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`"
+              :hint="
+                summary.averageWeightKg === null
+                  ? `${summary.nutritionSamples} дн. с отметкой`
+                  : `вес ${summary.averageWeightKg.toFixed(1).replace('.0', '')} кг · ${summary.weightSamples} изм.`
+              "
+              accent="#d9952f"
+            />
+            <MetricCard label="Особых дней" :value="summary.specialDays" :hint="`${results.length} итогов`" accent="#eb7458" />
+          </div>
           <article class="dashboard-card">
             <div class="section-heading">
               <div>
@@ -491,6 +541,30 @@ function shiftMonth(offset: number) {
         </div>
       </details>
 
+      <article v-if="lifeEvents.length" class="dashboard-card period-record-card month-featured-events">
+        <div class="period-record-card__heading">
+          <div>
+            <span class="eyebrow">Важный контекст</span>
+            <h2>События месяца</h2>
+          </div>
+          <span class="count-badge">{{ lifeEvents.length }}</span>
+        </div>
+        <div class="period-record-card__breakdown" aria-label="События по типам">
+          <span v-for="type in eventTypeSummary" :key="type.id">{{ type.icon }} {{ type.label }} · {{ type.count }}</span>
+        </div>
+        <ul class="period-record-preview">
+          <li v-for="event in displayedLifeEvents" :key="event.id ?? event.createdAt">
+            <span>{{ eventTypeSummary.find((type) => type.id === event.type)?.icon ?? '·' }}</span>
+            <div>
+              {{ event.title }}<small>{{ formatDate(event.date, { day: 'numeric', month: 'short' }) }}</small>
+            </div>
+          </li>
+        </ul>
+        <RouterLink class="secondary-button period-record-card__link" :to="'/events?from=' + start + '&to=' + archiveEnd">
+          Открыть все события
+        </RouterLink>
+      </article>
+
       <article v-if="reviewAvailable" id="month-review" class="review-card">
         <div class="section-heading">
           <div>
@@ -499,18 +573,23 @@ function shiftMonth(offset: number) {
           </div>
           <small>{{ formatDate(end, { day: 'numeric', month: 'long' }) }}</small>
         </div>
-        <label class="field-label">Что чаще всего повторялось?</label
-        ><textarea v-model="review.mainPattern" rows="2" placeholder="Повторяющееся действие, состояние или условие"></textarea>
-        <label class="field-label">Что поддерживало?</label
-        ><textarea v-model="review.support" rows="2" placeholder="Условия, решения или люди, которые помогали"></textarea>
-        <label class="field-label">Что мешало сильнее всего?</label
-        ><textarea v-model="review.obstacle" rows="2" placeholder="Один главный повторяющийся фактор"></textarea>
-        <label class="field-label">Что изменило месяц?</label
-        ><textarea
-          v-model="review.courseChange"
-          rows="2"
-          placeholder="Событие, решение или итог, после которого данные стали выглядеть иначе"
-        ></textarea>
+        <details class="period-details month-review-context" :open="reviewHasContext">
+          <summary>{{ reviewHasContext ? 'Разбор месяца' : 'Добавить разбор месяца' }}</summary>
+          <div class="period-details__content">
+            <label class="field-label">Что чаще всего повторялось?</label
+            ><textarea v-model="review.mainPattern" rows="2" placeholder="Повторяющееся действие, состояние или условие"></textarea>
+            <label class="field-label">Что поддерживало?</label
+            ><textarea v-model="review.support" rows="2" placeholder="Условия, решения или люди, которые помогали"></textarea>
+            <label class="field-label">Что мешало сильнее всего?</label
+            ><textarea v-model="review.obstacle" rows="2" placeholder="Один главный повторяющийся фактор"></textarea>
+            <label class="field-label">Что изменило месяц?</label
+            ><textarea
+              v-model="review.courseChange"
+              rows="2"
+              placeholder="Событие, решение или итог, после которого данные стали выглядеть иначе"
+            ></textarea>
+          </div>
+        </details>
         <label class="field-label">Главное направление следующего месяца</label
         ><textarea v-model="review.nextFocus" rows="2" placeholder="Что стоит продолжить, изменить или проверить"></textarea>
         <button class="primary-button" type="button" :disabled="reviewSaving" @click="saveReview">
@@ -533,62 +612,88 @@ function shiftMonth(offset: number) {
             <button class="secondary-button" type="button" @click="downloadJson">Скачать данные</button>
           </div>
         </div>
-        <div class="review-cue-grid">
-          <article v-for="cue in reviewCues" :key="cue.id" class="review-cue" :class="`review-cue--${cue.tone}`">
+        <div class="review-cue-grid review-cue-grid--primary">
+          <article v-for="cue in primaryReviewCues" :key="cue.id" class="review-cue" :class="'review-cue--' + cue.tone">
             <strong>{{ cue.title }}</strong>
             <p>{{ cue.text }}</p>
           </article>
         </div>
-        <ol class="review-question-list">
-          <li v-for="question in reviewQuestions" :key="question">{{ question }}</li>
-        </ol>
       </article>
 
-      <article v-if="observations.length" class="dashboard-card">
-        <div class="section-heading">
-          <div>
-            <span class="eyebrow">Автоматические наблюдения</span>
-            <h2>Что видно по данным</h2>
-          </div>
-        </div>
-        <div class="observation-grid">
-          <article v-for="observation in observations.slice(0, 3)" :key="observation.id" class="observation-card">
-            <strong>{{ observation.title }}</strong>
-            <p>{{ observation.text }}</p>
-          </article>
-        </div>
-      </article>
-
-      <details v-if="hasDailyData" class="period-details">
-        <summary>Показать графики месяца</summary>
+      <details v-if="hasDailyData" class="period-details month-analysis-details">
+        <summary>Показать графики и подробный разбор</summary>
         <div class="period-details__content">
-          <article class="dashboard-card">
+          <article v-if="additionalReviewCues.length || reviewQuestions.length" class="dashboard-card">
             <div class="section-heading">
               <div>
-                <span class="eyebrow">Сон обычных дней</span>
-                <h2>Динамика сна</h2>
+                <span class="eyebrow">Дополнительный разбор</span>
+                <h2>Другие наблюдения и вопросы</h2>
               </div>
-              <small>{{ sleepRegularityText() }}</small>
             </div>
-            <EChartPanel
-              v-if="sleepEntries.length"
-              :option="sleepEnergyOption"
-              :height="320"
-              aria-label="Динамика сна, времени в кровати и энергии"
-            />
-            <div v-else class="empty-chart">Добавьте данные о сне — здесь будет видно, как он менялся.</div>
+            <div v-if="additionalReviewCues.length" class="review-cue-grid review-cue-grid--additional">
+              <article v-for="cue in additionalReviewCues" :key="cue.id" class="review-cue" :class="'review-cue--' + cue.tone">
+                <strong>{{ cue.title }}</strong>
+                <p>{{ cue.text }}</p>
+              </article>
+            </div>
+            <ol class="review-question-list">
+              <li v-for="question in reviewQuestions" :key="question">{{ question }}</li>
+            </ol>
           </article>
 
-          <article v-if="weightEntries.length" class="dashboard-card">
+          <article v-if="additionalObservations.length" class="dashboard-card">
             <div class="section-heading">
               <div>
-                <span class="eyebrow">Вес</span>
-                <h2>Измерения и семидневный тренд</h2>
+                <span class="eyebrow">Сопоставление записей</span>
+                <h2>Что ещё видно по данным</h2>
               </div>
-              <small>данные по {{ formatDate(chartDates.at(-1) || end, { day: 'numeric', month: 'short' }) }} · особые дни исключены</small>
             </div>
-            <EChartPanel :option="weightOption" :height="280" aria-label="Вес и среднее значение за семь дней" />
+            <div class="observation-grid">
+              <article v-for="observation in additionalObservations" :key="observation.id" class="observation-card">
+                <strong>{{ observation.title }}</strong>
+                <p>{{ observation.text }}</p>
+              </article>
+            </div>
           </article>
+
+          <template v-if="hasEnoughDataForMonthCharts">
+            <article class="dashboard-card">
+              <div class="section-heading">
+                <div>
+                  <span class="eyebrow">Сон обычных дней</span>
+                  <h2>Динамика сна</h2>
+                </div>
+                <small>{{ sleepRegularityText() }}</small>
+              </div>
+              <EChartPanel
+                v-if="sleepEntries.length"
+                :option="sleepEnergyOption"
+                :height="320"
+                aria-label="Динамика сна, времени в кровати и энергии"
+              />
+              <div v-else class="empty-chart">Добавьте данные о сне — здесь будет видно, как он менялся.</div>
+            </article>
+
+            <article v-if="weightEntries.length" class="dashboard-card">
+              <div class="section-heading">
+                <div>
+                  <span class="eyebrow">Вес</span>
+                  <h2>Измерения и семидневный тренд</h2>
+                </div>
+                <small
+                  >данные по {{ formatDate(chartDates.at(-1) || end, { day: 'numeric', month: 'short' }) }} · особые дни исключены</small
+                >
+              </div>
+              <EChartPanel :option="weightOption" :height="280" aria-label="Вес и среднее значение за семь дней" />
+            </article>
+          </template>
+          <div v-else class="period-review-note month-chart-guide">
+            <strong>Для графиков пока мало сопоставимых данных</strong>
+            <p>
+              Нужны хотя бы 12 обычных заполненных дней, из них 6 с основными полями. Сейчас:
+              {{ summary.ordinaryCoveredEntriesCount }} и {{ summary.ordinaryCoreEntriesCount }}.
+            </p>
+          </div>
 
           <article v-if="factors.length" class="dashboard-card">
             <div class="section-heading">
@@ -692,30 +797,6 @@ function shiftMonth(offset: number) {
               <ArchivePagination v-model:page="actionPage" :page-count="actionPageCount" context-label="действий месяца" />
             </div>
           </details>
-
-          <article v-if="lifeEvents.length" class="period-record-card">
-            <div class="period-record-card__heading">
-              <div>
-                <span class="eyebrow">Важный контекст</span>
-                <h2>События месяца</h2>
-              </div>
-              <span class="count-badge">{{ lifeEvents.length }}</span>
-            </div>
-            <div class="period-record-card__breakdown" aria-label="События по типам">
-              <span v-for="type in eventTypeSummary" :key="type.id">{{ type.icon }} {{ type.label }} · {{ type.count }}</span>
-            </div>
-            <ul class="period-record-preview">
-              <li v-for="event in displayedLifeEvents" :key="event.id ?? event.createdAt">
-                <span>{{ eventTypeSummary.find((type) => type.id === event.type)?.icon ?? '·' }}</span>
-                <div>
-                  {{ event.title }}<small>{{ formatDate(event.date, { day: 'numeric', month: 'short' }) }}</small>
-                </div>
-              </li>
-            </ul>
-            <RouterLink class="secondary-button period-record-card__link" :to="`/events?from=${start}&to=${archiveEnd}`">
-              Открыть все события
-            </RouterLink>
-          </article>
 
           <details v-if="contextEntries.length" class="period-record-card period-record-card--disclosure">
             <summary>

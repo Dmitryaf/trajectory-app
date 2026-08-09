@@ -15,7 +15,7 @@ import { loadCloudSnapshot, markCloudSyncSynced } from '../src/services/cloudSyn
 import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../src/services/notifications';
 import { useAppStore } from '../src/stores/app';
 import { useAuthStore } from '../src/stores/auth';
-import { defaultSettings, emptyDailyEntry, emptyMonthlyReview, emptyWeeklyReview } from '../src/types';
+import { defaultSettings, emptyDailyEntry, emptyMonthlyReview, emptyWeeklyReview, type DailyEntry } from '../src/types';
 
 vi.mock('../src/services/notifications', () => ({
   notifyError: vi.fn(),
@@ -93,9 +93,38 @@ describe('daily entry scenario', () => {
     expect(wrapper.text()).toContain('Настроить главную');
     expect(wrapper.text()).not.toContain('С чего начать');
     expect(wrapper.text()).toContain('Состояние и условия');
-    expect(wrapper.text()).toContain('Действия и области жизни');
+    expect(wrapper.text()).toContain('Текущая цель');
+    expect(wrapper.text()).toContain('Остальные части дня');
     expect(wrapper.text()).toContain('Короткий итог дня');
     expect(wrapper.text()).not.toContain('Сон перед этой датой и сколько сил было в этот день.');
+  });
+
+  it('keeps one goal action before optional work context', async () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [{ ...emptyDailyEntry('2026-07-20'), importantFact: 'Обычная запись' }];
+    store.settings.activeDailyBlocks = ['career'];
+    store.settings.activeLifeAreas = [];
+    store.settings.activeFocusTitle = 'Подготовить доклад';
+    store.settings.focusOutcomeCriterion = 'Провести репетицию';
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+    const goalCard = wrapper.get('#goal-actions');
+    const workCard = wrapper.get('#career');
+
+    expect(wrapper.html().indexOf('id="goal-actions"')).toBeLessThan(wrapper.html().indexOf('id="career"'));
+    expect(goalCard.get('h2').text()).toBe('Шаг по текущей цели');
+    expect(goalCard.get('.goal-context-details').attributes('open')).toBeUndefined();
+    expect(workCard.get('h2').text()).toBe('Рабочий контекст');
+    expect(workCard.text()).toContain('не считается шагом по текущей цели');
+    expect(workCard.find('textarea').exists()).toBe(false);
+    expect(wrapper.find('#life-areas').exists()).toBe(false);
+
+    await goalCard
+      .findAll('.chip')
+      .find((chip) => chip.text().includes('Шаг к цели'))!
+      .trigger('click');
+    expect(goalCard.find('#goal-action-note').exists()).toBe(true);
   });
 
   it('offers recovery to an existing user without blocking the daily form', () => {
@@ -148,10 +177,11 @@ describe('daily entry scenario', () => {
     });
 
     expect(wrapper.get('[aria-label="Дата записи"]').attributes('max')).toBe('2026-07-21');
-    expect(wrapper.text()).toContain('Действия по цели');
+    expect(wrapper.text()).toContain('Шаг по текущей цели');
     expect(wrapper.text()).toContain('Физическая активность');
-    const directionCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Действия по цели');
+    const directionCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Шаг по текущей цели');
     expect(directionCard?.findAll('.chip').map((chip) => chip.text())).not.toContain('Восстановление');
+    expect(directionCard?.get('.goal-context-details').attributes('open')).toBeUndefined();
     const movementCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Физическая активность');
     expect(movementCard?.findAll('.chip').map((chip) => chip.text())).toEqual([
       '→ Прогулка',
@@ -225,7 +255,7 @@ describe('daily entry scenario', () => {
     ]);
 
     const careerNone = workCard.findAll('button').find((button) => button.text() === 'Ничего из списка');
-    const actionNone = wrapper.findAll('button').find((button) => button.text() === 'Действий по цели не было');
+    const actionNone = wrapper.findAll('button').find((button) => button.text() === 'Шага по цели не было');
     await careerNone!.trigger('click');
     await actionNone!.trigger('click');
     await wrapper.get('form').trigger('submit');
@@ -268,6 +298,7 @@ describe('daily entry scenario', () => {
   it('hides inactive blocks while preserving values in an existing entry', async () => {
     const { pinia, store } = createStore();
     store.settings.activeDailyBlocks = [];
+    store.settings.activeLifeAreas = [];
     store.dailyEntries = [
       {
         ...emptyDailyEntry('2026-07-21'),
@@ -277,7 +308,9 @@ describe('daily entry scenario', () => {
         timeInBedMinutes: 470,
         nutritionState: 'supports_goal',
         actionDirection: 'preparation',
-        recordedFields: ['actionDirection'],
+        lifeAreas: ['family'],
+        lifeAreasRecorded: true,
+        recordedFields: ['actionDirection', 'lifeAreas'],
       },
     ];
     const saveEntry = vi.spyOn(store, 'saveEntry').mockImplementation(async (entry) => {
@@ -290,10 +323,11 @@ describe('daily entry scenario', () => {
 
     const headings = wrapper.findAll('.form-card h2').map((heading) => heading.text());
     expect(headings).not.toContain('Сон и состояние');
-    expect(headings).not.toContain('Работа');
+    expect(headings).not.toContain('Рабочий контекст');
     expect(headings).not.toContain('Физическая активность');
     expect(headings).not.toContain('Питание');
     expect(headings).toContain('Заметка дня');
+    expect(headings).toContain('Области жизни');
     expect(wrapper.text()).toContain('Для этой записи цель не была сохранена.');
     expect(wrapper.findAll('#goal-actions .chip').map((chip) => chip.text())).toContain('◫ Подготовка');
 
@@ -594,6 +628,35 @@ describe('journal scenarios', () => {
 });
 
 describe('settings scenarios', () => {
+  it('separates daily, experiment, data and account settings without duplicating controls', async () => {
+    const { pinia } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
+    const tabs = wrapper.findAll('[aria-label="Разделы настроек"] button');
+
+    expect(tabs.map((tab) => tab.text())).toEqual(['Ежедневная запись', 'Эксперимент', 'Данные и синхронизация', 'Аккаунт и безопасность']);
+    expect(wrapper.get('#daily-settings').attributes('style')).toBeUndefined();
+    expect(wrapper.get('#data-settings').attributes('style')).toContain('display: none');
+
+    await tabs[2]!.trigger('click');
+    expect(wrapper.get('#daily-settings').attributes('style')).toContain('display: none');
+    expect(wrapper.get('#data-settings').attributes('style')).toBeUndefined();
+    expect(wrapper.get('#data-settings').text()).toContain('Автоматическая облачная копия');
+    expect(wrapper.get('#data-settings').text()).not.toContain('Удалить аккаунт');
+
+    await tabs[3]!.trigger('click');
+    expect(wrapper.get('#account-settings').attributes('style')).toBeUndefined();
+    expect(wrapper.get('#account-settings').text()).toContain('friend@example.com');
+    expect(
+      wrapper
+        .get('#account-settings')
+        .findAll('button')
+        .filter((button) => button.text() === 'Удалить аккаунт'),
+    ).toHaveLength(1);
+  });
+
   it('blocks a repeated settings save and allows retrying after an error', async () => {
     const { pinia, store } = createStore();
     let rejectFirstSave!: (error: Error) => void;
@@ -732,7 +795,7 @@ describe('settings scenarios', () => {
       global: { plugins: [pinia], mocks: { $route: { query: {} } } },
     });
 
-    const deleteButton = wrapper.findAll('.settings-card--cloud button').find((button) => button.text() === 'Удалить аккаунт');
+    const deleteButton = wrapper.findAll('.settings-card--account button').find((button) => button.text() === 'Удалить аккаунт');
     await deleteButton!.trigger('click');
     await flushPromises();
 
@@ -756,7 +819,7 @@ describe('settings scenarios', () => {
       global: { plugins: [pinia], mocks: { $route: { query: {} } } },
     });
 
-    const deleteButton = wrapper.findAll('.settings-card--cloud button').find((button) => button.text() === 'Удалить аккаунт');
+    const deleteButton = wrapper.findAll('.settings-card--account button').find((button) => button.text() === 'Удалить аккаунт');
     await deleteButton!.trigger('click');
     await flushPromises();
 
@@ -904,6 +967,102 @@ describe('settings scenarios', () => {
 });
 
 describe('trends scenarios', () => {
+  function buildCoveredTrendEntries(): DailyEntry[] {
+    const months = [
+      '2025-08',
+      '2025-09',
+      '2025-10',
+      '2025-11',
+      '2025-12',
+      '2026-01',
+      '2026-02',
+      '2026-03',
+      '2026-04',
+      '2026-05',
+      '2026-06',
+      '2026-07',
+    ];
+
+    return months.flatMap((month, monthIndex) =>
+      Array.from(
+        { length: 8 },
+        (_, dayIndex) =>
+          ({
+            ...emptyDailyEntry(`${month}-${String(dayIndex + 1).padStart(2, '0')}`),
+            recordedFields: ['sleepMinutes', 'energy', 'contextFactors', 'weightKg', 'actionDirection'],
+            sleepMinutes: 405 + (monthIndex % 3) * 15,
+            energy: 2 + (monthIndex % 3),
+            contextFactors: dayIndex < 4 ? ['screen'] : [],
+            contextFactorsRecorded: true,
+            weightKg: 80 - monthIndex * 0.2,
+            actionDirection: dayIndex % 3 === 0 ? 'preparation' : 'external',
+            importantFact: `Наблюдение ${dayIndex + 1}`,
+          }) satisfies DailyEntry,
+      ),
+    );
+  }
+
+  it('shows conclusions first and reveals detailed evidence by topic', async () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = buildCoveredTrendEntries();
+    store.results = [
+      {
+        id: 1,
+        date: '2026-07-08',
+        area: 'career',
+        title: 'Готовый результат',
+        note: '',
+        createdAt: '2026-07-08T12:00:00.000Z',
+      },
+    ];
+    store.lifeEvents = [
+      {
+        id: 1,
+        date: '2026-07-05',
+        type: 'event',
+        title: 'Важное событие',
+        note: '',
+        createdAt: '2026-07-05T12:00:00.000Z',
+      },
+    ];
+    const wrapper = mount(TrendsView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+
+    expect(wrapper.html().indexOf('dashboard-card--insights')).toBeLessThan(wrapper.html().indexOf('trends-quality-details'));
+    expect(wrapper.findAll('.review-cue-grid--primary .review-cue')).toHaveLength(3);
+    expect(wrapper.get('.trends-quality-details').attributes('open')).toBeUndefined();
+    expect(wrapper.get('.trends-table-details').attributes('open')).toBeUndefined();
+    expect(wrapper.get('.trends-event-details').attributes('open')).toBeUndefined();
+    expect(wrapper.get('.trends-weight-details').attributes('open')).toBeUndefined();
+    expect(wrapper.get('.trends-action-details').attributes('open')).toBeUndefined();
+    expect(wrapper.get('.trends-factor-details').attributes('open')).toBeUndefined();
+    expect(wrapper.get('.trends-history-details').attributes('open')).toBeUndefined();
+    expect(wrapper.findAll('.trend-chart-description')).toHaveLength(4);
+    expect(wrapper.text()).toContain('Сон рассчитан по 24 обычным дням');
+
+    for (const [label, rowCount] of [
+      ['3 месяца', 3],
+      ['6 месяцев', 6],
+      ['12 месяцев', 12],
+    ] as const) {
+      const button = wrapper.findAll('.range-tabs button').find((item) => item.text() === label);
+      await button!.trigger('click');
+      expect(wrapper.findAll('.trend-table__row')).toHaveLength(rowCount);
+      expect(wrapper.findAll('e-chart-panel-stub').length).toBeGreaterThanOrEqual(4);
+      expect(wrapper.find('.trends-chart-guide').exists()).toBe(false);
+    }
+  });
+
+  it('does not render visually significant charts for a scarce sample', () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [{ ...emptyDailyEntry('2026-07-21'), importantFact: 'Одна запись' }];
+    const wrapper = mount(TrendsView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+
+    expect(wrapper.findAll('.review-cue-grid--primary .review-cue').length).toBeGreaterThan(0);
+    expect(wrapper.get('.trends-quality-details').attributes('open')).toBeUndefined();
+    expect(wrapper.get('.trends-chart-guide').text()).toContain('Для графиков пока мало сопоставимых данных');
+    expect(wrapper.findAll('e-chart-panel-stub')).toHaveLength(0);
+  });
+
   it('keeps the change history compact until the user expands it', async () => {
     const { pinia, store } = createStore();
     store.dailyEntries = [{ ...emptyDailyEntry('2026-07-21'), importantFact: 'Есть данные для трендов' }];
@@ -992,6 +1151,138 @@ describe('period review navigation', () => {
     expect(wrapper.text()).not.toContain('Событие недели 4');
   });
 
+  it('keeps the weekly decision before details and limits the first-level observations', () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = Array.from({ length: 5 }, (_, index) => ({
+      ...emptyDailyEntry(`2026-07-${String(20 + index).padStart(2, '0')}`),
+      recordedFields: ['sleepMinutes', 'energy', 'actionDirection', 'importantFact'],
+      sleepMinutes: 390,
+      energy: 3,
+      actionDirection: 'preparation' as const,
+      importantFact: `Факт ${index + 1}`,
+    }));
+    store.results = [
+      {
+        id: 1,
+        date: '2026-07-22',
+        area: 'career',
+        title: 'Завершённый итог',
+        note: '',
+        createdAt: '2026-07-22T12:00:00.000Z',
+      },
+    ];
+    store.lifeEvents = [
+      {
+        id: 1,
+        date: '2026-07-23',
+        type: 'event',
+        title: 'Важное событие',
+        note: '',
+        createdAt: '2026-07-23T12:00:00.000Z',
+      },
+    ];
+    store.weeklyReviews = [emptyWeeklyReview('2026-07-20')];
+    const wrapper = mount(WeekView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+
+    const review = wrapper.get('#week-review');
+    const details = wrapper.get('details.week-data-details');
+    const reviewContext = review.get('details.review-context-details');
+    expect(review.element.compareDocumentPosition(details.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(wrapper.findAll('.review-cue-grid--primary .review-cue')).toHaveLength(3);
+    expect(wrapper.findAll('.review-cue-grid--additional .review-cue').length).toBeGreaterThan(0);
+    expect((reviewContext.element as HTMLDetailsElement).open).toBe(false);
+    expect(reviewContext.get('summary').text()).toBe('Добавить итоги и контекст');
+    expect(
+      (review.get('textarea[placeholder="Можно продолжить как есть или пока ничего не решать"]').element as HTMLTextAreaElement).value,
+    ).toBe('');
+    expect((details.element as HTMLDetailsElement).open).toBe(false);
+    expect(details.get('summary').text()).toBe('Показать показатели и записи недели');
+    expect(details.find('.metrics-grid').exists()).toBe(true);
+    expect(details.find('.week-chart-guide').exists()).toBe(false);
+    expect(details.find('e-chart-panel-stub').exists()).toBe(true);
+  });
+
+  it('explains why the weekly graph is hidden when comparable data is scarce', () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [
+      {
+        ...emptyDailyEntry('2026-07-21'),
+        recordedFields: ['sleepMinutes', 'energy', 'importantFact'],
+        sleepMinutes: 420,
+        energy: 3,
+        importantFact: 'Одна заполненная запись',
+      },
+    ];
+    const wrapper = mount(WeekView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+    const details = wrapper.get('details.week-data-details');
+
+    expect(details.get('.week-chart-guide').text()).toContain('Для графика пока мало сопоставимых данных');
+    expect(details.get('.week-chart-guide').text()).toContain('Сейчас: 1 и 1');
+    expect(details.find('e-chart-panel-stub').exists()).toBe(false);
+  });
+
+  it('keeps the monthly decision before detailed analytics and compares filled weeks', () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = Array.from({ length: 14 }, (_, index) => ({
+      ...emptyDailyEntry('2026-07-' + String(index + 1).padStart(2, '0')),
+      recordedFields: ['sleepMinutes', 'energy', 'actionDirection', 'importantFact'],
+      sleepMinutes: 390 + Math.floor(index / 7) * 30,
+      energy: 2 + Math.floor(index / 7),
+      actionDirection: 'external' as const,
+      importantFact: 'Факт месяца ' + (index + 1),
+    }));
+    store.lifeEvents = [
+      {
+        id: 1,
+        date: '2026-07-10',
+        type: 'event',
+        title: 'Событие, которое изменило месяц',
+        note: '',
+        createdAt: '2026-07-10T12:00:00.000Z',
+      },
+    ];
+    store.monthlyReviews = [emptyMonthlyReview('2026-07-01')];
+    const wrapper = mount(MonthView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+
+    const review = wrapper.get('#month-review');
+    const facts = wrapper.get('details.month-facts-details');
+    const analysis = wrapper.get('details.month-analysis-details');
+    const reviewContext = review.get('details.month-review-context');
+    expect(review.element.compareDocumentPosition(analysis.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(wrapper.findAll('.month-week-overview .comparison-periods > span').length).toBeGreaterThanOrEqual(2);
+    expect(wrapper.findAll('.review-cue-grid--primary .review-cue')).toHaveLength(3);
+    expect(wrapper.get('.month-featured-events').text()).toContain('Событие, которое изменило месяц');
+    expect(wrapper.get('.period-records').text()).not.toContain('Событие, которое изменило месяц');
+    expect((reviewContext.element as HTMLDetailsElement).open).toBe(false);
+    expect(reviewContext.get('summary').text()).toBe('Добавить разбор месяца');
+    expect((facts.element as HTMLDetailsElement).open).toBe(false);
+    expect(facts.find('.metrics-grid').exists()).toBe(true);
+    expect(facts.find('.month-calendar').exists()).toBe(true);
+    expect((analysis.element as HTMLDetailsElement).open).toBe(false);
+    expect(analysis.find('.month-chart-guide').exists()).toBe(false);
+    expect(analysis.find('e-chart-panel-stub').exists()).toBe(true);
+  });
+
+  it('explains why monthly graphs are hidden when comparable data is scarce', () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [
+      {
+        ...emptyDailyEntry('2026-07-21'),
+        recordedFields: ['sleepMinutes', 'energy', 'importantFact'],
+        sleepMinutes: 420,
+        energy: 3,
+        importantFact: 'Одна запись месяца',
+      },
+    ];
+    const wrapper = mount(MonthView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+    const analysis = wrapper.get('details.month-analysis-details');
+
+    expect(wrapper.get('.month-week-overview').text()).toContain('Для сравнения нужны записи хотя бы за две недели');
+    expect(analysis.get('.month-chart-guide').text()).toContain('Для графиков пока мало сопоставимых данных');
+    expect(analysis.get('.month-chart-guide').text()).toContain('Сейчас: 1 и 1');
+    expect(analysis.find('e-chart-panel-stub').exists()).toBe(false);
+  });
+
   it('keeps monthly records compact and routes complete archives to the selected period', async () => {
     const { pinia, store } = createStore();
     store.dailyEntries = Array.from({ length: 9 }, (_, index) => {
@@ -1021,7 +1312,7 @@ describe('period review navigation', () => {
     }));
     const wrapper = mount(MonthView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
 
-    expect(wrapper.text()).toContain('Показать графики месяца');
+    expect(wrapper.text()).toContain('Показать графики и подробный разбор');
     expect(wrapper.text()).toContain('Показать записи месяца');
     expect(wrapper.get('.period-record-card__link[href="/results?from=2026-07-01&to=2026-07-21"]').text()).toContain('Открыть все итоги');
     expect(wrapper.get('.period-record-card__link[href="/events?from=2026-07-01&to=2026-07-21"]').text()).toContain('Открыть все события');
@@ -1070,7 +1361,7 @@ describe('period review navigation', () => {
       expect(wrapper.text()).toContain('Завершённый итог без дневной записи');
       expect(wrapper.text()).toContain('Важное событие без дневной записи');
     }
-    expect((week.get('details.period-details').element as HTMLDetailsElement).open).toBe(true);
+    expect((week.get('details.week-data-details').element as HTMLDetailsElement).open).toBe(true);
     expect((month.get('details.period-records').element as HTMLDetailsElement).open).toBe(true);
   });
 
@@ -1087,9 +1378,11 @@ describe('period review navigation', () => {
       expect(wrapper.find('.period-data-guide').exists()).toBe(true);
       expect(wrapper.find('.metrics-grid').exists()).toBe(false);
       expect(wrapper.find('.review-card').exists()).toBe(true);
-      expect(wrapper.find('.period-details').exists()).toBe(false);
+      expect(wrapper.find('.period-details:not(.review-context-details):not(.month-review-context)').exists()).toBe(false);
     }
     expect((week.get('.review-card input').element as HTMLInputElement).value).toBe('Неделя не была пустой');
+    expect((month.get('details.month-review-context').element as HTMLDetailsElement).open).toBe(true);
+    expect(month.get('details.month-review-context summary').text()).toBe('Разбор месяца');
     expect((month.get('.review-card textarea').element as HTMLTextAreaElement).value).toBe('Важный вывод месяца');
   });
 
@@ -1120,6 +1413,9 @@ describe('period review navigation', () => {
     expect(overview.get('a[href="/?first-use=edit"]').text()).toBe('Исправить ответы');
 
     const reviewForm = wrapper.get('#week-review');
+    const reviewContext = reviewForm.get('details.review-context-details');
+    expect((reviewContext.element as HTMLDetailsElement).open).toBe(true);
+    expect(reviewContext.get('summary').text()).toBe('Итоги и контекст');
     expect(reviewForm.findAll('input')).toHaveLength(6);
     expect(reviewForm.text()).toContain('До трёх событий, решений или мыслей');
     expect((reviewForm.findAll('textarea')[0]!.element as HTMLTextAreaElement).value).toBe('К середине недели было мало сил');

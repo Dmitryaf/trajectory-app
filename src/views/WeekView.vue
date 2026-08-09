@@ -129,6 +129,9 @@ const completedExperiments = computed(() =>
 const reviewCues = computed(() =>
   buildReviewCues('week', entries.value, results.value, lifeEvents.value, externalCareerIds.value, contextFactorItems.value),
 );
+const primaryReviewCues = computed(() => reviewCues.value.slice(0, 3));
+const additionalReviewCues = computed(() => reviewCues.value.slice(3));
+const hasEnoughDataForWeekChart = computed(() => reviewCues.value.find((cue) => cue.id === 'coverage')?.tone === 'good');
 const reviewQuestions = buildReviewQuestions('week');
 const previousReview = computed(() => store.reviewByWeek(addDays(start.value, -7)));
 const savedReview = computed(() => store.reviewByWeek(start.value));
@@ -320,6 +323,12 @@ const rhythmOption = computed<EChartsCoreOption>(() => {
 });
 const review = reactive<WeeklyReview>(emptyWeeklyReview(start.value));
 const reviewSaving = ref(false);
+const reviewHasContext = computed(
+  () =>
+    review.results.some((value) => value.trim()) ||
+    review.highlights.some((value) => value.trim()) ||
+    Boolean(review.stateContext.trim() || review.support.trim() || review.obstacle.trim()),
+);
 
 function loadReview() {
   const existing = store.reviewByWeek(start.value);
@@ -444,63 +453,10 @@ function downloadJson() {
         </div>
       </article>
 
-      <div v-if="hasDailyData" class="metrics-grid">
-        <MetricCard
-          label="Средний сон"
-          :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))"
-          :hint="`${summary.sleepSamples} дн. без особых`"
-          accent="#7467e8"
-        />
-        <MetricCard
-          label="Работа"
-          :value="`${summary.careerDays}/${summary.careerSamples}`"
-          hint="дни с работой / дни с отметкой"
-          accent="#3f82d5"
-        />
-        <MetricCard
-          label="Шаги к цели"
-          :value="`${summary.externalActionDays}/${summary.preparationDays}`"
-          :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`"
-          accent="#1d5148"
-        />
-        <MetricCard
-          label="Дней с активностью"
-          :value="summary.movementDays"
-          :hint="`${summary.movementSamples} дн. с отметкой`"
-          accent="#2eaa7f"
-        />
-        <MetricCard
-          label="Питание"
-          :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`"
-          :hint="`поддержало / мешало · ${summary.nutritionSamples} дн.`"
-          accent="#d9952f"
-        />
-        <MetricCard label="Итогов" :value="results.length" accent="#e7a43b" />
-      </div>
-
       <article v-if="hasDailyData" class="insight-card">
         <span class="insight-card__mark">⌁</span>
         <p>{{ summaryText }}</p>
       </article>
-
-      <details v-if="hasDailyData" class="period-details">
-        <summary>Показать график недели</summary>
-        <div class="period-details__content">
-          <article class="dashboard-card">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Ритм недели</span>
-                <h2>Сон, энергия и действия</h2>
-              </div>
-            </div>
-            <EChartPanel :option="rhythmOption" :height="380" aria-label="Ритм сна, энергии и действий за неделю" />
-            <p class="data-note">
-              Столбцы показывают сон, линия — энергию. Оранжевый столбец означает особый день. В строке питания: зелёный — поддержало цель,
-              жёлтый — нейтрально, красный — мешало.
-            </p>
-          </article>
-        </div>
-      </details>
 
       <article v-if="hasDailyData || hasJournalData" class="dashboard-card">
         <div class="section-heading">
@@ -513,20 +469,165 @@ function downloadJson() {
             <button class="secondary-button" type="button" @click="downloadJson">Скачать данные</button>
           </div>
         </div>
-        <div class="review-cue-grid">
-          <article v-for="cue in reviewCues" :key="cue.id" class="review-cue" :class="`review-cue--${cue.tone}`">
+        <div class="review-cue-grid review-cue-grid--primary">
+          <article v-for="cue in primaryReviewCues" :key="cue.id" class="review-cue" :class="`review-cue--${cue.tone}`">
             <strong>{{ cue.title }}</strong>
             <p>{{ cue.text }}</p>
           </article>
         </div>
-        <ol class="review-question-list">
-          <li v-for="question in reviewQuestions" :key="question">{{ question }}</li>
-        </ol>
       </article>
 
-      <details v-if="hasDailyData || hasJournalData" class="period-details" :open="!hasDailyData">
-        <summary>{{ hasDailyData ? 'Показать записи и карту недели' : 'Записи недели' }}</summary>
+      <article v-if="reviewAvailable" id="week-review" class="review-card">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Обзор недели</span>
+            <h2>Короткий обзор</h2>
+          </div>
+          <span class="period-pill">До {{ formatDate(end, { day: 'numeric', month: 'long', year: 'numeric' }) }}</span>
+        </div>
+        <template v-if="previousReview?.nextLever || previousReview?.ifThenPlan">
+          <div class="previous-plan">
+            <span class="eyebrow">Решение из прошлого обзора</span>
+            <p v-if="previousReview.nextLever"><strong>Вы решили:</strong> {{ previousReview.nextLever }}</p>
+            <p v-if="previousReview.ifThenPlan"><strong>План:</strong> {{ previousReview.ifThenPlan }}</p>
+          </div>
+          <label class="field-label">Что получилось с этим решением?</label
+          ><textarea
+            v-model="review.previousPlanOutcome"
+            rows="2"
+            placeholder="Сработало, не сработало или данных пока недостаточно — и почему"
+          ></textarea>
+        </template>
+        <details class="period-details review-context-details" :open="reviewHasContext">
+          <summary>{{ reviewHasContext ? 'Итоги и контекст' : 'Добавить итоги и контекст' }}</summary>
+          <div class="period-details__content">
+            <label class="field-label">До трёх итогов или сделанных дел</label>
+            <input
+              v-for="(_, index) in review.results"
+              :key="index"
+              v-model="review.results[index]"
+              type="text"
+              :placeholder="`${index + 1}. Итог или важный факт`"
+            />
+            <label class="field-label">До трёх событий, решений или мыслей</label>
+            <input
+              v-for="(_, index) in review.highlights"
+              :key="`highlight-${index}`"
+              v-model="review.highlights[index]"
+              type="text"
+              :placeholder="`${index + 1}. Что важно запомнить`"
+            />
+            <label class="field-label">Как вы себя чувствовали и что влияло на неделю?</label>
+            <textarea v-model="review.stateContext" rows="2" placeholder="Силы, настроение и важные обстоятельства"></textarea>
+            <label class="field-label">Что помогало?</label
+            ><textarea v-model="review.support" rows="2" placeholder="Люди, режим, место, привычка или решение"></textarea>
+            <label class="field-label">Что мешало сильнее всего?</label
+            ><textarea v-model="review.obstacle" rows="2" placeholder="Один главный фактор"></textarea>
+          </div>
+        </details>
+        <label class="field-label">Что продолжить или изменить на следующей неделе?</label
+        ><textarea v-model="review.nextLever" rows="2" placeholder="Можно продолжить как есть или пока ничего не решать"></textarea>
+        <label class="field-label">План если-то</label
+        ><textarea
+          v-model="review.ifThenPlan"
+          rows="2"
+          placeholder="Если снова появится главное препятствие, то я сделаю конкретное действие"
+        ></textarea>
+        <button class="primary-button" type="button" :disabled="reviewSaving" @click="saveReview">
+          {{ reviewSaving ? 'Сохраняю…' : 'Сохранить обзор' }}
+        </button>
+      </article>
+      <section v-else id="week-review" class="period-review-note">
+        <strong>Короткий обзор появится в конце недели</strong>
+        <p>Его можно пропустить — дневные записи и сводка недели останутся на месте.</p>
+      </section>
+
+      <details v-if="hasDailyData || hasJournalData" class="period-details week-data-details" :open="!hasDailyData">
+        <summary>{{ hasDailyData ? 'Показать показатели и записи недели' : 'Записи недели' }}</summary>
         <div class="period-details__content">
+          <section v-if="hasDailyData" class="week-detail-section" aria-labelledby="week-metrics-title">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Показатели недели</span>
+                <h2 id="week-metrics-title">Сводка по отмеченным дням</h2>
+              </div>
+            </div>
+            <div class="metrics-grid">
+              <MetricCard
+                label="Средний сон"
+                :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))"
+                :hint="`${summary.sleepSamples} дн. без особых`"
+                accent="#7467e8"
+              />
+              <MetricCard
+                label="Работа"
+                :value="`${summary.careerDays}/${summary.careerSamples}`"
+                hint="дни с работой / дни с отметкой"
+                accent="#3f82d5"
+              />
+              <MetricCard
+                label="Шаги к цели"
+                :value="`${summary.externalActionDays}/${summary.preparationDays}`"
+                :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`"
+                accent="#1d5148"
+              />
+              <MetricCard
+                label="Дней с активностью"
+                :value="summary.movementDays"
+                :hint="`${summary.movementSamples} дн. с отметкой`"
+                accent="#2eaa7f"
+              />
+              <MetricCard
+                label="Питание"
+                :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`"
+                :hint="`поддержало / мешало · ${summary.nutritionSamples} дн.`"
+                accent="#d9952f"
+              />
+              <MetricCard label="Итогов" :value="results.length" accent="#e7a43b" />
+            </div>
+          </section>
+
+          <article v-if="hasDailyData" class="dashboard-card">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Ритм недели</span>
+                <h2>Сон, энергия и действия</h2>
+              </div>
+            </div>
+            <template v-if="hasEnoughDataForWeekChart">
+              <EChartPanel :option="rhythmOption" :height="380" aria-label="Ритм сна, энергии и действий за неделю" />
+              <p class="data-note">
+                Столбцы показывают сон, линия — энергию. Оранжевый столбец означает особый день. В строке питания: зелёный — поддержало
+                цель, жёлтый — нейтрально, красный — мешало.
+              </p>
+            </template>
+            <div v-else class="period-review-note week-chart-guide">
+              <strong>Для графика пока мало сопоставимых данных</strong>
+              <p>
+                Нужны хотя бы 4 обычных заполненных дня, из них 2 с основными полями. Сейчас: {{ summary.ordinaryCoveredEntriesCount }} и
+                {{ summary.ordinaryCoreEntriesCount }}.
+              </p>
+            </div>
+          </article>
+
+          <article v-if="additionalReviewCues.length || reviewQuestions.length" class="dashboard-card">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Дополнительный разбор</span>
+                <h2>Другие наблюдения и вопросы</h2>
+              </div>
+            </div>
+            <div v-if="additionalReviewCues.length" class="review-cue-grid review-cue-grid--additional">
+              <article v-for="cue in additionalReviewCues" :key="cue.id" class="review-cue" :class="`review-cue--${cue.tone}`">
+                <strong>{{ cue.title }}</strong>
+                <p>{{ cue.text }}</p>
+              </article>
+            </div>
+            <ol class="review-question-list">
+              <li v-for="question in reviewQuestions" :key="question">{{ question }}</li>
+            </ol>
+          </article>
+
           <article v-if="hasDailyData && (activeExperimentWeek || completedExperiments.length)" class="dashboard-card">
             <div class="section-heading">
               <div>
@@ -698,66 +799,6 @@ function downloadJson() {
           </article>
         </div>
       </details>
-
-      <article v-if="reviewAvailable" id="week-review" class="review-card">
-        <div class="section-heading">
-          <div>
-            <span class="eyebrow">Обзор недели</span>
-            <h2>Короткий обзор</h2>
-          </div>
-          <span class="period-pill">До {{ formatDate(end, { day: 'numeric', month: 'long', year: 'numeric' }) }}</span>
-        </div>
-        <template v-if="previousReview?.nextLever || previousReview?.ifThenPlan">
-          <div class="previous-plan">
-            <span class="eyebrow">Решение из прошлого обзора</span>
-            <p v-if="previousReview.nextLever"><strong>Вы решили:</strong> {{ previousReview.nextLever }}</p>
-            <p v-if="previousReview.ifThenPlan"><strong>План:</strong> {{ previousReview.ifThenPlan }}</p>
-          </div>
-          <label class="field-label">Что получилось с этим решением?</label
-          ><textarea
-            v-model="review.previousPlanOutcome"
-            rows="2"
-            placeholder="Сработало, не сработало или данных пока недостаточно — и почему"
-          ></textarea>
-        </template>
-        <label class="field-label">До трёх итогов или сделанных дел</label>
-        <input
-          v-for="(_, index) in review.results"
-          :key="index"
-          v-model="review.results[index]"
-          type="text"
-          :placeholder="`${index + 1}. Итог или важный факт`"
-        />
-        <label class="field-label">До трёх событий, решений или мыслей</label>
-        <input
-          v-for="(_, index) in review.highlights"
-          :key="`highlight-${index}`"
-          v-model="review.highlights[index]"
-          type="text"
-          :placeholder="`${index + 1}. Что важно запомнить`"
-        />
-        <label class="field-label">Как вы себя чувствовали и что влияло на неделю?</label>
-        <textarea v-model="review.stateContext" rows="2" placeholder="Силы, настроение и важные обстоятельства"></textarea>
-        <label class="field-label">Что помогало?</label
-        ><textarea v-model="review.support" rows="2" placeholder="Люди, режим, место, привычка или решение"></textarea>
-        <label class="field-label">Что мешало сильнее всего?</label
-        ><textarea v-model="review.obstacle" rows="2" placeholder="Один главный фактор"></textarea>
-        <label class="field-label">Что продолжить или изменить на следующей неделе?</label
-        ><textarea v-model="review.nextLever" rows="2" placeholder="Можно продолжить как есть или пока ничего не решать"></textarea>
-        <label class="field-label">План если-то</label
-        ><textarea
-          v-model="review.ifThenPlan"
-          rows="2"
-          placeholder="Если снова появится главное препятствие, то я сделаю конкретное действие"
-        ></textarea>
-        <button class="primary-button" type="button" :disabled="reviewSaving" @click="saveReview">
-          {{ reviewSaving ? 'Сохраняю…' : 'Сохранить обзор' }}
-        </button>
-      </article>
-      <section v-else id="week-review" class="period-review-note">
-        <strong>Короткий обзор появится в конце недели</strong>
-        <p>Его можно пропустить — дневные записи и сводка недели останутся на месте.</p>
-      </section>
     </template>
   </section>
 </template>
