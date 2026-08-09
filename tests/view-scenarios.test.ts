@@ -1127,10 +1127,10 @@ describe('period review navigation', () => {
     expect(saveMonthlyReview).toHaveBeenCalledTimes(2);
   });
 
-  it('uses the compact archive previews for weekly results and events', () => {
+  it('keeps weekly results and events in bounded pages inside the review', async () => {
     const { pinia, store } = createStore();
     store.dailyEntries = [{ ...emptyDailyEntry('2026-07-21'), importantFact: 'Есть данные недели' }];
-    store.results = Array.from({ length: 4 }, (_, index) => ({
+    store.results = Array.from({ length: 6 }, (_, index) => ({
       id: index + 1,
       date: '2026-07-21',
       area: 'career' as const,
@@ -1138,7 +1138,7 @@ describe('period review navigation', () => {
       note: '',
       createdAt: `2026-07-21T${String(12 + index).padStart(2, '0')}:00:00.000Z`,
     }));
-    store.lifeEvents = Array.from({ length: 4 }, (_, index) => ({
+    store.lifeEvents = Array.from({ length: 6 }, (_, index) => ({
       id: index + 1,
       date: '2026-07-21',
       type: 'event' as const,
@@ -1148,12 +1148,25 @@ describe('period review navigation', () => {
     }));
     const wrapper = mount(WeekView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
 
-    expect(wrapper.get('.period-record-card__link[href="/results?from=2026-07-20&to=2026-07-21"]').text()).toContain('Открыть все итоги');
-    expect(wrapper.get('.period-record-card__link[href="/events?from=2026-07-20&to=2026-07-21"]').text()).toContain('Открыть все события');
-    expect(wrapper.text()).toContain('Итог недели 3');
-    expect(wrapper.text()).not.toContain('Итог недели 4');
-    expect(wrapper.text()).toContain('Событие недели 3');
-    expect(wrapper.text()).not.toContain('Событие недели 4');
+    expect(wrapper.text()).not.toContain('Открыть все итоги');
+    expect(wrapper.text()).not.toContain('Открыть все события');
+    expect(wrapper.text()).toContain('Итог недели 5');
+    expect(wrapper.text()).not.toContain('Итог недели 6');
+    expect(wrapper.text()).toContain('Событие недели 5');
+    expect(wrapper.text()).not.toContain('Событие недели 6');
+
+    const resultPages = wrapper.get('nav[aria-label="Страницы итогов недели"]');
+    const eventPages = wrapper.get('nav[aria-label="Страницы событий недели"]');
+    expect(resultPages.text()).toContain('1 из 2');
+    expect(eventPages.text()).toContain('1 из 2');
+
+    await resultPages.get('button:last-child').trigger('click');
+    await eventPages.get('button:last-child').trigger('click');
+
+    expect(wrapper.text()).not.toContain('Итог недели 5');
+    expect(wrapper.text()).toContain('Итог недели 6');
+    expect(wrapper.text()).not.toContain('Событие недели 5');
+    expect(wrapper.text()).toContain('Событие недели 6');
   });
 
   it('keeps the weekly decision before details and limits the first-level observations', () => {
