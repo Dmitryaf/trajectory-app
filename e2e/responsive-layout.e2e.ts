@@ -244,7 +244,7 @@ test('keeps monthly records compact and opens the matching archives', async ({ p
   await expect(page.getByLabel('Конечная дата итогов')).toHaveValue('2026-07-31');
 });
 
-test('shows weekly results and events as compact archive previews', async ({ page }) => {
+test('keeps weekly results and events inside the review', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/week');
   await page.getByRole('button', { name: 'Предыдущий период' }).click();
@@ -254,8 +254,8 @@ test('shows weekly results and events as compact archive previews', async ({ pag
   const records = page.locator('.week-data-details').filter({ hasText: 'Показать показатели и записи недели' });
   await expect(records.getByText('Итоги недели', { exact: true })).toBeVisible();
   await expect(records.getByText('События недели', { exact: true })).toBeVisible();
-  await expect(records.getByRole('link', { name: 'Открыть все итоги' })).toHaveAttribute('href', '/results?from=2026-07-20&to=2026-07-26');
-  await expect(records.getByRole('link', { name: 'Открыть все события' })).toHaveAttribute('href', '/events?from=2026-07-20&to=2026-07-26');
+  await expect(records.getByRole('link', { name: 'Открыть все итоги' })).toHaveCount(0);
+  await expect(records.getByRole('link', { name: 'Открыть все события' })).toHaveCount(0);
 });
 
 test('keeps desktop navigation visible while the page scrolls', async ({ page }) => {
