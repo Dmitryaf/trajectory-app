@@ -307,8 +307,18 @@ export function useSettingsForm() {
 
   async function saveBackupToCloud() {
     await runCloudAction(async () => {
-      await store.syncCloudSnapshot({ force: true });
-      notifySaved('Локальная версия сохранена в облако');
+      const result = await store.syncCloudSnapshot({ force: true });
+      if (result.status === 'synced') {
+        notifySaved('Локальная версия сохранена в облако');
+      } else if (result.status === 'pending') {
+        notifyError('Облачная копия не обновлена. Локальные данные сохранены.');
+      } else if (result.status === 'queued') {
+        notifyInfo('Обновление облачной копии уже выполняется');
+      } else if (result.status === 'disabled') {
+        notifyInfo('Облачная копия недоступна в этой сборке');
+      } else {
+        notifyInfo('Сначала выбери, какую версию данных сохранить');
+      }
     });
   }
 

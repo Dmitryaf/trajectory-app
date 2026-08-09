@@ -550,6 +550,24 @@ describe('journal scenarios', () => {
 });
 
 describe('settings scenarios', () => {
+  it('does not confirm a cloud copy when the upload remains pending', async () => {
+    const { pinia, store } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    vi.spyOn(store, 'syncCloudSnapshot').mockResolvedValue({ status: 'pending', error: 'network unavailable' });
+    const wrapper = mount(SettingsView, {
+      global: { plugins: [pinia], mocks: { $route: { query: {} } } },
+    });
+
+    const backupButton = wrapper.findAll('.settings-card--cloud button').find((button) => button.text() === 'Обновить копию сейчас');
+    await backupButton!.trigger('click');
+    await flushPromises();
+
+    expect(notifySaved).not.toHaveBeenCalledWith('Локальная версия сохранена в облако');
+    expect(notifyError).toHaveBeenCalledWith('Облачная копия не обновлена. Локальные данные сохранены.');
+  });
+
   it('clears local data only after the authenticated account is deleted', async () => {
     const { pinia, store } = createStore();
     const auth = useAuthStore();

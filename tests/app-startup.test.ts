@@ -10,14 +10,22 @@ import { useAuthStore } from '../src/stores/auth';
 
 const sync = vi.hoisted(() => ({
   prepareLocalCacheOwner: vi.fn(),
+  reconcileCloudSnapshotAfterResume: vi.fn(),
   reconcileCloudSnapshotOnStartup: vi.fn(),
+}));
+const resume = vi.hoisted(() => ({
+  refresh: undefined as (() => Promise<void>) | undefined,
+  request: vi.fn().mockResolvedValue(false),
 }));
 const funnel = vi.hoisted(() => ({ recordFirstUseEvent: vi.fn(), recordFirstUseReturnEvents: vi.fn() }));
 
 vi.mock('../src/features/sync/startup', () => sync);
 vi.mock('../src/features/first-use/funnel', () => funnel);
 vi.mock('../src/features/sync/resume', () => ({
-  createResumeCloudRefresh: () => vi.fn().mockResolvedValue(false),
+  createResumeCloudRefresh: (refresh: () => Promise<void>) => {
+    resume.refresh = refresh;
+    return resume.request;
+  },
 }));
 vi.mock('../src/services/notifications', () => ({
   notifyInfo: vi.fn(),
@@ -121,6 +129,11 @@ describe('application startup', () => {
     expect(wrapper.find('[data-testid="working-screen"]').exists()).toBe(true);
     expect(wrapper.find('.bottom-nav').exists()).toBe(true);
     expect(funnel.recordFirstUseReturnEvents).toHaveBeenCalledOnce();
+
+    const startupCalls = sync.reconcileCloudSnapshotOnStartup.mock.calls.length;
+    await resume.refresh!();
+    expect(sync.reconcileCloudSnapshotAfterResume).toHaveBeenCalledWith(store, 'user-1');
+    expect(sync.reconcileCloudSnapshotOnStartup).toHaveBeenCalledTimes(startupCalls);
     wrapper.unmount();
   });
 });
