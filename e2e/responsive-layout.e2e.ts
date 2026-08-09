@@ -57,6 +57,36 @@ test('keeps mobile form controls inside their cards', async ({ page }) => {
   }
 });
 
+test('keeps trend evidence grouped behind compact mobile disclosures', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/trends');
+
+  const insights = page.locator('.dashboard-card--insights');
+  const quality = page.locator('.trends-quality-details');
+  await expect(insights).toBeVisible();
+  await expect(quality).not.toHaveAttribute('open', '');
+  const primaryCueCount = await page.locator('.review-cue-grid--primary .review-cue').count();
+  expect(primaryCueCount).toBeGreaterThan(0);
+  expect(primaryCueCount).toBeLessThanOrEqual(3);
+
+  const insightsBox = await insights.boundingBox();
+  const qualityBox = await quality.boundingBox();
+  expect(insightsBox).not.toBeNull();
+  expect(qualityBox).not.toBeNull();
+  expect(qualityBox!.y).toBeGreaterThan(insightsBox!.y);
+
+  await quality.locator(':scope > summary').click();
+  await expect(quality).toHaveAttribute('open', '');
+  await expect(quality.locator('.metrics-grid')).toBeVisible();
+  await expect(quality.locator('.trends-table-details')).toBeVisible();
+
+  const widths = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }));
+  expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+});
+
 test('keeps the returning daily form compact and visibly grouped', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto('/');
