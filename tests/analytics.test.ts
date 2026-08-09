@@ -18,6 +18,7 @@ import {
   defaultSettings,
   emptyDailyEntry,
   experimentAppliesToDate,
+  externalCareerIdsForOptions,
   normalizeDailyEntry,
   normalizeLifeEvent,
   normalizeMonthlyReview,
@@ -102,6 +103,33 @@ describe('analytics', () => {
 
     expect(summary.careerDays).toBe(2);
     expect(summary.externalSteps).toBe(2);
+  });
+
+  it('uses one external-career rule for built-in, custom and exported summaries', () => {
+    const settings = structuredClone(defaultSettings);
+    settings.customCareerOptions = [
+      { id: 'custom:career:outreach', label: 'Адресный контакт', countsAsExternal: true },
+      { id: 'custom:career:planning', label: 'Планирование', countsAsExternal: false },
+    ];
+    const externalIds = externalCareerIdsForOptions(settings.customCareerOptions);
+
+    expect(externalIds).toEqual(['external', 'interview', 'result', 'work_result', 'custom:career:outreach']);
+
+    const payload = buildAiReportPayload('week', '2026-07-16', {
+      entries: [
+        entry('2026-07-13', { careerStates: ['work_result'] }),
+        entry('2026-07-14', { careerStates: ['custom:career:outreach'] }),
+        entry('2026-07-15', { careerStates: ['custom:career:planning'] }),
+      ],
+      results: [],
+      lifeEvents: [],
+      reviews: [],
+      monthlyReviews: [],
+      settings,
+    });
+
+    expect(summarize(payload.entries, externalIds).externalSteps).toBe(2);
+    expect(payload.summary.externalSteps).toBe(2);
   });
 
   it('drops unsupported imported enum values', () => {
@@ -192,12 +220,20 @@ describe('analytics', () => {
         },
       ],
       lifeEvents: [],
-      reviews: [{ ...normalizeWeeklyReview({ weekStart: '2026-07-06' }), nextLever: 'Ложиться раньше' }],
+      reviews: [
+        {
+          ...normalizeWeeklyReview({ weekStart: '2026-07-06' }),
+          coveredThrough: '2026-07-10',
+          highlights: ['Важный разговор изменил планы', '', ''],
+          stateContext: 'Неделя была неровной из-за болезни.',
+          nextLever: 'Ложиться раньше',
+        },
+      ],
       monthlyReviews: [],
       settings,
     });
 
-    expect(payload.version).toBe(9);
+    expect(payload.version).toBe(10);
     expect(payload.dataThrough).toBe('2026-07-19');
     expect(payload.labels.contextFactors).toContainEqual(expect.objectContaining({ id: 'custom:context:rain', label: 'Шум за окном' }));
     expect(payload.labels.activities).toContainEqual(expect.objectContaining({ id: 'custom:activity:swimming', label: 'Плавание' }));
@@ -209,6 +245,9 @@ describe('analytics', () => {
     expect(prompt).toContain('ДАННЫЕ ДЛЯ АНАЛИЗА');
     expect(prompt).toContain('Шум за окном');
     expect(prompt).toContain('Ложиться раньше');
+    expect(prompt).toContain('важные события и мысли: Важный разговор изменил планы');
+    expect(prompt).toContain('состояние и условия: Неделя была неровной из-за болезни.');
+    expect(prompt).toContain('ответы собраны по 2026-07-10');
     expect(prompt).toContain('подробности: Показал сценарий двум пользователям и записал вопросы');
     expect(prompt).toContain('Наблюдаемый результат цели: Показать работающий сценарий трём людям.');
     expect(prompt).toContain('Цель нужно пересмотреть 2026-07-31.');
@@ -460,6 +499,8 @@ describe('analytics', () => {
 
     expect(review.ifThenPlan).toBe('');
     expect(review.previousPlanOutcome).toBe('');
+    expect(review.highlights).toEqual(['', '', '']);
+    expect(review.stateContext).toBe('');
     expect(review.updatedAt).toBe('');
   });
 

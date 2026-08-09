@@ -15,7 +15,7 @@ import {
 } from '../../types';
 
 export type ExportPayload = {
-  version: 1 | 2 | 3 | 4 | 5 | 6;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
   exportedAt: string;
   dailyEntries: DailyEntry[];
   results: ResultRecord[];
@@ -30,7 +30,17 @@ type UnknownRecord = Record<string, unknown>;
 export function normalizeSnapshot(input: unknown): ExportPayload {
   const source = requireRecord(input, 'резервная копия');
   const version = source.version;
-  if (version !== 1 && version !== 2 && version !== 3 && version !== 4 && version !== 5 && version !== 6) {
+  if (
+    version !== 1 &&
+    version !== 2 &&
+    version !== 3 &&
+    version !== 4 &&
+    version !== 5 &&
+    version !== 6 &&
+    version !== 7 &&
+    version !== 8 &&
+    version !== 9
+  ) {
     throw new Error('Неподдерживаемый формат резервной копии');
   }
 
@@ -57,7 +67,10 @@ export function normalizeSnapshot(input: unknown): ExportPayload {
   });
   const settings =
     source.settings === undefined
-      ? structuredClone(defaultSettings)
+      ? normalizeSettings({
+          ...structuredClone(defaultSettings),
+          firstUse: { ...structuredClone(defaultSettings.firstUse), status: 'available' },
+        })
       : normalizeSettings(requireRecord(source.settings, 'settings') as Partial<AppSettings>);
 
   return {

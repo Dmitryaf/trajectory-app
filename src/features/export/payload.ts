@@ -6,6 +6,7 @@ import {
   activityOptions,
   careerOptions,
   contextFactorOptions,
+  externalCareerIdsForOptions,
   legacyActivityOptions,
   legacyCareerOptions,
   legacyContextFactorOptions,
@@ -28,7 +29,7 @@ export const AI_PROMPT_CHARACTER_LIMIT = 48_000;
 
 export type AiReportPayload = {
   app: 'trajectory';
-  version: 9;
+  version: 10;
   period: AiReportPeriod;
   rangeMonths?: number;
   start: string;
@@ -120,15 +121,12 @@ function buildPayload(
   extra: Partial<AiReportPayload>,
 ): AiReportPayload {
   const entries = dataThrough >= start ? entriesForPeriod(source.entries, start, dataThrough) : [];
-  const careerItems = [...careerOptions, ...legacyCareerOptions, ...source.settings.customCareerOptions];
   const factorItems = [...contextFactorOptions, ...source.settings.customContextFactorOptions];
-  const externalCareerIds = careerItems
-    .filter((option) => option.countsAsExternal || ['external', 'interview', 'result', 'work_result'].includes(option.id))
-    .map((option) => option.id);
+  const externalCareerIds = externalCareerIdsForOptions(source.settings.customCareerOptions);
 
   return {
     app: 'trajectory',
-    version: 9,
+    version: 10,
     period,
     start,
     end,

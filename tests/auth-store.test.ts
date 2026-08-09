@@ -8,7 +8,7 @@ const cloud = vi.hoisted(() => ({
   clearLocalSession: vi.fn(),
   configured: vi.fn(),
   deleteAccount: vi.fn(),
-  getSession: vi.fn(),
+  getStartupSession: vi.fn(),
   onAuthChange: vi.fn(),
   requestPasswordReset: vi.fn(),
   resendConfirmation: vi.fn(),
@@ -21,7 +21,7 @@ vi.mock('../src/services/cloudSync', () => ({
   clearCloudSyncMeta: vi.fn(),
   clearLocalCloudSession: cloud.clearLocalSession,
   deleteCloudAccount: cloud.deleteAccount,
-  getVerifiedCloudSession: cloud.getSession,
+  getStartupCloudSession: cloud.getStartupSession,
   isBetaSignupConfigured: vi.fn(() => true),
   isCloudAuthRequired: cloud.authRequired,
   isCloudSyncConfigured: cloud.configured,
@@ -44,7 +44,7 @@ describe('auth store beta lifecycle', () => {
     window.sessionStorage.clear();
     cloud.authRequired.mockReturnValue(false);
     cloud.configured.mockReturnValue(true);
-    cloud.getSession.mockResolvedValue(null);
+    cloud.getStartupSession.mockResolvedValue(null);
     cloud.onAuthChange.mockImplementation(() => ({ data: { subscription: { unsubscribe: vi.fn() } } }));
   });
 
@@ -70,6 +70,18 @@ describe('auth store beta lifecycle', () => {
     expect(auth.configurationMissing).toBe(true);
     expect(auth.requiresAuth).toBe(true);
     expect(auth.isAuthenticated).toBe(false);
+  });
+
+  it('keeps a cached session when startup verification is temporarily unavailable', async () => {
+    const cachedSession = { user: { id: 'user-1', email: 'friend@example.com' } } as ReturnType<typeof useAuthStore>['session'];
+    cloud.getStartupSession.mockResolvedValue(cachedSession);
+    const auth = useAuthStore();
+
+    await auth.init();
+
+    expect(auth.session).toEqual(cachedSession);
+    expect(auth.isAuthenticated).toBe(true);
+    expect(auth.error).toBe('');
   });
 
   it('requests a password recovery email without exposing account existence', async () => {

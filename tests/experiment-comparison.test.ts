@@ -79,7 +79,7 @@ describe('experiment summary', () => {
       settings,
     });
 
-    expect(payload.version).toBe(9);
+    expect(payload.version).toBe(10);
     expect(payload.experimentHistory).toHaveLength(1);
     const prompt = buildAiReportPrompt(payload, settings);
     expect(prompt).toContain('вывод пользователя: Утром было немного легче');

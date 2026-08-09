@@ -10,12 +10,22 @@ import { useAuthStore } from '../src/stores/auth';
 
 const sync = vi.hoisted(() => ({
   prepareLocalCacheOwner: vi.fn(),
+  reconcileCloudSnapshotAfterResume: vi.fn(),
   reconcileCloudSnapshotOnStartup: vi.fn(),
 }));
+const resume = vi.hoisted(() => ({
+  refresh: undefined as (() => Promise<void>) | undefined,
+  request: vi.fn().mockResolvedValue(false),
+}));
+const funnel = vi.hoisted(() => ({ recordFirstUseEvent: vi.fn(), recordFirstUseReturnEvents: vi.fn() }));
 
 vi.mock('../src/features/sync/startup', () => sync);
+vi.mock('../src/features/first-use/funnel', () => funnel);
 vi.mock('../src/features/sync/resume', () => ({
-  createResumeCloudRefresh: () => vi.fn().mockResolvedValue(false),
+  createResumeCloudRefresh: (refresh: () => Promise<void>) => {
+    resume.refresh = refresh;
+    return resume.request;
+  },
 }));
 vi.mock('../src/services/notifications', () => ({
   notifyInfo: vi.fn(),
@@ -23,6 +33,45 @@ vi.mock('../src/services/notifications', () => ({
 }));
 
 describe('application startup', () => {
+  it('returns an unauthenticated deep link to the sign-in entry route', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.authRequired = true;
+    auth.initialized = true;
+    auth.session = null;
+    vi.spyOn(auth, 'init').mockResolvedValue(undefined);
+
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', component: { template: '<div>Главная</div>' } },
+        { path: '/trends', component: { template: '<div>Тренды</div>' } },
+        { path: '/password-reset', component: { template: '<div>Новый пароль</div>' } },
+      ],
+    });
+    await router.push('/trends');
+    await router.isReady();
+
+    const wrapper = mount(App, {
+      global: {
+        plugins: [pinia, router],
+        stubs: {
+          FeedbackDialog: true,
+          Toaster: true,
+        },
+      },
+    });
+
+    await flushPromises();
+
+    expect(router.currentRoute.value.fullPath).toBe('/');
+    expect(wrapper.find('.auth-shell').exists()).toBe(true);
+    expect(wrapper.find('.app-main').classes()).toContain('app-main--auth');
+    wrapper.unmount();
+  });
+
   it('does not mount working screens before the required cloud reconciliation finishes', async () => {
     let finishCloudCheck!: () => void;
     sync.prepareLocalCacheOwner.mockResolvedValue(undefined);
@@ -79,6 +128,20 @@ describe('application startup', () => {
 
     expect(wrapper.find('[data-testid="working-screen"]').exists()).toBe(true);
     expect(wrapper.find('.bottom-nav').exists()).toBe(true);
+    expect(funnel.recordFirstUseReturnEvents).toHaveBeenCalledOnce();
+
+    store.cloudSyncStatus = 'conflict';
+    store.cloudSyncMessage =
+      'В облаке появились более свежие данные. Открытые записи не заменены. Выберите нужную копию в разделе «Данные и синхронизация».';
+    await flushPromises();
+    const cloudSettingsLink = wrapper.get('.sync-banner a');
+    expect(cloudSettingsLink.text()).toBe('Данные и синхронизация');
+    expect(cloudSettingsLink.attributes('href')).toBe('/settings#cloud-settings');
+
+    const startupCalls = sync.reconcileCloudSnapshotOnStartup.mock.calls.length;
+    await resume.refresh!();
+    expect(sync.reconcileCloudSnapshotAfterResume).toHaveBeenCalledWith(store, 'user-1');
+    expect(sync.reconcileCloudSnapshotOnStartup).toHaveBeenCalledTimes(startupCalls);
     wrapper.unmount();
   });
 });

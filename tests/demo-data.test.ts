@@ -10,9 +10,10 @@ const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as ExportPayload;
 
 describe('test user fixture', () => {
   it('uses the current import schema and normalized settings', () => {
-    expect(fixture.version).toBe(5);
+    expect(fixture.version).toBe(9);
     const settings = normalizeSettings(fixture.settings);
-    expect(settings.settingsVersion).toBe(11);
+    expect(settings.settingsVersion).toBe(13);
+    expect(settings.firstUse).toMatchObject({ status: 'completed', lastStep: 'overview', overviewSeen: true });
     expect(settings.focusOutcomeCriterion).not.toBe('');
     expect(settings.focusReviewDate).toBe('2026-08-15');
     expect(settings.experiment).toMatchObject({ targetMetricId: null, minimumMeaningfulChange: null });
@@ -41,6 +42,8 @@ describe('test user fixture', () => {
     expect(fixture.results.length).toBeGreaterThan(20);
     expect(fixture.lifeEvents?.length).toBeGreaterThanOrEqual(8);
     expect(fixture.monthlyReviews?.length).toBeGreaterThanOrEqual(2);
+    expect(fixture.weeklyReviews.every((review) => review.highlights.some(Boolean))).toBe(true);
+    expect(fixture.weeklyReviews.every((review) => review.stateContext)).toBe(true);
   });
 
   it('contains no future or removed event values', () => {

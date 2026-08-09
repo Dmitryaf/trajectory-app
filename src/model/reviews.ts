@@ -1,4 +1,5 @@
 import { lifeEventTypeOptions } from './options';
+import { validDate } from './normalization';
 import type { LifeEventRecord, LifeEventType, MonthlyReview, ResultRecord, WeeklyReview } from './schema';
 
 export function normalizeResult(result: Partial<ResultRecord> & { date: string; title: string }): ResultRecord {
@@ -29,9 +30,12 @@ export function normalizeLifeEvent(event: Partial<LifeEventRecord> & { date: str
 export function emptyWeeklyReview(weekStart: string): WeeklyReview {
   return {
     weekStart,
+    coveredThrough: '',
     updatedAt: '',
     previousPlanOutcome: '',
     results: ['', '', ''],
+    highlights: ['', '', ''],
+    stateContext: '',
     support: '',
     obstacle: '',
     nextLever: '',
@@ -43,14 +47,27 @@ export function normalizeWeeklyReview(review: Partial<WeeklyReview> & { weekStar
   return {
     ...emptyWeeklyReview(review.weekStart),
     ...review,
+    coveredThrough: validCoveredThrough(review.coveredThrough, review.weekStart),
     previousPlanOutcome: typeof review.previousPlanOutcome === 'string' ? review.previousPlanOutcome : '',
     updatedAt: typeof review.updatedAt === 'string' ? review.updatedAt : '',
     results: Array.isArray(review.results) ? review.results.filter((result): result is string => typeof result === 'string') : ['', '', ''],
+    highlights: Array.isArray(review.highlights)
+      ? review.highlights.filter((highlight): highlight is string => typeof highlight === 'string')
+      : ['', '', ''],
+    stateContext: typeof review.stateContext === 'string' ? review.stateContext : '',
     support: typeof review.support === 'string' ? review.support : '',
     obstacle: typeof review.obstacle === 'string' ? review.obstacle : '',
     nextLever: typeof review.nextLever === 'string' ? review.nextLever : '',
     ifThenPlan: typeof review.ifThenPlan === 'string' ? review.ifThenPlan : '',
   };
+}
+
+function validCoveredThrough(value: unknown, weekStart: string): string {
+  const coveredThrough = validDate(value);
+  if (!coveredThrough || coveredThrough < weekStart) return '';
+  const weekEnd = new Date(`${weekStart}T00:00:00Z`);
+  weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
+  return coveredThrough <= weekEnd.toISOString().slice(0, 10) ? coveredThrough : '';
 }
 
 export function emptyMonthlyReview(monthStart: string): MonthlyReview {

@@ -63,7 +63,7 @@ FEEDBACK_FROM_EMAIL=Траектория <onboarding@resend.dev>
 
 ## Как выпускать в `main` после staging
 
-1. Довести изменения до зелёного `npm run check` и `npm run test:e2e`.
+1. Довести изменения до зелёных `npm run audit:dependencies`, `npm run check` и `npm run test:e2e`.
 2. Убедиться, что staging на `develop` проверен вручную на основном сценарии и на новом изменении.
 3. Обновить `develop`, если понадобились правки после staging, и повторить проверку.
 4. Создать release PR из `develop` в `main`.

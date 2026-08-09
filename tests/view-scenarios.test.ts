@@ -11,16 +11,23 @@ import SettingsView from '../src/views/SettingsView.vue';
 import TodayView from '../src/views/TodayView.vue';
 import TrendsView from '../src/views/TrendsView.vue';
 import WeekView from '../src/views/WeekView.vue';
-import { notifyError, notifySaved, notifyUnknownError } from '../src/services/notifications';
+import { loadCloudSnapshot, markCloudSyncSynced } from '../src/services/cloudSync';
+import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../src/services/notifications';
 import { useAppStore } from '../src/stores/app';
 import { useAuthStore } from '../src/stores/auth';
-import { defaultSettings, emptyDailyEntry, emptyWeeklyReview } from '../src/types';
+import { defaultSettings, emptyDailyEntry, emptyMonthlyReview, emptyWeeklyReview, type DailyEntry } from '../src/types';
 
 vi.mock('../src/services/notifications', () => ({
   notifyError: vi.fn(),
   notifyInfo: vi.fn(),
   notifySaved: vi.fn(),
   notifyUnknownError: vi.fn(),
+}));
+
+vi.mock('../src/services/cloudSync', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../src/services/cloudSync')>()),
+  loadCloudSnapshot: vi.fn(),
+  markCloudSyncSynced: vi.fn(),
 }));
 
 enableAutoUnmount(afterEach);
@@ -36,6 +43,14 @@ function createStore() {
   const store = useAppStore();
   store.loaded = true;
   store.settings = structuredClone(defaultSettings);
+  store.settings.firstUse = {
+    status: 'completed',
+    weekStart: '2026-07-13',
+    periodEnd: '2026-07-19',
+    lastStep: 'overview',
+    overviewSeen: true,
+    updatedAt: '2026-07-20T12:00:00.000Z',
+  };
   return { pinia, store };
 }
 
@@ -43,6 +58,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(2026, 6, 21, 12));
   vi.clearAllMocks();
+  window.history.replaceState(null, '', '/');
 });
 
 afterEach(() => {
@@ -58,11 +74,12 @@ describe('daily entry scenario', () => {
 
     expect(wrapper.text()).toContain('Отметьте несколько деталей сегодняшнего дня');
     expect(wrapper.text()).toContain('Разделы на главной можно добавить или убрать в настройках');
-    expect(wrapper.text()).toContain('Настроить блоки на главной');
+    expect(wrapper.text()).toContain('Настроить блоки');
     expect(wrapper.text()).toContain('Зачем это заполнять?');
     expect(wrapper.text()).not.toContain('Вчера без записи');
     expect(wrapper.find('.quick-capture').exists()).toBe(false);
     expect(wrapper.text()).toContain('Сначала выберите, над чем сейчас хотите работать.');
+    expect(wrapper.get('#goal-actions .context-action').text()).toBe('Выбрать цель');
     expect(wrapper.text()).not.toContain('Конкретное действие');
   });
 
@@ -76,6 +93,59 @@ describe('daily entry scenario', () => {
     expect(wrapper.text()).toContain('Хотите добавить или убрать разделы?');
     expect(wrapper.text()).toContain('Настроить главную');
     expect(wrapper.text()).not.toContain('С чего начать');
+    expect(wrapper.text()).toContain('Состояние и условия');
+    expect(wrapper.text()).toContain('Текущая цель');
+    expect(wrapper.text()).toContain('Остальные части дня');
+    expect(wrapper.text()).toContain('Короткий итог дня');
+    expect(wrapper.text()).not.toContain('Сон перед этой датой и сколько сил было в этот день.');
+  });
+
+  it('keeps one goal action before optional work context', async () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [{ ...emptyDailyEntry('2026-07-20'), importantFact: 'Обычная запись' }];
+    store.settings.activeDailyBlocks = ['career'];
+    store.settings.activeLifeAreas = [];
+    store.settings.activeFocusTitle = 'Подготовить доклад';
+    store.settings.focusOutcomeCriterion = 'Провести репетицию';
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+    const goalCard = wrapper.get('#goal-actions');
+    const workCard = wrapper.get('#career');
+
+    expect(wrapper.html().indexOf('id="goal-actions"')).toBeLessThan(wrapper.html().indexOf('id="career"'));
+    expect(goalCard.get('h2').text()).toBe('Шаг по текущей цели');
+    expect(goalCard.get('.goal-context-details').attributes('open')).toBeUndefined();
+    expect(workCard.get('h2').text()).toBe('Рабочий контекст');
+    expect(workCard.text()).toContain('не считается шагом по текущей цели');
+    expect(workCard.find('textarea').exists()).toBe(false);
+    expect(wrapper.find('#life-areas').exists()).toBe(false);
+
+    await goalCard
+      .findAll('.chip')
+      .find((chip) => chip.text().includes('Шаг к цели'))!
+      .trigger('click');
+    expect(goalCard.find('#goal-action-note').exists()).toBe(true);
+  });
+
+  it('offers recovery to an existing user without blocking the daily form', () => {
+    const { pinia, store } = createStore();
+    store.settings.firstUse = {
+      status: 'available',
+      weekStart: '',
+      periodEnd: '',
+      lastStep: 'choice',
+      overviewSeen: false,
+      updatedAt: '',
+    };
+    store.dailyEntries = [emptyDailyEntry('2026-07-20')];
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+
+    expect(wrapper.text()).toContain('Собрать недавнюю неделю?');
+    expect(wrapper.text()).toContain('Не сейчас');
+    expect(wrapper.find('.checkin-grid').exists()).toBe(true);
   });
 
   it('shows only one current cue and keeps a weekly plan visible without daily tracking', () => {
@@ -108,10 +178,11 @@ describe('daily entry scenario', () => {
     });
 
     expect(wrapper.get('[aria-label="Дата записи"]').attributes('max')).toBe('2026-07-21');
-    expect(wrapper.text()).toContain('Действия по цели');
+    expect(wrapper.text()).toContain('Шаг по текущей цели');
     expect(wrapper.text()).toContain('Физическая активность');
-    const directionCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Действия по цели');
+    const directionCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Шаг по текущей цели');
     expect(directionCard?.findAll('.chip').map((chip) => chip.text())).not.toContain('Восстановление');
+    expect(directionCard?.get('.goal-context-details').attributes('open')).toBeUndefined();
     const movementCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Физическая активность');
     expect(movementCard?.findAll('.chip').map((chip) => chip.text())).toEqual([
       '→ Прогулка',
@@ -185,7 +256,7 @@ describe('daily entry scenario', () => {
     ]);
 
     const careerNone = workCard.findAll('button').find((button) => button.text() === 'Ничего из списка');
-    const actionNone = wrapper.findAll('button').find((button) => button.text() === 'Действий по цели не было');
+    const actionNone = wrapper.findAll('button').find((button) => button.text() === 'Шага по цели не было');
     await careerNone!.trigger('click');
     await actionNone!.trigger('click');
     await wrapper.get('form').trigger('submit');
@@ -228,6 +299,7 @@ describe('daily entry scenario', () => {
   it('hides inactive blocks while preserving values in an existing entry', async () => {
     const { pinia, store } = createStore();
     store.settings.activeDailyBlocks = [];
+    store.settings.activeLifeAreas = [];
     store.dailyEntries = [
       {
         ...emptyDailyEntry('2026-07-21'),
@@ -237,7 +309,9 @@ describe('daily entry scenario', () => {
         timeInBedMinutes: 470,
         nutritionState: 'supports_goal',
         actionDirection: 'preparation',
-        recordedFields: ['actionDirection'],
+        lifeAreas: ['family'],
+        lifeAreasRecorded: true,
+        recordedFields: ['actionDirection', 'lifeAreas'],
       },
     ];
     const saveEntry = vi.spyOn(store, 'saveEntry').mockImplementation(async (entry) => {
@@ -250,10 +324,11 @@ describe('daily entry scenario', () => {
 
     const headings = wrapper.findAll('.form-card h2').map((heading) => heading.text());
     expect(headings).not.toContain('Сон и состояние');
-    expect(headings).not.toContain('Работа');
+    expect(headings).not.toContain('Рабочий контекст');
     expect(headings).not.toContain('Физическая активность');
     expect(headings).not.toContain('Питание');
     expect(headings).toContain('Заметка дня');
+    expect(headings).toContain('Области жизни');
     expect(wrapper.text()).toContain('Для этой записи цель не была сохранена.');
     expect(wrapper.findAll('#goal-actions .chip').map((chip) => chip.text())).toContain('◫ Подготовка');
 
@@ -384,6 +459,43 @@ describe('daily entry scenario', () => {
 });
 
 describe('journal scenarios', () => {
+  it('reports archive deletion errors and allows retrying the same record', async () => {
+    const { pinia, store } = createStore();
+    store.results = [{ id: 1, date: '2026-07-21', area: 'career', title: 'Итог', note: '', createdAt: '2026-07-21T10:00:00.000Z' }];
+    store.lifeEvents = [{ id: 2, date: '2026-07-21', type: 'event', title: 'Событие', note: '', createdAt: '2026-07-21T11:00:00.000Z' }];
+    const removeResult = vi
+      .spyOn(store, 'removeResult')
+      .mockRejectedValueOnce(new Error('IndexedDB unavailable'))
+      .mockResolvedValueOnce(undefined);
+    const removeLifeEvent = vi
+      .spyOn(store, 'removeLifeEvent')
+      .mockRejectedValueOnce(new Error('IndexedDB unavailable'))
+      .mockResolvedValueOnce(undefined);
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const global = { plugins: [pinia], stubs: { RouterLink: routerLinkStub } };
+    const results = mount(ResultsView, { global });
+    const events = mount(EventsView, { global });
+    const resultButton = results.get('[aria-label="Удалить итог"]');
+    const eventButton = events.get('[aria-label="Удалить событие"]');
+
+    await resultButton.trigger('click');
+    await eventButton.trigger('click');
+    await flushPromises();
+    expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось удалить итог');
+    expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось удалить событие');
+    expect(notifyInfo).not.toHaveBeenCalledWith('Итог удалён');
+    expect(notifyInfo).not.toHaveBeenCalledWith('Событие удалено');
+    expect(resultButton.attributes('disabled')).toBeUndefined();
+    expect(eventButton.attributes('disabled')).toBeUndefined();
+
+    await resultButton.trigger('click');
+    await eventButton.trigger('click');
+    await flushPromises();
+    expect(removeResult).toHaveBeenCalledTimes(2);
+    expect(removeLifeEvent).toHaveBeenCalledTimes(2);
+    confirm.mockRestore();
+  });
+
   it('uses bounded pages and resets pagination when archive filters change', async () => {
     const { pinia, store } = createStore();
     store.results = Array.from({ length: 9 }, (_, index) => ({
@@ -445,8 +557,11 @@ describe('journal scenarios', () => {
 
     await wrapper.get('[aria-label="Поиск по итогам"]').setValue('');
     await wrapper.get('.result-composer input[type="text"]').setValue('Закончил курс');
-    await wrapper.get('.result-note-field summary').trigger('click');
-    await wrapper.get('.result-note-field textarea').setValue('Собрал финальный проект и получил обратную связь');
+    const note = wrapper.get('.result-composer textarea');
+    await note.setValue('Собрал финальный проект и получил обратную связь');
+    await note.setValue('');
+    expect(note.element).toBeInstanceOf(HTMLTextAreaElement);
+    await note.setValue('Собрал финальный проект и получил обратную связь');
     await wrapper.get('.result-composer .primary-button').trigger('click');
     await flushPromises();
 
@@ -514,6 +629,164 @@ describe('journal scenarios', () => {
 });
 
 describe('settings scenarios', () => {
+  it('separates daily, experiment, data and account settings without duplicating controls', async () => {
+    const { pinia } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
+    const tabs = wrapper.findAll('[aria-label="Разделы настроек"] button');
+
+    expect(tabs.map((tab) => tab.text())).toEqual(['Ежедневная запись', 'Эксперимент', 'Данные и синхронизация', 'Аккаунт и безопасность']);
+    expect(wrapper.findAll('.settings-group')).toHaveLength(4);
+    expect(wrapper.get('#daily-settings').attributes('style')).toContain('animation: page-in 0.25s ease-out');
+    expect(wrapper.get('#daily-settings').attributes('style')).not.toContain('display: none');
+    expect(wrapper.get('#data-settings').attributes('style')).toContain('display: none');
+
+    await tabs[2]!.trigger('click');
+    expect(wrapper.get('#daily-settings').attributes('style')).toContain('display: none');
+    expect(wrapper.get('#data-settings').attributes('style')).toContain('animation: page-in 0.25s ease-out');
+    expect(wrapper.get('#data-settings').attributes('style')).not.toContain('display: none');
+    expect(wrapper.get('#data-settings').text()).toContain('Автоматическая облачная копия');
+    expect(wrapper.get('#data-settings').text()).not.toContain('Удалить аккаунт');
+
+    await tabs[3]!.trigger('click');
+    expect(wrapper.get('#account-settings').attributes('style')).toContain('animation: page-in 0.25s ease-out');
+    expect(wrapper.get('#account-settings').attributes('style')).not.toContain('display: none');
+    expect(wrapper.get('#account-settings').text()).toContain('friend@example.com');
+    expect(
+      wrapper
+        .get('#account-settings')
+        .findAll('button')
+        .filter((button) => button.text() === 'Удалить аккаунт'),
+    ).toHaveLength(1);
+  });
+
+  it('blocks a repeated settings save and allows retrying after an error', async () => {
+    const { pinia, store } = createStore();
+    let rejectFirstSave!: (error: Error) => void;
+    const firstSave = new Promise<void>((_, reject) => {
+      rejectFirstSave = reject;
+    });
+    const saveSettings = vi.spyOn(store, 'saveSettings').mockReturnValueOnce(firstSave).mockResolvedValueOnce(undefined);
+    const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
+    const saveButton = wrapper.get('.settings-card--daily-blocks .primary-button');
+
+    await saveButton.trigger('click');
+    await saveButton.trigger('click');
+    expect(saveSettings).toHaveBeenCalledOnce();
+    expect(saveButton.attributes('disabled')).toBeDefined();
+
+    rejectFirstSave(new Error('IndexedDB unavailable'));
+    await flushPromises();
+    expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось сохранить настройки');
+    expect(saveButton.attributes('disabled')).toBeUndefined();
+
+    await saveButton.trigger('click');
+    await flushPromises();
+    expect(saveSettings).toHaveBeenCalledTimes(2);
+    expect(notifySaved).toHaveBeenCalledWith('Блоки ежедневной записи сохранены');
+  });
+
+  it('applies a confirmed cloud copy through the shared snapshot transition', async () => {
+    const { pinia, store } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    const snapshot = {
+      userId: 'user-1',
+      updatedAt: '2026-07-22T10:00:00.000Z',
+      payload: { version: 3 },
+    } as Awaited<ReturnType<typeof loadCloudSnapshot>>;
+    vi.mocked(loadCloudSnapshot).mockResolvedValue(snapshot);
+    const importData = vi.spyOn(store, 'importData').mockResolvedValue(undefined);
+    const setCloudSyncState = vi.spyOn(store, 'setCloudSyncState');
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const wrapper = mount(SettingsView, {
+      global: { plugins: [pinia], mocks: { $route: { query: {} } } },
+    });
+
+    const restoreButton = wrapper.findAll('.settings-card--cloud button').find((button) => button.text() === 'Загрузить из облака');
+    await restoreButton!.trigger('click');
+    await flushPromises();
+
+    expect(importData).toHaveBeenCalledWith(snapshot!.payload, { syncCloud: false });
+    expect(markCloudSyncSynced).toHaveBeenCalledWith('user-1', snapshot!.updatedAt);
+    expect(setCloudSyncState).toHaveBeenCalledWith('synced', expect.stringContaining('Загружена облачная копия'), {
+      updatedAt: snapshot!.updatedAt,
+    });
+    expect(notifySaved).toHaveBeenCalledWith(expect.stringContaining('Данные восстановлены из облака'));
+    confirm.mockRestore();
+  });
+
+  it('keeps local data when cloud restore is cancelled', async () => {
+    const { pinia, store } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    vi.mocked(loadCloudSnapshot).mockResolvedValue({
+      userId: 'user-1',
+      updatedAt: '2026-07-22T10:00:00.000Z',
+      payload: { version: 3 },
+    } as Awaited<ReturnType<typeof loadCloudSnapshot>>);
+    const importData = vi.spyOn(store, 'importData').mockResolvedValue(undefined);
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const wrapper = mount(SettingsView, {
+      global: { plugins: [pinia], mocks: { $route: { query: {} } } },
+    });
+
+    const restoreButton = wrapper.findAll('.settings-card--cloud button').find((button) => button.text() === 'Загрузить из облака');
+    await restoreButton!.trigger('click');
+    await flushPromises();
+
+    expect(importData).not.toHaveBeenCalled();
+    expect(markCloudSyncSynced).not.toHaveBeenCalled();
+    confirm.mockRestore();
+  });
+
+  it('does not mark an invalid cloud copy as synchronized', async () => {
+    const { pinia, store } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    vi.mocked(loadCloudSnapshot).mockResolvedValue({
+      userId: 'user-1',
+      updatedAt: '2026-07-22T10:00:00.000Z',
+      payload: { version: 999 },
+    } as Awaited<ReturnType<typeof loadCloudSnapshot>>);
+    vi.spyOn(store, 'importData').mockRejectedValue(new Error('Неподдерживаемая версия резервной копии'));
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const wrapper = mount(SettingsView, {
+      global: { plugins: [pinia], mocks: { $route: { query: {} } } },
+    });
+
+    const restoreButton = wrapper.findAll('.settings-card--cloud button').find((button) => button.text() === 'Загрузить из облака');
+    await restoreButton!.trigger('click');
+    await flushPromises();
+
+    expect(markCloudSyncSynced).not.toHaveBeenCalled();
+    expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Облачное действие не выполнено');
+    confirm.mockRestore();
+  });
+
+  it('does not confirm a cloud copy when the upload remains pending', async () => {
+    const { pinia, store } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    vi.spyOn(store, 'syncCloudSnapshot').mockResolvedValue({ status: 'pending', error: 'network unavailable' });
+    const wrapper = mount(SettingsView, {
+      global: { plugins: [pinia], mocks: { $route: { query: {} } } },
+    });
+
+    const backupButton = wrapper.findAll('.settings-card--cloud button').find((button) => button.text() === 'Обновить копию сейчас');
+    await backupButton!.trigger('click');
+    await flushPromises();
+
+    expect(notifySaved).not.toHaveBeenCalledWith('Локальная версия сохранена в облако');
+    expect(notifyError).toHaveBeenCalledWith('Облачная копия не обновлена. Локальные данные сохранены.');
+  });
+
   it('clears local data only after the authenticated account is deleted', async () => {
     const { pinia, store } = createStore();
     const auth = useAuthStore();
@@ -527,7 +800,7 @@ describe('settings scenarios', () => {
       global: { plugins: [pinia], mocks: { $route: { query: {} } } },
     });
 
-    const deleteButton = wrapper.findAll('.settings-card--cloud button').find((button) => button.text() === 'Удалить аккаунт');
+    const deleteButton = wrapper.findAll('.settings-card--account button').find((button) => button.text() === 'Удалить аккаунт');
     await deleteButton!.trigger('click');
     await flushPromises();
 
@@ -551,7 +824,7 @@ describe('settings scenarios', () => {
       global: { plugins: [pinia], mocks: { $route: { query: {} } } },
     });
 
-    const deleteButton = wrapper.findAll('.settings-card--cloud button').find((button) => button.text() === 'Удалить аккаунт');
+    const deleteButton = wrapper.findAll('.settings-card--account button').find((button) => button.text() === 'Удалить аккаунт');
     await deleteButton!.trigger('click');
     await flushPromises();
 
@@ -699,6 +972,102 @@ describe('settings scenarios', () => {
 });
 
 describe('trends scenarios', () => {
+  function buildCoveredTrendEntries(): DailyEntry[] {
+    const months = [
+      '2025-08',
+      '2025-09',
+      '2025-10',
+      '2025-11',
+      '2025-12',
+      '2026-01',
+      '2026-02',
+      '2026-03',
+      '2026-04',
+      '2026-05',
+      '2026-06',
+      '2026-07',
+    ];
+
+    return months.flatMap((month, monthIndex) =>
+      Array.from(
+        { length: 8 },
+        (_, dayIndex) =>
+          ({
+            ...emptyDailyEntry(`${month}-${String(dayIndex + 1).padStart(2, '0')}`),
+            recordedFields: ['sleepMinutes', 'energy', 'contextFactors', 'weightKg', 'actionDirection'],
+            sleepMinutes: 405 + (monthIndex % 3) * 15,
+            energy: 2 + (monthIndex % 3),
+            contextFactors: dayIndex < 4 ? ['screen'] : [],
+            contextFactorsRecorded: true,
+            weightKg: 80 - monthIndex * 0.2,
+            actionDirection: dayIndex % 3 === 0 ? 'preparation' : 'external',
+            importantFact: `Наблюдение ${dayIndex + 1}`,
+          }) satisfies DailyEntry,
+      ),
+    );
+  }
+
+  it('shows conclusions first and reveals detailed evidence by topic', async () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = buildCoveredTrendEntries();
+    store.results = [
+      {
+        id: 1,
+        date: '2026-07-08',
+        area: 'career',
+        title: 'Готовый результат',
+        note: '',
+        createdAt: '2026-07-08T12:00:00.000Z',
+      },
+    ];
+    store.lifeEvents = [
+      {
+        id: 1,
+        date: '2026-07-05',
+        type: 'event',
+        title: 'Важное событие',
+        note: '',
+        createdAt: '2026-07-05T12:00:00.000Z',
+      },
+    ];
+    const wrapper = mount(TrendsView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+
+    expect(wrapper.html().indexOf('dashboard-card--insights')).toBeLessThan(wrapper.html().indexOf('trends-quality-details'));
+    expect(wrapper.findAll('.review-cue-grid--primary .review-cue')).toHaveLength(3);
+    expect(wrapper.get('.trends-quality-details').attributes('open')).toBeUndefined();
+    expect(wrapper.get('.trends-table-details').attributes('open')).toBeUndefined();
+    expect(wrapper.get('.trends-event-details').attributes('open')).toBeUndefined();
+    expect(wrapper.get('.trends-weight-details').attributes('open')).toBeUndefined();
+    expect(wrapper.get('.trends-action-details').attributes('open')).toBeUndefined();
+    expect(wrapper.get('.trends-factor-details').attributes('open')).toBeUndefined();
+    expect(wrapper.get('.trends-history-details').attributes('open')).toBeUndefined();
+    expect(wrapper.findAll('.trend-chart-description')).toHaveLength(4);
+    expect(wrapper.text()).toContain('Сон рассчитан по 24 обычным дням');
+
+    for (const [label, rowCount] of [
+      ['3 месяца', 3],
+      ['6 месяцев', 6],
+      ['12 месяцев', 12],
+    ] as const) {
+      const button = wrapper.findAll('.range-tabs button').find((item) => item.text() === label);
+      await button!.trigger('click');
+      expect(wrapper.findAll('.trend-table__row')).toHaveLength(rowCount);
+      expect(wrapper.findAll('e-chart-panel-stub').length).toBeGreaterThanOrEqual(4);
+      expect(wrapper.find('.trends-chart-guide').exists()).toBe(false);
+    }
+  });
+
+  it('does not render visually significant charts for a scarce sample', () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [{ ...emptyDailyEntry('2026-07-21'), importantFact: 'Одна запись' }];
+    const wrapper = mount(TrendsView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+
+    expect(wrapper.findAll('.review-cue-grid--primary .review-cue').length).toBeGreaterThan(0);
+    expect(wrapper.get('.trends-quality-details').attributes('open')).toBeUndefined();
+    expect(wrapper.get('.trends-chart-guide').text()).toContain('Для графиков пока мало сопоставимых данных');
+    expect(wrapper.findAll('e-chart-panel-stub')).toHaveLength(0);
+  });
+
   it('keeps the change history compact until the user expands it', async () => {
     const { pinia, store } = createStore();
     store.dailyEntries = [{ ...emptyDailyEntry('2026-07-21'), importantFact: 'Есть данные для трендов' }];
@@ -722,6 +1091,390 @@ describe('trends scenarios', () => {
 });
 
 describe('period review navigation', () => {
+  it('keeps review drafts available after a failed save and allows retrying', async () => {
+    const { pinia, store } = createStore();
+    store.weeklyReviews = [{ ...emptyWeeklyReview('2026-07-20'), results: ['Черновик недели', '', ''] }];
+    store.monthlyReviews = [{ ...emptyMonthlyReview('2026-07-01'), mainPattern: 'Черновик месяца' }];
+    const saveReview = vi
+      .spyOn(store, 'saveReview')
+      .mockRejectedValueOnce(new Error('IndexedDB unavailable'))
+      .mockResolvedValueOnce(undefined);
+    const saveMonthlyReview = vi
+      .spyOn(store, 'saveMonthlyReview')
+      .mockRejectedValueOnce(new Error('IndexedDB unavailable'))
+      .mockResolvedValueOnce(undefined);
+    const global = { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } };
+    const week = mount(WeekView, { global });
+    const month = mount(MonthView, { global });
+    const weekButton = week.get('#week-review .primary-button');
+    const monthButton = month.get('#month-review .primary-button');
+
+    await weekButton.trigger('click');
+    await monthButton.trigger('click');
+    await flushPromises();
+
+    expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось сохранить обзор недели');
+    expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось сохранить итог месяца');
+    expect((week.get('#week-review input').element as HTMLInputElement).value).toBe('Черновик недели');
+    expect((month.get('#month-review textarea').element as HTMLTextAreaElement).value).toBe('Черновик месяца');
+    expect(weekButton.attributes('disabled')).toBeUndefined();
+    expect(monthButton.attributes('disabled')).toBeUndefined();
+
+    await weekButton.trigger('click');
+    await monthButton.trigger('click');
+    await flushPromises();
+    expect(saveReview).toHaveBeenCalledTimes(2);
+    expect(saveMonthlyReview).toHaveBeenCalledTimes(2);
+  });
+
+  it('uses the compact archive previews for weekly results and events', () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [{ ...emptyDailyEntry('2026-07-21'), importantFact: 'Есть данные недели' }];
+    store.results = Array.from({ length: 4 }, (_, index) => ({
+      id: index + 1,
+      date: '2026-07-21',
+      area: 'career' as const,
+      title: `Итог недели ${index + 1}`,
+      note: '',
+      createdAt: `2026-07-21T${String(12 + index).padStart(2, '0')}:00:00.000Z`,
+    }));
+    store.lifeEvents = Array.from({ length: 4 }, (_, index) => ({
+      id: index + 1,
+      date: '2026-07-21',
+      type: 'event' as const,
+      title: `Событие недели ${index + 1}`,
+      note: '',
+      createdAt: `2026-07-21T${String(12 + index).padStart(2, '0')}:00:00.000Z`,
+    }));
+    const wrapper = mount(WeekView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+
+    expect(wrapper.get('.period-record-card__link[href="/results?from=2026-07-20&to=2026-07-21"]').text()).toContain('Открыть все итоги');
+    expect(wrapper.get('.period-record-card__link[href="/events?from=2026-07-20&to=2026-07-21"]').text()).toContain('Открыть все события');
+    expect(wrapper.text()).toContain('Итог недели 3');
+    expect(wrapper.text()).not.toContain('Итог недели 4');
+    expect(wrapper.text()).toContain('Событие недели 3');
+    expect(wrapper.text()).not.toContain('Событие недели 4');
+  });
+
+  it('keeps the weekly decision before details and limits the first-level observations', () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = Array.from({ length: 5 }, (_, index) => ({
+      ...emptyDailyEntry(`2026-07-${String(20 + index).padStart(2, '0')}`),
+      recordedFields: ['sleepMinutes', 'energy', 'actionDirection', 'importantFact'],
+      sleepMinutes: 390,
+      energy: 3,
+      actionDirection: 'preparation' as const,
+      importantFact: `Факт ${index + 1}`,
+    }));
+    store.results = [
+      {
+        id: 1,
+        date: '2026-07-22',
+        area: 'career',
+        title: 'Завершённый итог',
+        note: '',
+        createdAt: '2026-07-22T12:00:00.000Z',
+      },
+    ];
+    store.lifeEvents = [
+      {
+        id: 1,
+        date: '2026-07-23',
+        type: 'event',
+        title: 'Важное событие',
+        note: '',
+        createdAt: '2026-07-23T12:00:00.000Z',
+      },
+    ];
+    store.weeklyReviews = [emptyWeeklyReview('2026-07-20')];
+    const wrapper = mount(WeekView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+
+    const review = wrapper.get('#week-review');
+    const details = wrapper.get('details.week-data-details');
+    const reviewContext = review.get('details.review-context-details');
+    expect(review.element.compareDocumentPosition(details.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(wrapper.findAll('.review-cue-grid--primary .review-cue')).toHaveLength(3);
+    expect(wrapper.findAll('.review-cue-grid--additional .review-cue').length).toBeGreaterThan(0);
+    expect((reviewContext.element as HTMLDetailsElement).open).toBe(false);
+    expect(reviewContext.get('summary').text()).toBe('Добавить итоги и контекст');
+    expect(
+      (review.get('textarea[placeholder="Можно продолжить как есть или пока ничего не решать"]').element as HTMLTextAreaElement).value,
+    ).toBe('');
+    expect((details.element as HTMLDetailsElement).open).toBe(false);
+    expect(details.get('summary').text()).toBe('Показать показатели и записи недели');
+    expect(details.find('.metrics-grid').exists()).toBe(true);
+    expect(details.find('.week-chart-guide').exists()).toBe(false);
+    expect(details.find('e-chart-panel-stub').exists()).toBe(true);
+  });
+
+  it('explains why the weekly graph is hidden when comparable data is scarce', () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [
+      {
+        ...emptyDailyEntry('2026-07-21'),
+        recordedFields: ['sleepMinutes', 'energy', 'importantFact'],
+        sleepMinutes: 420,
+        energy: 3,
+        importantFact: 'Одна заполненная запись',
+      },
+    ];
+    const wrapper = mount(WeekView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+    const details = wrapper.get('details.week-data-details');
+
+    expect(details.get('.week-chart-guide').text()).toContain('Для графика пока мало сопоставимых данных');
+    expect(details.get('.week-chart-guide').text()).toContain('Сейчас: 1 и 1');
+    expect(details.find('e-chart-panel-stub').exists()).toBe(false);
+  });
+
+  it('keeps the monthly decision before detailed analytics and compares filled weeks', () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = Array.from({ length: 14 }, (_, index) => ({
+      ...emptyDailyEntry('2026-07-' + String(index + 1).padStart(2, '0')),
+      recordedFields: ['sleepMinutes', 'energy', 'actionDirection', 'importantFact'],
+      sleepMinutes: 390 + Math.floor(index / 7) * 30,
+      energy: 2 + Math.floor(index / 7),
+      actionDirection: 'external' as const,
+      importantFact: 'Факт месяца ' + (index + 1),
+    }));
+    store.lifeEvents = [
+      {
+        id: 1,
+        date: '2026-07-10',
+        type: 'event',
+        title: 'Событие, которое изменило месяц',
+        note: '',
+        createdAt: '2026-07-10T12:00:00.000Z',
+      },
+    ];
+    store.monthlyReviews = [emptyMonthlyReview('2026-07-01')];
+    const wrapper = mount(MonthView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+
+    const review = wrapper.get('#month-review');
+    const facts = wrapper.get('details.month-facts-details');
+    const analysis = wrapper.get('details.month-analysis-details');
+    const reviewContext = review.get('details.month-review-context');
+    expect(review.element.compareDocumentPosition(analysis.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(wrapper.findAll('.month-week-overview .comparison-periods > span').length).toBeGreaterThanOrEqual(2);
+    expect(wrapper.findAll('.review-cue-grid--primary .review-cue')).toHaveLength(3);
+    expect(wrapper.get('.month-featured-events').text()).toContain('Событие, которое изменило месяц');
+    expect(wrapper.get('.period-records').text()).not.toContain('Событие, которое изменило месяц');
+    expect((reviewContext.element as HTMLDetailsElement).open).toBe(false);
+    expect(reviewContext.get('summary').text()).toBe('Добавить разбор месяца');
+    expect((facts.element as HTMLDetailsElement).open).toBe(false);
+    expect(facts.find('.metrics-grid').exists()).toBe(true);
+    expect(facts.find('.month-calendar').exists()).toBe(true);
+    expect((analysis.element as HTMLDetailsElement).open).toBe(false);
+    expect(analysis.find('.month-chart-guide').exists()).toBe(false);
+    expect(analysis.find('e-chart-panel-stub').exists()).toBe(true);
+  });
+
+  it('explains why monthly graphs are hidden when comparable data is scarce', () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [
+      {
+        ...emptyDailyEntry('2026-07-21'),
+        recordedFields: ['sleepMinutes', 'energy', 'importantFact'],
+        sleepMinutes: 420,
+        energy: 3,
+        importantFact: 'Одна запись месяца',
+      },
+    ];
+    const wrapper = mount(MonthView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+    const analysis = wrapper.get('details.month-analysis-details');
+
+    expect(wrapper.get('.month-week-overview').text()).toContain('Для сравнения нужны записи хотя бы за две недели');
+    expect(analysis.get('.month-chart-guide').text()).toContain('Для графиков пока мало сопоставимых данных');
+    expect(analysis.get('.month-chart-guide').text()).toContain('Сейчас: 1 и 1');
+    expect(analysis.find('e-chart-panel-stub').exists()).toBe(false);
+  });
+
+  it('keeps monthly records compact and routes complete archives to the selected period', async () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = Array.from({ length: 9 }, (_, index) => {
+      const day = String(21 - index).padStart(2, '0');
+      return {
+        ...emptyDailyEntry(`2026-07-${day}`),
+        actionDirection: index % 2 === 0 ? 'preparation' : 'external',
+        actionNote: `Действие ${index + 1}`,
+        contextNote: `Контекст ${index + 1}`,
+      };
+    });
+    store.results = Array.from({ length: 4 }, (_, index) => ({
+      id: index + 1,
+      date: `2026-07-${String(21 - index).padStart(2, '0')}`,
+      area: 'career' as const,
+      title: `Итог месяца ${index + 1}`,
+      note: '',
+      createdAt: `2026-07-${String(21 - index).padStart(2, '0')}T12:00:00.000Z`,
+    }));
+    store.lifeEvents = Array.from({ length: 4 }, (_, index) => ({
+      id: index + 1,
+      date: `2026-07-${String(21 - index).padStart(2, '0')}`,
+      type: 'event' as const,
+      title: `Событие месяца ${index + 1}`,
+      note: '',
+      createdAt: `2026-07-${String(21 - index).padStart(2, '0')}T12:00:00.000Z`,
+    }));
+    const wrapper = mount(MonthView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+
+    expect(wrapper.text()).toContain('Показать графики и подробный разбор');
+    expect(wrapper.text()).toContain('Показать записи месяца');
+    expect(wrapper.get('.period-record-card__link[href="/results?from=2026-07-01&to=2026-07-21"]').text()).toContain('Открыть все итоги');
+    expect(wrapper.get('.period-record-card__link[href="/events?from=2026-07-01&to=2026-07-21"]').text()).toContain('Открыть все события');
+    expect(wrapper.text()).toContain('Итог месяца 3');
+    expect(wrapper.text()).not.toContain('Итог месяца 4');
+
+    const actions = wrapper.get('.period-record-card--disclosure');
+    await actions.get('summary').trigger('click');
+    expect(actions.findAll('.note-item')).toHaveLength(7);
+    expect(actions.text()).toContain('1 из 2');
+    await actions.get('[aria-label="Страницы действий месяца"] button:last-child').trigger('click');
+    expect(actions.text()).toContain('Действие 8');
+    expect(actions.text()).toContain('Действие 9');
+  });
+
+  it('shows journal records without pretending that daily analytics exist', () => {
+    const { pinia, store } = createStore();
+    store.results = [
+      {
+        id: 1,
+        date: '2026-07-21',
+        area: 'career',
+        title: 'Завершённый итог без дневной записи',
+        note: '',
+        createdAt: '2026-07-21T12:00:00.000Z',
+      },
+    ];
+    store.lifeEvents = [
+      {
+        id: 1,
+        date: '2026-07-21',
+        type: 'event',
+        title: 'Важное событие без дневной записи',
+        note: '',
+        createdAt: '2026-07-21T13:00:00.000Z',
+      },
+    ];
+    const global = { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } };
+    const week = mount(WeekView, { global });
+    const month = mount(MonthView, { global });
+
+    for (const wrapper of [week, month]) {
+      expect(wrapper.find('.period-empty-guide').exists()).toBe(false);
+      expect(wrapper.get('.period-data-guide').text()).toContain('нет дневных записей');
+      expect(wrapper.find('.metrics-grid').exists()).toBe(false);
+      expect(wrapper.text()).toContain('Завершённый итог без дневной записи');
+      expect(wrapper.text()).toContain('Важное событие без дневной записи');
+    }
+    expect((week.get('details.week-data-details').element as HTMLDetailsElement).open).toBe(true);
+    expect((month.get('details.period-records').element as HTMLDetailsElement).open).toBe(true);
+  });
+
+  it('keeps a saved period review visible without daily or journal records', () => {
+    const { pinia, store } = createStore();
+    store.weeklyReviews = [{ ...emptyWeeklyReview('2026-07-20'), results: ['Неделя не была пустой', '', ''] }];
+    store.monthlyReviews = [{ ...emptyMonthlyReview('2026-07-01'), mainPattern: 'Важный вывод месяца' }];
+    const global = { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } };
+    const week = mount(WeekView, { global });
+    const month = mount(MonthView, { global });
+
+    for (const wrapper of [week, month]) {
+      expect(wrapper.find('.period-empty-guide').exists()).toBe(false);
+      expect(wrapper.find('.period-data-guide').exists()).toBe(true);
+      expect(wrapper.find('.metrics-grid').exists()).toBe(false);
+      expect(wrapper.find('.review-card').exists()).toBe(true);
+      expect(wrapper.find('.period-details:not(.review-context-details):not(.month-review-context)').exists()).toBe(false);
+    }
+    expect((week.get('.review-card input').element as HTMLInputElement).value).toBe('Неделя не была пустой');
+    expect((month.get('details.month-review-context').element as HTMLDetailsElement).open).toBe(true);
+    expect(month.get('details.month-review-context summary').text()).toBe('Разбор месяца');
+    expect((month.get('.review-card textarea').element as HTMLTextAreaElement).value).toBe('Важный вывод месяца');
+  });
+
+  it('opens the recovered week on its exact dates and keeps all answers editable', () => {
+    window.history.replaceState(null, '', '/week?week=2026-07-13#first-use-overview');
+    const { pinia, store } = createStore();
+    store.weeklyReviews = [
+      {
+        ...emptyWeeklyReview('2026-07-13'),
+        results: ['Закончил черновик'],
+        highlights: ['Состоялся важный разговор'],
+        stateContext: 'К середине недели было мало сил',
+        support: 'Свободный вечер',
+        obstacle: 'Недосып',
+        nextLever: 'Пока без решения',
+      },
+    ];
+    const wrapper = mount(WeekView, {
+      props: { initialWeek: '2026-07-13' },
+      global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } },
+    });
+
+    const overview = wrapper.get('#first-use-overview');
+    expect(overview.text()).toContain('Восстановлено по вашим ответам');
+    expect(overview.text()).toContain('Закончил черновик');
+    expect(overview.text()).toContain('Состоялся важный разговор');
+    expect(overview.text()).toContain('К середине недели было мало сил');
+    expect(overview.get('a[href="/"]').text()).toBe('Записать сегодняшний день');
+    expect(overview.get('a[href="/?first-use=edit"]').text()).toBe('Исправить ответы');
+
+    const reviewForm = wrapper.get('#week-review');
+    const reviewContext = reviewForm.get('details.review-context-details');
+    expect((reviewContext.element as HTMLDetailsElement).open).toBe(true);
+    expect(reviewContext.get('summary').text()).toBe('Итоги и контекст');
+    expect(reviewForm.findAll('input')).toHaveLength(6);
+    expect(reviewForm.text()).toContain('До трёх событий, решений или мыслей');
+    expect((reviewForm.findAll('textarea')[0]!.element as HTMLTextAreaElement).value).toBe('К середине недели было мало сил');
+  });
+
+  it('shows the real boundary of an incomplete recovered week', () => {
+    window.history.replaceState(null, '', '/week?week=2026-07-13#first-use-overview');
+    const { pinia, store } = createStore();
+    store.settings.firstUse.periodEnd = '2026-07-17';
+    store.weeklyReviews = [
+      {
+        ...emptyWeeklyReview('2026-07-13'),
+        coveredThrough: '2026-07-17',
+        results: ['Закончил черновик'],
+      },
+    ];
+    const wrapper = mount(WeekView, {
+      props: { initialWeek: '2026-07-13' },
+      global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } },
+    });
+
+    expect(wrapper.get('#first-use-overview').text()).toContain('Ответы собраны по 17 июля');
+    expect(wrapper.get('#first-use-overview').text()).toContain('Остальные дни этой недели не считаются пропущенными');
+    expect(wrapper.get('#first-use-overview input[type="date"]').attributes('max')).toBe('2026-07-17');
+  });
+
+  it('keeps the current week as default and links to the recovered overview', () => {
+    const { pinia, store } = createStore();
+    store.weeklyReviews = [{ ...emptyWeeklyReview('2026-07-13'), results: ['Закончил черновик'] }];
+    const wrapper = mount(WeekView, {
+      global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } },
+    });
+
+    expect(wrapper.get('.period-nav__label').text()).toContain('Текущая неделя');
+    expect(wrapper.find('#first-use-overview').exists()).toBe(false);
+    expect(wrapper.get('.recovered-week-link').text()).toContain('Ваш первый обзор сохранён');
+    expect(wrapper.find('.period-empty-guide').exists()).toBe(true);
+  });
+
+  it('keeps the current week as the default after it gets its own data', () => {
+    const { pinia, store } = createStore();
+    store.weeklyReviews = [{ ...emptyWeeklyReview('2026-07-13'), results: ['Закончил черновик'] }];
+    store.dailyEntries = [{ ...emptyDailyEntry('2026-07-21'), importantFact: 'Первая запись текущей недели' }];
+    const wrapper = mount(WeekView, {
+      global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } },
+    });
+
+    expect(wrapper.get('.period-nav__label').text()).toContain('Текущая неделя');
+    expect(wrapper.find('.metrics-grid').exists()).toBe(true);
+    expect(wrapper.find('.period-empty-guide').exists()).toBe(false);
+    expect(wrapper.get('.recovered-week-link').text()).toContain('Ваш первый обзор сохранён');
+  });
+
   it('links the week and month summaries to their review forms', () => {
     vi.setSystemTime(new Date(2026, 7, 30, 12));
     const { pinia, store } = createStore();

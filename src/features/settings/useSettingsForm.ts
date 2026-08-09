@@ -5,10 +5,11 @@ import { useAuthStore } from '../../stores/auth';
 import { copyText, downloadJson } from '../export/browser';
 import { buildAiReportCustomRangePayload, buildAiReportPayload, buildAiReportPrompt, type AiReportPeriod } from '../export/report';
 import { createExperimentRecord, emptyExperiment, experimentDecisionOptions, experimentPeriodsOverlap } from '../experiments/model';
-import { loadCloudSnapshot, markCloudSyncSynced } from '../../services/cloudSync';
+import { loadCloudSnapshot } from '../../services/cloudSync';
 import { addDays, todayKey } from '../../services/dates';
 import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../../services/notifications';
 import { plainCopy } from '../../services/plain';
+import { applyCloudSnapshot, formatCloudUpdatedAt } from '../sync/snapshot';
 import {
   activityOptions,
   careerOptions,
@@ -39,6 +40,7 @@ export function useSettingsForm() {
   const analysisStart = ref(addDays(todayKey(), -30));
   const analysisEnd = ref(todayKey());
   const analysisMaxDate = todayKey();
+  const savingActions = reactive(new Set<string>());
   const auth = useAuthStore();
   const allCareerOptions = computed(() => {
     const usedIds = new Set([
@@ -85,12 +87,27 @@ export function useSettingsForm() {
   const cloudStatusText = computed(() => store.cloudSyncMessage || 'Синхронизация готова.');
   const experimentCanConclude = computed(() => Boolean(settings.experiment.endDate && settings.experiment.endDate <= todayKey()));
 
-  async function save(message = 'Настройки сохранены') {
-    await store.saveSettings(plainCopy(settings));
-    notifySaved(message);
+  function isSaving(action: string) {
+    return savingActions.has(action);
+  }
+
+  async function save(message = 'Настройки сохранены', action = 'settings', nextSettings: AppSettings = plainCopy(settings)) {
+    if (isSaving(action)) return false;
+    savingActions.add(action);
+    try {
+      await store.saveSettings(nextSettings);
+      notifySaved(message);
+      return true;
+    } catch (error) {
+      notifyUnknownError(error, 'Не удалось сохранить настройки');
+      return false;
+    } finally {
+      savingActions.delete(action);
+    }
   }
 
   async function saveExperiment() {
+    if (isSaving('experiment')) return;
     const experiment = settings.experiment;
     if (experiment.active && !experiment.title.trim()) {
       notifyError('Напишите, что хотите попробовать');
@@ -108,10 +125,11 @@ export function useSettingsForm() {
       notifyError('Период пересекается с завершённым экспериментом');
       return;
     }
-    await save('Эксперимент сохранён');
+    await save('Эксперимент сохранён', 'experiment');
   }
 
   async function completeExperiment() {
+    if (isSaving('experiment')) return;
     const experiment = settings.experiment;
     if (!experiment.title.trim() || !experiment.startDate || !experiment.endDate) {
       notifyError('Напишите, что пробовали, и укажите даты');
@@ -133,28 +151,33 @@ export function useSettingsForm() {
       notifyError('Период пересекается с завершённым экспериментом');
       return;
     }
-    settings.experimentHistory.unshift(createExperimentRecord(experiment));
-    settings.experiment = emptyExperiment();
-    await save('Эксперимент добавлен в историю');
+    const nextSettings = plainCopy(settings);
+    nextSettings.experimentHistory.unshift(createExperimentRecord(experiment));
+    nextSettings.experiment = emptyExperiment();
+    if (await save('Эксперимент добавлен в историю', 'experiment', nextSettings)) {
+      Object.assign(settings, nextSettings);
+    }
   }
 
   async function addCareerOption() {
+    if (isSaving('career')) return;
     const label = newCareerLabel.value.trim();
     if (!label || hasOption(careerOptions, label)) return;
     const archived = findArchived(settings.customCareerOptions, label);
     if (archived) {
       archived.archived = false;
       newCareerLabel.value = '';
-      await save();
+      await save('Настройки сохранены', 'career');
       return;
     }
     if (hasOption(settings.customCareerOptions, label)) return;
     settings.customCareerOptions.push({ ...createCustomOption(label, 'career'), countsAsExternal: false });
     newCareerLabel.value = '';
-    await save();
+    await save('Настройки сохранены', 'career');
   }
 
   async function addActivityOption() {
+    if (isSaving('activity')) return;
     const label = newActivityLabel.value.trim();
     if (!label) return;
     const hiddenBuiltIn = activityOptions.find(
@@ -163,7 +186,7 @@ export function useSettingsForm() {
     if (hiddenBuiltIn) {
       settings.hiddenActivityIds = settings.hiddenActivityIds.filter((id) => id !== hiddenBuiltIn.id);
       newActivityLabel.value = '';
-      await save('Вариант активности возвращён');
+      await save('Вариант активности возвращён', 'activity');
       return;
     }
     if (hasOption(activityOptions, label)) return;
@@ -174,30 +197,34 @@ export function useSettingsForm() {
       settings.customActivityOptions.push(legacy ? { ...legacy, custom: true } : createCustomOption(label, 'activity'));
     }
     newActivityLabel.value = '';
-    await save('Варианты активности сохранены');
+    await save('Варианты активности сохранены', 'activity');
   }
 
   async function removeActivityOption(id: ActivityId) {
+    if (isSaving('activity')) return;
     const option = settings.customActivityOptions.find((item) => item.id === id);
     if (option) option.archived = true;
     else if (!settings.hiddenActivityIds.includes(id)) settings.hiddenActivityIds.push(id);
-    await save('Вариант убран из ежедневной записи');
+    await save('Вариант убран из ежедневной записи', 'activity');
   }
 
   async function restoreActivityOption(id: ActivityId) {
+    if (isSaving('activity')) return;
     const option = settings.customActivityOptions.find((item) => item.id === id);
     if (option) option.archived = false;
     else settings.hiddenActivityIds = settings.hiddenActivityIds.filter((activityId) => activityId !== id);
-    await save('Вариант активности возвращён');
+    await save('Вариант активности возвращён', 'activity');
   }
 
   async function removeCareerOption(id: CareerState) {
+    if (isSaving('career')) return;
     const option = settings.customCareerOptions.find((item) => item.id === id);
     if (option) option.archived = true;
-    await save();
+    await save('Настройки сохранены', 'career');
   }
 
   async function addLifeArea() {
+    if (isSaving('life-areas')) return;
     const label = newLifeAreaLabel.value.trim();
     if (!label || hasOption(lifeAreaOptions, label)) return;
     const archived = findArchived(settings.customLifeAreaOptions, label);
@@ -205,7 +232,7 @@ export function useSettingsForm() {
       archived.archived = false;
       settings.activeLifeAreas.push(archived.id);
       newLifeAreaLabel.value = '';
-      await save();
+      await save('Настройки сохранены', 'life-areas');
       return;
     }
     if (hasOption(settings.customLifeAreaOptions, label)) return;
@@ -213,17 +240,19 @@ export function useSettingsForm() {
     settings.customLifeAreaOptions.push(option);
     settings.activeLifeAreas.push(option.id);
     newLifeAreaLabel.value = '';
-    await save();
+    await save('Настройки сохранены', 'life-areas');
   }
 
   async function removeLifeArea(id: LifeAreaId) {
+    if (isSaving('life-areas')) return;
     const option = settings.customLifeAreaOptions.find((item) => item.id === id);
     if (option) option.archived = true;
     settings.activeLifeAreas = settings.activeLifeAreas.filter((area) => area !== id);
-    await save();
+    await save('Настройки сохранены', 'life-areas');
   }
 
   async function addContextFactor() {
+    if (isSaving('context')) return;
     const label = newContextFactorLabel.value.trim();
     if (!label) return;
     const hiddenBuiltIn = contextFactorOptions.find(
@@ -232,7 +261,7 @@ export function useSettingsForm() {
     if (hiddenBuiltIn) {
       settings.hiddenContextFactorIds = settings.hiddenContextFactorIds.filter((id) => id !== hiddenBuiltIn.id);
       newContextFactorLabel.value = '';
-      await save('Фактор дня возвращён');
+      await save('Фактор дня возвращён', 'context');
       return;
     }
     if (hasOption(contextFactorOptions, label)) return;
@@ -241,21 +270,23 @@ export function useSettingsForm() {
     else if (!hasOption(settings.customContextFactorOptions, label))
       settings.customContextFactorOptions.push(createCustomOption(label, 'context'));
     newContextFactorLabel.value = '';
-    await save('Факторы дня сохранены');
+    await save('Факторы дня сохранены', 'context');
   }
 
   async function removeContextFactor(id: ContextFactorId) {
+    if (isSaving('context')) return;
     const option = settings.customContextFactorOptions.find((item) => item.id === id);
     if (option) option.archived = true;
     else if (!settings.hiddenContextFactorIds.includes(id)) settings.hiddenContextFactorIds.push(id);
-    await save('Фактор убран из ежедневной записи');
+    await save('Фактор убран из ежедневной записи', 'context');
   }
 
   async function restoreContextFactor(id: ContextFactorId) {
+    if (isSaving('context')) return;
     const option = settings.customContextFactorOptions.find((item) => item.id === id);
     if (option) option.archived = false;
     else settings.hiddenContextFactorIds = settings.hiddenContextFactorIds.filter((factorId) => factorId !== id);
-    await save('Фактор дня возвращён');
+    await save('Фактор дня возвращён', 'context');
   }
 
   function hasOption(options: { label: string }[], label: string) {
@@ -307,8 +338,18 @@ export function useSettingsForm() {
 
   async function saveBackupToCloud() {
     await runCloudAction(async () => {
-      await store.syncCloudSnapshot({ force: true });
-      notifySaved('Локальная версия сохранена в облако');
+      const result = await store.syncCloudSnapshot({ force: true });
+      if (result.status === 'synced') {
+        notifySaved('Локальная версия сохранена в облако');
+      } else if (result.status === 'pending') {
+        notifyError('Облачная копия не обновлена. Локальные данные сохранены.');
+      } else if (result.status === 'queued') {
+        notifyInfo('Обновление облачной копии уже выполняется');
+      } else if (result.status === 'disabled') {
+        notifyInfo('Облачная копия недоступна в этой сборке');
+      } else {
+        notifyInfo('Сначала выбери, какую версию данных сохранить');
+      }
     });
   }
 
@@ -320,12 +361,15 @@ export function useSettingsForm() {
         return;
       }
 
-      const updatedAt = new Date(snapshot.updatedAt).toLocaleString('ru-RU');
+      const updatedAt = formatCloudUpdatedAt(snapshot.updatedAt);
       if (!window.confirm(`Заменить локальные данные облачной копией от ${updatedAt}? Перед этим лучше скачать локальную копию.`)) return;
-      await store.importData(snapshot.payload, { syncCloud: false });
+      const userId = auth.session?.user.id;
+      if (!userId) {
+        notifyInfo('Сначала войдите в аккаунт');
+        return;
+      }
+      await applyCloudSnapshot(store, userId, snapshot, 'Загружена облачная копия');
       Object.assign(settings, plainCopy(store.settings));
-      markCloudSyncSynced(snapshot.userId, snapshot.updatedAt);
-      store.setCloudSyncState('synced', `Загружена облачная копия: ${updatedAt}`, { updatedAt: snapshot.updatedAt });
       notifySaved(`Данные восстановлены из облака: ${updatedAt}`);
     });
   }
@@ -494,6 +538,7 @@ export function useSettingsForm() {
     cloudStatusTitle,
     cloudStatusText,
     experimentCanConclude,
+    isSaving,
     save,
     saveExperiment,
     completeExperiment,

@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../src/db';
 import { useAppStore, type ExportPayload } from '../src/stores/app';
-import { emptyDailyEntry } from '../src/types';
+import { defaultSettings, emptyDailyEntry, emptyWeeklyReview } from '../src/types';
 
 beforeEach(async () => {
   await db.delete();
@@ -109,7 +109,10 @@ describe('backup import', () => {
     expect(store.lifeEvents).toEqual([]);
     expect(store.monthlyReviews).toEqual([]);
     expect(store.weeklyReviews[0].ifThenPlan).toBe('');
-    expect(store.settings.settingsVersion).toBe(11);
+    expect(store.weeklyReviews[0].highlights).toEqual(['', '', '']);
+    expect(store.weeklyReviews[0].stateContext).toBe('');
+    expect(store.settings.settingsVersion).toBe(13);
+    expect(store.settings.firstUse.status).toBe('available');
     expect(store.settings.activeDailyBlocks).toEqual(['sleep', 'context', 'career', 'movement', 'nutrition']);
     expect(store.settings.activeLifeAreas).toEqual(['family']);
 
@@ -117,9 +120,54 @@ describe('backup import', () => {
     expect(storedDates).toEqual(['2025-02-01']);
 
     const exported = store.exportData();
-    expect(exported.version).toBe(6);
+    expect(exported.version).toBe(9);
+    expect(exported).not.toHaveProperty('firstUseFunnel');
     expect(exported.dailyEntries[0].careerStates).toEqual(['external']);
     expect(exported.monthlyReviews).toEqual([]);
+  });
+
+  it('round-trips approximate weekly highlights and state context', async () => {
+    const store = useAppStore();
+    await store.saveReview({
+      ...emptyWeeklyReview('2026-07-20'),
+      coveredThrough: '2026-07-24',
+      highlights: ['Важный разговор изменил планы', 'Появилась новая мысль о проекте', ''],
+      stateContext: 'Неделя была тяжёлой из-за болезни и нехватки сна.',
+    });
+    await store.saveSettings({
+      ...store.settings,
+      firstUse: {
+        status: 'in_progress',
+        weekStart: '2026-07-20',
+        periodEnd: '2026-07-24',
+        lastStep: 'state_context',
+        overviewSeen: false,
+        updatedAt: '2026-07-27T10:00:00.000Z',
+      },
+    });
+
+    const exported = store.exportData();
+    expect(exported.version).toBe(9);
+    expect(exported.weeklyReviews[0]).toMatchObject({
+      highlights: ['Важный разговор изменил планы', 'Появилась новая мысль о проекте', ''],
+      stateContext: 'Неделя была тяжёлой из-за болезни и нехватки сна.',
+      coveredThrough: '2026-07-24',
+    });
+
+    await store.clearAll({ syncCloud: false });
+    await store.importData(exported, { syncCloud: false });
+
+    expect(store.weeklyReviews[0]).toMatchObject({
+      highlights: ['Важный разговор изменил планы', 'Появилась новая мысль о проекте', ''],
+      stateContext: 'Неделя была тяжёлой из-за болезни и нехватки сна.',
+      coveredThrough: '2026-07-24',
+    });
+    expect(store.settings.firstUse).toMatchObject({
+      status: 'in_progress',
+      weekStart: '2026-07-20',
+      periodEnd: '2026-07-24',
+      lastStep: 'state_context',
+    });
   });
 
   it('rejects an unsupported backup before clearing current data', async () => {
@@ -133,6 +181,21 @@ describe('backup import', () => {
     await expect(store.importData({ version: 99 } as unknown as ExportPayload)).rejects.toThrow('Неподдерживаемый формат резервной копии');
 
     expect(await db.dailyEntries.get('2026-07-21')).toMatchObject({ importantFact: 'Не удалять' });
+  });
+
+  it('treats an old backup without settings as an existing user without changing current defaults', async () => {
+    const store = useAppStore();
+    await store.importData({
+      version: 1,
+      exportedAt: '2025-02-02T10:00:00.000Z',
+      dailyEntries: [],
+      results: [],
+      weeklyReviews: [],
+    });
+
+    expect(store.settings.firstUse.status).toBe('available');
+    expect(store.settings.activeDailyBlocks).toEqual(defaultSettings.activeDailyBlocks);
+    expect(store.settings.activeLifeAreas).toEqual(defaultSettings.activeLifeAreas);
   });
 
   it('rejects malformed records before replacing current data', async () => {

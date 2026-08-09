@@ -9,14 +9,25 @@ import type {
   ExperimentDecision,
   ExperimentMetricId,
   ExperimentRecord,
+  FirstUseState,
+  FirstUseStatus,
+  FirstUseStep,
   LifeAreaId,
   Option,
 } from './schema';
 
 export const defaultSettings: AppSettings = {
   id: 'main',
-  settingsVersion: 11,
+  settingsVersion: 13,
   introSeen: false,
+  firstUse: {
+    status: 'not_started',
+    weekStart: '',
+    periodEnd: '',
+    lastStep: 'choice',
+    overviewSeen: false,
+    updatedAt: '',
+  },
   activeDailyBlocks: dailyBlockOptions.filter((option) => option.id !== 'career').map((option) => option.id),
   activeLifeAreas: ['family', 'reading', 'creativity', 'rest'],
   customActivityOptions: [],
@@ -46,7 +57,8 @@ export const defaultSettings: AppSettings = {
   experimentHistory: [],
 };
 
-type LegacyAppSettings = Partial<AppSettings> & {
+type LegacyAppSettings = Omit<Partial<AppSettings>, 'firstUse'> & {
+  firstUse?: Partial<FirstUseState>;
   customEveningFactorOptions?: unknown;
 };
 
@@ -102,6 +114,7 @@ export function normalizeSettings(settings: LegacyAppSettings | null | undefined
     id: 'main',
     settingsVersion: defaultSettings.settingsVersion,
     introSeen: source.introSeen === true,
+    firstUse: normalizeFirstUseState(source.firstUse, settings == null),
     activeDailyBlocks,
     activeLifeAreas: (source.settingsVersion ?? 1) < 2 ? activeLifeAreas.filter((area) => area !== 'spiritual') : activeLifeAreas,
     customActivityOptions,
@@ -118,6 +131,58 @@ export function normalizeSettings(settings: LegacyAppSettings | null | undefined
     experiment: normalizeExperiment(source.experiment),
     experimentHistory: normalizeExperimentHistory(source.experimentHistory),
   };
+}
+
+function normalizeFirstUseState(value: unknown, isNewInstall: boolean): FirstUseState {
+  const fallback: FirstUseState = {
+    ...structuredClone(defaultSettings.firstUse),
+    status: isNewInstall ? 'not_started' : 'available',
+  };
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return fallback;
+
+  const source = value as Partial<FirstUseState>;
+  const status = isFirstUseStatus(source.status) ? source.status : fallback.status;
+  const weekStart = validDate(source.weekStart);
+  if ((status === 'in_progress' || status === 'completed') && !weekStart) return fallback;
+  const hasRecoveryWeek = status === 'in_progress' || status === 'completed';
+  const periodEnd = validRecoveryPeriodEnd(source.periodEnd, weekStart);
+
+  return {
+    status,
+    weekStart: hasRecoveryWeek ? weekStart : '',
+    periodEnd: hasRecoveryWeek ? periodEnd || recoveryWeekEnd(weekStart) : '',
+    lastStep: hasRecoveryWeek && isFirstUseStep(source.lastStep) ? source.lastStep : 'choice',
+    overviewSeen: status === 'completed' || source.overviewSeen === true,
+    updatedAt: typeof source.updatedAt === 'string' ? source.updatedAt : '',
+  };
+}
+
+function validRecoveryPeriodEnd(value: unknown, weekStart: string): string {
+  const periodEnd = validDate(value);
+  if (!periodEnd || !weekStart) return '';
+  return periodEnd >= weekStart && periodEnd <= recoveryWeekEnd(weekStart) ? periodEnd : '';
+}
+
+function recoveryWeekEnd(weekStart: string): string {
+  const date = new Date(`${weekStart}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + 6);
+  return date.toISOString().slice(0, 10);
+}
+
+function isFirstUseStatus(value: unknown): value is FirstUseStatus {
+  return value === 'not_started' || value === 'available' || value === 'in_progress' || value === 'completed' || value === 'dismissed';
+}
+
+function isFirstUseStep(value: unknown): value is FirstUseStep {
+  return (
+    value === 'choice' ||
+    value === 'results' ||
+    value === 'highlights' ||
+    value === 'state_context' ||
+    value === 'support_obstacle' ||
+    value === 'decision' ||
+    value === 'overview'
+  );
 }
 
 function normalizeExperiment(value: unknown): Experiment {

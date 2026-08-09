@@ -7,8 +7,9 @@ import AuthGate from './components/AuthGate.vue';
 import AccountMenu from './components/AccountMenu.vue';
 import HowItWorksDialog from './components/HowItWorksDialog.vue';
 import PasswordResetView from './views/PasswordResetView.vue';
+import { recordFirstUseReturnEvents } from './features/first-use/funnel';
 import { createResumeCloudRefresh } from './features/sync/resume';
-import { prepareLocalCacheOwner, reconcileCloudSnapshotOnStartup } from './features/sync/startup';
+import { prepareLocalCacheOwner, reconcileCloudSnapshotAfterResume, reconcileCloudSnapshotOnStartup } from './features/sync/startup';
 import { notifyInfo, notifyUnknownError } from './services/notifications';
 import { useAppStore } from './stores/app';
 import { useAuthStore } from './stores/auth';
@@ -25,7 +26,7 @@ const appDataLoadingText = ref('Загружаю записи…');
 const effectiveLoadError = computed(() => store.loadError || appDataLoadError.value);
 let appDataLoadPromise: Promise<void> | null = null;
 const refreshCloudAfterResume = createResumeCloudRefresh(async () => {
-  await reconcileCloudSnapshotOnStartup(store, auth.requiresAuth ? auth.session?.user.id : null);
+  await reconcileCloudSnapshotAfterResume(store, auth.requiresAuth ? auth.session?.user.id : null);
 });
 
 function currentCloudRefreshState() {
@@ -48,6 +49,11 @@ function handleOnline() {
   void refreshCloudAfterResume(currentCloudRefreshState(), true);
 }
 
+async function keepUnauthenticatedRouteAtEntry() {
+  if (!auth.initialized || !auth.requiresAuth || auth.isAuthenticated || auth.recoveryRequired) return;
+  if (router.currentRoute.value.path !== '/') await router.replace('/');
+}
+
 onMounted(async () => {
   window.addEventListener('focus', handleWindowFocus);
   window.addEventListener('online', handleOnline);
@@ -55,6 +61,8 @@ onMounted(async () => {
   await auth.init();
   if (auth.recoveryRequired && router.currentRoute.value.path !== '/password-reset') {
     await router.replace('/password-reset');
+  } else {
+    await keepUnauthenticatedRouteAtEntry();
   }
   if (canOpenApp.value) await loadAppData();
 });
@@ -83,6 +91,11 @@ watch(
   },
 );
 
+watch(
+  () => [auth.initialized, auth.requiresAuth, auth.isAuthenticated, auth.recoveryRequired, router.currentRoute.value.path] as const,
+  () => void keepUnauthenticatedRouteAtEntry(),
+);
+
 async function loadAppData() {
   if (appDataReady.value && store.loaded && !effectiveLoadError.value) return;
   if (appDataLoadPromise) return appDataLoadPromise;
@@ -97,6 +110,7 @@ async function loadAppData() {
       await store.load();
       if (userId) appDataLoadingText.value = 'Сверяю записи с облаком…';
       await reconcileCloudSnapshotOnStartup(store, userId);
+      recordFirstUseReturnEvents();
     } catch (error) {
       console.error('Не удалось подготовить записи', error);
       appDataLoadError.value = error instanceof Error ? error.message : 'Не удалось подготовить записи';
@@ -158,7 +172,7 @@ const navItems = [
       </div>
     </header>
 
-    <main class="app-main">
+    <main class="app-main" :class="{ 'app-main--auth': auth.initialized && auth.requiresAuth && !auth.isAuthenticated }">
       <div v-if="!auth.initialized" class="loading-card" role="status" aria-live="polite">
         <span class="loading-card__mark" aria-hidden="true"><i></i></span>
         <strong>Проверяю доступ…</strong>
@@ -195,7 +209,7 @@ const navItems = [
             <strong>{{ store.cloudSyncStatus === 'conflict' ? 'Нужен выбор по облаку' : 'Облако не обновлено' }}</strong>
             <p>{{ store.cloudSyncMessage }}</p>
           </div>
-          <RouterLink class="secondary-button" to="/settings">Настройки</RouterLink>
+          <RouterLink class="secondary-button" to="/settings#cloud-settings">Данные и синхронизация</RouterLink>
         </section>
         <RouterView />
       </template>

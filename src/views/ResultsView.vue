@@ -4,6 +4,7 @@ import AutoGrowTextarea from '../components/AutoGrowTextarea.vue';
 import ChipGroup from '../components/ChipGroup.vue';
 import ArchiveDateRange from '../features/journal/ArchiveDateRange.vue';
 import ArchivePagination from '../features/journal/ArchivePagination.vue';
+import { archiveRangeFromQuery } from '../features/journal/archiveQuery';
 import { useArchiveList } from '../features/journal/useArchiveList';
 import { formatDate, todayKey } from '../services/dates';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
@@ -18,7 +19,9 @@ const area = ref<ResultRecord['area']>('career');
 const editingId = ref<number | null>(null);
 const editingCreatedAt = ref('');
 const saving = ref(false);
+const removingIds = ref<number[]>([]);
 const expandedNotes = ref<string[]>([]);
+const archiveRange = archiveRangeFromQuery();
 const recentResults = computed(() => [...store.results].sort((a, b) => b.date.localeCompare(a.date)));
 const resultOptions = computed(() => [...resultAreaOptions, ...store.settings.customLifeAreaOptions]);
 const resultEntryOptions = computed(() => [
@@ -37,6 +40,7 @@ const {
 } = useArchiveList(recentResults, {
   getSearchText: (result) => `${result.title} ${result.note}`,
   getCategory: (result) => result.area,
+  ...archiveRange,
 });
 
 async function saveResult() {
@@ -86,10 +90,17 @@ function resetForm() {
 }
 
 async function remove(id?: number) {
-  if (id === undefined || !window.confirm('Удалить этот итог?')) return;
-  await store.removeResult(id);
-  if (editingId.value === id) resetForm();
-  notifyInfo('Итог удалён');
+  if (id === undefined || removingIds.value.includes(id) || !window.confirm('Удалить этот итог?')) return;
+  removingIds.value.push(id);
+  try {
+    await store.removeResult(id);
+    if (editingId.value === id) resetForm();
+    notifyInfo('Итог удалён');
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось удалить итог');
+  } finally {
+    removingIds.value = removingIds.value.filter((item) => item !== id);
+  }
 }
 
 function areaMeta(value: ResultRecord['area']) {
@@ -144,15 +155,12 @@ function toggleNote(result: ResultRecord) {
           {{ editingId === null ? 'Добавить итог' : 'Сохранить итог' }}
         </button>
       </div>
-      <details class="result-note-field" :open="Boolean(note)">
-        <summary>{{ note ? 'Подробности' : 'Добавить подробности' }} <span>необязательно</span></summary>
-        <AutoGrowTextarea
-          v-model="note"
-          :rows="3"
-          :max-length="2000"
-          placeholder="Что произошло, почему это важно или какой контекст стоит сохранить"
-        />
-      </details>
+      <AutoGrowTextarea
+        v-model="note"
+        :rows="4"
+        :max-length="2000"
+        placeholder="Что произошло, почему это важно или какой контекст стоит сохранить"
+      />
       <button v-if="editingId !== null" class="secondary-button composer-cancel" type="button" @click="resetForm">
         Отменить редактирование
       </button>
@@ -205,7 +213,13 @@ function toggleNote(result: ResultRecord) {
             </div>
             <div class="item-actions">
               <button class="ghost-button" type="button" aria-label="Редактировать итог" @click="edit(result)">✎</button>
-              <button class="ghost-button ghost-button--danger" type="button" aria-label="Удалить итог" @click="remove(result.id)">
+              <button
+                class="ghost-button ghost-button--danger"
+                type="button"
+                aria-label="Удалить итог"
+                :disabled="result.id !== undefined && removingIds.includes(result.id)"
+                @click="remove(result.id)"
+              >
                 ×
               </button>
             </div>

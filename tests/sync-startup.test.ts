@@ -1,6 +1,11 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { hasLocalUserData, prepareLocalCacheOwner, reconcileCloudSnapshotOnStartup } from '../src/features/sync/startup';
+import {
+  hasLocalUserData,
+  prepareLocalCacheOwner,
+  reconcileCloudSnapshotAfterResume,
+  reconcileCloudSnapshotOnStartup,
+} from '../src/features/sync/startup';
 import { useAppStore } from '../src/stores/app';
 import { defaultSettings } from '../src/types';
 import type { CloudSnapshot, CloudSyncMeta } from '../src/services/cloudSync';
@@ -18,7 +23,7 @@ function createStore() {
   const store = useAppStore();
   store.settings = structuredClone(defaultSettings);
   vi.spyOn(store, 'importData').mockResolvedValue(undefined);
-  vi.spyOn(store, 'syncCloudSnapshot').mockResolvedValue(undefined);
+  vi.spyOn(store, 'syncCloudSnapshot').mockResolvedValue({ status: 'synced', updatedAt: '2026-07-22T10:00:00.000Z' });
   vi.spyOn(store, 'setCloudSyncState');
   vi.spyOn(store, 'clearAll').mockResolvedValue(undefined);
   return store;
@@ -60,7 +65,7 @@ describe('startup cloud reconciliation', () => {
     expect(services.markConflict).toHaveBeenCalledWith('user-1', snapshot.updatedAt);
     expect(store.setCloudSyncState).toHaveBeenCalledWith(
       'conflict',
-      'В этом браузере и в облаке есть разные данные. Выбери действие в настройках.',
+      'В этом браузере и в облаке есть разные данные. Выберите нужную копию в разделе «Данные и синхронизация».',
       { updatedAt: snapshot.updatedAt },
     );
   });
@@ -75,6 +80,36 @@ describe('startup cloud reconciliation', () => {
 
     expect(store.syncCloudSnapshot).toHaveBeenCalledWith({ force: true });
     expect(store.importData).not.toHaveBeenCalled();
+  });
+
+  it('imports a newer known cloud revision before working screens mount', async () => {
+    const store = createStore();
+    store.dailyEntries = [{ date: '2026-07-21' } as (typeof store.dailyEntries)[number]];
+    const snapshot = { payload: { version: 3 }, updatedAt: '2026-07-22T10:00:00.000Z', userId: 'user-1' };
+    const services = createServices(snapshot, { lastCloudUpdatedAt: '2026-07-21T10:00:00.000Z' });
+
+    await reconcileCloudSnapshotOnStartup(store, 'user-1', services);
+
+    expect(store.importData).toHaveBeenCalledWith(snapshot.payload, { syncCloud: false });
+    expect(services.markSynced).toHaveBeenCalledWith('user-1', snapshot.updatedAt);
+    expect(services.markConflict).not.toHaveBeenCalled();
+  });
+
+  it('does not replace mounted screens when a newer cloud revision appears after resume', async () => {
+    const store = createStore();
+    store.dailyEntries = [{ date: '2026-07-21' } as (typeof store.dailyEntries)[number]];
+    const snapshot = { payload: { version: 3 }, updatedAt: '2026-07-22T10:00:00.000Z', userId: 'user-1' };
+    const services = createServices(snapshot, { lastCloudUpdatedAt: '2026-07-21T10:00:00.000Z' });
+
+    await reconcileCloudSnapshotAfterResume(store, 'user-1', services);
+
+    expect(store.importData).not.toHaveBeenCalled();
+    expect(services.markConflict).toHaveBeenCalledWith('user-1', snapshot.updatedAt);
+    expect(store.setCloudSyncState).toHaveBeenCalledWith(
+      'conflict',
+      'В облаке появились более свежие данные. Открытые записи не заменены. Выберите нужную копию в разделе «Данные и синхронизация».',
+      { updatedAt: snapshot.updatedAt },
+    );
   });
 
   it('keeps local data available when the cloud check fails', async () => {

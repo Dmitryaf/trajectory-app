@@ -6,6 +6,9 @@ test('saves a dirty daily entry from the mobile action', async ({ page }) => {
   await page.goto('/');
   const introClose = page.getByRole('button', { name: 'Закрыть объяснение' });
   if (await introClose.isVisible()) await introClose.click();
+  const startToday = page.getByRole('button', { name: 'Начать с сегодняшнего дня' });
+  await expect(startToday).toBeVisible();
+  await startToday.click();
   const mobileSave = page.locator('.mobile-save-button');
   const formSave = page.locator('.primary-button--save');
   await expect(mobileSave).toBeHidden();

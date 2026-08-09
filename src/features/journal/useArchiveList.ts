@@ -10,13 +10,15 @@ interface ArchiveListOptions<T> {
   getSearchText: (item: T) => string;
   getCategory: (item: T) => string;
   pageSize?: number;
+  initialDateFrom?: string;
+  initialDateTo?: string;
 }
 
 export function useArchiveList<T extends DatedArchiveItem>(items: ComputedRef<T[]>, options: ArchiveListOptions<T>) {
   const filterText = ref('');
   const filterCategory = ref('all');
-  const dateFrom = ref(todayKey());
-  const dateTo = ref('');
+  const dateFrom = ref(options.initialDateFrom ?? todayKey());
+  const dateTo = ref(options.initialDateTo ?? '');
   const currentPage = ref(1);
   const pageSize = options.pageSize ?? 8;
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { contextFactorOptions, normalizeDailyEntry, normalizeSettings } from '../src/types';
+import { contextFactorOptions, normalizeDailyEntry, normalizeSettings, normalizeWeeklyReview } from '../src/types';
 import { contextFactorLabel } from '../src/services/analytics';
 
 describe('settings migrations', () => {
@@ -16,8 +16,9 @@ describe('settings migrations', () => {
     });
 
     expect(settings.customCareerOptions).toEqual([]);
-    expect(settings.settingsVersion).toBe(11);
+    expect(settings.settingsVersion).toBe(13);
     expect(settings.introSeen).toBe(false);
+    expect(settings.firstUse.status).toBe('available');
     expect(settings.activeDailyBlocks).toContain('context');
     expect(settings.activeDailyBlocks).toContain('career');
     expect(settings.customContextFactorOptions).toEqual([]);
@@ -31,6 +32,64 @@ describe('settings migrations', () => {
   it('keeps work optional for a new account without changing old account settings', () => {
     expect(normalizeSettings(undefined).activeDailyBlocks).not.toContain('career');
     expect(normalizeSettings({ settingsVersion: 10 }).activeDailyBlocks).toContain('career');
+    expect(normalizeSettings(undefined).firstUse.status).toBe('not_started');
+    expect(normalizeSettings({ settingsVersion: 11 }).firstUse.status).toBe('available');
+  });
+
+  it('preserves resumable first-use progress and rejects an invalid recovery week', () => {
+    const inProgress = normalizeSettings({
+      settingsVersion: 12,
+      firstUse: {
+        status: 'in_progress',
+        weekStart: '2026-07-20',
+        periodEnd: '2026-07-24',
+        lastStep: 'state_context',
+        overviewSeen: false,
+        updatedAt: '2026-07-27T10:00:00.000Z',
+      },
+    });
+    const invalid = normalizeSettings({
+      settingsVersion: 12,
+      firstUse: {
+        status: 'in_progress',
+        weekStart: '20.07.2026',
+        periodEnd: '2026-07-24',
+        lastStep: 'highlights',
+        overviewSeen: false,
+        updatedAt: '',
+      },
+    });
+
+    expect(inProgress.firstUse).toEqual({
+      status: 'in_progress',
+      weekStart: '2026-07-20',
+      periodEnd: '2026-07-24',
+      lastStep: 'state_context',
+      overviewSeen: false,
+      updatedAt: '2026-07-27T10:00:00.000Z',
+    });
+    expect(invalid.firstUse).toEqual(expect.objectContaining({ status: 'available', weekStart: '', lastStep: 'choice' }));
+  });
+
+  it('gives old first-use progress its completed calendar-week boundary', () => {
+    const settings = normalizeSettings({
+      settingsVersion: 12,
+      firstUse: {
+        status: 'completed',
+        weekStart: '2026-07-20',
+        lastStep: 'overview',
+        overviewSeen: true,
+        updatedAt: '',
+      },
+    });
+
+    expect(settings.firstUse.periodEnd).toBe('2026-07-26');
+  });
+
+  it('keeps only an evidenced boundary inside the review week', () => {
+    expect(normalizeWeeklyReview({ weekStart: '2026-07-20', coveredThrough: '2026-07-24' }).coveredThrough).toBe('2026-07-24');
+    expect(normalizeWeeklyReview({ weekStart: '2026-07-20', coveredThrough: '2026-07-27' }).coveredThrough).toBe('');
+    expect(normalizeWeeklyReview({ weekStart: '2026-07-20' }).coveredThrough).toBe('');
   });
 
   it('keeps optional goal evidence and ignores an invalid review date', () => {
