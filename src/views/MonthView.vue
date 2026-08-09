@@ -39,6 +39,7 @@ import {
   actionDirectionOptions,
   contextFactorOptions,
   emptyMonthlyReview,
+  externalCareerIdsForOptions,
   lifeAreaOptions,
   lifeEventTypeOptions,
   resultAreaOptions,
@@ -51,12 +52,7 @@ const start = computed(() => startOfMonth(anchor.value));
 const end = computed(() => endOfMonth(anchor.value));
 const archiveEnd = computed(() => (end.value > todayKey() ? todayKey() : end.value));
 const entries = computed(() => entriesForMonth(store.dailyEntries, anchor.value));
-const externalCareerIds = computed(() => [
-  'external',
-  'interview',
-  'result',
-  ...store.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id),
-]);
+const externalCareerIds = computed(() => externalCareerIdsForOptions(store.settings.customCareerOptions));
 const summary = computed(() => summarize(entries.value, externalCareerIds.value));
 const contextFactorItems = computed(() => [...contextFactorOptions, ...store.settings.customContextFactorOptions]);
 const observations = computed(() => buildObservations(entries.value, contextFactorItems.value));
@@ -249,6 +245,7 @@ const monthCalendarDays = computed(() => {
 });
 const monthWeekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const review = reactive<MonthlyReview>(emptyMonthlyReview(start.value));
+const reviewSaving = ref(false);
 
 function loadReview() {
   const existing = store.reviewByMonth(start.value);
@@ -266,8 +263,16 @@ watch(contextPageCount, (count) => {
 });
 
 async function saveReview() {
-  await store.saveMonthlyReview(plainCopy(review));
-  notifySaved('Итог месяца сохранён');
+  if (reviewSaving.value) return;
+  reviewSaving.value = true;
+  try {
+    await store.saveMonthlyReview(plainCopy(review));
+    notifySaved('Итог месяца сохранён');
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось сохранить итог месяца');
+  } finally {
+    reviewSaving.value = false;
+  }
 }
 
 function createPackage() {
@@ -508,7 +513,9 @@ function shiftMonth(offset: number) {
         ></textarea>
         <label class="field-label">Главное направление следующего месяца</label
         ><textarea v-model="review.nextFocus" rows="2" placeholder="Что стоит продолжить, изменить или проверить"></textarea>
-        <button class="primary-button" type="button" @click="saveReview">Сохранить итог месяца</button>
+        <button class="primary-button" type="button" :disabled="reviewSaving" @click="saveReview">
+          {{ reviewSaving ? 'Сохраняю…' : 'Сохранить итог месяца' }}
+        </button>
       </article>
       <section v-else id="month-review" class="period-review-note">
         <strong>Итог появится ближе к концу месяца</strong>

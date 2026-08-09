@@ -14,6 +14,7 @@ import {
   activityOptions,
   careerOptions,
   experimentAppliesToDate,
+  externalCareerIdsForOptions,
   contextFactorOptions,
   legacyContextFactorOptions,
   legacyActivityOptions,
@@ -105,12 +106,7 @@ const hasSelectedFocus = computed(() => Boolean((form.focusTitle || store.settin
 const hasRecordedGoalAction = computed(() => form.recordedFields.includes('actionDirection'));
 const showGoalActionChoices = computed(() => hasSelectedFocus.value || hasRecordedGoalAction.value);
 const currentWeekEntries = computed(() => entriesForWeek(store.dailyEntries, todayKey()));
-const externalCareerIds = computed(() => [
-  'external',
-  'interview',
-  'result',
-  ...store.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id),
-]);
+const externalCareerIds = computed(() => externalCareerIdsForOptions(store.settings.customCareerOptions));
 const currentWeekSummary = computed(() => summarize(currentWeekEntries.value, externalCareerIds.value));
 const currentWeekObservation = computed(() => buildObservations(currentWeekEntries.value, contextFactorItems.value)[0]);
 const currentMonthEntries = computed(() => entriesForPeriod(store.dailyEntries, startOfMonth(todayKey()), endOfMonth(todayKey())));

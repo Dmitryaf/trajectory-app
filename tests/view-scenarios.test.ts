@@ -11,7 +11,8 @@ import SettingsView from '../src/views/SettingsView.vue';
 import TodayView from '../src/views/TodayView.vue';
 import TrendsView from '../src/views/TrendsView.vue';
 import WeekView from '../src/views/WeekView.vue';
-import { notifyError, notifySaved, notifyUnknownError } from '../src/services/notifications';
+import { loadCloudSnapshot, markCloudSyncSynced } from '../src/services/cloudSync';
+import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../src/services/notifications';
 import { useAppStore } from '../src/stores/app';
 import { useAuthStore } from '../src/stores/auth';
 import { defaultSettings, emptyDailyEntry, emptyMonthlyReview, emptyWeeklyReview } from '../src/types';
@@ -21,6 +22,12 @@ vi.mock('../src/services/notifications', () => ({
   notifyInfo: vi.fn(),
   notifySaved: vi.fn(),
   notifyUnknownError: vi.fn(),
+}));
+
+vi.mock('../src/services/cloudSync', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../src/services/cloudSync')>()),
+  loadCloudSnapshot: vi.fn(),
+  markCloudSyncSynced: vi.fn(),
 }));
 
 enableAutoUnmount(afterEach);
@@ -417,6 +424,43 @@ describe('daily entry scenario', () => {
 });
 
 describe('journal scenarios', () => {
+  it('reports archive deletion errors and allows retrying the same record', async () => {
+    const { pinia, store } = createStore();
+    store.results = [{ id: 1, date: '2026-07-21', area: 'career', title: 'Итог', note: '', createdAt: '2026-07-21T10:00:00.000Z' }];
+    store.lifeEvents = [{ id: 2, date: '2026-07-21', type: 'event', title: 'Событие', note: '', createdAt: '2026-07-21T11:00:00.000Z' }];
+    const removeResult = vi
+      .spyOn(store, 'removeResult')
+      .mockRejectedValueOnce(new Error('IndexedDB unavailable'))
+      .mockResolvedValueOnce(undefined);
+    const removeLifeEvent = vi
+      .spyOn(store, 'removeLifeEvent')
+      .mockRejectedValueOnce(new Error('IndexedDB unavailable'))
+      .mockResolvedValueOnce(undefined);
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const global = { plugins: [pinia], stubs: { RouterLink: routerLinkStub } };
+    const results = mount(ResultsView, { global });
+    const events = mount(EventsView, { global });
+    const resultButton = results.get('[aria-label="Удалить итог"]');
+    const eventButton = events.get('[aria-label="Удалить событие"]');
+
+    await resultButton.trigger('click');
+    await eventButton.trigger('click');
+    await flushPromises();
+    expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось удалить итог');
+    expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось удалить событие');
+    expect(notifyInfo).not.toHaveBeenCalledWith('Итог удалён');
+    expect(notifyInfo).not.toHaveBeenCalledWith('Событие удалено');
+    expect(resultButton.attributes('disabled')).toBeUndefined();
+    expect(eventButton.attributes('disabled')).toBeUndefined();
+
+    await resultButton.trigger('click');
+    await eventButton.trigger('click');
+    await flushPromises();
+    expect(removeResult).toHaveBeenCalledTimes(2);
+    expect(removeLifeEvent).toHaveBeenCalledTimes(2);
+    confirm.mockRestore();
+  });
+
   it('uses bounded pages and resets pagination when archive filters change', async () => {
     const { pinia, store } = createStore();
     store.results = Array.from({ length: 9 }, (_, index) => ({
@@ -550,6 +594,131 @@ describe('journal scenarios', () => {
 });
 
 describe('settings scenarios', () => {
+  it('blocks a repeated settings save and allows retrying after an error', async () => {
+    const { pinia, store } = createStore();
+    let rejectFirstSave!: (error: Error) => void;
+    const firstSave = new Promise<void>((_, reject) => {
+      rejectFirstSave = reject;
+    });
+    const saveSettings = vi.spyOn(store, 'saveSettings').mockReturnValueOnce(firstSave).mockResolvedValueOnce(undefined);
+    const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
+    const saveButton = wrapper.get('.settings-card--daily-blocks .primary-button');
+
+    await saveButton.trigger('click');
+    await saveButton.trigger('click');
+    expect(saveSettings).toHaveBeenCalledOnce();
+    expect(saveButton.attributes('disabled')).toBeDefined();
+
+    rejectFirstSave(new Error('IndexedDB unavailable'));
+    await flushPromises();
+    expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось сохранить настройки');
+    expect(saveButton.attributes('disabled')).toBeUndefined();
+
+    await saveButton.trigger('click');
+    await flushPromises();
+    expect(saveSettings).toHaveBeenCalledTimes(2);
+    expect(notifySaved).toHaveBeenCalledWith('Блоки ежедневной записи сохранены');
+  });
+
+  it('applies a confirmed cloud copy through the shared snapshot transition', async () => {
+    const { pinia, store } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    const snapshot = {
+      userId: 'user-1',
+      updatedAt: '2026-07-22T10:00:00.000Z',
+      payload: { version: 3 },
+    } as Awaited<ReturnType<typeof loadCloudSnapshot>>;
+    vi.mocked(loadCloudSnapshot).mockResolvedValue(snapshot);
+    const importData = vi.spyOn(store, 'importData').mockResolvedValue(undefined);
+    const setCloudSyncState = vi.spyOn(store, 'setCloudSyncState');
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const wrapper = mount(SettingsView, {
+      global: { plugins: [pinia], mocks: { $route: { query: {} } } },
+    });
+
+    const restoreButton = wrapper.findAll('.settings-card--cloud button').find((button) => button.text() === 'Загрузить из облака');
+    await restoreButton!.trigger('click');
+    await flushPromises();
+
+    expect(importData).toHaveBeenCalledWith(snapshot!.payload, { syncCloud: false });
+    expect(markCloudSyncSynced).toHaveBeenCalledWith('user-1', snapshot!.updatedAt);
+    expect(setCloudSyncState).toHaveBeenCalledWith('synced', expect.stringContaining('Загружена облачная копия'), {
+      updatedAt: snapshot!.updatedAt,
+    });
+    expect(notifySaved).toHaveBeenCalledWith(expect.stringContaining('Данные восстановлены из облака'));
+    confirm.mockRestore();
+  });
+
+  it('keeps local data when cloud restore is cancelled', async () => {
+    const { pinia, store } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    vi.mocked(loadCloudSnapshot).mockResolvedValue({
+      userId: 'user-1',
+      updatedAt: '2026-07-22T10:00:00.000Z',
+      payload: { version: 3 },
+    } as Awaited<ReturnType<typeof loadCloudSnapshot>>);
+    const importData = vi.spyOn(store, 'importData').mockResolvedValue(undefined);
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const wrapper = mount(SettingsView, {
+      global: { plugins: [pinia], mocks: { $route: { query: {} } } },
+    });
+
+    const restoreButton = wrapper.findAll('.settings-card--cloud button').find((button) => button.text() === 'Загрузить из облака');
+    await restoreButton!.trigger('click');
+    await flushPromises();
+
+    expect(importData).not.toHaveBeenCalled();
+    expect(markCloudSyncSynced).not.toHaveBeenCalled();
+    confirm.mockRestore();
+  });
+
+  it('does not mark an invalid cloud copy as synchronized', async () => {
+    const { pinia, store } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    vi.mocked(loadCloudSnapshot).mockResolvedValue({
+      userId: 'user-1',
+      updatedAt: '2026-07-22T10:00:00.000Z',
+      payload: { version: 999 },
+    } as Awaited<ReturnType<typeof loadCloudSnapshot>>);
+    vi.spyOn(store, 'importData').mockRejectedValue(new Error('Неподдерживаемая версия резервной копии'));
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const wrapper = mount(SettingsView, {
+      global: { plugins: [pinia], mocks: { $route: { query: {} } } },
+    });
+
+    const restoreButton = wrapper.findAll('.settings-card--cloud button').find((button) => button.text() === 'Загрузить из облака');
+    await restoreButton!.trigger('click');
+    await flushPromises();
+
+    expect(markCloudSyncSynced).not.toHaveBeenCalled();
+    expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Облачное действие не выполнено');
+    confirm.mockRestore();
+  });
+
+  it('does not confirm a cloud copy when the upload remains pending', async () => {
+    const { pinia, store } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    vi.spyOn(store, 'syncCloudSnapshot').mockResolvedValue({ status: 'pending', error: 'network unavailable' });
+    const wrapper = mount(SettingsView, {
+      global: { plugins: [pinia], mocks: { $route: { query: {} } } },
+    });
+
+    const backupButton = wrapper.findAll('.settings-card--cloud button').find((button) => button.text() === 'Обновить копию сейчас');
+    await backupButton!.trigger('click');
+    await flushPromises();
+
+    expect(notifySaved).not.toHaveBeenCalledWith('Локальная версия сохранена в облако');
+    expect(notifyError).toHaveBeenCalledWith('Облачная копия не обновлена. Локальные данные сохранены.');
+  });
+
   it('clears local data only after the authenticated account is deleted', async () => {
     const { pinia, store } = createStore();
     const auth = useAuthStore();
@@ -758,6 +927,42 @@ describe('trends scenarios', () => {
 });
 
 describe('period review navigation', () => {
+  it('keeps review drafts available after a failed save and allows retrying', async () => {
+    const { pinia, store } = createStore();
+    store.weeklyReviews = [{ ...emptyWeeklyReview('2026-07-20'), results: ['Черновик недели', '', ''] }];
+    store.monthlyReviews = [{ ...emptyMonthlyReview('2026-07-01'), mainPattern: 'Черновик месяца' }];
+    const saveReview = vi
+      .spyOn(store, 'saveReview')
+      .mockRejectedValueOnce(new Error('IndexedDB unavailable'))
+      .mockResolvedValueOnce(undefined);
+    const saveMonthlyReview = vi
+      .spyOn(store, 'saveMonthlyReview')
+      .mockRejectedValueOnce(new Error('IndexedDB unavailable'))
+      .mockResolvedValueOnce(undefined);
+    const global = { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } };
+    const week = mount(WeekView, { global });
+    const month = mount(MonthView, { global });
+    const weekButton = week.get('#week-review .primary-button');
+    const monthButton = month.get('#month-review .primary-button');
+
+    await weekButton.trigger('click');
+    await monthButton.trigger('click');
+    await flushPromises();
+
+    expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось сохранить обзор недели');
+    expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось сохранить итог месяца');
+    expect((week.get('#week-review input').element as HTMLInputElement).value).toBe('Черновик недели');
+    expect((month.get('#month-review textarea').element as HTMLTextAreaElement).value).toBe('Черновик месяца');
+    expect(weekButton.attributes('disabled')).toBeUndefined();
+    expect(monthButton.attributes('disabled')).toBeUndefined();
+
+    await weekButton.trigger('click');
+    await monthButton.trigger('click');
+    await flushPromises();
+    expect(saveReview).toHaveBeenCalledTimes(2);
+    expect(saveMonthlyReview).toHaveBeenCalledTimes(2);
+  });
+
   it('uses the compact archive previews for weekly results and events', () => {
     const { pinia, store } = createStore();
     store.dailyEntries = [{ ...emptyDailyEntry('2026-07-21'), importantFact: 'Есть данные недели' }];

@@ -19,6 +19,7 @@ const area = ref<ResultRecord['area']>('career');
 const editingId = ref<number | null>(null);
 const editingCreatedAt = ref('');
 const saving = ref(false);
+const removingIds = ref<number[]>([]);
 const expandedNotes = ref<string[]>([]);
 const archiveRange = archiveRangeFromQuery();
 const recentResults = computed(() => [...store.results].sort((a, b) => b.date.localeCompare(a.date)));
@@ -89,10 +90,17 @@ function resetForm() {
 }
 
 async function remove(id?: number) {
-  if (id === undefined || !window.confirm('Удалить этот итог?')) return;
-  await store.removeResult(id);
-  if (editingId.value === id) resetForm();
-  notifyInfo('Итог удалён');
+  if (id === undefined || removingIds.value.includes(id) || !window.confirm('Удалить этот итог?')) return;
+  removingIds.value.push(id);
+  try {
+    await store.removeResult(id);
+    if (editingId.value === id) resetForm();
+    notifyInfo('Итог удалён');
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось удалить итог');
+  } finally {
+    removingIds.value = removingIds.value.filter((item) => item !== id);
+  }
 }
 
 function areaMeta(value: ResultRecord['area']) {
@@ -205,7 +213,13 @@ function toggleNote(result: ResultRecord) {
             </div>
             <div class="item-actions">
               <button class="ghost-button" type="button" aria-label="Редактировать итог" @click="edit(result)">✎</button>
-              <button class="ghost-button ghost-button--danger" type="button" aria-label="Удалить итог" @click="remove(result.id)">
+              <button
+                class="ghost-button ghost-button--danger"
+                type="button"
+                aria-label="Удалить итог"
+                :disabled="result.id !== undefined && removingIds.includes(result.id)"
+                @click="remove(result.id)"
+              >
                 ×
               </button>
             </div>

@@ -29,6 +29,7 @@ import { useAppStore } from '../stores/app';
 import {
   contextFactorOptions,
   emptyWeeklyReview,
+  externalCareerIdsForOptions,
   lifeAreaOptions,
   lifeEventTypeOptions,
   resultAreaOptions,
@@ -77,12 +78,7 @@ const entries = computed(() => entriesForWeek(store.dailyEntries, anchor.value))
 const entriesByDate = computed(() => new Map(entries.value.map((entry) => [entry.date, entry])));
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
 const contextFactorItems = computed(() => [...contextFactorOptions, ...store.settings.customContextFactorOptions]);
-const externalCareerIds = computed(() => [
-  'external',
-  'interview',
-  'result',
-  ...store.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id),
-]);
+const externalCareerIds = computed(() => externalCareerIdsForOptions(store.settings.customCareerOptions));
 const summary = computed(() => summarize(entries.value, externalCareerIds.value));
 const results = computed(() => resultsForPeriod(store.results, start.value, end.value));
 const displayedResults = computed(() => results.value.slice(0, 3));
@@ -323,6 +319,7 @@ const rhythmOption = computed<EChartsCoreOption>(() => {
   };
 });
 const review = reactive<WeeklyReview>(emptyWeeklyReview(start.value));
+const reviewSaving = ref(false);
 
 function loadReview() {
   const existing = store.reviewByWeek(start.value);
@@ -339,8 +336,16 @@ watch(
 );
 
 async function saveReview() {
-  await store.saveReview(plainCopy(review));
-  notifySaved('Обзор недели сохранён');
+  if (reviewSaving.value) return;
+  reviewSaving.value = true;
+  try {
+    await store.saveReview(plainCopy(review));
+    notifySaved('Обзор недели сохранён');
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось сохранить обзор недели');
+  } finally {
+    reviewSaving.value = false;
+  }
 }
 
 function createPackage() {
@@ -745,7 +750,9 @@ function downloadJson() {
           rows="2"
           placeholder="Если снова появится главное препятствие, то я сделаю конкретное действие"
         ></textarea>
-        <button class="primary-button" type="button" @click="saveReview">Сохранить обзор</button>
+        <button class="primary-button" type="button" :disabled="reviewSaving" @click="saveReview">
+          {{ reviewSaving ? 'Сохраняю…' : 'Сохранить обзор' }}
+        </button>
       </article>
       <section v-else id="week-review" class="period-review-note">
         <strong>Короткий обзор появится в конце недели</strong>

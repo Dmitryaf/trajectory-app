@@ -18,6 +18,7 @@ import {
   defaultSettings,
   emptyDailyEntry,
   experimentAppliesToDate,
+  externalCareerIdsForOptions,
   normalizeDailyEntry,
   normalizeLifeEvent,
   normalizeMonthlyReview,
@@ -102,6 +103,33 @@ describe('analytics', () => {
 
     expect(summary.careerDays).toBe(2);
     expect(summary.externalSteps).toBe(2);
+  });
+
+  it('uses one external-career rule for built-in, custom and exported summaries', () => {
+    const settings = structuredClone(defaultSettings);
+    settings.customCareerOptions = [
+      { id: 'custom:career:outreach', label: 'Адресный контакт', countsAsExternal: true },
+      { id: 'custom:career:planning', label: 'Планирование', countsAsExternal: false },
+    ];
+    const externalIds = externalCareerIdsForOptions(settings.customCareerOptions);
+
+    expect(externalIds).toEqual(['external', 'interview', 'result', 'work_result', 'custom:career:outreach']);
+
+    const payload = buildAiReportPayload('week', '2026-07-16', {
+      entries: [
+        entry('2026-07-13', { careerStates: ['work_result'] }),
+        entry('2026-07-14', { careerStates: ['custom:career:outreach'] }),
+        entry('2026-07-15', { careerStates: ['custom:career:planning'] }),
+      ],
+      results: [],
+      lifeEvents: [],
+      reviews: [],
+      monthlyReviews: [],
+      settings,
+    });
+
+    expect(summarize(payload.entries, externalIds).externalSteps).toBe(2);
+    expect(payload.summary.externalSteps).toBe(2);
   });
 
   it('drops unsupported imported enum values', () => {

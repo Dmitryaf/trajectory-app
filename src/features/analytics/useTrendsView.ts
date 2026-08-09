@@ -28,7 +28,7 @@ import { buildExperimentSummary } from './experimentComparison';
 import { experimentDecisionLabel } from '../experiments/model';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../../services/notifications';
 import { useAppStore } from '../../stores/app';
-import { contextFactorOptions, type ExperimentMetricId, type ExperimentRecord } from '../../types';
+import { contextFactorOptions, externalCareerIdsForOptions, type ExperimentMetricId, type ExperimentRecord } from '../../types';
 
 type RangeMonths = 3 | 6 | 12;
 type DecisionTimelineItem = {
@@ -52,12 +52,7 @@ export function useTrendsView() {
     { value: 12, label: '12 месяцев' },
   ];
 
-  const externalCareerIds = computed(() => [
-    'external',
-    'interview',
-    'result',
-    ...store.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id),
-  ]);
+  const externalCareerIds = computed(() => externalCareerIdsForOptions(store.settings.customCareerOptions));
   const end = computed(() => todayKey());
   const start = computed(() => startOfMonth(addMonths(todayKey(), -(range.value - 1))));
   const entries = computed(() => entriesForPeriod(store.dailyEntries, start.value, end.value));

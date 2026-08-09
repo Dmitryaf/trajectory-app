@@ -7,6 +7,7 @@
     "node": ">=22 <23"
   },
   "scripts": {
+    "audit:dependencies": "npm audit --audit-level=high",
     "check": "npm run lint && npm run format:check && npm test && npm run build && npm run check:dist && npm run storybook:build",
     "check:dist": "node scripts/check-built-app.mjs",
     "commitlint": "commitlint",

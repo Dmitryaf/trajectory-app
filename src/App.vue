@@ -9,7 +9,7 @@ import HowItWorksDialog from './components/HowItWorksDialog.vue';
 import PasswordResetView from './views/PasswordResetView.vue';
 import { recordFirstUseReturnEvents } from './features/first-use/funnel';
 import { createResumeCloudRefresh } from './features/sync/resume';
-import { prepareLocalCacheOwner, reconcileCloudSnapshotOnStartup } from './features/sync/startup';
+import { prepareLocalCacheOwner, reconcileCloudSnapshotAfterResume, reconcileCloudSnapshotOnStartup } from './features/sync/startup';
 import { notifyInfo, notifyUnknownError } from './services/notifications';
 import { useAppStore } from './stores/app';
 import { useAuthStore } from './stores/auth';
@@ -26,7 +26,7 @@ const appDataLoadingText = ref('Загружаю записи…');
 const effectiveLoadError = computed(() => store.loadError || appDataLoadError.value);
 let appDataLoadPromise: Promise<void> | null = null;
 const refreshCloudAfterResume = createResumeCloudRefresh(async () => {
-  await reconcileCloudSnapshotOnStartup(store, auth.requiresAuth ? auth.session?.user.id : null);
+  await reconcileCloudSnapshotAfterResume(store, auth.requiresAuth ? auth.session?.user.id : null);
 });
 
 function currentCloudRefreshState() {

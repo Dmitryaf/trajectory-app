@@ -48,7 +48,10 @@ describe('cloud synchronization state', () => {
       },
     ];
 
-    await store.syncCloudSnapshot();
+    await expect(store.syncCloudSnapshot()).resolves.toEqual({
+      status: 'synced',
+      updatedAt: '2026-07-22T10:00:00.000Z',
+    });
 
     expect(markCloudSyncPending).toHaveBeenCalledWith('user-1', 'Локальные изменения ожидают синхронизации');
     expect(vi.mocked(markCloudSyncPending).mock.invocationCallOrder[0]).toBeLessThan(
@@ -91,6 +94,21 @@ describe('cloud synchronization state', () => {
     expect(store.settings.firstUse).toMatchObject({ status: 'in_progress', lastStep: 'highlights' });
     expect((await db.settings.get('main'))?.firstUse).toMatchObject({ status: 'in_progress', lastStep: 'highlights' });
     expect(store.cloudSyncMessage).toBe('Изменения сохранены локально. Облако обновится после повторной синхронизации.');
+    expect(store.cloudSyncError).toBe('network unavailable');
+  });
+
+  it('reports that a requested cloud copy is still pending after a network failure', async () => {
+    const auth = useAuthStore();
+    auth.session = { user: { id: 'user-1' } } as typeof auth.session;
+    vi.mocked(saveCloudSnapshot).mockRejectedValue(new Error('network unavailable'));
+    const store = useAppStore();
+
+    await expect(store.syncCloudSnapshot({ force: true })).resolves.toEqual({
+      status: 'pending',
+      error: 'network unavailable',
+    });
+
+    expect(store.cloudSyncStatus).toBe('pending');
     expect(store.cloudSyncError).toBe('network unavailable');
   });
 });

@@ -8,6 +8,7 @@ import {
   type CloudSnapshot,
   type CloudSyncMeta,
 } from '../../services/cloudSync';
+import { applyCloudSnapshot, formatCloudUpdatedAt } from './snapshot';
 
 type AppStore = ReturnType<typeof useAppStore>;
 
@@ -32,6 +33,23 @@ export async function reconcileCloudSnapshotOnStartup(
   userId: string | null | undefined,
   services: StartupSyncServices = defaultServices,
 ) {
+  await reconcileCloudSnapshot(store, userId, 'startup', services);
+}
+
+export async function reconcileCloudSnapshotAfterResume(
+  store: AppStore,
+  userId: string | null | undefined,
+  services: StartupSyncServices = defaultServices,
+) {
+  await reconcileCloudSnapshot(store, userId, 'resume', services);
+}
+
+async function reconcileCloudSnapshot(
+  store: AppStore,
+  userId: string | null | undefined,
+  mode: 'startup' | 'resume',
+  services: StartupSyncServices,
+) {
   if (!userId) return;
 
   try {
@@ -45,21 +63,27 @@ export async function reconcileCloudSnapshotOnStartup(
     }
 
     if (!hasLocalUserData(store) && !meta.pending) {
-      await importCloudSnapshot(store, userId, snapshot, services, 'Загружена облачная копия');
+      if (mode === 'startup')
+        await applyCloudSnapshot(store, userId, snapshot, 'Загружена облачная копия', { markSynced: services.markSynced });
+      else markResumeConflict(store, userId, snapshot, services);
       return;
     }
 
     if (meta.lastCloudUpdatedAt === snapshot.updatedAt) {
       if (meta.pending) await store.syncCloudSnapshot({ force: true });
       else
-        store.setCloudSyncState('synced', `Облако синхронизировано: ${formatUpdatedAt(snapshot.updatedAt)}`, {
+        store.setCloudSyncState('synced', `Облако синхронизировано: ${formatCloudUpdatedAt(snapshot.updatedAt)}`, {
           updatedAt: snapshot.updatedAt,
         });
       return;
     }
 
     if (meta.lastCloudUpdatedAt && !meta.pending && !meta.conflict) {
-      await importCloudSnapshot(store, userId, snapshot, services, 'Загружена более свежая облачная копия');
+      if (mode === 'startup')
+        await applyCloudSnapshot(store, userId, snapshot, 'Загружена более свежая облачная копия', {
+          markSynced: services.markSynced,
+        });
+      else markResumeConflict(store, userId, snapshot, services);
       return;
     }
 
@@ -73,6 +97,17 @@ export async function reconcileCloudSnapshotOnStartup(
       error: error instanceof Error ? error.message : 'Не удалось проверить облако',
     });
   }
+}
+
+function markResumeConflict(store: AppStore, userId: string, snapshot: CloudSnapshot, services: StartupSyncServices) {
+  services.markConflict(userId, snapshot.updatedAt);
+  store.setCloudSyncState(
+    'conflict',
+    'В облаке появились более свежие данные. Открытые записи не заменены. Выбери действие в настройках.',
+    {
+      updatedAt: snapshot.updatedAt,
+    },
+  );
 }
 
 export async function prepareLocalCacheOwner(
@@ -98,20 +133,4 @@ export function hasLocalUserData(store: AppStore): boolean {
     store.monthlyReviews.length ||
     JSON.stringify(store.settings) !== JSON.stringify(defaultSettings),
   );
-}
-
-async function importCloudSnapshot(
-  store: AppStore,
-  userId: string,
-  snapshot: CloudSnapshot,
-  services: StartupSyncServices,
-  message: string,
-) {
-  await store.importData(snapshot.payload, { syncCloud: false });
-  services.markSynced(userId, snapshot.updatedAt);
-  store.setCloudSyncState('synced', `${message}: ${formatUpdatedAt(snapshot.updatedAt)}`, { updatedAt: snapshot.updatedAt });
-}
-
-function formatUpdatedAt(value: string) {
-  return new Date(value).toLocaleString('ru-RU');
 }

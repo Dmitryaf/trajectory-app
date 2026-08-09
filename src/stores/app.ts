@@ -25,6 +25,9 @@ export type { ExportPayload } from '../features/backup/snapshot';
 
 type CloudSyncStatus = 'disabled' | 'idle' | 'syncing' | 'synced' | 'pending' | 'conflict' | 'error';
 
+export type CloudSyncResult =
+  { status: 'synced'; updatedAt: string } | { status: 'pending'; error: string } | { status: 'disabled' | 'conflict' | 'queued' };
+
 export const useAppStore = defineStore('app', {
   state: () => ({
     loaded: false,
@@ -234,21 +237,22 @@ export const useAppStore = defineStore('app', {
     async syncCloudSnapshot(options: { force?: boolean } = {}) {
       if (!isCloudSyncConfigured()) {
         this.setCloudSyncState('disabled');
-        return;
+        return { status: 'disabled' } as CloudSyncResult;
       }
-      if (this.cloudSyncStatus === 'conflict' && !options.force) return;
+      if (this.cloudSyncStatus === 'conflict' && !options.force) return { status: 'conflict' } as CloudSyncResult;
       if (this.cloudSyncStatus === 'syncing') {
         this.cloudSyncQueued = true;
-        return;
+        return { status: 'queued' } as CloudSyncResult;
       }
 
       const userId = useAuthStore().session?.user.id;
       if (userId) markCloudSyncPending(userId, 'Локальные изменения ожидают синхронизации');
       this.setCloudSyncState('syncing', 'Сохраняю облачную копию…');
+      let updatedAt: string;
       do {
         this.cloudSyncQueued = false;
         try {
-          const updatedAt = await saveCloudSnapshot(this.exportData());
+          updatedAt = await saveCloudSnapshot(this.exportData());
           this.setCloudSyncState('synced', `Облако обновлено: ${new Date(updatedAt).toLocaleString('ru-RU')}`, { updatedAt });
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Не удалось сохранить облачную копию';
@@ -256,9 +260,10 @@ export const useAppStore = defineStore('app', {
           this.setCloudSyncState('pending', 'Изменения сохранены локально. Облако обновится после повторной синхронизации.', {
             error: message,
           });
-          return;
+          return { status: 'pending', error: message } as CloudSyncResult;
         }
       } while (this.cloudSyncQueued);
+      return { status: 'synced', updatedAt } as CloudSyncResult;
     },
     unload() {
       this.loaded = false;
