@@ -96,9 +96,25 @@ test('keeps the returning daily form compact and visibly grouped', async ({ page
   expect(headingBox!.height).toBeLessThanOrEqual(150);
   await expect(page.getByText('Запись за дату', { exact: true })).toBeVisible();
   await expect(page.getByText('Состояние и условия', { exact: true })).toBeVisible();
-  await expect(page.getByText('Действия и области жизни', { exact: true })).toBeVisible();
+  await expect(page.getByText('Текущая цель', { exact: true })).toBeVisible();
+  await expect(page.getByText('Остальные части дня', { exact: true })).toBeVisible();
   await expect(page.getByText('Короткий итог дня', { exact: true })).toBeVisible();
   await expect(page.getByText('Сон перед этой датой и сколько сил было в этот день.', { exact: true })).toBeHidden();
+
+  const goalCard = page.locator('#goal-actions');
+  const workCard = page.locator('#career');
+  const goalBox = await goalCard.boundingBox();
+  const workBox = await workCard.boundingBox();
+  expect(goalBox).not.toBeNull();
+  expect(workBox).not.toBeNull();
+  expect(goalBox!.y).toBeLessThan(workBox!.y);
+  await expect(workCard.locator('textarea')).toHaveCount(0);
+
+  const goalCriteria = goalCard.locator('.goal-context-details');
+  await expect(goalCriteria).not.toHaveAttribute('open', '');
+  await goalCriteria.locator('summary').focus();
+  await goalCriteria.locator('summary').press('Enter');
+  await expect(goalCriteria).toHaveAttribute('open', '');
 });
 
 test('keeps result details editable when Backspace clears the field', async ({ page }) => {

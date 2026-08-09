@@ -93,9 +93,38 @@ describe('daily entry scenario', () => {
     expect(wrapper.text()).toContain('Настроить главную');
     expect(wrapper.text()).not.toContain('С чего начать');
     expect(wrapper.text()).toContain('Состояние и условия');
-    expect(wrapper.text()).toContain('Действия и области жизни');
+    expect(wrapper.text()).toContain('Текущая цель');
+    expect(wrapper.text()).toContain('Остальные части дня');
     expect(wrapper.text()).toContain('Короткий итог дня');
     expect(wrapper.text()).not.toContain('Сон перед этой датой и сколько сил было в этот день.');
+  });
+
+  it('keeps one goal action before optional work context', async () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [{ ...emptyDailyEntry('2026-07-20'), importantFact: 'Обычная запись' }];
+    store.settings.activeDailyBlocks = ['career'];
+    store.settings.activeLifeAreas = [];
+    store.settings.activeFocusTitle = 'Подготовить доклад';
+    store.settings.focusOutcomeCriterion = 'Провести репетицию';
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+    const goalCard = wrapper.get('#goal-actions');
+    const workCard = wrapper.get('#career');
+
+    expect(wrapper.html().indexOf('id="goal-actions"')).toBeLessThan(wrapper.html().indexOf('id="career"'));
+    expect(goalCard.get('h2').text()).toBe('Шаг по текущей цели');
+    expect(goalCard.get('.goal-context-details').attributes('open')).toBeUndefined();
+    expect(workCard.get('h2').text()).toBe('Рабочий контекст');
+    expect(workCard.text()).toContain('не считается шагом по текущей цели');
+    expect(workCard.find('textarea').exists()).toBe(false);
+    expect(wrapper.find('#life-areas').exists()).toBe(false);
+
+    await goalCard
+      .findAll('.chip')
+      .find((chip) => chip.text().includes('Шаг к цели'))!
+      .trigger('click');
+    expect(goalCard.find('#goal-action-note').exists()).toBe(true);
   });
 
   it('offers recovery to an existing user without blocking the daily form', () => {
@@ -148,10 +177,11 @@ describe('daily entry scenario', () => {
     });
 
     expect(wrapper.get('[aria-label="Дата записи"]').attributes('max')).toBe('2026-07-21');
-    expect(wrapper.text()).toContain('Действия по цели');
+    expect(wrapper.text()).toContain('Шаг по текущей цели');
     expect(wrapper.text()).toContain('Физическая активность');
-    const directionCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Действия по цели');
+    const directionCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Шаг по текущей цели');
     expect(directionCard?.findAll('.chip').map((chip) => chip.text())).not.toContain('Восстановление');
+    expect(directionCard?.get('.goal-context-details').attributes('open')).toBeUndefined();
     const movementCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Физическая активность');
     expect(movementCard?.findAll('.chip').map((chip) => chip.text())).toEqual([
       '→ Прогулка',
@@ -225,7 +255,7 @@ describe('daily entry scenario', () => {
     ]);
 
     const careerNone = workCard.findAll('button').find((button) => button.text() === 'Ничего из списка');
-    const actionNone = wrapper.findAll('button').find((button) => button.text() === 'Действий по цели не было');
+    const actionNone = wrapper.findAll('button').find((button) => button.text() === 'Шага по цели не было');
     await careerNone!.trigger('click');
     await actionNone!.trigger('click');
     await wrapper.get('form').trigger('submit');
@@ -268,6 +298,7 @@ describe('daily entry scenario', () => {
   it('hides inactive blocks while preserving values in an existing entry', async () => {
     const { pinia, store } = createStore();
     store.settings.activeDailyBlocks = [];
+    store.settings.activeLifeAreas = [];
     store.dailyEntries = [
       {
         ...emptyDailyEntry('2026-07-21'),
@@ -277,7 +308,9 @@ describe('daily entry scenario', () => {
         timeInBedMinutes: 470,
         nutritionState: 'supports_goal',
         actionDirection: 'preparation',
-        recordedFields: ['actionDirection'],
+        lifeAreas: ['family'],
+        lifeAreasRecorded: true,
+        recordedFields: ['actionDirection', 'lifeAreas'],
       },
     ];
     const saveEntry = vi.spyOn(store, 'saveEntry').mockImplementation(async (entry) => {
@@ -290,10 +323,11 @@ describe('daily entry scenario', () => {
 
     const headings = wrapper.findAll('.form-card h2').map((heading) => heading.text());
     expect(headings).not.toContain('Сон и состояние');
-    expect(headings).not.toContain('Работа');
+    expect(headings).not.toContain('Рабочий контекст');
     expect(headings).not.toContain('Физическая активность');
     expect(headings).not.toContain('Питание');
     expect(headings).toContain('Заметка дня');
+    expect(headings).toContain('Области жизни');
     expect(wrapper.text()).toContain('Для этой записи цель не была сохранена.');
     expect(wrapper.findAll('#goal-actions .chip').map((chip) => chip.text())).toContain('◫ Подготовка');
 
