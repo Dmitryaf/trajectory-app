@@ -594,6 +594,35 @@ describe('journal scenarios', () => {
 });
 
 describe('settings scenarios', () => {
+  it('separates daily, experiment, data and account settings without duplicating controls', async () => {
+    const { pinia } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
+    const tabs = wrapper.findAll('[aria-label="Разделы настроек"] button');
+
+    expect(tabs.map((tab) => tab.text())).toEqual(['Ежедневная запись', 'Эксперимент', 'Данные и синхронизация', 'Аккаунт и безопасность']);
+    expect(wrapper.get('#daily-settings').attributes('style')).toBeUndefined();
+    expect(wrapper.get('#data-settings').attributes('style')).toContain('display: none');
+
+    await tabs[2]!.trigger('click');
+    expect(wrapper.get('#daily-settings').attributes('style')).toContain('display: none');
+    expect(wrapper.get('#data-settings').attributes('style')).toBeUndefined();
+    expect(wrapper.get('#data-settings').text()).toContain('Автоматическая облачная копия');
+    expect(wrapper.get('#data-settings').text()).not.toContain('Удалить аккаунт');
+
+    await tabs[3]!.trigger('click');
+    expect(wrapper.get('#account-settings').attributes('style')).toBeUndefined();
+    expect(wrapper.get('#account-settings').text()).toContain('friend@example.com');
+    expect(
+      wrapper
+        .get('#account-settings')
+        .findAll('button')
+        .filter((button) => button.text() === 'Удалить аккаунт'),
+    ).toHaveLength(1);
+  });
+
   it('blocks a repeated settings save and allows retrying after an error', async () => {
     const { pinia, store } = createStore();
     let rejectFirstSave!: (error: Error) => void;
@@ -732,7 +761,7 @@ describe('settings scenarios', () => {
       global: { plugins: [pinia], mocks: { $route: { query: {} } } },
     });
 
-    const deleteButton = wrapper.findAll('.settings-card--cloud button').find((button) => button.text() === 'Удалить аккаунт');
+    const deleteButton = wrapper.findAll('.settings-card--account button').find((button) => button.text() === 'Удалить аккаунт');
     await deleteButton!.trigger('click');
     await flushPromises();
 
@@ -756,7 +785,7 @@ describe('settings scenarios', () => {
       global: { plugins: [pinia], mocks: { $route: { query: {} } } },
     });
 
-    const deleteButton = wrapper.findAll('.settings-card--cloud button').find((button) => button.text() === 'Удалить аккаунт');
+    const deleteButton = wrapper.findAll('.settings-card--account button').find((button) => button.text() === 'Удалить аккаунт');
     await deleteButton!.trigger('click');
     await flushPromises();
 

@@ -138,6 +138,29 @@ test('opens the exact settings section from a daily card', async ({ page }) => {
   await expect(page.locator('#life-areas')).toBeInViewport();
 });
 
+test('switches settings scenarios with the keyboard on a mobile screen', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/settings');
+
+  const dataTab = page.getByRole('button', { name: 'Данные и синхронизация' });
+  await dataTab.focus();
+  await dataTab.press('Enter');
+  await expect(page.locator('#data-settings')).toBeVisible();
+  await expect(page.locator('#daily-settings')).toBeHidden();
+  await expect(page.locator('.settings-card--cloud')).toBeVisible();
+  await expect(page.locator('.settings-card--account')).toBeHidden();
+
+  await page.getByRole('button', { name: 'Аккаунт и безопасность' }).click();
+  await expect(page.locator('#account-settings')).toBeVisible();
+  await expect(page.locator('#data-settings')).toBeHidden();
+
+  const widths = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }));
+  expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+});
+
 test('sends feedback from the built-in form without asking for recipient details', async ({ page }) => {
   let submittedMessage = '';
   await page.route('/api/feedback', async (route) => {

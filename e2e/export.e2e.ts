@@ -40,6 +40,7 @@ test('includes daily reflections from an exact cross-month period', async ({ pag
   await page.locator('input[type="file"]').setInputFiles('demo/trajectory-test-user-2026-07-20.json');
   await page.getByText('Резервная копия восстановлена', { exact: true }).waitFor();
 
+  await page.getByRole('button', { name: 'Данные и синхронизация' }).click();
   await page.getByText('Выбрать другой период', { exact: true }).click();
   await page.getByLabel('Начало периода анализа').fill('2026-06-15');
   await page.getByLabel('Конец периода анализа').fill('2026-07-02');
