@@ -1,5 +1,6 @@
 import type { useAppStore } from '../../stores/app';
 import { defaultSettings } from '../../types';
+import { normalizeSnapshot } from '../backup/snapshot';
 import {
   getCloudSyncMeta,
   loadCloudSnapshot,
@@ -69,12 +70,31 @@ async function reconcileCloudSnapshot(
       return;
     }
 
-    if (meta.lastCloudUpdatedAt === snapshot.updatedAt) {
-      if (meta.pending) await store.syncCloudSnapshot({ force: true });
-      else
+    if (meta.conflict) {
+      if (sameSnapshotData(store, snapshot)) {
+        services.markSynced(userId, snapshot.updatedAt);
         store.setCloudSyncState('synced', `Облако синхронизировано: ${formatCloudUpdatedAt(snapshot.updatedAt)}`, {
           updatedAt: snapshot.updatedAt,
         });
+        return;
+      }
+      if (!sameCloudRevision(meta.lastCloudUpdatedAt, snapshot.updatedAt)) services.markConflict(userId, snapshot.updatedAt);
+      store.setCloudSyncState(
+        'conflict',
+        'В этом браузере и в облаке есть разные данные. Выберите нужную копию в разделе «Данные и синхронизация».',
+        { updatedAt: snapshot.updatedAt },
+      );
+      return;
+    }
+
+    if (sameCloudRevision(meta.lastCloudUpdatedAt, snapshot.updatedAt)) {
+      if (meta.pending) await store.syncCloudSnapshot({ force: true });
+      else {
+        if (meta.lastCloudUpdatedAt !== snapshot.updatedAt) services.markSynced(userId, snapshot.updatedAt);
+        store.setCloudSyncState('synced', `Облако синхронизировано: ${formatCloudUpdatedAt(snapshot.updatedAt)}`, {
+          updatedAt: snapshot.updatedAt,
+        });
+      }
       return;
     }
 
@@ -100,6 +120,23 @@ async function reconcileCloudSnapshot(
     store.setCloudSyncState('pending', 'Локальные данные доступны. Облако пока не проверено.', {
       error: error instanceof Error ? error.message : 'Не удалось проверить облако',
     });
+  }
+}
+
+function sameCloudRevision(knownRevision: string, cloudRevision: string) {
+  if (knownRevision === cloudRevision) return true;
+  const knownTime = Date.parse(knownRevision);
+  const cloudTime = Date.parse(cloudRevision);
+  return Number.isFinite(knownTime) && Number.isFinite(cloudTime) && knownTime === cloudTime;
+}
+
+function sameSnapshotData(store: AppStore, snapshot: CloudSnapshot) {
+  try {
+    const localData = { ...store.exportData(), exportedAt: '' };
+    const cloudData = { ...normalizeSnapshot(snapshot.payload), exportedAt: '' };
+    return JSON.stringify(localData) === JSON.stringify(cloudData);
+  } catch {
+    return false;
   }
 }
 
