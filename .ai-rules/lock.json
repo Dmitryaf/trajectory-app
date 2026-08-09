@@ -1,9 +1,9 @@
 ﻿{
     "schemaVersion":  "0.2",
-    "generatedAtUtc":  "2026-08-08T07:40:31.2390616Z",
+    "generatedAtUtc":  "2026-08-09T08:28:56.6409608Z",
     "source":  {
                    "repository":  "ai-rules-hub",
-                   "revision":  "d786e80e4ac8d37c9f0a63a62a38dbdf8a016e82",
+                   "revision":  "8f1c39faa14d41c0541ab7cc0e09a635f885bc26",
                    "dirty":  false,
                    "catalogVersion":  "0.1"
                },
@@ -29,13 +29,13 @@
                   {
                       "source":  "rules/CORE.md",
                       "target":  ".ai-rules/upstream/CORE.md",
-                      "sha256":  "a9879391230d7ff514f752ffcca3d091183482f7cc15319410ae2b643a13fd08",
+                      "sha256":  "b4daf486805650343925f6e23f0891e3638cde4023ea606f38f2bbd9da5e0786",
                       "state":  "managed"
                   },
                   {
                       "source":  "profiles/data-sensitive.md",
                       "target":  ".ai-rules/upstream/profiles/data-sensitive.md",
-                      "sha256":  "65a4c37a7798ff95c1edd9241938195d9688f047ffe187240d382cb305d22867",
+                      "sha256":  "25f186c3724f4676beadaa59d446e0edd10ac97044df18cde0d6d0d867e17e29",
                       "state":  "managed"
                   },
                   {
@@ -53,31 +53,31 @@
                   {
                       "source":  "rules/AI_COLLABORATION.md",
                       "target":  ".ai-rules/upstream/rules/AI_COLLABORATION.md",
-                      "sha256":  "dfe52d580d55b1182bddf1061893c4b081eabdf3bcc12c71e05c92fe6bd28ffb",
+                      "sha256":  "c0346eb44aafd2a9c2d6b9160d170dc93971da9b76e49de0067ce017f340628d",
                       "state":  "managed"
                   },
                   {
                       "source":  "rules/ARCHITECTURE_AND_DATA.md",
                       "target":  ".ai-rules/upstream/rules/ARCHITECTURE_AND_DATA.md",
-                      "sha256":  "6fe470b8620deb6902b7c3168d14d606934ea297540e6cb786a4fa55dc11c14b",
+                      "sha256":  "a87dd2ab6b7e2c1129b756516501d3fb64fd7cccbccd3a2fad2a132970c39206",
                       "state":  "managed"
                   },
                   {
                       "source":  "rules/DOCUMENTATION.md",
                       "target":  ".ai-rules/upstream/rules/DOCUMENTATION.md",
-                      "sha256":  "c7a115b321ca5205635115774f311dc42dee2e678f493dcae96c092bef8f5e17",
+                      "sha256":  "214cc86e8ae6481eaf0a5f51da6d058e2bb419faa5766bee28fc6f9d7042c2cf",
                       "state":  "managed"
                   },
                   {
                       "source":  "rules/GIT_AND_DELIVERY.md",
                       "target":  ".ai-rules/upstream/rules/GIT_AND_DELIVERY.md",
-                      "sha256":  "987f0c265ceb2d6ba8db1999dcee2edf8e115c2fc9b22d71eeebe258f85d8680",
+                      "sha256":  "0cbe33b3e46f54dfeaabe7bb44c0a3da1b534fea8a35d8c6568fc56d4430d7a3",
                       "state":  "managed"
                   },
                   {
                       "source":  "rules/IMPLEMENTATION.md",
                       "target":  ".ai-rules/upstream/rules/IMPLEMENTATION.md",
-                      "sha256":  "06553b318a9dff3432fe70fb8f053167dabaef0964ee098ef5ef40822a968e8a",
+                      "sha256":  "cca6d151adc51fc81e23f59130661913e9cfde2a1ae6b2dee3d7f8efe5a05e0d",
                       "state":  "managed"
                   },
                   {
@@ -89,19 +89,19 @@
                   {
                       "source":  "rules/QUALITY.md",
                       "target":  ".ai-rules/upstream/rules/QUALITY.md",
-                      "sha256":  "43af5b4eeca860df278065078e5e37c3ee06ba4a784499664b2268346186c8b0",
+                      "sha256":  "2c1c627f96de27121b5ef8599874785b44cdbe3d8ec487c9ad8de611788c1f76",
                       "state":  "managed"
                   },
                   {
                       "source":  "rules/RESEARCH_AND_EVIDENCE.md",
                       "target":  ".ai-rules/upstream/rules/RESEARCH_AND_EVIDENCE.md",
-                      "sha256":  "c11fa8f2275e8dbd29c72447adf3b999860d1cf9075c9668aefc4e00b82ae846",
+                      "sha256":  "592f78446ae6305e2d6b58e7f691a2cf5f4f1097b5a8d9745d97324b83b3ce14",
                       "state":  "managed"
                   },
                   {
                       "source":  "rules/SECURITY_AND_PRIVACY.md",
                       "target":  ".ai-rules/upstream/rules/SECURITY_AND_PRIVACY.md",
-                      "sha256":  "39862639a4f84674277d186f4bc97e95bf63a6d340fb75a84bce57d7acdcb4d5",
+                      "sha256":  "ea661f3f7495c351d21b5692595a09dd1a12aad31396d29d4155b830d58f7b31",
                       "state":  "managed"
                   }
               ]
