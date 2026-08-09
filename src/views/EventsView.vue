@@ -19,6 +19,7 @@ const type = ref<LifeEventType>('change');
 const editingId = ref<number | null>(null);
 const editingCreatedAt = ref('');
 const saving = ref(false);
+const removingIds = ref<number[]>([]);
 const expandedNotes = ref<string[]>([]);
 const archiveRange = archiveRangeFromQuery();
 
@@ -87,10 +88,17 @@ function resetForm() {
 }
 
 async function remove(id?: number) {
-  if (id === undefined || !window.confirm('Удалить это событие?')) return;
-  await store.removeLifeEvent(id);
-  if (editingId.value === id) resetForm();
-  notifyInfo('Событие удалено');
+  if (id === undefined || removingIds.value.includes(id) || !window.confirm('Удалить это событие?')) return;
+  removingIds.value.push(id);
+  try {
+    await store.removeLifeEvent(id);
+    if (editingId.value === id) resetForm();
+    notifyInfo('Событие удалено');
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось удалить событие');
+  } finally {
+    removingIds.value = removingIds.value.filter((item) => item !== id);
+  }
 }
 
 function eventMeta(value: LifeEventRecord['type']) {
@@ -194,7 +202,13 @@ function toggleNote(event: LifeEventRecord) {
             </div>
             <div class="item-actions">
               <button class="ghost-button" type="button" aria-label="Редактировать событие" @click="edit(event)">✎</button>
-              <button class="ghost-button ghost-button--danger" type="button" aria-label="Удалить событие" @click="remove(event.id)">
+              <button
+                class="ghost-button ghost-button--danger"
+                type="button"
+                aria-label="Удалить событие"
+                :disabled="event.id !== undefined && removingIds.includes(event.id)"
+                @click="remove(event.id)"
+              >
                 ×
               </button>
             </div>

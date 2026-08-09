@@ -12,7 +12,7 @@ import TodayView from '../src/views/TodayView.vue';
 import TrendsView from '../src/views/TrendsView.vue';
 import WeekView from '../src/views/WeekView.vue';
 import { loadCloudSnapshot, markCloudSyncSynced } from '../src/services/cloudSync';
-import { notifyError, notifySaved, notifyUnknownError } from '../src/services/notifications';
+import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../src/services/notifications';
 import { useAppStore } from '../src/stores/app';
 import { useAuthStore } from '../src/stores/auth';
 import { defaultSettings, emptyDailyEntry, emptyMonthlyReview, emptyWeeklyReview } from '../src/types';
@@ -424,6 +424,43 @@ describe('daily entry scenario', () => {
 });
 
 describe('journal scenarios', () => {
+  it('reports archive deletion errors and allows retrying the same record', async () => {
+    const { pinia, store } = createStore();
+    store.results = [{ id: 1, date: '2026-07-21', area: 'career', title: 'Итог', note: '', createdAt: '2026-07-21T10:00:00.000Z' }];
+    store.lifeEvents = [{ id: 2, date: '2026-07-21', type: 'event', title: 'Событие', note: '', createdAt: '2026-07-21T11:00:00.000Z' }];
+    const removeResult = vi
+      .spyOn(store, 'removeResult')
+      .mockRejectedValueOnce(new Error('IndexedDB unavailable'))
+      .mockResolvedValueOnce(undefined);
+    const removeLifeEvent = vi
+      .spyOn(store, 'removeLifeEvent')
+      .mockRejectedValueOnce(new Error('IndexedDB unavailable'))
+      .mockResolvedValueOnce(undefined);
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const global = { plugins: [pinia], stubs: { RouterLink: routerLinkStub } };
+    const results = mount(ResultsView, { global });
+    const events = mount(EventsView, { global });
+    const resultButton = results.get('[aria-label="Удалить итог"]');
+    const eventButton = events.get('[aria-label="Удалить событие"]');
+
+    await resultButton.trigger('click');
+    await eventButton.trigger('click');
+    await flushPromises();
+    expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось удалить итог');
+    expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось удалить событие');
+    expect(notifyInfo).not.toHaveBeenCalledWith('Итог удалён');
+    expect(notifyInfo).not.toHaveBeenCalledWith('Событие удалено');
+    expect(resultButton.attributes('disabled')).toBeUndefined();
+    expect(eventButton.attributes('disabled')).toBeUndefined();
+
+    await resultButton.trigger('click');
+    await eventButton.trigger('click');
+    await flushPromises();
+    expect(removeResult).toHaveBeenCalledTimes(2);
+    expect(removeLifeEvent).toHaveBeenCalledTimes(2);
+    confirm.mockRestore();
+  });
+
   it('uses bounded pages and resets pagination when archive filters change', async () => {
     const { pinia, store } = createStore();
     store.results = Array.from({ length: 9 }, (_, index) => ({
@@ -557,6 +594,32 @@ describe('journal scenarios', () => {
 });
 
 describe('settings scenarios', () => {
+  it('blocks a repeated settings save and allows retrying after an error', async () => {
+    const { pinia, store } = createStore();
+    let rejectFirstSave!: (error: Error) => void;
+    const firstSave = new Promise<void>((_, reject) => {
+      rejectFirstSave = reject;
+    });
+    const saveSettings = vi.spyOn(store, 'saveSettings').mockReturnValueOnce(firstSave).mockResolvedValueOnce(undefined);
+    const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
+    const saveButton = wrapper.get('.settings-card--daily-blocks .primary-button');
+
+    await saveButton.trigger('click');
+    await saveButton.trigger('click');
+    expect(saveSettings).toHaveBeenCalledOnce();
+    expect(saveButton.attributes('disabled')).toBeDefined();
+
+    rejectFirstSave(new Error('IndexedDB unavailable'));
+    await flushPromises();
+    expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось сохранить настройки');
+    expect(saveButton.attributes('disabled')).toBeUndefined();
+
+    await saveButton.trigger('click');
+    await flushPromises();
+    expect(saveSettings).toHaveBeenCalledTimes(2);
+    expect(notifySaved).toHaveBeenCalledWith('Блоки ежедневной записи сохранены');
+  });
+
   it('applies a confirmed cloud copy through the shared snapshot transition', async () => {
     const { pinia, store } = createStore();
     const auth = useAuthStore();
@@ -864,6 +927,42 @@ describe('trends scenarios', () => {
 });
 
 describe('period review navigation', () => {
+  it('keeps review drafts available after a failed save and allows retrying', async () => {
+    const { pinia, store } = createStore();
+    store.weeklyReviews = [{ ...emptyWeeklyReview('2026-07-20'), results: ['Черновик недели', '', ''] }];
+    store.monthlyReviews = [{ ...emptyMonthlyReview('2026-07-01'), mainPattern: 'Черновик месяца' }];
+    const saveReview = vi
+      .spyOn(store, 'saveReview')
+      .mockRejectedValueOnce(new Error('IndexedDB unavailable'))
+      .mockResolvedValueOnce(undefined);
+    const saveMonthlyReview = vi
+      .spyOn(store, 'saveMonthlyReview')
+      .mockRejectedValueOnce(new Error('IndexedDB unavailable'))
+      .mockResolvedValueOnce(undefined);
+    const global = { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } };
+    const week = mount(WeekView, { global });
+    const month = mount(MonthView, { global });
+    const weekButton = week.get('#week-review .primary-button');
+    const monthButton = month.get('#month-review .primary-button');
+
+    await weekButton.trigger('click');
+    await monthButton.trigger('click');
+    await flushPromises();
+
+    expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось сохранить обзор недели');
+    expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось сохранить итог месяца');
+    expect((week.get('#week-review input').element as HTMLInputElement).value).toBe('Черновик недели');
+    expect((month.get('#month-review textarea').element as HTMLTextAreaElement).value).toBe('Черновик месяца');
+    expect(weekButton.attributes('disabled')).toBeUndefined();
+    expect(monthButton.attributes('disabled')).toBeUndefined();
+
+    await weekButton.trigger('click');
+    await monthButton.trigger('click');
+    await flushPromises();
+    expect(saveReview).toHaveBeenCalledTimes(2);
+    expect(saveMonthlyReview).toHaveBeenCalledTimes(2);
+  });
+
   it('uses the compact archive previews for weekly results and events', () => {
     const { pinia, store } = createStore();
     store.dailyEntries = [{ ...emptyDailyEntry('2026-07-21'), importantFact: 'Есть данные недели' }];

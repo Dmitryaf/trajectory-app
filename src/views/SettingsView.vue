@@ -30,6 +30,7 @@ const {
   cloudStatusTitle,
   cloudStatusText,
   experimentCanConclude,
+  isSaving,
   save,
   saveExperiment,
   completeExperiment,
@@ -80,7 +81,14 @@ const {
       <p v-if="!settings.activeDailyBlocks.length" class="data-note">
         Останутся общие блоки: действия по текущей цели, области жизни и заметка дня.
       </p>
-      <button class="primary-button" type="button" @click="save('Блоки ежедневной записи сохранены')">Сохранить блоки</button>
+      <button
+        class="primary-button"
+        type="button"
+        :disabled="isSaving('daily-blocks')"
+        @click="save('Блоки ежедневной записи сохранены', 'daily-blocks')"
+      >
+        {{ isSaving('daily-blocks') ? 'Сохраняю…' : 'Сохранить блоки' }}
+      </button>
     </article>
 
     <article id="movement-options" class="settings-card settings-card--movement">
@@ -102,6 +110,7 @@ const {
             type="button"
             :aria-label="`Убрать ${option.label} из ежедневной записи`"
             title="Убрать из ежедневной записи"
+            :disabled="isSaving('activity')"
             @click="removeActivityOption(option.id)"
           >
             −
@@ -119,7 +128,14 @@ const {
             placeholder="Например: плавание"
             @keyup.enter="addActivityOption"
           />
-          <button class="secondary-button" type="button" :disabled="!newActivityLabel.trim()" @click="addActivityOption">Добавить</button>
+          <button
+            class="secondary-button"
+            type="button"
+            :disabled="!newActivityLabel.trim() || isSaving('activity')"
+            @click="addActivityOption"
+          >
+            Добавить
+          </button>
         </div>
         <div v-if="hiddenActivityOptions.length" class="hidden-options">
           <span class="field-label">Убраны из ежедневной записи</span>
@@ -130,6 +146,7 @@ const {
               class="restore-option"
               type="button"
               :aria-label="`Вернуть ${option.label} в ежедневную запись`"
+              :disabled="isSaving('activity')"
               @click="restoreActivityOption(option.id)"
             >
               <span>+</span>{{ option.label }}
@@ -153,7 +170,14 @@ const {
         <label class="field-label" for="new-life-area">Своя область</label>
         <div class="inline-add">
           <input id="new-life-area" v-model="newLifeAreaLabel" type="text" maxlength="32" placeholder="Учёба" @keyup.enter="addLifeArea" />
-          <button class="secondary-button" type="button" :disabled="!newLifeAreaLabel.trim()" @click="addLifeArea">Добавить</button>
+          <button
+            class="secondary-button"
+            type="button"
+            :disabled="!newLifeAreaLabel.trim() || isSaving('life-areas')"
+            @click="addLifeArea"
+          >
+            Добавить
+          </button>
         </div>
         <div v-if="settings.customLifeAreaOptions.some((option) => !option.archived)" class="custom-list">
           <div v-for="option in settings.customLifeAreaOptions.filter((item) => !item.archived)" :key="option.id" class="custom-list__item">
@@ -165,6 +189,7 @@ const {
               class="ghost-button ghost-button--danger"
               type="button"
               :aria-label="`Скрыть ${option.label}`"
+              :disabled="isSaving('life-areas')"
               @click="removeLifeArea(option.id)"
             >
               ×
@@ -172,7 +197,9 @@ const {
           </div>
         </div>
       </div>
-      <button class="primary-button" type="button" @click="save('Области сохранены')">Сохранить области</button>
+      <button class="primary-button" type="button" :disabled="isSaving('life-areas')" @click="save('Области сохранены', 'life-areas')">
+        {{ isSaving('life-areas') ? 'Сохраняю…' : 'Сохранить области' }}
+      </button>
     </article>
 
     <article id="context-options" class="settings-card settings-card--context">
@@ -194,6 +221,7 @@ const {
             type="button"
             :aria-label="`Убрать ${option.label} из ежедневной записи`"
             title="Убрать из ежедневной записи"
+            :disabled="isSaving('context')"
             @click="removeContextFactor(option.id)"
           >
             −
@@ -211,7 +239,12 @@ const {
             placeholder="Например: долгая дорога"
             @keyup.enter="addContextFactor"
           />
-          <button class="secondary-button" type="button" :disabled="!newContextFactorLabel.trim()" @click="addContextFactor">
+          <button
+            class="secondary-button"
+            type="button"
+            :disabled="!newContextFactorLabel.trim() || isSaving('context')"
+            @click="addContextFactor"
+          >
             Добавить
           </button>
         </div>
@@ -224,6 +257,7 @@ const {
               class="restore-option"
               type="button"
               :aria-label="`Вернуть ${option.label} в ежедневную запись`"
+              :disabled="isSaving('context')"
               @click="restoreContextFactor(option.id)"
             >
               <span>+</span>{{ option.label }}
@@ -270,7 +304,9 @@ const {
           placeholder="Например: выполненное задание, тренировка, разговор или принятое решение"
         ></textarea>
       </div>
-      <button class="primary-button" type="button" @click="save('Настройки цели сохранены')">Сохранить цель</button>
+      <button class="primary-button" type="button" :disabled="isSaving('goal')" @click="save('Настройки цели сохранены', 'goal')">
+        {{ isSaving('goal') ? 'Сохраняю…' : 'Сохранить цель' }}
+      </button>
     </article>
 
     <article id="work-settings" class="settings-card settings-card--career">
@@ -299,7 +335,9 @@ const {
             placeholder="Например: урок, смена, заказ или собеседование"
             @keyup.enter="addCareerOption"
           />
-          <button class="secondary-button" type="button" :disabled="!newCareerLabel.trim()" @click="addCareerOption">Добавить</button>
+          <button class="secondary-button" type="button" :disabled="!newCareerLabel.trim() || isSaving('career')" @click="addCareerOption">
+            Добавить
+          </button>
         </div>
         <div v-if="settings.customCareerOptions.some((option) => !option.archived)" class="custom-list">
           <div v-for="option in settings.customCareerOptions.filter((item) => !item.archived)" :key="option.id" class="custom-list__item">
@@ -311,6 +349,7 @@ const {
               class="ghost-button ghost-button--danger"
               type="button"
               :aria-label="`Скрыть ${option.label}`"
+              :disabled="isSaving('career')"
               @click="removeCareerOption(option.id)"
             >
               ×
@@ -336,7 +375,14 @@ const {
         maxlength="280"
         placeholder="Например: ел по плану, был нормальный ужин, не было незапланированных вечерних перекусов"
       ></textarea>
-      <button class="primary-button" type="button" @click="save('Критерий питания сохранён')">Сохранить настройки</button>
+      <button
+        class="primary-button"
+        type="button"
+        :disabled="isSaving('nutrition')"
+        @click="save('Критерий питания сохранён', 'nutrition')"
+      >
+        {{ isSaving('nutrition') ? 'Сохраняю…' : 'Сохранить настройки' }}
+      </button>
     </article>
 
     <article id="experiment-settings" class="settings-card settings-card--experiment">
@@ -390,8 +436,18 @@ const {
       <p v-else-if="settings.experiment.endDate" class="field-hint">
         После последнего дня здесь можно записать, что вы заметили. Завершённый эксперимент появится в истории раздела «Тренды».
       </p>
-      <button class="primary-button" type="button" @click="saveExperiment">Сохранить настройки</button>
-      <button v-if="experimentCanConclude" class="secondary-button" type="button" @click="completeExperiment">Завершить эксперимент</button>
+      <button class="primary-button" type="button" :disabled="isSaving('experiment')" @click="saveExperiment">
+        {{ isSaving('experiment') ? 'Сохраняю…' : 'Сохранить настройки' }}
+      </button>
+      <button
+        v-if="experimentCanConclude"
+        class="secondary-button"
+        type="button"
+        :disabled="isSaving('experiment')"
+        @click="completeExperiment"
+      >
+        Завершить эксперимент
+      </button>
       <p v-if="settings.experimentHistory.length" class="data-note">
         Завершённые эксперименты можно посмотреть в истории раздела «Тренды»: {{ settings.experimentHistory.length }}.
       </p>
