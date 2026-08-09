@@ -6,6 +6,7 @@ import {
   activityOptions,
   careerOptions,
   contextFactorOptions,
+  externalCareerIdsForOptions,
   legacyActivityOptions,
   legacyCareerOptions,
   legacyContextFactorOptions,
@@ -120,11 +121,8 @@ function buildPayload(
   extra: Partial<AiReportPayload>,
 ): AiReportPayload {
   const entries = dataThrough >= start ? entriesForPeriod(source.entries, start, dataThrough) : [];
-  const careerItems = [...careerOptions, ...legacyCareerOptions, ...source.settings.customCareerOptions];
   const factorItems = [...contextFactorOptions, ...source.settings.customContextFactorOptions];
-  const externalCareerIds = careerItems
-    .filter((option) => option.countsAsExternal || ['external', 'interview', 'result', 'work_result'].includes(option.id))
-    .map((option) => option.id);
+  const externalCareerIds = externalCareerIdsForOptions(source.settings.customCareerOptions);
 
   return {
     app: 'trajectory',

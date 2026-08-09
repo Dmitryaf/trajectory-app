@@ -29,6 +29,7 @@ import { useAppStore } from '../stores/app';
 import {
   contextFactorOptions,
   emptyWeeklyReview,
+  externalCareerIdsForOptions,
   lifeAreaOptions,
   lifeEventTypeOptions,
   resultAreaOptions,
@@ -77,12 +78,7 @@ const entries = computed(() => entriesForWeek(store.dailyEntries, anchor.value))
 const entriesByDate = computed(() => new Map(entries.value.map((entry) => [entry.date, entry])));
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
 const contextFactorItems = computed(() => [...contextFactorOptions, ...store.settings.customContextFactorOptions]);
-const externalCareerIds = computed(() => [
-  'external',
-  'interview',
-  'result',
-  ...store.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id),
-]);
+const externalCareerIds = computed(() => externalCareerIdsForOptions(store.settings.customCareerOptions));
 const summary = computed(() => summarize(entries.value, externalCareerIds.value));
 const results = computed(() => resultsForPeriod(store.results, start.value, end.value));
 const displayedResults = computed(() => results.value.slice(0, 3));

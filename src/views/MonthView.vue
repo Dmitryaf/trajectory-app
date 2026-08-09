@@ -39,6 +39,7 @@ import {
   actionDirectionOptions,
   contextFactorOptions,
   emptyMonthlyReview,
+  externalCareerIdsForOptions,
   lifeAreaOptions,
   lifeEventTypeOptions,
   resultAreaOptions,
@@ -51,12 +52,7 @@ const start = computed(() => startOfMonth(anchor.value));
 const end = computed(() => endOfMonth(anchor.value));
 const archiveEnd = computed(() => (end.value > todayKey() ? todayKey() : end.value));
 const entries = computed(() => entriesForMonth(store.dailyEntries, anchor.value));
-const externalCareerIds = computed(() => [
-  'external',
-  'interview',
-  'result',
-  ...store.settings.customCareerOptions.filter((option) => option.countsAsExternal).map((option) => option.id),
-]);
+const externalCareerIds = computed(() => externalCareerIdsForOptions(store.settings.customCareerOptions));
 const summary = computed(() => summarize(entries.value, externalCareerIds.value));
 const contextFactorItems = computed(() => [...contextFactorOptions, ...store.settings.customContextFactorOptions]);
 const observations = computed(() => buildObservations(entries.value, contextFactorItems.value));

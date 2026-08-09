@@ -129,3 +129,7 @@ export const experimentMetricOptions: ExperimentMetricOption[] = [
 ];
 
 export const externalCareerStates: CareerState[] = ['external', 'interview', 'result', 'work_result'];
+
+export function externalCareerIdsForOptions(options: Array<Pick<Option<CareerState>, 'id' | 'countsAsExternal'>>): CareerState[] {
+  return Array.from(new Set([...externalCareerStates, ...options.filter((option) => option.countsAsExternal).map((option) => option.id)]));
+}
