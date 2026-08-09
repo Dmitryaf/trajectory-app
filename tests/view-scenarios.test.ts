@@ -11,6 +11,7 @@ import SettingsView from '../src/views/SettingsView.vue';
 import TodayView from '../src/views/TodayView.vue';
 import TrendsView from '../src/views/TrendsView.vue';
 import WeekView from '../src/views/WeekView.vue';
+import { loadCloudSnapshot, markCloudSyncSynced } from '../src/services/cloudSync';
 import { notifyError, notifySaved, notifyUnknownError } from '../src/services/notifications';
 import { useAppStore } from '../src/stores/app';
 import { useAuthStore } from '../src/stores/auth';
@@ -21,6 +22,12 @@ vi.mock('../src/services/notifications', () => ({
   notifyInfo: vi.fn(),
   notifySaved: vi.fn(),
   notifyUnknownError: vi.fn(),
+}));
+
+vi.mock('../src/services/cloudSync', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../src/services/cloudSync')>()),
+  loadCloudSnapshot: vi.fn(),
+  markCloudSyncSynced: vi.fn(),
 }));
 
 enableAutoUnmount(afterEach);
@@ -550,6 +557,87 @@ describe('journal scenarios', () => {
 });
 
 describe('settings scenarios', () => {
+  it('applies a confirmed cloud copy through the shared snapshot transition', async () => {
+    const { pinia, store } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    const snapshot = {
+      userId: 'user-1',
+      updatedAt: '2026-07-22T10:00:00.000Z',
+      payload: { version: 3 },
+    } as Awaited<ReturnType<typeof loadCloudSnapshot>>;
+    vi.mocked(loadCloudSnapshot).mockResolvedValue(snapshot);
+    const importData = vi.spyOn(store, 'importData').mockResolvedValue(undefined);
+    const setCloudSyncState = vi.spyOn(store, 'setCloudSyncState');
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const wrapper = mount(SettingsView, {
+      global: { plugins: [pinia], mocks: { $route: { query: {} } } },
+    });
+
+    const restoreButton = wrapper.findAll('.settings-card--cloud button').find((button) => button.text() === 'Загрузить из облака');
+    await restoreButton!.trigger('click');
+    await flushPromises();
+
+    expect(importData).toHaveBeenCalledWith(snapshot!.payload, { syncCloud: false });
+    expect(markCloudSyncSynced).toHaveBeenCalledWith('user-1', snapshot!.updatedAt);
+    expect(setCloudSyncState).toHaveBeenCalledWith('synced', expect.stringContaining('Загружена облачная копия'), {
+      updatedAt: snapshot!.updatedAt,
+    });
+    expect(notifySaved).toHaveBeenCalledWith(expect.stringContaining('Данные восстановлены из облака'));
+    confirm.mockRestore();
+  });
+
+  it('keeps local data when cloud restore is cancelled', async () => {
+    const { pinia, store } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    vi.mocked(loadCloudSnapshot).mockResolvedValue({
+      userId: 'user-1',
+      updatedAt: '2026-07-22T10:00:00.000Z',
+      payload: { version: 3 },
+    } as Awaited<ReturnType<typeof loadCloudSnapshot>>);
+    const importData = vi.spyOn(store, 'importData').mockResolvedValue(undefined);
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const wrapper = mount(SettingsView, {
+      global: { plugins: [pinia], mocks: { $route: { query: {} } } },
+    });
+
+    const restoreButton = wrapper.findAll('.settings-card--cloud button').find((button) => button.text() === 'Загрузить из облака');
+    await restoreButton!.trigger('click');
+    await flushPromises();
+
+    expect(importData).not.toHaveBeenCalled();
+    expect(markCloudSyncSynced).not.toHaveBeenCalled();
+    confirm.mockRestore();
+  });
+
+  it('does not mark an invalid cloud copy as synchronized', async () => {
+    const { pinia, store } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    vi.mocked(loadCloudSnapshot).mockResolvedValue({
+      userId: 'user-1',
+      updatedAt: '2026-07-22T10:00:00.000Z',
+      payload: { version: 999 },
+    } as Awaited<ReturnType<typeof loadCloudSnapshot>>);
+    vi.spyOn(store, 'importData').mockRejectedValue(new Error('Неподдерживаемая версия резервной копии'));
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const wrapper = mount(SettingsView, {
+      global: { plugins: [pinia], mocks: { $route: { query: {} } } },
+    });
+
+    const restoreButton = wrapper.findAll('.settings-card--cloud button').find((button) => button.text() === 'Загрузить из облака');
+    await restoreButton!.trigger('click');
+    await flushPromises();
+
+    expect(markCloudSyncSynced).not.toHaveBeenCalled();
+    expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Облачное действие не выполнено');
+    confirm.mockRestore();
+  });
+
   it('does not confirm a cloud copy when the upload remains pending', async () => {
     const { pinia, store } = createStore();
     const auth = useAuthStore();

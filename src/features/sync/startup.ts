@@ -8,6 +8,7 @@ import {
   type CloudSnapshot,
   type CloudSyncMeta,
 } from '../../services/cloudSync';
+import { applyCloudSnapshot, formatCloudUpdatedAt } from './snapshot';
 
 type AppStore = ReturnType<typeof useAppStore>;
 
@@ -62,7 +63,8 @@ async function reconcileCloudSnapshot(
     }
 
     if (!hasLocalUserData(store) && !meta.pending) {
-      if (mode === 'startup') await importCloudSnapshot(store, userId, snapshot, services, 'Загружена облачная копия');
+      if (mode === 'startup')
+        await applyCloudSnapshot(store, userId, snapshot, 'Загружена облачная копия', { markSynced: services.markSynced });
       else markResumeConflict(store, userId, snapshot, services);
       return;
     }
@@ -70,14 +72,17 @@ async function reconcileCloudSnapshot(
     if (meta.lastCloudUpdatedAt === snapshot.updatedAt) {
       if (meta.pending) await store.syncCloudSnapshot({ force: true });
       else
-        store.setCloudSyncState('synced', `Облако синхронизировано: ${formatUpdatedAt(snapshot.updatedAt)}`, {
+        store.setCloudSyncState('synced', `Облако синхронизировано: ${formatCloudUpdatedAt(snapshot.updatedAt)}`, {
           updatedAt: snapshot.updatedAt,
         });
       return;
     }
 
     if (meta.lastCloudUpdatedAt && !meta.pending && !meta.conflict) {
-      if (mode === 'startup') await importCloudSnapshot(store, userId, snapshot, services, 'Загружена более свежая облачная копия');
+      if (mode === 'startup')
+        await applyCloudSnapshot(store, userId, snapshot, 'Загружена более свежая облачная копия', {
+          markSynced: services.markSynced,
+        });
       else markResumeConflict(store, userId, snapshot, services);
       return;
     }
@@ -128,20 +133,4 @@ export function hasLocalUserData(store: AppStore): boolean {
     store.monthlyReviews.length ||
     JSON.stringify(store.settings) !== JSON.stringify(defaultSettings),
   );
-}
-
-async function importCloudSnapshot(
-  store: AppStore,
-  userId: string,
-  snapshot: CloudSnapshot,
-  services: StartupSyncServices,
-  message: string,
-) {
-  await store.importData(snapshot.payload, { syncCloud: false });
-  services.markSynced(userId, snapshot.updatedAt);
-  store.setCloudSyncState('synced', `${message}: ${formatUpdatedAt(snapshot.updatedAt)}`, { updatedAt: snapshot.updatedAt });
-}
-
-function formatUpdatedAt(value: string) {
-  return new Date(value).toLocaleString('ru-RU');
 }

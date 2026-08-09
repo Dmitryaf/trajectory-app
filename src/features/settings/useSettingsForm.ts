@@ -5,10 +5,11 @@ import { useAuthStore } from '../../stores/auth';
 import { copyText, downloadJson } from '../export/browser';
 import { buildAiReportCustomRangePayload, buildAiReportPayload, buildAiReportPrompt, type AiReportPeriod } from '../export/report';
 import { createExperimentRecord, emptyExperiment, experimentDecisionOptions, experimentPeriodsOverlap } from '../experiments/model';
-import { loadCloudSnapshot, markCloudSyncSynced } from '../../services/cloudSync';
+import { loadCloudSnapshot } from '../../services/cloudSync';
 import { addDays, todayKey } from '../../services/dates';
 import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../../services/notifications';
 import { plainCopy } from '../../services/plain';
+import { applyCloudSnapshot, formatCloudUpdatedAt } from '../sync/snapshot';
 import {
   activityOptions,
   careerOptions,
@@ -330,12 +331,15 @@ export function useSettingsForm() {
         return;
       }
 
-      const updatedAt = new Date(snapshot.updatedAt).toLocaleString('ru-RU');
+      const updatedAt = formatCloudUpdatedAt(snapshot.updatedAt);
       if (!window.confirm(`Заменить локальные данные облачной копией от ${updatedAt}? Перед этим лучше скачать локальную копию.`)) return;
-      await store.importData(snapshot.payload, { syncCloud: false });
+      const userId = auth.session?.user.id;
+      if (!userId) {
+        notifyInfo('Сначала войдите в аккаунт');
+        return;
+      }
+      await applyCloudSnapshot(store, userId, snapshot, 'Загружена облачная копия');
       Object.assign(settings, plainCopy(store.settings));
-      markCloudSyncSynced(snapshot.userId, snapshot.updatedAt);
-      store.setCloudSyncState('synced', `Загружена облачная копия: ${updatedAt}`, { updatedAt: snapshot.updatedAt });
       notifySaved(`Данные восстановлены из облака: ${updatedAt}`);
     });
   }
