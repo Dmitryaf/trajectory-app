@@ -58,6 +58,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(2026, 6, 21, 12));
   vi.clearAllMocks();
+  window.history.replaceState(null, '', '/');
 });
 
 afterEach(() => {
@@ -637,17 +638,21 @@ describe('settings scenarios', () => {
     const tabs = wrapper.findAll('[aria-label="Разделы настроек"] button');
 
     expect(tabs.map((tab) => tab.text())).toEqual(['Ежедневная запись', 'Эксперимент', 'Данные и синхронизация', 'Аккаунт и безопасность']);
-    expect(wrapper.get('#daily-settings').attributes('style')).toBeUndefined();
+    expect(wrapper.findAll('.settings-group')).toHaveLength(4);
+    expect(wrapper.get('#daily-settings').attributes('style')).toContain('animation: page-in 0.25s ease-out');
+    expect(wrapper.get('#daily-settings').attributes('style')).not.toContain('display: none');
     expect(wrapper.get('#data-settings').attributes('style')).toContain('display: none');
 
     await tabs[2]!.trigger('click');
     expect(wrapper.get('#daily-settings').attributes('style')).toContain('display: none');
-    expect(wrapper.get('#data-settings').attributes('style')).toBeUndefined();
+    expect(wrapper.get('#data-settings').attributes('style')).toContain('animation: page-in 0.25s ease-out');
+    expect(wrapper.get('#data-settings').attributes('style')).not.toContain('display: none');
     expect(wrapper.get('#data-settings').text()).toContain('Автоматическая облачная копия');
     expect(wrapper.get('#data-settings').text()).not.toContain('Удалить аккаунт');
 
     await tabs[3]!.trigger('click');
-    expect(wrapper.get('#account-settings').attributes('style')).toBeUndefined();
+    expect(wrapper.get('#account-settings').attributes('style')).toContain('animation: page-in 0.25s ease-out');
+    expect(wrapper.get('#account-settings').attributes('style')).not.toContain('display: none');
     expect(wrapper.get('#account-settings').text()).toContain('friend@example.com');
     expect(
       wrapper
@@ -1387,6 +1392,7 @@ describe('period review navigation', () => {
   });
 
   it('opens the recovered week on its exact dates and keeps all answers editable', () => {
+    window.history.replaceState(null, '', '/week?week=2026-07-13#first-use-overview');
     const { pinia, store } = createStore();
     store.weeklyReviews = [
       {
@@ -1422,6 +1428,7 @@ describe('period review navigation', () => {
   });
 
   it('shows the real boundary of an incomplete recovered week', () => {
+    window.history.replaceState(null, '', '/week?week=2026-07-13#first-use-overview');
     const { pinia, store } = createStore();
     store.settings.firstUse.periodEnd = '2026-07-17';
     store.weeklyReviews = [
@@ -1441,16 +1448,17 @@ describe('period review navigation', () => {
     expect(wrapper.get('#first-use-overview input[type="date"]').attributes('max')).toBe('2026-07-17');
   });
 
-  it('returns to the recovered overview while the following week is still empty', () => {
+  it('keeps the current week as default and links to the recovered overview', () => {
     const { pinia, store } = createStore();
     store.weeklyReviews = [{ ...emptyWeeklyReview('2026-07-13'), results: ['Закончил черновик'] }];
     const wrapper = mount(WeekView, {
       global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } },
     });
 
-    expect(wrapper.get('.period-nav__label').text()).toContain('Ваш первый обзор недели');
-    expect(wrapper.get('#first-use-overview').text()).toContain('Закончил черновик');
-    expect(wrapper.find('.period-empty-guide').exists()).toBe(false);
+    expect(wrapper.get('.period-nav__label').text()).toContain('Текущая неделя');
+    expect(wrapper.find('#first-use-overview').exists()).toBe(false);
+    expect(wrapper.get('.recovered-week-link').text()).toContain('Ваш первый обзор сохранён');
+    expect(wrapper.find('.period-empty-guide').exists()).toBe(true);
   });
 
   it('keeps the current week as the default after it gets its own data', () => {

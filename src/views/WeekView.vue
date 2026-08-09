@@ -44,29 +44,8 @@ function validAnchor(value: string | undefined) {
   return toDateKey(fromDateKey(value)) === value ? value : todayKey();
 }
 
-function hasDataForWeek(anchorValue: string) {
-  const weekStart = startOfWeek(anchorValue);
-  const weekEnd = endOfWeek(anchorValue);
-  return Boolean(
-    entriesForWeek(store.dailyEntries, anchorValue).length ||
-    resultsForPeriod(store.results, weekStart, weekEnd).length ||
-    store.lifeEvents.some((event) => event.date >= weekStart && event.date <= weekEnd) ||
-    store.reviewByWeek(weekStart),
-  );
-}
-
 function initialAnchor(value: string | undefined) {
-  if (value) return validAnchor(value);
-  const currentWeek = startOfWeek(todayKey());
-  const previousWeek = addDays(currentWeek, -7);
-  const firstUse = store.settings.firstUse;
-  const shouldOpenRecoveredWeek =
-    firstUse.status === 'completed' &&
-    firstUse.overviewSeen &&
-    firstUse.weekStart === previousWeek &&
-    Boolean(store.reviewByWeek(firstUse.weekStart)) &&
-    !hasDataForWeek(currentWeek);
-  return shouldOpenRecoveredWeek ? firstUse.weekStart : todayKey();
+  return value ? validAnchor(value) : todayKey();
 }
 
 const anchor = ref(initialAnchor(props.initialWeek));
@@ -152,8 +131,9 @@ const isRecoveredReview = computed(
     store.settings.firstUse.overviewSeen &&
     (store.settings.firstUse.status === 'in_progress' || store.settings.firstUse.status === 'completed'),
 );
+const showRecoveredOverview = computed(() => isRecoveredReview.value && window.location.hash === '#first-use-overview');
 const navigatorSubtitle = computed(() => {
-  if (isRecoveredReview.value) return 'Ваш первый обзор недели';
+  if (showRecoveredOverview.value) return 'Ваш первый обзор недели';
   return start.value === startOfWeek(todayKey()) ? 'Текущая неделя' : '';
 });
 const recoveredPeriodIsIncomplete = computed(
@@ -433,7 +413,7 @@ function downloadJson() {
         <p>Итоги, события и сохранённый обзор показаны ниже. Данных для сравнения сна, состояния и действий пока нет.</p>
       </section>
 
-      <article v-if="isRecoveredReview && savedReview" id="first-use-overview" class="restored-week-overview">
+      <article v-if="showRecoveredOverview && savedReview" id="first-use-overview" class="restored-week-overview">
         <div class="restored-week-overview__heading">
           <div>
             <p class="eyebrow">Восстановлено по вашим ответам</p>

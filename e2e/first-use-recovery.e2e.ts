@@ -81,8 +81,9 @@ test('saves and resumes the first week recovery on a small screen', async ({ pag
 
   await page.locator('.bottom-nav a[href="/"]').click();
   await page.locator('.bottom-nav a[href="/week"]').click();
-  await expect(page.locator('.period-nav__label')).toContainText('Ваш первый обзор недели');
-  await expect(page.locator('#first-use-overview').getByText('К середине недели было мало сил')).toBeVisible();
+  await expect(page.locator('.period-nav__label')).toContainText('Текущая неделя');
+  await expect(page.locator('#first-use-overview')).toHaveCount(0);
+  await expect(page.locator('#week-review textarea').first()).toHaveValue('К середине недели было мало сил');
 
   await page.getByRole('button', { name: 'Следующий период' }).click();
   const savedOverviewNotice = page.locator('.recovered-week-link');

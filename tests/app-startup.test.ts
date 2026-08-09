@@ -130,6 +130,14 @@ describe('application startup', () => {
     expect(wrapper.find('.bottom-nav').exists()).toBe(true);
     expect(funnel.recordFirstUseReturnEvents).toHaveBeenCalledOnce();
 
+    store.cloudSyncStatus = 'conflict';
+    store.cloudSyncMessage =
+      'В облаке появились более свежие данные. Открытые записи не заменены. Выберите нужную копию в разделе «Данные и синхронизация».';
+    await flushPromises();
+    const cloudSettingsLink = wrapper.get('.sync-banner a');
+    expect(cloudSettingsLink.text()).toBe('Данные и синхронизация');
+    expect(cloudSettingsLink.attributes('href')).toBe('/settings#cloud-settings');
+
     const startupCalls = sync.reconcileCloudSnapshotOnStartup.mock.calls.length;
     await resume.refresh!();
     expect(sync.reconcileCloudSnapshotAfterResume).toHaveBeenCalledWith(store, 'user-1');
