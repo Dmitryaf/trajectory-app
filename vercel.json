@@ -1,15 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [
-    { "source": "/week", "destination": "/index.html" },
-    { "source": "/month", "destination": "/index.html" },
-    { "source": "/trends", "destination": "/index.html" },
-    { "source": "/more", "destination": "/index.html" },
-    { "source": "/results", "destination": "/index.html" },
-    { "source": "/events", "destination": "/index.html" },
-    { "source": "/settings", "destination": "/index.html" },
-    { "source": "/password-reset", "destination": "/index.html" }
-  ],
+  "rewrites": [{ "source": "/((?!api(?:/|$)|assets(?:/|$)).*)", "destination": "/index.html" }],
   "headers": [
     {
       "source": "/assets/(.*)",

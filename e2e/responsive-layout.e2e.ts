@@ -24,6 +24,17 @@ test('keeps every primary screen inside the minimum viewport width', async ({ pa
   }
 });
 
+test('shows an unknown user route and returns to Today with the keyboard', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 720 });
+  await page.goto('/missing-page');
+
+  await expect(page.getByRole('heading', { name: 'Такой страницы нет' })).toBeVisible();
+  await expect(page).toHaveTitle('Страница не найдена · Траектория');
+  await page.getByRole('link', { name: 'Перейти к «Сегодня»' }).focus();
+  await page.getByRole('link', { name: 'Перейти к «Сегодня»' }).press('Enter');
+  await expect(page).toHaveURL(/\/$/);
+});
+
 test('keeps empty-period actions below their explanatory text', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
 
