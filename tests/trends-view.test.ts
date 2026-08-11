@@ -67,6 +67,8 @@ describe('trends scenarios', () => {
     ];
     const wrapper = mount(TrendsView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
 
+    expect(wrapper.get('.range-custom-action').text()).toContain('Выбрать даты и скопировать промпт');
+    expect(wrapper.get('.range-custom-action a').attributes('href')).toBe('/settings#analysis-settings');
     expect(wrapper.html().indexOf('dashboard-card--insights')).toBeLessThan(wrapper.html().indexOf('trends-quality-details'));
     expect(wrapper.findAll('.review-cue-grid--primary .review-cue')).toHaveLength(3);
     expect(wrapper.get('.trends-quality-details').attributes('open')).toBeUndefined();

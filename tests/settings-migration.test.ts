@@ -131,6 +131,20 @@ describe('settings migrations', () => {
     expect(normalized.recordedFields).not.toContain('nutritionState');
   });
 
+  it('keeps an optional experiment note without inventing it for older entries', () => {
+    const oldEntry = normalizeDailyEntry({ date: '2026-07-15', experimentCompleted: false });
+    const notedEntry = normalizeDailyEntry({
+      date: '2026-07-16',
+      experimentCompleted: true,
+      experimentNote: 'Подготовил всё заранее',
+    });
+
+    expect(oldEntry.experimentNote).toBe('');
+    expect(oldEntry.recordedFields).not.toContain('experimentNote');
+    expect(notedEntry.experimentNote).toBe('Подготовил всё заранее');
+    expect(notedEntry.recordedFields).toContain('experimentNote');
+  });
+
   it('links an unambiguous legacy experiment metric without guessing a combined metric', () => {
     const energy = normalizeSettings({ experiment: { ...normalizeSettings(undefined).experiment, targetMetric: 'Энергия' } });
     const combined = normalizeSettings({

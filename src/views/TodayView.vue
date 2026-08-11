@@ -5,6 +5,8 @@ import DurationInput from '../components/DurationInput.vue';
 import FirstUseRecovery from '../components/FirstUseRecovery.vue';
 import HowItWorksDialog from '../components/HowItWorksDialog.vue';
 import ScalePicker from '../components/ScalePicker.vue';
+import AutoGrowTextarea from '../components/AutoGrowTextarea.vue';
+import { experimentTextLimits } from '../features/experiments/model';
 import { useDailyEntryForm } from '../features/daily-entry/useDailyEntryForm';
 import { useAppStore } from '../stores/app';
 import { addDays, endOfMonth, endOfWeek, formatDate, formatMinutes, startOfMonth, startOfWeek, todayKey } from '../services/dates';
@@ -604,6 +606,14 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
             Нет отметки
           </button>
         </div>
+        <label class="field-label" for="experiment-note">Что помогло или помешало? <span class="field-optional">необязательно</span></label>
+        <AutoGrowTextarea
+          id="experiment-note"
+          v-model="form.experimentNote"
+          :rows="2"
+          :max-length="experimentTextLimits.dailyNote"
+          placeholder="Например: заранее убрал телефон; поздний звонок сбил план"
+        />
       </article>
 
       <div class="checkin-group-heading">

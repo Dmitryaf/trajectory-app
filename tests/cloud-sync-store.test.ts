@@ -59,7 +59,7 @@ describe('cloud synchronization state', () => {
     );
     expect(saveCloudSnapshot).toHaveBeenCalledWith(
       expect.objectContaining({
-        version: 9,
+        version: 10,
         settings: expect.objectContaining({ firstUse: expect.objectContaining({ status: 'not_started' }) }),
         weeklyReviews: [
           expect.objectContaining({

@@ -5,6 +5,7 @@ import {
   snapshotDailyEntry,
   timeBetween,
   validateDailyEntryMetrics,
+  validateDailyEntryText,
 } from '../src/features/daily-entry/model';
 import { emptyDailyEntry, type DailyBlockId } from '../src/types';
 
@@ -45,7 +46,7 @@ describe('daily entry model', () => {
       focusReviewDate: '2026-08-01',
       externalEvidenceCriterion: 'Внешний результат',
       nutritionCriterion: 'Обычный режим',
-      entrySchemaVersion: 2,
+      entrySchemaVersion: 3,
       activeDailyBlocksSnapshot: ['sleep', 'context', 'movement'],
     });
     expect(source.focusTitle).toBe('');
@@ -70,5 +71,7 @@ describe('daily entry model', () => {
     expect(validateDailyEntryMetrics(metrics, true)).toBe('Время сна не может быть больше времени в кровати.');
     expect(validateDailyEntryMetrics(metrics, false)).toBe('');
     expect(validateDailyEntryMetrics({ ...metrics, sleepMinutes: 420 }, true)).toBe('');
+    expect(validateDailyEntryText({ ...entry, experimentNote: 'x'.repeat(501) })).toContain('длиннее 500 символов');
+    expect(validateDailyEntryText({ ...entry, experimentNote: 'x'.repeat(500) })).toBe('');
   });
 });

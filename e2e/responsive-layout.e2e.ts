@@ -178,6 +178,22 @@ test('switches settings scenarios with the keyboard on a mobile screen', async (
   await expect(page.locator('.settings-card--cloud')).toBeVisible();
   await expect(page.locator('.settings-card--account')).toBeHidden();
 
+  const cloudStatusBox = await page.locator('.settings-card--cloud .cloud-sync-note').boundingBox();
+  expect(cloudStatusBox).not.toBeNull();
+  const cloudActions = page.locator('.settings-card--cloud .data-actions');
+  if ((await cloudActions.count()) > 0) {
+    const cloudActionsBox = await cloudActions.boundingBox();
+    expect(cloudActionsBox).not.toBeNull();
+    expect(cloudActionsBox!.y - (cloudStatusBox!.y + cloudStatusBox!.height)).toBeGreaterThanOrEqual(10);
+  }
+
+  await page.locator('.analysis-range > summary').click();
+  const rangeFieldsBox = await page.locator('.analysis-range .form-row').boundingBox();
+  const rangeActionsBox = await page.locator('.analysis-range .ai-actions').boundingBox();
+  expect(rangeFieldsBox).not.toBeNull();
+  expect(rangeActionsBox).not.toBeNull();
+  expect(rangeActionsBox!.y - (rangeFieldsBox!.y + rangeFieldsBox!.height)).toBeGreaterThanOrEqual(10);
+
   await page.getByRole('button', { name: 'Аккаунт и безопасность' }).click();
   await expect(page.locator('#account-settings')).toBeVisible();
   await expect(page.locator('#data-settings')).toBeHidden();

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import PasswordField from '../components/PasswordField.vue';
+import AutoGrowTextarea from '../components/AutoGrowTextarea.vue';
 import { useSettingsForm } from '../features/settings/useSettingsForm';
 import type { DailyBlockId, LifeAreaId } from '../types';
 
@@ -64,6 +65,7 @@ onBeforeUnmount(() => window.removeEventListener('hashchange', syncSettingsGroup
 const {
   ChipGroup,
   experimentDecisionOptions,
+  experimentTextLimits,
   dailyBlockOptions,
   store,
   settings,
@@ -502,21 +504,21 @@ const {
           ><input v-model="settings.experiment.active" type="checkbox"
         /></label>
         <label class="field-label" for="experiment-title">Что хотите попробовать</label>
-        <textarea
+        <AutoGrowTextarea
           id="experiment-title"
           v-model="settings.experiment.title"
-          rows="3"
-          maxlength="400"
+          :rows="5"
+          :max-length="experimentTextLimits.title"
           placeholder="Не читать новости после 22:00"
-        ></textarea>
+        />
         <label class="field-label" for="experiment-hypothesis">Что хотите узнать <span class="field-optional">необязательно</span></label>
-        <textarea
+        <AutoGrowTextarea
           id="experiment-hypothesis"
           v-model="settings.experiment.hypothesis"
-          rows="2"
-          maxlength="300"
+          :rows="4"
+          :max-length="experimentTextLimits.hypothesis"
           placeholder="Например: станет ли проще засыпать и сохранять энергию утром"
-        ></textarea>
+        />
         <div class="form-row">
           <label class="form-control"
             ><span class="field-label">С какого дня</span><input v-model="settings.experiment.startDate" type="date"
@@ -527,13 +529,13 @@ const {
         </div>
         <template v-if="experimentCanConclude">
           <label class="field-label" for="experiment-conclusion">Что вы заметили?</label>
-          <textarea
+          <AutoGrowTextarea
             id="experiment-conclusion"
             v-model="settings.experiment.conclusion"
-            rows="3"
-            maxlength="800"
+            :rows="6"
+            :max-length="experimentTextLimits.conclusion"
             placeholder="Опиши наблюдения своими словами. Совпадение показателей не обязательно означает влияние эксперимента."
-          ></textarea>
+          />
           <label class="field-label">Что хотите делать дальше? <span class="field-optional">необязательно</span></label>
           <ChipGroup v-model="settings.experiment.decision" :options="experimentDecisionOptions" allow-clear />
         </template>

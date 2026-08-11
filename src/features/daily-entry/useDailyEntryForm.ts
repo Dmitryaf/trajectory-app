@@ -5,7 +5,14 @@ import { notifyError, notifySaved, notifyUnknownError } from '../../services/not
 import { plainCopy } from '../../services/plain';
 import { emptyDailyEntry, type DailyBlockId, type DailyEntry } from '../../types';
 import type { useAppStore } from '../../stores/app';
-import { prepareDailyEntryForSave, snapshotDailyEntry, timeBetween, validateDailyEntryMetrics, type DailyEntryMetrics } from './model';
+import {
+  prepareDailyEntryForSave,
+  snapshotDailyEntry,
+  timeBetween,
+  validateDailyEntryMetrics,
+  validateDailyEntryText,
+  type DailyEntryMetrics,
+} from './model';
 
 type AppStore = ReturnType<typeof useAppStore>;
 
@@ -95,7 +102,7 @@ export function useDailyEntryForm(store: AppStore) {
 
   async function save() {
     if (saving.value) return;
-    validationMessage.value = validateDailyEntryMetrics(currentMetrics(), blockIsActive('sleep'));
+    validationMessage.value = validateDailyEntryMetrics(currentMetrics(), blockIsActive('sleep')) || validateDailyEntryText(form);
     if (validationMessage.value) {
       notifyError(validationMessage.value);
       return;

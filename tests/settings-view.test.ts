@@ -398,7 +398,8 @@ describe('settings scenarios', () => {
     expect(wrapper.text()).toContain('Для обычной работы скачивать файл не требуется');
 
     await card.get('input[type="checkbox"]').setValue(true);
-    expect(card.get('#experiment-title').attributes('maxlength')).toBe('400');
+    expect(card.get('#experiment-title').attributes('maxlength')).toBe('800');
+    expect(card.get('#experiment-hypothesis').attributes('maxlength')).toBe('800');
     await card.get('#experiment-title').setValue(experimentTitle);
     await card.get('.primary-button').trigger('click');
     expect(notifyError).toHaveBeenCalledWith('Укажите, с какого и до какого дня идёт эксперимент');
@@ -406,6 +407,12 @@ describe('settings scenarios', () => {
 
     await card.findAll('input[type="date"]')[0]!.setValue('2026-07-15');
     await card.findAll('input[type="date"]')[1]!.setValue('2026-07-21');
+    await card.get('#experiment-title').setValue('x'.repeat(801));
+    await card.get('.primary-button').trigger('click');
+    expect(notifyError).toHaveBeenCalledWith('Условие эксперимента длиннее 800 символов. Сократите текст, чтобы сохранить его.');
+    expect(saveSettings).not.toHaveBeenCalled();
+
+    await card.get('#experiment-title').setValue(experimentTitle);
     await card.get('.primary-button').trigger('click');
     await flushPromises();
 
@@ -422,6 +429,7 @@ describe('settings scenarios', () => {
     );
 
     await card.get('#experiment-conclusion').setValue('Вечером было спокойнее');
+    expect(card.get('#experiment-conclusion').attributes('maxlength')).toBe('2000');
     const completeButton = card.findAll('button').find((button) => button.text().includes('Завершить эксперимент'));
     await completeButton!.trigger('click');
     await flushPromises();

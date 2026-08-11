@@ -616,6 +616,10 @@ function shiftMonth(offset: number) {
             <button class="secondary-button" type="button" @click="downloadJson">Скачать данные</button>
           </div>
         </div>
+        <p class="data-note range-custom-action">
+          Нужен другой период?
+          <RouterLink to="/settings#analysis-settings">Выбрать даты и скопировать промпт</RouterLink>
+        </p>
         <div class="review-cue-grid review-cue-grid--primary">
           <article v-for="cue in primaryReviewCues" :key="cue.id" class="review-cue" :class="'review-cue--' + cue.tone">
             <strong>{{ cue.title }}</strong>

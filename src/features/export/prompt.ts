@@ -302,6 +302,7 @@ function formatEntry(entry: DailyEntry, payload: AiReportPayload): string {
   }
   if (cleanText(entry.importantFact)) values.push(`заметка пользователя: ${cleanText(entry.importantFact)}`);
   if (entry.experimentCompleted !== null) values.push(`условие эксперимента: ${entry.experimentCompleted ? 'выполнено' : 'не выполнено'}`);
+  if (entry.experimentNote) values.push(`заметка к эксперименту: ${cleanText(entry.experimentNote)}`);
   return `${entry.date} — ${values.length ? values.join('; ') : 'есть запись без заполненных показателей'}.`;
 }
 

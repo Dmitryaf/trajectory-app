@@ -34,6 +34,7 @@ const dailyRecordedFieldIds: DailyRecordedFieldId[] = [
   'lifeAreas',
   'importantFact',
   'experimentCompleted',
+  'experimentNote',
 ];
 
 function isNutritionState(value: unknown): value is NutritionState {
@@ -90,6 +91,7 @@ export function emptyDailyEntry(date: string): DailyEntry {
     lifeAreasRecorded: false,
     importantFact: '',
     experimentCompleted: null,
+    experimentNote: '',
     updatedAt: new Date().toISOString(),
   };
 }
@@ -151,6 +153,7 @@ export function normalizeDailyEntry(entry: LegacyDailyEntry & { date: string }):
   const lifeAreas = Array.isArray(entry.lifeAreas) ? entry.lifeAreas.filter((area): area is LifeAreaId => typeof area === 'string') : [];
   const importantFact = typeof entry.importantFact === 'string' ? entry.importantFact : '';
   const experimentCompleted = typeof entry.experimentCompleted === 'boolean' ? entry.experimentCompleted : null;
+  const experimentNote = typeof entry.experimentNote === 'string' ? entry.experimentNote : '';
   const activitiesRecorded = typeof entry.activitiesRecorded === 'boolean' ? entry.activitiesRecorded : activities.length > 0;
   const lifeAreasRecorded = typeof entry.lifeAreasRecorded === 'boolean' ? entry.lifeAreasRecorded : lifeAreas.length > 0;
   const contextFactorsRecorded =
@@ -183,6 +186,7 @@ export function normalizeDailyEntry(entry: LegacyDailyEntry & { date: string }):
   if (lifeAreasRecorded) recordedFields.add('lifeAreas');
   if (importantFact.trim()) recordedFields.add('importantFact');
   if (experimentCompleted !== null) recordedFields.add('experimentCompleted');
+  if (experimentNote.trim()) recordedFields.add('experimentNote');
   const activeDailyBlocksSnapshot = Array.isArray(entry.activeDailyBlocksSnapshot)
     ? Array.from(
         new Set(
@@ -228,6 +232,7 @@ export function normalizeDailyEntry(entry: LegacyDailyEntry & { date: string }):
     specialDayNote: typeof entry.specialDayNote === 'string' ? entry.specialDayNote : '',
     importantFact,
     experimentCompleted,
+    experimentNote,
     updatedAt: typeof entry.updatedAt === 'string' ? entry.updatedAt : '',
   };
 }
@@ -273,5 +278,7 @@ export function dailyFieldWasRecorded(entry: DailyEntry, field: DailyRecordedFie
       return Boolean(entry.importantFact.trim());
     case 'experimentCompleted':
       return entry.experimentCompleted !== null;
+    case 'experimentNote':
+      return Boolean(entry.experimentNote.trim());
   }
 }

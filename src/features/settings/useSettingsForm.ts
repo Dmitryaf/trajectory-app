@@ -4,7 +4,14 @@ import { useAppStore } from '../../stores/app';
 import { useAuthStore } from '../../stores/auth';
 import { copyText, downloadJson } from '../export/browser';
 import { buildAiReportCustomRangePayload, buildAiReportPayload, buildAiReportPrompt, type AiReportPeriod } from '../export/report';
-import { createExperimentRecord, emptyExperiment, experimentDecisionOptions, experimentPeriodsOverlap } from '../experiments/model';
+import {
+  createExperimentRecord,
+  emptyExperiment,
+  experimentDecisionOptions,
+  experimentPeriodsOverlap,
+  experimentTextLimits,
+  validateExperimentTextLengths,
+} from '../experiments/model';
 import { loadCloudSnapshot } from '../../services/cloudSync';
 import { addDays, todayKey } from '../../services/dates';
 import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../../services/notifications';
@@ -116,6 +123,11 @@ export function useSettingsForm() {
   async function saveExperiment() {
     if (isSaving('experiment')) return;
     const experiment = settings.experiment;
+    const lengthError = validateExperimentTextLengths(experiment);
+    if (lengthError) {
+      notifyError(lengthError);
+      return;
+    }
     if (experiment.active && !experiment.title.trim()) {
       notifyError('Напишите, что хотите попробовать');
       return;
@@ -138,6 +150,11 @@ export function useSettingsForm() {
   async function completeExperiment() {
     if (isSaving('experiment')) return;
     const experiment = settings.experiment;
+    const lengthError = validateExperimentTextLengths(experiment);
+    if (lengthError) {
+      notifyError(lengthError);
+      return;
+    }
     if (!experiment.title.trim() || !experiment.startDate || !experiment.endDate) {
       notifyError('Напишите, что пробовали, и укажите даты');
       return;
@@ -524,6 +541,7 @@ export function useSettingsForm() {
   return {
     ChipGroup,
     experimentDecisionOptions,
+    experimentTextLimits,
     dailyBlockOptions,
     store,
     settings,

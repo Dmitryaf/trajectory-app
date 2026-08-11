@@ -1,5 +1,6 @@
 import { currentDailyEntrySchemaVersion, type DailyBlockId, type DailyEntry } from '../../types';
 import { plainCopy } from '../../services/plain';
+import { experimentTextLimits } from '../experiments/model';
 
 export type DailyEntryMetrics = {
   sleepMinutes: number | null;
@@ -70,5 +71,11 @@ export function validateDailyEntryMetrics(metrics: DailyEntryMetrics, sleepBlock
   ) {
     return 'Время сна не может быть больше времени в кровати.';
   }
+  return '';
+}
+
+export function validateDailyEntryText(entry: DailyEntry): string {
+  if (entry.experimentNote.length > experimentTextLimits.dailyNote)
+    return `Заметка к эксперименту длиннее ${experimentTextLimits.dailyNote} символов. Сократите текст, чтобы сохранить день.`;
   return '';
 }

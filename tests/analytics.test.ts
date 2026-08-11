@@ -208,7 +208,13 @@ describe('analytics', () => {
       conclusion: 'unclear',
     };
     const payload = buildAiReportPayload('week', '2026-07-16', {
-      entries: [entry('2026-07-13', { contextFactors: ['custom:context:rain'] })],
+      entries: [
+        entry('2026-07-13', {
+          contextFactors: ['custom:context:rain'],
+          experimentCompleted: false,
+          experimentNote: 'Поздний звонок помешал выполнить условие',
+        }),
+      ],
       results: [
         {
           id: 1,
@@ -253,6 +259,7 @@ describe('analytics', () => {
     expect(prompt).toContain('важные события и мысли: Важный разговор изменил планы');
     expect(prompt).toContain('состояние и условия: Неделя была неровной из-за болезни.');
     expect(prompt).toContain('ответы собраны по 2026-07-10');
+    expect(prompt).toContain('заметка к эксперименту: Поздний звонок помешал выполнить условие');
     expect(prompt).toContain('подробности: Показал сценарий двум пользователям и записал вопросы');
     expect(prompt).toContain('Наблюдаемый результат цели: Показать работающий сценарий трём людям.');
     expect(prompt).toContain('Цель нужно пересмотреть 2026-07-31.');
