@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import PasswordField from '../components/PasswordField.vue';
 import { useAuthStore } from '../stores/auth';
 
 const auth = useAuthStore();
@@ -47,11 +48,11 @@ async function returnToSignIn() {
         <p class="password-reset-card__intro">После сохранения войди в аккаунт с новым паролем.</p>
 
         <form class="auth-form" @submit.prevent="savePassword">
-          <label class="form-control">
-            <span class="field-label">Новый пароль</span>
-            <input
+          <div class="form-control">
+            <label class="field-label" for="reset-password">Новый пароль</label>
+            <PasswordField
+              id="reset-password"
               v-model="password"
-              type="password"
               autocomplete="new-password"
               required
               minlength="8"
@@ -59,18 +60,18 @@ async function returnToSignIn() {
               placeholder="Не меньше 8 символов"
             />
             <small id="reset-password-hint" class="auth-field-hint">Не меньше 8 символов.</small>
-          </label>
-          <label class="form-control">
-            <span class="field-label">Повтори пароль</span>
-            <input
+          </div>
+          <div class="form-control">
+            <label class="field-label" for="reset-password-confirmation">Повтори пароль</label>
+            <PasswordField
+              id="reset-password-confirmation"
               v-model="passwordConfirmation"
-              type="password"
               autocomplete="new-password"
               required
               minlength="8"
               placeholder="Повтори новый пароль"
             />
-          </label>
+          </div>
           <button class="primary-button" type="submit" :disabled="auth.loading">
             {{ auth.loading ? 'Сохраняю...' : 'Сохранить новый пароль' }}
           </button>

@@ -47,6 +47,12 @@ describe('settings scenarios', () => {
     expect(wrapper.get('#account-settings').attributes('style')).toContain('animation: page-in 0.25s ease-out');
     expect(wrapper.get('#account-settings').attributes('style')).not.toContain('display: none');
     expect(wrapper.get('#account-settings').text()).toContain('friend@example.com');
+    expect(wrapper.get('#account-settings').findAll('button[aria-label="Показать пароль"]')).toHaveLength(2);
+    expect(wrapper.get('#new-password').attributes('autocomplete')).toBe('new-password');
+    await wrapper.get('#new-password').setValue('new-safe-password');
+    await wrapper.get('#account-settings button[aria-controls="new-password"]').trigger('click');
+    expect(wrapper.get('#new-password').attributes('type')).toBe('text');
+    expect((wrapper.get('#new-password').element as HTMLInputElement).value).toBe('new-safe-password');
     expect(
       wrapper
         .get('#account-settings')

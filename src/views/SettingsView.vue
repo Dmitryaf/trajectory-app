@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import PasswordField from '../components/PasswordField.vue';
 import { useSettingsForm } from '../features/settings/useSettingsForm';
 import type { DailyBlockId, LifeAreaId } from '../types';
 
@@ -724,19 +725,17 @@ const {
             <summary>Изменить пароль</summary>
             <div class="settings-field-stack account-security__form">
               <label class="field-label" for="new-password">Новый пароль</label>
-              <input
+              <PasswordField
                 id="new-password"
                 v-model="newPassword"
-                type="password"
                 autocomplete="new-password"
                 minlength="8"
                 placeholder="Не меньше 8 символов"
               />
               <label class="field-label" for="new-password-confirmation">Повтори пароль</label>
-              <input
+              <PasswordField
                 id="new-password-confirmation"
                 v-model="newPasswordConfirmation"
-                type="password"
                 autocomplete="new-password"
                 minlength="8"
                 placeholder="Повтори пароль"
