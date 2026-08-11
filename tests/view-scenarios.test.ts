@@ -1127,14 +1127,14 @@ describe('period review navigation', () => {
     expect(saveMonthlyReview).toHaveBeenCalledTimes(2);
   });
 
-  it('keeps weekly results and events in bounded pages inside the review', async () => {
+  it('keeps weekly and monthly results and events in matching bounded pages', async () => {
     const { pinia, store } = createStore();
     store.dailyEntries = [{ ...emptyDailyEntry('2026-07-21'), importantFact: 'Есть данные недели' }];
     store.results = Array.from({ length: 6 }, (_, index) => ({
       id: index + 1,
       date: '2026-07-21',
-      area: 'career' as const,
-      title: `Итог недели ${index + 1}`,
+      area: index === 0 ? ('sleep' as const) : ('career' as const),
+      title: `Итог периода ${index + 1}`,
       note: '',
       createdAt: `2026-07-21T${String(12 + index).padStart(2, '0')}:00:00.000Z`,
     }));
@@ -1142,31 +1142,62 @@ describe('period review navigation', () => {
       id: index + 1,
       date: '2026-07-21',
       type: 'event' as const,
-      title: `Событие недели ${index + 1}`,
+      title: `Событие периода ${index + 1}`,
       note: '',
       createdAt: `2026-07-21T${String(12 + index).padStart(2, '0')}:00:00.000Z`,
     }));
-    const wrapper = mount(WeekView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+    const global = { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } };
+    const periods = [
+      { wrapper: mount(WeekView, { global }), label: 'недели' },
+      { wrapper: mount(MonthView, { global }), label: 'месяца' },
+    ];
 
-    expect(wrapper.text()).not.toContain('Открыть все итоги');
-    expect(wrapper.text()).not.toContain('Открыть все события');
-    expect(wrapper.text()).toContain('Итог недели 5');
-    expect(wrapper.text()).not.toContain('Итог недели 6');
-    expect(wrapper.text()).toContain('Событие недели 5');
-    expect(wrapper.text()).not.toContain('Событие недели 6');
+    for (const { wrapper, label } of periods) {
+      expect(wrapper.text()).not.toContain('Открыть все итоги');
+      expect(wrapper.text()).not.toContain('Открыть все события');
+      expect(wrapper.text()).toContain('Итог периода 5');
+      expect(wrapper.text()).not.toContain('Итог периода 6');
+      expect(wrapper.text()).toContain('Событие периода 5');
+      expect(wrapper.text()).not.toContain('Событие периода 6');
 
-    const resultPages = wrapper.get('nav[aria-label="Страницы итогов недели"]');
-    const eventPages = wrapper.get('nav[aria-label="Страницы событий недели"]');
-    expect(resultPages.text()).toContain('1 из 2');
-    expect(eventPages.text()).toContain('1 из 2');
+      const resultCard = wrapper.findAll('article.period-record-card').find((card) => card.text().includes(`Итоги ${label}`))!;
+      expect(resultCard.get('.period-record-preview li > span').text()).toBe('◒');
 
-    await resultPages.get('button:last-child').trigger('click');
-    await eventPages.get('button:last-child').trigger('click');
+      const resultPages = wrapper.get(`nav[aria-label="Страницы итогов ${label}"]`);
+      const eventPages = wrapper.get(`nav[aria-label="Страницы событий ${label}"]`);
+      expect(resultPages.text()).toContain('1 из 2');
+      expect(eventPages.text()).toContain('1 из 2');
 
-    expect(wrapper.text()).not.toContain('Итог недели 5');
-    expect(wrapper.text()).toContain('Итог недели 6');
-    expect(wrapper.text()).not.toContain('Событие недели 5');
-    expect(wrapper.text()).toContain('Событие недели 6');
+      await resultPages.get('button:last-child').trigger('click');
+      await eventPages.get('button:last-child').trigger('click');
+
+      expect(wrapper.text()).not.toContain('Итог периода 5');
+      expect(wrapper.text()).toContain('Итог периода 6');
+      expect(wrapper.text()).not.toContain('Событие периода 5');
+      expect(wrapper.text()).toContain('Событие периода 6');
+    }
+  });
+
+  it('keeps manually opened review context visible after its draft is cleared', async () => {
+    const { pinia, store } = createStore();
+    store.weeklyReviews = [emptyWeeklyReview('2026-07-20')];
+    store.monthlyReviews = [emptyMonthlyReview('2026-07-01')];
+    const global = { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } };
+    const cases = [
+      { details: mount(WeekView, { global }).get('details.review-context-details'), field: 'input' },
+      { details: mount(MonthView, { global }).get('details.month-review-context'), field: 'textarea' },
+    ];
+
+    for (const { details, field } of cases) {
+      expect((details.element as HTMLDetailsElement).open).toBe(false);
+      await details.get('summary').trigger('click');
+      expect((details.element as HTMLDetailsElement).open).toBe(true);
+
+      await details.get(field).setValue('Черновик');
+      await details.get(field).setValue('');
+
+      expect((details.element as HTMLDetailsElement).open).toBe(true);
+    }
   });
 
   it('keeps the weekly decision before details and limits the first-level observations', () => {
@@ -1265,12 +1296,14 @@ describe('period review navigation', () => {
     const review = wrapper.get('#month-review');
     const facts = wrapper.get('details.month-facts-details');
     const analysis = wrapper.get('details.month-analysis-details');
+    const records = wrapper.get('details.period-records');
     const reviewContext = review.get('details.month-review-context');
     expect(review.element.compareDocumentPosition(analysis.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(review.element.compareDocumentPosition(records.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(wrapper.findAll('.month-week-overview .comparison-periods > span').length).toBeGreaterThanOrEqual(2);
     expect(wrapper.findAll('.review-cue-grid--primary .review-cue')).toHaveLength(3);
-    expect(wrapper.get('.month-featured-events').text()).toContain('Событие, которое изменило месяц');
-    expect(wrapper.get('.period-records').text()).not.toContain('Событие, которое изменило месяц');
+    expect(wrapper.find('.month-featured-events').exists()).toBe(false);
+    expect(records.text()).toContain('Событие, которое изменило месяц');
     expect((reviewContext.element as HTMLDetailsElement).open).toBe(false);
     expect(reviewContext.get('summary').text()).toBe('Добавить разбор месяца');
     expect((facts.element as HTMLDetailsElement).open).toBe(false);
@@ -1301,7 +1334,7 @@ describe('period review navigation', () => {
     expect(analysis.find('e-chart-panel-stub').exists()).toBe(false);
   });
 
-  it('keeps monthly records compact and routes complete archives to the selected period', async () => {
+  it('keeps monthly record groups together and paginates detailed notes', async () => {
     const { pinia, store } = createStore();
     store.dailyEntries = Array.from({ length: 9 }, (_, index) => {
       const day = String(21 - index).padStart(2, '0');
@@ -1332,10 +1365,12 @@ describe('period review navigation', () => {
 
     expect(wrapper.text()).toContain('Показать графики и подробный разбор');
     expect(wrapper.text()).toContain('Показать записи месяца');
-    expect(wrapper.get('.period-record-card__link[href="/results?from=2026-07-01&to=2026-07-21"]').text()).toContain('Открыть все итоги');
-    expect(wrapper.get('.period-record-card__link[href="/events?from=2026-07-01&to=2026-07-21"]').text()).toContain('Открыть все события');
-    expect(wrapper.text()).toContain('Итог месяца 3');
-    expect(wrapper.text()).not.toContain('Итог месяца 4');
+    expect(wrapper.text()).not.toContain('Открыть все итоги');
+    expect(wrapper.text()).not.toContain('Открыть все события');
+    const recordGroups = wrapper.get('.period-records').findAll('article.period-record-card');
+    expect(recordGroups[0].text()).toContain('Итоги месяца');
+    expect(recordGroups[1].text()).toContain('События месяца');
+    expect(wrapper.text()).toContain('Итог месяца 4');
 
     const actions = wrapper.get('.period-record-card--disclosure');
     await actions.get('summary').trigger('click');
@@ -1399,6 +1434,7 @@ describe('period review navigation', () => {
       expect(wrapper.find('.period-details:not(.review-context-details):not(.month-review-context)').exists()).toBe(false);
     }
     expect((week.get('.review-card input').element as HTMLInputElement).value).toBe('Неделя не была пустой');
+    expect((week.get('details.review-context-details').element as HTMLDetailsElement).open).toBe(true);
     expect((month.get('details.month-review-context').element as HTMLDetailsElement).open).toBe(true);
     expect(month.get('details.month-review-context summary').text()).toBe('Разбор месяца');
     expect((month.get('.review-card textarea').element as HTMLTextAreaElement).value).toBe('Важный вывод месяца');
