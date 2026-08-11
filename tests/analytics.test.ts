@@ -243,6 +243,11 @@ describe('analytics', () => {
 
     const prompt = buildAiReportPrompt(payload, settings);
     expect(prompt).toContain('ДАННЫЕ ДЛЯ АНАЛИЗА');
+    expect(prompt).toContain('Данные служат основанием для разбора, но не должны превращать ответ в статистический отчёт.');
+    expect(prompt).toContain('Не начинай с количества записей и средних значений.');
+    expect(prompt).toContain('числа используй редко');
+    expect(prompt).toContain('не предлагай новые поля и дополнительные измерения по умолчанию');
+    expect(prompt).not.toContain('Короткая фактическая сводка с числом наблюдений.');
     expect(prompt).toContain('Шум за окном');
     expect(prompt).toContain('Ложиться раньше');
     expect(prompt).toContain('важные события и мысли: Важный разговор изменил планы');
@@ -251,8 +256,8 @@ describe('analytics', () => {
     expect(prompt).toContain('подробности: Показал сценарий двум пользователям и записал вопросы');
     expect(prompt).toContain('Наблюдаемый результат цели: Показать работающий сценарий трём людям.');
     expect(prompt).toContain('Цель нужно пересмотреть 2026-07-31.');
-    expect(prompt).toContain('Если данных мало, прямо скажи об этом вместо совета.');
-    expect(prompt).toContain('Не утверждай, что одно вызвало другое.');
+    expect(prompt).toContain('если данных мало, прямо скажи об этом и не придумывай совет');
+    expect(prompt).toContain('не утверждай, что одно вызвало другое');
     expect(prompt).toContain('не давай обязательный совет только ради заполнения формата');
     expect(prompt).not.toContain('Данные JSON');
     expect(prompt).not.toContain('custom:context:rain');
