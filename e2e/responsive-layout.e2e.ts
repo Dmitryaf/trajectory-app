@@ -100,28 +100,30 @@ test('separates the custom-period action from adjacent review content', async ({
   }
 });
 
-test('keeps trend evidence grouped behind compact mobile disclosures', async ({ page }) => {
+test('keeps change history visible and one metric behind a compact mobile disclosure', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/trends');
 
   const insights = page.locator('.dashboard-card--insights');
-  const quality = page.locator('.trends-quality-details');
+  const history = page.locator('.history-timeline--featured');
+  const metric = page.locator('.trends-metric-details');
   await expect(insights).toBeVisible();
-  await expect(quality).not.toHaveAttribute('open', '');
+  await expect(history).toBeVisible();
+  await expect(metric).not.toHaveAttribute('open', '');
   const primaryCueCount = await page.locator('.review-cue-grid--primary .review-cue').count();
   expect(primaryCueCount).toBeGreaterThan(0);
   expect(primaryCueCount).toBeLessThanOrEqual(3);
 
   const insightsBox = await insights.boundingBox();
-  const qualityBox = await quality.boundingBox();
+  const historyBox = await history.boundingBox();
   expect(insightsBox).not.toBeNull();
-  expect(qualityBox).not.toBeNull();
-  expect(qualityBox!.y).toBeGreaterThan(insightsBox!.y);
+  expect(historyBox).not.toBeNull();
+  expect(historyBox!.y).toBeGreaterThan(insightsBox!.y);
 
-  await quality.locator(':scope > summary').click();
-  await expect(quality).toHaveAttribute('open', '');
-  await expect(quality.locator('.metrics-grid')).toBeVisible();
-  await expect(quality.locator('.trends-table-details')).toBeVisible();
+  await metric.locator(':scope > summary').click();
+  await expect(metric).toHaveAttribute('open', '');
+  await expect(metric.locator('.metric-switcher')).toBeVisible();
+  await expect(page.locator('.trend-table')).toHaveCount(0);
 
   const widths = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,
@@ -273,16 +275,15 @@ test('opens period review forms from the summary shortcuts', async ({ page }) =>
   }
 });
 
-test('keeps monthly records together after the review with bounded pages', async ({ page }) => {
+test('keeps monthly results before the review and secondary context behind a disclosure', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/month');
   await page.getByRole('button', { name: 'Предыдущий период' }).click();
   await expect(page.locator('.month-featured-events')).toHaveCount(0);
-  await expect(page.locator('.month-facts-details')).not.toHaveAttribute('open', '');
+  await expect(page.locator('.month-facts-details')).toHaveCount(0);
   await expect(page.locator('.month-analysis-details')).not.toHaveAttribute('open', '');
-  await page.getByText('Показать записи месяца', { exact: true }).click();
 
-  const records = page.locator('.period-records');
+  const records = page.locator('.period-records--featured');
   await expect(records.getByText('Итоги месяца', { exact: true })).toBeVisible();
   await expect(records.getByText('События месяца', { exact: true })).toBeVisible();
   await expect(records.locator('.period-record-preview').first().locator('li')).toHaveCount(5);
@@ -294,24 +295,25 @@ test('keeps monthly records together after the review with bounded pages', async
   const recordsBox = await records.boundingBox();
   expect(reviewBox).not.toBeNull();
   expect(recordsBox).not.toBeNull();
-  expect(recordsBox!.y).toBeGreaterThan(reviewBox!.y);
+  expect(recordsBox!.y).toBeLessThan(reviewBox!.y);
 
   await records.getByRole('navigation', { name: 'Страницы итогов месяца' }).getByRole('button', { name: 'Дальше' }).click();
   await expect(records.getByRole('navigation', { name: 'Страницы итогов месяца' })).toContainText('2 из');
-  await records.getByText('Конкретные действия и подготовка', { exact: true }).click();
-  await expect(records.getByRole('navigation', { name: 'Страницы действий месяца' })).toBeVisible();
+  const secondaryRecords = page.locator('details.period-records');
+  await secondaryRecords.getByText('Показать действия и дополнительный контекст', { exact: true }).click();
+  await secondaryRecords.getByText('Конкретные действия и подготовка', { exact: true }).click();
+  await expect(secondaryRecords.getByRole('navigation', { name: 'Страницы действий месяца' })).toBeVisible();
 });
 
-test('keeps weekly results and events inside the review', async ({ page }) => {
+test('keeps weekly results and events visible before detailed daily context', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`/week?week=${demoAnchor()}`);
-  await page.getByText('Показать показатели и записи недели', { exact: true }).click();
-
-  const records = page.locator('.week-data-details').filter({ hasText: 'Показать показатели и записи недели' });
+  const records = page.locator('.period-records--featured');
   await expect(records.getByText('Итоги недели', { exact: true })).toBeVisible();
   await expect(records.getByText('События недели', { exact: true })).toBeVisible();
   await expect(records.getByRole('link', { name: 'Открыть все итоги' })).toHaveCount(0);
   await expect(records.getByRole('link', { name: 'Открыть все события' })).toHaveCount(0);
+  await expect(page.locator('.week-data-details')).not.toHaveAttribute('open', '');
 });
 
 test('keeps desktop navigation visible while the page scrolls', async ({ page }) => {

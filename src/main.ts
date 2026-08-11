@@ -33,7 +33,7 @@ const router = createRouter({
       meta: { title: 'Неделя' },
     },
     { path: '/month', component: () => import('./views/MonthView.vue'), meta: { title: 'Месяц' } },
-    { path: '/trends', component: () => import('./views/TrendsView.vue'), meta: { title: 'Тренды' } },
+    { path: '/trends', component: () => import('./views/TrendsView.vue'), meta: { title: 'История изменений' } },
     { path: '/more', component: () => import('./views/MoreView.vue'), meta: { title: 'Журнал' } },
     { path: '/settings', component: () => import('./views/SettingsView.vue'), meta: { title: 'Настройки' } },
     { path: '/password-reset', component: () => import('./views/PasswordResetView.vue'), meta: { title: 'Новый пароль' } },

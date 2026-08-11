@@ -540,7 +540,7 @@ const {
           <ChipGroup v-model="settings.experiment.decision" :options="experimentDecisionOptions" allow-clear />
         </template>
         <p v-else-if="settings.experiment.endDate" class="field-hint">
-          После последнего дня здесь можно записать, что вы заметили. Завершённый эксперимент появится в истории раздела «Тренды».
+          После последнего дня здесь можно записать, что вы заметили. Завершённый эксперимент появится в разделе «История».
         </p>
         <button class="primary-button" type="button" :disabled="isSaving('experiment')" @click="saveExperiment">
           {{ isSaving('experiment') ? 'Сохраняю…' : 'Сохранить настройки' }}
@@ -555,7 +555,7 @@ const {
           Завершить эксперимент
         </button>
         <p v-if="settings.experimentHistory.length" class="data-note">
-          Завершённые эксперименты можно посмотреть в истории раздела «Тренды»: {{ settings.experimentHistory.length }}.
+          Завершённые эксперименты можно посмотреть в разделе «История»: {{ settings.experimentHistory.length }}.
         </p>
       </article>
     </section>

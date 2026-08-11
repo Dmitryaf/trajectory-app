@@ -65,16 +65,6 @@ export function hasArea(entry: DailyEntry | undefined, area: string): boolean {
   return entry.lifeAreas.includes(area as LifeAreaId);
 }
 
-export function buildReviewQuestions(period: 'week' | 'month'): string[] {
-  const label = period === 'week' ? 'неделе' : 'месяце';
-  return [
-    `Что в этой ${label} повторялось чаще всего и могло влиять на состояние?`,
-    'Какие действия привели к заметному результату или обратной связи?',
-    'Какой один фактор стоит уменьшить в следующем периоде?',
-    'Какое одно действие или условие стоит сохранить, потому что оно помогало?',
-  ];
-}
-
 export function periodDays(anchor: string, period: 'week' | 'month'): string[] {
   return period === 'week' ? dateRange(startOfWeek(anchor), endOfWeek(anchor)) : dateRange(startOfMonth(anchor), endOfMonth(anchor));
 }

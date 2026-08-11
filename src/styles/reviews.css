@@ -252,6 +252,100 @@
   gap: 12px;
   padding-bottom: 16px;
 }
+.period-records--featured {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.month-week-story {
+  display: grid;
+  gap: 10px;
+}
+.month-week-story article {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 12px 14px;
+  border: 1px solid #e2eae6;
+  border-radius: 14px;
+  background: #fbfdfc;
+}
+.month-week-story strong {
+  min-width: 112px;
+}
+.month-week-story span {
+  color: var(--muted);
+  font-size: 13px;
+}
+.metric-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 14px;
+}
+.metric-switcher button {
+  padding: 7px 12px;
+  border: 1px solid #dce5e1;
+  border-radius: 999px;
+  background: #f5f8f7;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+.metric-switcher button.active {
+  border-color: #83b8a8;
+  background: #e9f5f1;
+  color: var(--primary);
+}
+.week-story-list {
+  display: grid;
+  gap: 8px;
+}
+.week-story-day {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px 14px;
+  border: 1px solid #e2eae6;
+  border-radius: 14px;
+  background: #fbfdfc;
+}
+.week-story-day--empty {
+  background: #f7f9f8;
+}
+.week-story-day time {
+  color: #66756f;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+.week-story-day strong,
+.week-story-day > div > span {
+  display: block;
+  color: #3f504a;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.week-story-day--empty > div > span {
+  color: var(--muted);
+}
+.week-story-day__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+.week-story-day__facts small {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #eaf3ef;
+  color: #41675b;
+  font-size: 10px;
+  font-weight: 750;
+}
 .period-record-card {
   min-width: 0;
   padding: 17px;
@@ -550,5 +644,9 @@
   }
   .weekly-review-journal__fields .secondary-button {
     width: 100%;
+  }
+  .week-story-day {
+    grid-template-columns: 1fr;
+    gap: 5px;
   }
 }
