@@ -37,6 +37,7 @@ const router = createRouter({
     { path: '/more', component: () => import('./views/MoreView.vue'), meta: { title: 'Журнал' } },
     { path: '/settings', component: () => import('./views/SettingsView.vue'), meta: { title: 'Настройки' } },
     { path: '/password-reset', component: () => import('./views/PasswordResetView.vue'), meta: { title: 'Новый пароль' } },
+    { path: '/:pathMatch(.*)*', component: () => import('./views/NotFoundView.vue'), meta: { title: 'Страница не найдена' } },
   ],
 });
 

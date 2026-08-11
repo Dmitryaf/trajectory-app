@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, ref } from 'vue';
 import { recordFirstUseEvent } from '../features/first-use/funnel';
 import { useAuthStore } from '../stores/auth';
+import PasswordField from './PasswordField.vue';
 
 type PreviewLevelId = 'today' | 'journal' | 'week' | 'month';
 
@@ -243,11 +244,11 @@ async function requestPasswordReset() {
               placeholder="you@example.com"
             />
           </label>
-          <label class="form-control">
-            <span class="field-label">Пароль</span>
-            <input
+          <div class="form-control">
+            <label class="field-label" for="auth-password">Пароль</label>
+            <PasswordField
+              id="auth-password"
               v-model="password"
-              type="password"
               :autocomplete="mode === 'sign-up' ? 'new-password' : 'current-password'"
               required
               :minlength="mode === 'sign-up' ? 8 : 6"
@@ -255,19 +256,19 @@ async function requestPasswordReset() {
               :placeholder="mode === 'sign-up' ? 'Не меньше 8 символов' : 'Пароль'"
             />
             <small v-if="mode === 'sign-up'" id="signup-password-hint" class="auth-field-hint">Не меньше 8 символов.</small>
-          </label>
+          </div>
           <template v-if="mode === 'sign-up'">
-            <label class="form-control">
-              <span class="field-label">Повтори пароль</span>
-              <input
+            <div class="form-control">
+              <label class="field-label" for="auth-password-confirmation">Повтори пароль</label>
+              <PasswordField
+                id="auth-password-confirmation"
                 v-model="passwordConfirmation"
-                type="password"
                 autocomplete="new-password"
                 required
                 minlength="8"
                 placeholder="Повтори пароль"
               />
-            </label>
+            </div>
             <label class="form-control">
               <span class="field-label">Код приглашения</span>
               <input

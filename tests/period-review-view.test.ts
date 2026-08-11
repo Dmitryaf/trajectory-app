@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import MonthView from '../src/views/MonthView.vue';
 import TrendsView from '../src/views/TrendsView.vue';
 import WeekView from '../src/views/WeekView.vue';
+import { copyAiPrompt } from '../src/features/export/browser';
 import { notifyUnknownError } from '../src/services/notifications';
 import { emptyDailyEntry, emptyMonthlyReview, emptyWeeklyReview } from '../src/types';
 import { createStore, routerLinkStub } from './helpers/viewScenario';
@@ -14,6 +15,11 @@ vi.mock('../src/services/notifications', () => ({
   notifyInfo: vi.fn(),
   notifySaved: vi.fn(),
   notifyUnknownError: vi.fn(),
+}));
+
+vi.mock('../src/features/export/browser', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../src/features/export/browser')>()),
+  copyAiPrompt: vi.fn(),
 }));
 
 describe('period review navigation', () => {
@@ -51,6 +57,49 @@ describe('period review navigation', () => {
     await flushPromises();
     expect(saveReview).toHaveBeenCalledTimes(2);
     expect(saveMonthlyReview).toHaveBeenCalledTimes(2);
+  });
+
+  it('blocks repeated prompt copying in weekly and monthly reviews', async () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [{ ...emptyDailyEntry('2026-07-21'), importantFact: 'Есть данные для анализа' }];
+    let finishWeekCopy!: () => void;
+    let finishMonthCopy!: () => void;
+    vi.mocked(copyAiPrompt)
+      .mockReturnValueOnce(
+        new Promise<void>((resolve) => {
+          finishWeekCopy = resolve;
+        }),
+      )
+      .mockReturnValueOnce(
+        new Promise<void>((resolve) => {
+          finishMonthCopy = resolve;
+        }),
+      );
+    const global = { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } };
+    const week = mount(WeekView, { global });
+    const month = mount(MonthView, { global });
+    const weekButton = week.findAll('button').find((button) => button.text() === 'Скопировать промпт')!;
+    const monthButton = month.findAll('button').find((button) => button.text() === 'Скопировать промпт')!;
+
+    await weekButton.trigger('click');
+    await weekButton.trigger('click');
+    await monthButton.trigger('click');
+    await monthButton.trigger('click');
+
+    expect(copyAiPrompt).toHaveBeenCalledTimes(2);
+    expect(weekButton.text()).toBe('Копирую…');
+    expect(monthButton.text()).toBe('Копирую…');
+    expect(weekButton.attributes('disabled')).toBeDefined();
+    expect(monthButton.attributes('disabled')).toBeDefined();
+
+    finishWeekCopy();
+    finishMonthCopy();
+    await flushPromises();
+
+    expect(weekButton.text()).toBe('Скопировать промпт');
+    expect(monthButton.text()).toBe('Скопировать промпт');
+    expect(weekButton.attributes('disabled')).toBeUndefined();
+    expect(monthButton.attributes('disabled')).toBeUndefined();
   });
 
   it('keeps weekly and monthly results and events in matching bounded pages', async () => {
