@@ -13,3 +13,4 @@ trajectory-app/
 storybook-static/
 playwright-report/
 test-results/
+demo/generated/

@@ -1,63 +1,63 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { ExportPayload } from '../src/stores/app';
+import { BACKUP_VERSION } from '../src/features/backup/version';
+import { normalizeSnapshot } from '../src/features/backup/snapshot';
 import { normalizeDailyEntry, normalizeLifeEvent, normalizeSettings } from '../src/types';
+import { buildDemoPayload, DEMO_BACKUP_VERSION } from '../scripts/generate-test-user-data.mjs';
 
-const dataThrough = '2026-07-20';
-const fixturePath = resolve(process.cwd(), 'demo/trajectory-test-user-2026-07-20.json');
-const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as ExportPayload;
+const anchor = '2026-08-11';
 
-describe('test user fixture', () => {
-  it('uses the current import schema and normalized settings', () => {
-    expect(fixture.version).toBe(9);
-    const settings = normalizeSettings(fixture.settings);
+describe('test user generator', () => {
+  it('uses the current import schema and creates deterministic relative dates', () => {
+    const first = normalizeSnapshot(buildDemoPayload(anchor));
+    const second = normalizeSnapshot(buildDemoPayload(anchor));
+    const settings = normalizeSettings(first.settings);
+
+    expect(first).toEqual(second);
+    expect(DEMO_BACKUP_VERSION).toBe(BACKUP_VERSION);
+    expect(first.version).toBe(BACKUP_VERSION);
+    expect(first.exportedAt.slice(0, 10)).toBe(anchor);
     expect(settings.settingsVersion).toBe(13);
     expect(settings.firstUse).toMatchObject({ status: 'completed', lastStep: 'overview', overviewSeen: true });
-    expect(settings.focusOutcomeCriterion).not.toBe('');
-    expect(settings.focusReviewDate).toBe('2026-08-15');
-    expect(settings.experiment).toMatchObject({ targetMetricId: null, minimumMeaningfulChange: null });
+    expect(settings.focusReviewDate > anchor).toBe(true);
+    expect(settings.experiment.startDate <= anchor).toBe(true);
+    expect(settings.experiment.endDate > anchor).toBe(true);
     expect(settings.experimentHistory).toHaveLength(1);
-    expect(settings.experimentHistory[0]).toMatchObject({ decision: 'more_data', endDate: '2026-06-16' });
-    expect(settings.activeDailyBlocks).toEqual(['sleep', 'context', 'career', 'movement', 'nutrition']);
-    expect(settings.activeLifeAreas).not.toContain('spiritual');
-    expect(settings.customLifeAreaOptions).toContainEqual(
-      expect.objectContaining({ id: 'custom:life:music', label: 'Музыка', custom: true }),
-    );
-    expect(settings.customActivityOptions).toContainEqual(
-      expect.objectContaining({ id: 'custom:activity:swimming', label: 'Плавание', custom: true }),
-    );
-    expect(settings.customCareerOptions.some((option) => option.label === 'Адресные отклики')).toBe(false);
-    expect(settings.customContextFactorOptions.some((option) => option.label === 'Спокойный душ')).toBe(false);
+    expect(settings.experimentHistory[0]!.endDate < settings.experiment.startDate).toBe(true);
   });
 
-  it('covers new and high-volume UI scenarios', () => {
+  it('covers high-volume UI, history, and experiment-note scenarios', () => {
+    const fixture = normalizeSnapshot(buildDemoPayload(anchor));
     const entries = fixture.dailyEntries.map(normalizeDailyEntry);
-    expect(entries.length).toBeGreaterThanOrEqual(24);
+
+    expect(entries.length).toBeGreaterThanOrEqual(40);
     expect(entries.some((entry) => entry.careerStates.length > 1)).toBe(true);
     expect(entries.some((entry) => entry.contextFactors.includes('anxiety_overload'))).toBe(true);
     expect(entries.some((entry) => entry.specialDay !== null)).toBe(true);
+    expect(entries.some((entry) => entry.experimentNote.trim().length > 0)).toBe(true);
+    expect(entries.some((entry) => entry.experimentCompleted === true)).toBe(true);
+    expect(entries.some((entry) => entry.experimentCompleted === false)).toBe(true);
     expect(entries.every((entry) => entry.entrySchemaVersion === 2)).toBe(true);
     expect(entries.every((entry) => entry.activeDailyBlocksSnapshot?.includes('context'))).toBe(true);
     expect(fixture.results.length).toBeGreaterThan(20);
-    expect(fixture.lifeEvents?.length).toBeGreaterThanOrEqual(8);
-    expect(fixture.monthlyReviews?.length).toBeGreaterThanOrEqual(2);
-    expect(fixture.weeklyReviews.every((review) => review.highlights.some(Boolean))).toBe(true);
-    expect(fixture.weeklyReviews.every((review) => review.stateContext)).toBe(true);
+    expect(fixture.lifeEvents).toHaveLength(10);
+    expect(fixture.weeklyReviews.length).toBeGreaterThanOrEqual(8);
+    expect(fixture.monthlyReviews?.length).toBeGreaterThanOrEqual(3);
   });
 
-  it('contains no future or removed event values', () => {
-    expect(fixture.dailyEntries.every((entry) => entry.date <= dataThrough)).toBe(true);
-    expect(fixture.dailyEntries.filter((entry) => entry.weightKg !== null).every((entry) => entry.date <= dataThrough)).toBe(true);
+  it('does not create future observations or removed event values', () => {
+    const fixture = normalizeSnapshot(buildDemoPayload(anchor));
+    expect(fixture.dailyEntries.every((entry) => entry.date <= anchor)).toBe(true);
+    expect(fixture.dailyEntries.filter((entry) => entry.weightKg !== null).every((entry) => entry.date <= anchor)).toBe(true);
     const events = (fixture.lifeEvents ?? []).map(normalizeLifeEvent);
-    expect(events.every((event) => event.date <= dataThrough)).toBe(true);
+    expect(events.every((event) => event.date <= anchor)).toBe(true);
     expect(events.every((event) => event.type !== 'milestone')).toBe(true);
   });
 
-  it('does not reuse the owner-specific vocabulary removed from the public fixture', () => {
-    const serialized = JSON.stringify(fixture).toLocaleLowerCase('ru-RU');
+  it('does not reuse owner-specific vocabulary and rejects invalid anchors', () => {
+    const serialized = JSON.stringify(buildDemoPayload(anchor)).toLocaleLowerCase('ru-RU');
     for (const fragment of ['резюме', 'ваканси', 'отклик', 'интервью', 'личн', 'английск', 'бокс', 'бачат', 'gpt', 'codex']) {
       expect(serialized).not.toContain(fragment);
     }
+    expect(() => buildDemoPayload('2026-02-30')).toThrow(/календарной датой/);
   });
 });

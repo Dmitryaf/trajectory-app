@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
+import { completedCrossMonthRange, demoFilePath } from './demo-data';
 
 test('copies a readable prompt and downloads the lossless weekly package', async ({ page }) => {
   await page.goto('/settings');
-  await page.locator('input[type="file"]').setInputFiles('demo/trajectory-test-user-2026-07-20.json');
+  await page.locator('input[type="file"]').setInputFiles(demoFilePath);
   await page.getByText('Резервная копия восстановлена', { exact: true }).waitFor();
   await page.goto('/week');
   await expect(page.getByRole('heading', { name: 'Неделя', exact: true })).toBeVisible();
@@ -37,20 +38,20 @@ test('copies a readable prompt and downloads the lossless weekly package', async
 
 test('includes daily reflections from an exact cross-month period', async ({ page }) => {
   await page.goto('/settings');
-  await page.locator('input[type="file"]').setInputFiles('demo/trajectory-test-user-2026-07-20.json');
+  await page.locator('input[type="file"]').setInputFiles(demoFilePath);
   await page.getByText('Резервная копия восстановлена', { exact: true }).waitFor();
 
   await page.getByRole('button', { name: 'Данные и синхронизация' }).click();
   await page.getByText('Выбрать другой период', { exact: true }).click();
-  await page.getByLabel('Начало периода анализа').fill('2026-06-15');
-  await page.getByLabel('Конец периода анализа').fill('2026-07-02');
+  const range = completedCrossMonthRange();
+  await page.getByLabel('Начало периода анализа').fill(range.start);
+  await page.getByLabel('Конец периода анализа').fill(range.end);
   await page.getByRole('button', { name: 'Скопировать промпт периода' }).click();
 
   const prompt = await page.evaluate(() => navigator.clipboard.readText());
   expect(prompt).toContain('Записи по дням');
   expect(prompt).not.toContain('Покрытие по месяцам');
-  expect(prompt).toContain('2026-06');
-  expect(prompt).toContain('2 июля 2026 г.');
+  expect(prompt).toContain(range.start.slice(0, 7));
 
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Скачать данные периода' }).click();
@@ -63,10 +64,10 @@ test('includes daily reflections from an exact cross-month period', async ({ pag
     entries: Array<{ date: string }>;
   };
 
-  expect(download.suggestedFilename()).toBe('trajectory-analysis-period-2026-06-15-2026-07-02.json');
+  expect(download.suggestedFilename()).toBe(`trajectory-analysis-period-${range.start}-${range.end}.json`);
   expect(payload.period).toBe('range');
-  expect(payload.start).toBe('2026-06-15');
-  expect(payload.end).toBe('2026-07-02');
+  expect(payload.start).toBe(range.start);
+  expect(payload.end).toBe(range.end);
   expect(payload.entries.length).toBeGreaterThan(0);
   expect(payload.entries.every((entry) => entry.date >= payload.start && entry.date <= payload.end)).toBe(true);
 });

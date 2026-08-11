@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
+import { demoAnchor, demoFilePath, emptyPeriodDate } from './demo-data';
 
 const routes = ['/', '/week', '/month', '/trends', '/more', '/results', '/events', '/settings'];
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/settings');
-  await page.locator('input[type="file"]').setInputFiles('demo/trajectory-test-user-2026-07-20.json');
+  await page.locator('input[type="file"]').setInputFiles(demoFilePath);
   await page.getByText('Резервная копия восстановлена', { exact: true }).waitFor();
 });
 
@@ -37,9 +38,9 @@ test('shows an unknown user route and returns to Today with the keyboard', async
 
 test('keeps empty-period actions below their explanatory text', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
+  const emptyDate = emptyPeriodDate();
 
-  for (const route of ['/week', '/month']) {
-    await page.goto(route);
+  async function expectEmptyGuideSpacing() {
     const paragraph = page.locator('.period-empty-guide p');
     const action = page.locator('.period-empty-guide .secondary-button');
     const paragraphBox = await paragraph.boundingBox();
@@ -49,6 +50,12 @@ test('keeps empty-period actions below their explanatory text', async ({ page })
     expect(actionBox).not.toBeNull();
     expect(actionBox!.y).toBeGreaterThanOrEqual(paragraphBox!.y + paragraphBox!.height + 10);
   }
+
+  await page.goto(`/week?week=${emptyDate}`);
+  await expectEmptyGuideSpacing();
+  await page.goto('/month');
+  for (let index = 0; index < 5; index += 1) await page.getByRole('button', { name: 'Предыдущий период' }).click();
+  await expectEmptyGuideSpacing();
 });
 
 test('keeps mobile form controls inside their cards', async ({ page }) => {
@@ -65,6 +72,31 @@ test('keeps mobile form controls inside their cards', async ({ page }) => {
       }),
     );
     expect(overflow, `form controls should stay inside cards at ${width}px`).toEqual([]);
+  }
+});
+
+test('separates the custom-period action from adjacent review content', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  for (const route of ['/week', '/month', '/trends']) {
+    await page.goto(route);
+    const action = page.locator('.range-custom-action');
+    await expect(action).toBeVisible();
+    const spacing = await action.evaluate((element) => {
+      const box = element.getBoundingClientRect();
+      const previousBox = element.previousElementSibling?.getBoundingClientRect();
+      const nextBox = element.nextElementSibling?.getBoundingClientRect();
+      const linkBox = element.querySelector('a')?.getBoundingClientRect();
+      return {
+        before: previousBox ? box.top - previousBox.bottom : 0,
+        after: nextBox ? nextBox.top - box.bottom : 0,
+        linkInside: linkBox ? linkBox.left >= box.left && linkBox.right <= box.right : false,
+      };
+    });
+
+    expect(spacing.before, `${route} should leave space before the custom-period action`).toBeGreaterThanOrEqual(14);
+    expect(spacing.after, `${route} should leave space after the custom-period action`).toBeGreaterThanOrEqual(12);
+    expect(spacing.linkInside, `${route} action should stay inside its card`).toBe(true);
   }
 });
 
@@ -272,7 +304,7 @@ test('keeps monthly records together after the review with bounded pages', async
 
 test('keeps weekly results and events inside the review', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/week?week=2026-07-20');
+  await page.goto(`/week?week=${demoAnchor()}`);
   await page.getByText('Показать показатели и записи недели', { exact: true }).click();
 
   const records = page.locator('.week-data-details').filter({ hasText: 'Показать показатели и записи недели' });

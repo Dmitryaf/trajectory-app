@@ -1,4 +1,7 @@
 @media (max-width: 520px) {
+  .timeline-item > .item-actions {
+    grid-column: 2;
+  }
   .archive-filters {
     grid-template-columns: 1fr;
   }
