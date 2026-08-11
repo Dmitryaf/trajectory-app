@@ -5,9 +5,9 @@ import type { EChartsCoreOption } from 'echarts/core';
 import EChartPanel from '../components/charts/EChartPanel.vue';
 import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
+import PeriodRecordCard from '../components/PeriodRecordCard.vue';
 import WeeklyReviewJournalLinks from '../components/WeeklyReviewJournalLinks.vue';
 import WeeklyReviewOverview from '../components/WeeklyReviewOverview.vue';
-import ArchivePagination from '../features/journal/ArchivePagination.vue';
 import {
   actionDirectionLabel,
   buildReviewCues,
@@ -25,7 +25,6 @@ import { addDays, endOfWeek, formatDate, formatMinutes, fromDateKey, startOfWeek
 import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../features/export/browser';
 import { experimentDecisionLabel } from '../features/experiments/model';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
-import { pageCount, pageItems } from '../services/pagination';
 import { plainCopy } from '../services/plain';
 import { useAppStore } from '../stores/app';
 import {
@@ -64,13 +63,6 @@ const results = computed(() => resultsForPeriod(store.results, start.value, end.
 const lifeEvents = computed(() =>
   store.lifeEvents.filter((event) => event.date >= start.value && event.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)),
 );
-const resultPage = ref(1);
-const eventPage = ref(1);
-const recordPageSize = 5;
-const visibleResults = computed(() => pageItems(results.value, resultPage.value, recordPageSize));
-const resultPageCount = computed(() => pageCount(results.value.length, recordPageSize));
-const visibleLifeEvents = computed(() => pageItems(lifeEvents.value, eventPage.value, recordPageSize));
-const eventPageCount = computed(() => pageCount(lifeEvents.value.length, recordPageSize));
 const resultAreaItems = computed(() => [...resultAreaOptions, ...store.settings.customLifeAreaOptions]);
 const resultAreaSummary = computed(() => {
   const knownAreas = resultAreaItems.value;
@@ -86,6 +78,22 @@ const eventTypeSummary = computed(() =>
   lifeEventTypeOptions
     .map((option) => ({ ...option, count: lifeEvents.value.filter((event) => event.type === option.id).length }))
     .filter((option) => option.count > 0),
+);
+const resultRecordItems = computed(() =>
+  results.value.map((result) => ({
+    id: result.id ?? result.createdAt,
+    icon: resultAreaItems.value.find((option) => option.id === result.area)?.icon ?? '·',
+    title: result.title,
+    dateLabel: formatDate(result.date, { weekday: 'short', day: 'numeric' }),
+  })),
+);
+const eventRecordItems = computed(() =>
+  lifeEvents.value.map((event) => ({
+    id: event.id ?? event.createdAt,
+    icon: lifeEventTypeOptions.find((option) => option.id === event.type)?.icon ?? '·',
+    title: event.title,
+    dateLabel: formatDate(event.date, { weekday: 'short', day: 'numeric' }),
+  })),
 );
 const activeExperimentWeek = computed(() => {
   const experiment = store.settings.experiment;
@@ -309,6 +317,8 @@ const rhythmOption = computed<EChartsCoreOption>(() => {
 });
 const review = reactive<WeeklyReview>(emptyWeeklyReview(start.value));
 const reviewSaving = ref(false);
+const promptCopying = ref(false);
+const reviewContextOpen = ref(false);
 const reviewHasContext = computed(
   () =>
     review.results.some((value) => value.trim()) ||
@@ -321,22 +331,19 @@ function loadReview() {
   Object.assign(review, emptyWeeklyReview(start.value), existing ? plainCopy(existing) : {});
   while (review.results.length < 3) review.results.push('');
   while (review.highlights.length < 3) review.highlights.push('');
-  resultPage.value = 1;
-  eventPage.value = 1;
+  reviewContextOpen.value = reviewHasContext.value;
 }
 watch(start, loadReview, { immediate: true });
-watch(resultPageCount, (count) => {
-  resultPage.value = Math.min(resultPage.value, count);
-});
-watch(eventPageCount, (count) => {
-  eventPage.value = Math.min(eventPage.value, count);
-});
 watch(
   () => props.initialWeek,
   (value) => {
     anchor.value = initialAnchor(value);
   },
 );
+
+function updateReviewContextOpen(event: Event) {
+  reviewContextOpen.value = (event.currentTarget as HTMLDetailsElement).open;
+}
 
 async function saveReview() {
   if (reviewSaving.value) return;
@@ -363,11 +370,15 @@ function createPackage() {
 }
 
 async function copyPrompt() {
+  if (promptCopying.value) return;
+  promptCopying.value = true;
   try {
     await copyPackagePrompt(createPackage(), store.settings);
     notifySaved('Промпт для анализа скопирован');
   } catch (error) {
     notifyUnknownError(error, 'Не удалось скопировать промпт');
+  } finally {
+    promptCopying.value = false;
   }
 }
 
@@ -459,7 +470,9 @@ function downloadJson() {
             <h2>На что обратить внимание</h2>
           </div>
           <div class="period-actions">
-            <button class="secondary-button" type="button" @click="copyPrompt">Скопировать промпт</button>
+            <button class="secondary-button" type="button" :disabled="promptCopying" @click="copyPrompt">
+              {{ promptCopying ? 'Копирую…' : 'Скопировать промпт' }}
+            </button>
             <button class="secondary-button" type="button" @click="downloadJson">Скачать данные</button>
           </div>
         </div>
@@ -492,7 +505,7 @@ function downloadJson() {
             placeholder="Сработало, не сработало или данных пока недостаточно — и почему"
           ></textarea>
         </template>
-        <details class="period-details review-context-details" :open="reviewHasContext">
+        <details class="period-details review-context-details" :open="reviewContextOpen" @toggle="updateReviewContextOpen">
           <summary>{{ reviewHasContext ? 'Итоги и контекст' : 'Добавить итоги и контекст' }}</summary>
           <div class="period-details__content">
             <label class="field-label">До трёх итогов или сделанных дел</label>
@@ -744,49 +757,25 @@ function downloadJson() {
             </div>
           </article>
 
-          <article v-if="results.length" class="period-record-card">
-            <div class="period-record-card__heading">
-              <div>
-                <span class="eyebrow">Завершённые факты</span>
-                <h2>Итоги недели</h2>
-              </div>
-              <span class="count-badge">{{ results.length }}</span>
-            </div>
-            <div class="period-record-card__breakdown" aria-label="Итоги по областям">
-              <span v-for="area in resultAreaSummary" :key="area.id">{{ area.icon }} {{ area.label }} · {{ area.count }}</span>
-            </div>
-            <ul class="period-record-preview">
-              <li v-for="result in visibleResults" :key="result.id ?? result.createdAt">
-                <span>✓</span>
-                <div>
-                  {{ result.title }}<small>{{ formatDate(result.date, { weekday: 'short', day: 'numeric' }) }}</small>
-                </div>
-              </li>
-            </ul>
-            <ArchivePagination v-model:page="resultPage" :page-count="resultPageCount" context-label="итогов недели" />
-          </article>
+          <PeriodRecordCard
+            v-if="results.length"
+            eyebrow="Завершённые факты"
+            title="Итоги недели"
+            :items="resultRecordItems"
+            :breakdown="resultAreaSummary"
+            breakdown-label="Итоги по областям"
+            pagination-label="итогов недели"
+          />
 
-          <article v-if="lifeEvents.length" class="period-record-card">
-            <div class="period-record-card__heading">
-              <div>
-                <span class="eyebrow">Важный контекст</span>
-                <h2>События недели</h2>
-              </div>
-              <span class="count-badge">{{ lifeEvents.length }}</span>
-            </div>
-            <div class="period-record-card__breakdown" aria-label="События по типам">
-              <span v-for="type in eventTypeSummary" :key="type.id">{{ type.icon }} {{ type.label }} · {{ type.count }}</span>
-            </div>
-            <ul class="period-record-preview">
-              <li v-for="event in visibleLifeEvents" :key="event.id ?? event.createdAt">
-                <span>{{ eventTypeSummary.find((type) => type.id === event.type)?.icon ?? '·' }}</span>
-                <div>
-                  {{ event.title }}<small>{{ formatDate(event.date, { weekday: 'short', day: 'numeric' }) }}</small>
-                </div>
-              </li>
-            </ul>
-            <ArchivePagination v-model:page="eventPage" :page-count="eventPageCount" context-label="событий недели" />
-          </article>
+          <PeriodRecordCard
+            v-if="lifeEvents.length"
+            eyebrow="Важный контекст"
+            title="События недели"
+            :items="eventRecordItems"
+            :breakdown="eventTypeSummary"
+            breakdown-label="События по типам"
+            pagination-label="событий недели"
+          />
         </div>
       </details>
     </template>

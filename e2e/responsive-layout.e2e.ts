@@ -24,6 +24,17 @@ test('keeps every primary screen inside the minimum viewport width', async ({ pa
   }
 });
 
+test('shows an unknown user route and returns to Today with the keyboard', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 720 });
+  await page.goto('/missing-page');
+
+  await expect(page.getByRole('heading', { name: 'Такой страницы нет' })).toBeVisible();
+  await expect(page).toHaveTitle('Страница не найдена · Траектория');
+  await page.getByRole('link', { name: 'Перейти к «Сегодня»' }).focus();
+  await page.getByRole('link', { name: 'Перейти к «Сегодня»' }).press('Enter');
+  await expect(page).toHaveURL(/\/$/);
+});
+
 test('keeps empty-period actions below their explanatory text', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
 
@@ -214,41 +225,38 @@ test('opens period review forms from the summary shortcuts', async ({ page }) =>
   }
 });
 
-test('keeps monthly records compact and opens the matching archives', async ({ page }) => {
+test('keeps monthly records together after the review with bounded pages', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/month');
   await page.getByRole('button', { name: 'Предыдущий период' }).click();
-  await expect(page.locator('.month-featured-events')).toBeVisible();
-  await expect(page.locator('.month-featured-events').getByRole('link', { name: 'Открыть все события' })).toHaveAttribute(
-    'href',
-    '/events?from=2026-07-01&to=2026-07-31',
-  );
+  await expect(page.locator('.month-featured-events')).toHaveCount(0);
   await expect(page.locator('.month-facts-details')).not.toHaveAttribute('open', '');
   await expect(page.locator('.month-analysis-details')).not.toHaveAttribute('open', '');
   await page.getByText('Показать записи месяца', { exact: true }).click();
 
   const records = page.locator('.period-records');
   await expect(records.getByText('Итоги месяца', { exact: true })).toBeVisible();
-  await expect(records.locator('.period-record-preview').first().locator('li')).toHaveCount(3);
-  const lastPreviewBox = await records.locator('.period-record-preview').first().locator('li').last().boundingBox();
-  const archiveLinkBox = await records.getByRole('link', { name: 'Открыть все итоги' }).boundingBox();
-  expect(lastPreviewBox).not.toBeNull();
-  expect(archiveLinkBox).not.toBeNull();
-  expect(archiveLinkBox!.y).toBeGreaterThanOrEqual(lastPreviewBox!.y + lastPreviewBox!.height + 10);
+  await expect(records.getByText('События месяца', { exact: true })).toBeVisible();
+  await expect(records.locator('.period-record-preview').first().locator('li')).toHaveCount(5);
+  await expect(records.getByRole('navigation', { name: 'Страницы итогов месяца' })).toBeVisible();
+  await expect(records.getByRole('link', { name: 'Открыть все итоги' })).toHaveCount(0);
+  await expect(records.getByRole('link', { name: 'Открыть все события' })).toHaveCount(0);
+
+  const reviewBox = await page.locator('#month-review').boundingBox();
+  const recordsBox = await records.boundingBox();
+  expect(reviewBox).not.toBeNull();
+  expect(recordsBox).not.toBeNull();
+  expect(recordsBox!.y).toBeGreaterThan(reviewBox!.y);
+
+  await records.getByRole('navigation', { name: 'Страницы итогов месяца' }).getByRole('button', { name: 'Дальше' }).click();
+  await expect(records.getByRole('navigation', { name: 'Страницы итогов месяца' })).toContainText('2 из');
   await records.getByText('Конкретные действия и подготовка', { exact: true }).click();
   await expect(records.getByRole('navigation', { name: 'Страницы действий месяца' })).toBeVisible();
-
-  await records.getByRole('link', { name: 'Открыть все итоги' }).click();
-  await expect(page).toHaveURL(/\/results\?from=2026-07-01&to=2026-07-31$/);
-  await expect(page.getByLabel('Начальная дата итогов')).toHaveValue('2026-07-01');
-  await expect(page.getByLabel('Конечная дата итогов')).toHaveValue('2026-07-31');
 });
 
 test('keeps weekly results and events inside the review', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/week');
-  await page.getByRole('button', { name: 'Предыдущий период' }).click();
-  await page.getByRole('button', { name: 'Предыдущий период' }).click();
+  await page.goto('/week?week=2026-07-20');
   await page.getByText('Показать показатели и записи недели', { exact: true }).click();
 
   const records = page.locator('.week-data-details').filter({ hasText: 'Показать показатели и записи недели' });

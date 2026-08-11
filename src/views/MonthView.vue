@@ -5,6 +5,7 @@ import type { EChartsCoreOption } from 'echarts/core';
 import EChartPanel from '../components/charts/EChartPanel.vue';
 import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
+import PeriodRecordCard from '../components/PeriodRecordCard.vue';
 import ArchivePagination from '../features/journal/ArchivePagination.vue';
 import {
   actionDirectionLabel,
@@ -59,11 +60,9 @@ const contextFactorItems = computed(() => [...contextFactorOptions, ...store.set
 const observations = computed(() => buildObservations(entries.value, contextFactorItems.value));
 const factors = computed(() => factorSummaries(entries.value, contextFactorItems.value));
 const results = computed(() => resultsForPeriod(store.results, start.value, end.value));
-const displayedResults = computed(() => results.value.slice(0, 3));
 const lifeEvents = computed(() =>
   store.lifeEvents.filter((event) => event.date >= start.value && event.date <= end.value).sort((a, b) => b.date.localeCompare(a.date)),
 );
-const displayedLifeEvents = computed(() => lifeEvents.value.slice(0, 3));
 const reviewCues = computed(() =>
   buildReviewCues('month', entries.value, results.value, lifeEvents.value, externalCareerIds.value, contextFactorItems.value),
 );
@@ -235,6 +234,22 @@ const eventTypeSummary = computed(() =>
     .map((option) => ({ ...option, count: lifeEvents.value.filter((event) => event.type === option.id).length }))
     .filter((option) => option.count > 0),
 );
+const resultRecordItems = computed(() =>
+  results.value.map((result) => ({
+    id: result.id ?? result.createdAt,
+    icon: resultAreaItems.value.find((option) => option.id === result.area)?.icon ?? '·',
+    title: result.title,
+    dateLabel: formatDate(result.date, { day: 'numeric', month: 'short' }),
+  })),
+);
+const eventRecordItems = computed(() =>
+  lifeEvents.value.map((event) => ({
+    id: event.id ?? event.createdAt,
+    icon: lifeEventTypeOptions.find((option) => option.id === event.type)?.icon ?? '·',
+    title: event.title,
+    dateLabel: formatDate(event.date, { day: 'numeric', month: 'short' }),
+  })),
+);
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
 const activeAreas = computed(() => lifeAreaItems.value.filter((option) => store.settings.activeLifeAreas.includes(option.id)));
 const monthCalendarDays = computed(() => {
@@ -265,6 +280,8 @@ const monthCalendarDays = computed(() => {
 const monthWeekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const review = reactive<MonthlyReview>(emptyMonthlyReview(start.value));
 const reviewSaving = ref(false);
+const promptCopying = ref(false);
+const reviewContextOpen = ref(false);
 const reviewHasContext = computed(() =>
   Boolean(review.mainPattern.trim() || review.support.trim() || review.obstacle.trim() || review.courseChange.trim()),
 );
@@ -274,6 +291,7 @@ function loadReview() {
   Object.assign(review, emptyMonthlyReview(start.value), existing ? plainCopy(existing) : {});
   actionPage.value = 1;
   contextPage.value = 1;
+  reviewContextOpen.value = reviewHasContext.value;
 }
 
 watch(start, loadReview, { immediate: true });
@@ -283,6 +301,10 @@ watch(actionPageCount, (count) => {
 watch(contextPageCount, (count) => {
   contextPage.value = Math.min(contextPage.value, count);
 });
+
+function updateReviewContextOpen(event: Event) {
+  reviewContextOpen.value = (event.currentTarget as HTMLDetailsElement).open;
+}
 
 async function saveReview() {
   if (reviewSaving.value) return;
@@ -309,11 +331,15 @@ function createPackage() {
 }
 
 async function copyPrompt() {
+  if (promptCopying.value) return;
+  promptCopying.value = true;
   try {
     await copyPackagePrompt(createPackage(), store.settings);
     notifySaved('Промпт для анализа скопирован');
   } catch (error) {
     notifyUnknownError(error, 'Не удалось скопировать промпт');
+  } finally {
+    promptCopying.value = false;
   }
 }
 
@@ -541,30 +567,6 @@ function shiftMonth(offset: number) {
         </div>
       </details>
 
-      <article v-if="lifeEvents.length" class="dashboard-card period-record-card month-featured-events">
-        <div class="period-record-card__heading">
-          <div>
-            <span class="eyebrow">Важный контекст</span>
-            <h2>События месяца</h2>
-          </div>
-          <span class="count-badge">{{ lifeEvents.length }}</span>
-        </div>
-        <div class="period-record-card__breakdown" aria-label="События по типам">
-          <span v-for="type in eventTypeSummary" :key="type.id">{{ type.icon }} {{ type.label }} · {{ type.count }}</span>
-        </div>
-        <ul class="period-record-preview">
-          <li v-for="event in displayedLifeEvents" :key="event.id ?? event.createdAt">
-            <span>{{ eventTypeSummary.find((type) => type.id === event.type)?.icon ?? '·' }}</span>
-            <div>
-              {{ event.title }}<small>{{ formatDate(event.date, { day: 'numeric', month: 'short' }) }}</small>
-            </div>
-          </li>
-        </ul>
-        <RouterLink class="secondary-button period-record-card__link" :to="'/events?from=' + start + '&to=' + archiveEnd">
-          Открыть все события
-        </RouterLink>
-      </article>
-
       <article v-if="reviewAvailable" id="month-review" class="review-card">
         <div class="section-heading">
           <div>
@@ -573,7 +575,7 @@ function shiftMonth(offset: number) {
           </div>
           <small>{{ formatDate(end, { day: 'numeric', month: 'long' }) }}</small>
         </div>
-        <details class="period-details month-review-context" :open="reviewHasContext">
+        <details class="period-details month-review-context" :open="reviewContextOpen" @toggle="updateReviewContextOpen">
           <summary>{{ reviewHasContext ? 'Разбор месяца' : 'Добавить разбор месяца' }}</summary>
           <div class="period-details__content">
             <label class="field-label">Что чаще всего повторялось?</label
@@ -608,7 +610,9 @@ function shiftMonth(offset: number) {
             <h2>Месячный обзор</h2>
           </div>
           <div class="period-actions">
-            <button class="secondary-button" type="button" @click="copyPrompt">Скопировать промпт</button>
+            <button class="secondary-button" type="button" :disabled="promptCopying" @click="copyPrompt">
+              {{ promptCopying ? 'Копирую…' : 'Скопировать промпт' }}
+            </button>
             <button class="secondary-button" type="button" @click="downloadJson">Скачать данные</button>
           </div>
         </div>
@@ -747,29 +751,25 @@ function shiftMonth(offset: number) {
       <details v-if="hasDailyData || hasJournalData" class="period-details period-records" :open="!hasDailyData">
         <summary>{{ hasDailyData ? 'Показать записи месяца' : 'Записи месяца' }}</summary>
         <div class="period-details__content period-records__content">
-          <article v-if="results.length" class="period-record-card">
-            <div class="period-record-card__heading">
-              <div>
-                <span class="eyebrow">Завершённые факты</span>
-                <h2>Итоги месяца</h2>
-              </div>
-              <span class="count-badge">{{ results.length }}</span>
-            </div>
-            <div class="period-record-card__breakdown" aria-label="Итоги по областям">
-              <span v-for="area in resultAreaSummary" :key="area.id">{{ area.icon }} {{ area.label }} · {{ area.count }}</span>
-            </div>
-            <ul class="period-record-preview">
-              <li v-for="result in displayedResults" :key="result.id ?? result.createdAt">
-                <span>✓</span>
-                <div>
-                  {{ result.title }}<small>{{ formatDate(result.date, { day: 'numeric', month: 'short' }) }}</small>
-                </div>
-              </li>
-            </ul>
-            <RouterLink class="secondary-button period-record-card__link" :to="`/results?from=${start}&to=${archiveEnd}`">
-              Открыть все итоги
-            </RouterLink>
-          </article>
+          <PeriodRecordCard
+            v-if="results.length"
+            eyebrow="Завершённые факты"
+            title="Итоги месяца"
+            :items="resultRecordItems"
+            :breakdown="resultAreaSummary"
+            breakdown-label="Итоги по областям"
+            pagination-label="итогов месяца"
+          />
+
+          <PeriodRecordCard
+            v-if="lifeEvents.length"
+            eyebrow="Важный контекст"
+            title="События месяца"
+            :items="eventRecordItems"
+            :breakdown="eventTypeSummary"
+            breakdown-label="События по типам"
+            pagination-label="событий месяца"
+          />
 
           <details v-if="actionNotes.length" class="period-record-card period-record-card--disclosure">
             <summary>

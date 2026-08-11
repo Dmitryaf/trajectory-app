@@ -9,12 +9,39 @@ import AuthGate from '../src/components/AuthGate.vue';
 import ChipGroup from '../src/components/ChipGroup.vue';
 import DurationInput from '../src/components/DurationInput.vue';
 import HowItWorksDialog from '../src/components/HowItWorksDialog.vue';
+import PasswordField from '../src/components/PasswordField.vue';
 import PeriodNavigator from '../src/components/PeriodNavigator.vue';
 import PasswordResetView from '../src/views/PasswordResetView.vue';
 import { readFirstUseFunnel } from '../src/features/first-use/funnel';
 import { useAuthStore } from '../src/stores/auth';
 
 describe('form components', () => {
+  it('toggles password visibility without changing the entered value', async () => {
+    const wrapper = mount(PasswordField, {
+      props: {
+        id: 'test-password',
+        modelValue: 'safe-password',
+        autocomplete: 'current-password',
+      },
+    });
+    const input = wrapper.get('input');
+    const toggle = wrapper.get('button');
+
+    expect(input.attributes('type')).toBe('password');
+    expect(input.attributes('autocomplete')).toBe('current-password');
+    expect(input.element.value).toBe('safe-password');
+    expect(toggle.attributes('aria-label')).toBe('Показать пароль');
+    expect(toggle.attributes('aria-pressed')).toBe('false');
+    expect(toggle.attributes('aria-controls')).toBe('test-password');
+
+    await toggle.trigger('click');
+
+    expect(input.attributes('type')).toBe('text');
+    expect(input.element.value).toBe('safe-password');
+    expect(toggle.attributes('aria-label')).toBe('Скрыть пароль');
+    expect(toggle.attributes('aria-pressed')).toBe('true');
+  });
+
   it('shows a duration as hours and minutes and emits exact minute values', async () => {
     const wrapper = mount(DurationInput, {
       props: { id: 'sleep-duration', modelValue: 415, maxHours: 24 },
@@ -172,7 +199,18 @@ describe('beta authentication', () => {
 
     expect(wrapper.text()).toContain('Создайте аккаунт');
     expect(wrapper.findAll('input')).toHaveLength(4);
+    expect(wrapper.findAll('button[aria-label="Показать пароль"]')).toHaveLength(2);
+    expect(wrapper.get('#auth-password').attributes('autocomplete')).toBe('new-password');
+    expect(wrapper.get('#auth-password-confirmation').attributes('autocomplete')).toBe('new-password');
     expect(wrapper.get('input[type="email"]').element).toBe(document.activeElement);
+
+    await wrapper
+      .get('.auth-mode')
+      .findAll('button')
+      .find((button) => button.text() === 'Войти')!
+      .trigger('click');
+    expect(wrapper.findAll('button[aria-label="Показать пароль"]')).toHaveLength(1);
+    expect(wrapper.get('#auth-password').attributes('autocomplete')).toBe('current-password');
     wrapper.unmount();
   });
 
@@ -227,6 +265,11 @@ describe('beta authentication', () => {
     const inputs = wrapper.findAll('input');
     await inputs[0].setValue('new-safe-password');
     await inputs[1].setValue('new-safe-password');
+    const visibilityButtons = wrapper.findAll('button[aria-label="Показать пароль"]');
+    expect(visibilityButtons).toHaveLength(2);
+    await visibilityButtons[0]!.trigger('click');
+    expect(inputs[0]!.attributes('type')).toBe('text');
+    expect(inputs[0]!.element.value).toBe('new-safe-password');
     await wrapper.get('form').trigger('submit');
     await flushPromises();
 

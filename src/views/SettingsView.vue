@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import PasswordField from '../components/PasswordField.vue';
 import { useSettingsForm } from '../features/settings/useSettingsForm';
 import type { DailyBlockId, LifeAreaId } from '../types';
 
@@ -76,6 +77,7 @@ const {
   analysisStart,
   analysisEnd,
   analysisMaxDate,
+  cloudAction,
   auth,
   allCareerOptions,
   activeActivityOptions,
@@ -573,15 +575,26 @@ const {
         </div>
         <div class="data-actions">
           <button class="secondary-button" type="button" @click="exportData">Скачать копию</button>
-          <button class="secondary-button" type="button" @click="importInput?.click()">Восстановить из копии</button>
-          <input ref="importInput" class="visually-hidden" type="file" accept="application/json" @change="importData" />
+          <button class="secondary-button" type="button" :disabled="isSaving('import')" @click="importInput?.click()">
+            {{ isSaving('import') ? 'Восстанавливаю…' : 'Восстановить из копии' }}
+          </button>
+          <input
+            ref="importInput"
+            class="visually-hidden"
+            type="file"
+            accept="application/json"
+            :disabled="isSaving('import')"
+            @change="importData"
+          />
         </div>
         <div class="danger-zone">
           <div>
             <strong>Удалить все данные</strong>
             <p>Записи, итоги, обзоры и настройки будут очищены.</p>
           </div>
-          <button class="danger-button" type="button" @click="clearAll">Удалить</button>
+          <button class="danger-button" type="button" :disabled="isSaving('clear-data')" @click="clearAll">
+            {{ isSaving('clear-data') ? 'Удаляю…' : 'Удалить' }}
+          </button>
         </div>
       </article>
 
@@ -611,11 +624,11 @@ const {
             <p>Обнови страницу и войди снова. До входа приложение не загружает записи.</p>
           </div>
           <div class="data-actions">
-            <button class="secondary-button" type="button" :disabled="!cloudSession" @click="saveBackupToCloud">
-              Обновить копию сейчас
+            <button class="secondary-button" type="button" :disabled="!cloudSession || isSaving('cloud')" @click="saveBackupToCloud">
+              {{ cloudAction === 'save' ? 'Обновляю…' : 'Обновить копию сейчас' }}
             </button>
-            <button class="secondary-button" type="button" :disabled="!cloudSession" @click="restoreBackupFromCloud">
-              Загрузить из облака
+            <button class="secondary-button" type="button" :disabled="!cloudSession || isSaving('cloud')" @click="restoreBackupFromCloud">
+              {{ cloudAction === 'restore' ? 'Загружаю…' : 'Загрузить из облака' }}
             </button>
           </div>
         </template>
@@ -633,8 +646,12 @@ const {
           </div>
         </div>
         <div class="ai-actions">
-          <button class="secondary-button" type="button" @click="copyAnalysisPrompt('week')">Промпт недели</button>
-          <button class="secondary-button" type="button" @click="copyAnalysisPrompt('month')">Промпт месяца</button>
+          <button class="secondary-button" type="button" :disabled="isSaving('analysis-week')" @click="copyAnalysisPrompt('week')">
+            {{ isSaving('analysis-week') ? 'Копирую…' : 'Промпт недели' }}
+          </button>
+          <button class="secondary-button" type="button" :disabled="isSaving('analysis-month')" @click="copyAnalysisPrompt('month')">
+            {{ isSaving('analysis-month') ? 'Копирую…' : 'Промпт месяца' }}
+          </button>
           <button class="secondary-button" type="button" @click="downloadAnalysisData('week')">Данные недели</button>
           <button class="secondary-button" type="button" @click="downloadAnalysisData('month')">Данные месяца</button>
         </div>
@@ -660,7 +677,9 @@ const {
               </div>
             </div>
             <div class="ai-actions">
-              <button class="secondary-button" type="button" @click="copyCustomAnalysisPrompt">Скопировать промпт периода</button>
+              <button class="secondary-button" type="button" :disabled="isSaving('analysis-range')" @click="copyCustomAnalysisPrompt">
+                {{ isSaving('analysis-range') ? 'Копирую…' : 'Скопировать промпт периода' }}
+              </button>
               <button class="secondary-button" type="button" @click="downloadCustomAnalysisData">Скачать данные периода</button>
             </div>
             <p class="data-note">
@@ -706,19 +725,17 @@ const {
             <summary>Изменить пароль</summary>
             <div class="settings-field-stack account-security__form">
               <label class="field-label" for="new-password">Новый пароль</label>
-              <input
+              <PasswordField
                 id="new-password"
                 v-model="newPassword"
-                type="password"
                 autocomplete="new-password"
                 minlength="8"
                 placeholder="Не меньше 8 символов"
               />
               <label class="field-label" for="new-password-confirmation">Повтори пароль</label>
-              <input
+              <PasswordField
                 id="new-password-confirmation"
                 v-model="newPasswordConfirmation"
-                type="password"
                 autocomplete="new-password"
                 minlength="8"
                 placeholder="Повтори пароль"
