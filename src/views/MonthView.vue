@@ -280,6 +280,7 @@ const monthCalendarDays = computed(() => {
 const monthWeekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const review = reactive<MonthlyReview>(emptyMonthlyReview(start.value));
 const reviewSaving = ref(false);
+const promptCopying = ref(false);
 const reviewContextOpen = ref(false);
 const reviewHasContext = computed(() =>
   Boolean(review.mainPattern.trim() || review.support.trim() || review.obstacle.trim() || review.courseChange.trim()),
@@ -330,11 +331,15 @@ function createPackage() {
 }
 
 async function copyPrompt() {
+  if (promptCopying.value) return;
+  promptCopying.value = true;
   try {
     await copyPackagePrompt(createPackage(), store.settings);
     notifySaved('Промпт для анализа скопирован');
   } catch (error) {
     notifyUnknownError(error, 'Не удалось скопировать промпт');
+  } finally {
+    promptCopying.value = false;
   }
 }
 
@@ -605,7 +610,9 @@ function shiftMonth(offset: number) {
             <h2>Месячный обзор</h2>
           </div>
           <div class="period-actions">
-            <button class="secondary-button" type="button" @click="copyPrompt">Скопировать промпт</button>
+            <button class="secondary-button" type="button" :disabled="promptCopying" @click="copyPrompt">
+              {{ promptCopying ? 'Копирую…' : 'Скопировать промпт' }}
+            </button>
             <button class="secondary-button" type="button" @click="downloadJson">Скачать данные</button>
           </div>
         </div>

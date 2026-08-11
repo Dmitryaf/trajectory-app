@@ -41,6 +41,7 @@ export function useSettingsForm() {
   const analysisEnd = ref(todayKey());
   const analysisMaxDate = todayKey();
   const savingActions = reactive(new Set<string>());
+  const cloudAction = ref<'save' | 'restore' | null>(null);
   const auth = useAuthStore();
   const allCareerOptions = computed(() => {
     const usedIds = new Set([
@@ -91,19 +92,25 @@ export function useSettingsForm() {
     return savingActions.has(action);
   }
 
-  async function save(message = 'Настройки сохранены', action = 'settings', nextSettings: AppSettings = plainCopy(settings)) {
+  async function runAction(action: string, fallback: string, operation: () => Promise<void>) {
     if (isSaving(action)) return false;
     savingActions.add(action);
     try {
-      await store.saveSettings(nextSettings);
-      notifySaved(message);
+      await operation();
       return true;
     } catch (error) {
-      notifyUnknownError(error, 'Не удалось сохранить настройки');
+      notifyUnknownError(error, fallback);
       return false;
     } finally {
       savingActions.delete(action);
     }
+  }
+
+  async function save(message = 'Настройки сохранены', action = 'settings', nextSettings: AppSettings = plainCopy(settings)) {
+    return runAction(action, 'Не удалось сохранить настройки', async () => {
+      await store.saveSettings(nextSettings);
+      notifySaved(message);
+    });
   }
 
   async function saveExperiment() {
@@ -311,10 +318,12 @@ export function useSettingsForm() {
   }
 
   async function signOutCloud() {
-    await runCloudAction(async () => {
+    try {
       await auth.signOut();
       notifyInfo('Выход выполнен');
-    });
+    } catch (error) {
+      notifyUnknownError(error, 'Не удалось выйти из аккаунта');
+    }
   }
 
   async function changePassword() {
@@ -337,7 +346,7 @@ export function useSettingsForm() {
   }
 
   async function saveBackupToCloud() {
-    await runCloudAction(async () => {
+    await runCloudAction('save', async () => {
       const result = await store.syncCloudSnapshot({ force: true });
       if (result.status === 'synced') {
         notifySaved('Локальная версия сохранена в облако');
@@ -354,7 +363,7 @@ export function useSettingsForm() {
   }
 
   async function restoreBackupFromCloud() {
-    await runCloudAction(async () => {
+    await runCloudAction('restore', async () => {
       const snapshot = await loadCloudSnapshot();
       if (!snapshot) {
         notifyInfo('В облаке пока нет копии');
@@ -374,22 +383,22 @@ export function useSettingsForm() {
     });
   }
 
-  async function runCloudAction(action: () => Promise<void>) {
+  async function runCloudAction(kind: 'save' | 'restore', action: () => Promise<void>) {
+    if (isSaving('cloud')) return;
+    cloudAction.value = kind;
     try {
-      await action();
-    } catch (error) {
-      notifyUnknownError(error, 'Облачное действие не выполнено');
+      await runAction('cloud', 'Облачное действие не выполнено', action);
+    } finally {
+      cloudAction.value = null;
     }
   }
 
   async function copyAnalysisPrompt(period: Exclude<AiReportPeriod, 'range'>) {
-    try {
+    await runAction(`analysis-${period}`, 'Не удалось скопировать промпт', async () => {
       const payload = createAnalysisPayload(period);
       await copyText(buildAiReportPrompt(payload, store.settings));
       notifySaved('Промпт для анализа скопирован');
-    } catch (error) {
-      notifyUnknownError(error, 'Не удалось скопировать промпт');
-    }
+    });
   }
 
   function downloadAnalysisData(period: Exclude<AiReportPeriod, 'range'>) {
@@ -404,13 +413,11 @@ export function useSettingsForm() {
 
   async function copyCustomAnalysisPrompt() {
     if (!analysisRangeIsValid()) return;
-    try {
+    await runAction('analysis-range', 'Не удалось скопировать промпт', async () => {
       const payload = createCustomAnalysisPayload();
       await copyText(buildAiReportPrompt(payload, store.settings));
       notifySaved('Промпт выбранного периода скопирован');
-    } catch (error) {
-      notifyUnknownError(error, 'Не удалось скопировать промпт');
-    }
+    });
   }
 
   function downloadCustomAnalysisData() {
@@ -461,28 +468,32 @@ export function useSettingsForm() {
 
   async function importData(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
+    if (!file || isSaving('import')) return;
     try {
-      const payload = JSON.parse(await file.text());
-      await store.importData(payload, { syncCloud: Boolean(cloudSession.value) });
-      Object.assign(settings, plainCopy(store.settings));
-      if (cloudSession.value) {
-        notifySaved('Резервная копия восстановлена. Облако обновляется.');
-      } else {
-        notifySaved('Резервная копия восстановлена');
-      }
-    } catch (error) {
-      notifyError(error instanceof Error ? error.message : 'Не удалось импортировать данные');
+      await runAction('import', 'Не удалось импортировать данные', async () => {
+        const payload = JSON.parse(await file.text());
+        await store.importData(payload, { syncCloud: Boolean(cloudSession.value) });
+        Object.assign(settings, plainCopy(store.settings));
+        if (cloudSession.value) {
+          notifySaved('Резервная копия восстановлена. Облако обновляется.');
+        } else {
+          notifySaved('Резервная копия восстановлена');
+        }
+      });
+    } finally {
+      if (importInput.value) importInput.value.value = '';
     }
-    if (importInput.value) importInput.value.value = '';
   }
 
   async function clearAll() {
+    if (isSaving('clear-data')) return;
     if (!window.confirm('Удалить все записи, итоги и обзоры? Перед этим лучше скачать резервную копию.')) return;
     if (!window.confirm('Это действие нельзя отменить. Точно удалить все данные?')) return;
-    await store.clearAll({ syncCloud: Boolean(cloudSession.value) });
-    Object.assign(settings, plainCopy(store.settings));
-    notifyInfo('Все данные удалены');
+    await runAction('clear-data', 'Не удалось удалить данные', async () => {
+      await store.clearAll({ syncCloud: Boolean(cloudSession.value) });
+      Object.assign(settings, plainCopy(store.settings));
+      notifyInfo('Все данные удалены');
+    });
   }
 
   async function deleteAccount() {
@@ -526,6 +537,7 @@ export function useSettingsForm() {
     analysisStart,
     analysisEnd,
     analysisMaxDate,
+    cloudAction,
     auth,
     allCareerOptions,
     activeActivityOptions,

@@ -81,6 +81,71 @@ describe('settings scenarios', () => {
     expect(notifySaved).toHaveBeenCalledWith('Блоки ежедневной записи сохранены');
   });
 
+  it('blocks conflicting cloud actions and shows which operation is running', async () => {
+    const { pinia, store } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    let finishUpload!: (result: { status: 'synced'; updatedAt: string }) => void;
+    const upload = new Promise<{ status: 'synced'; updatedAt: string }>((resolve) => {
+      finishUpload = resolve;
+    });
+    const syncCloudSnapshot = vi.spyOn(store, 'syncCloudSnapshot').mockReturnValue(upload);
+    const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
+    const cloudButtons = wrapper.get('.settings-card--cloud').findAll('button');
+    const saveButton = cloudButtons[0]!;
+    const restoreButton = cloudButtons[1]!;
+
+    await saveButton.trigger('click');
+    await saveButton.trigger('click');
+    await restoreButton.trigger('click');
+
+    expect(syncCloudSnapshot).toHaveBeenCalledOnce();
+    expect(saveButton.text()).toBe('Обновляю…');
+    expect(saveButton.attributes('disabled')).toBeDefined();
+    expect(restoreButton.attributes('disabled')).toBeDefined();
+    expect(loadCloudSnapshot).not.toHaveBeenCalled();
+
+    finishUpload({ status: 'synced', updatedAt: '2026-08-11T08:00:00.000Z' });
+    await flushPromises();
+
+    expect(saveButton.text()).toBe('Обновить копию сейчас');
+    expect(saveButton.attributes('disabled')).toBeUndefined();
+    expect(restoreButton.attributes('disabled')).toBeUndefined();
+    expect(notifySaved).toHaveBeenCalledWith('Локальная версия сохранена в облако');
+  });
+
+  it('blocks repeated data clearing and allows retrying after an error', async () => {
+    const { pinia, store } = createStore();
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    let rejectFirstClear!: (error: Error) => void;
+    const firstClear = new Promise<void>((_, reject) => {
+      rejectFirstClear = reject;
+    });
+    const clearAll = vi.spyOn(store, 'clearAll').mockReturnValueOnce(firstClear).mockResolvedValueOnce(undefined);
+    const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
+    const clearButton = wrapper.get('.settings-card--backup .danger-button');
+
+    await clearButton.trigger('click');
+    await clearButton.trigger('click');
+
+    expect(clearAll).toHaveBeenCalledOnce();
+    expect(confirm).toHaveBeenCalledTimes(2);
+    expect(clearButton.text()).toBe('Удаляю…');
+    expect(clearButton.attributes('disabled')).toBeDefined();
+
+    rejectFirstClear(new Error('IndexedDB unavailable'));
+    await flushPromises();
+
+    expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось удалить данные');
+    expect(clearButton.text()).toBe('Удалить');
+    expect(clearButton.attributes('disabled')).toBeUndefined();
+
+    await clearButton.trigger('click');
+    await flushPromises();
+    expect(clearAll).toHaveBeenCalledTimes(2);
+  });
+
   it('applies a confirmed cloud copy through the shared snapshot transition', async () => {
     const { pinia, store } = createStore();
     const auth = useAuthStore();
