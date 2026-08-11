@@ -1,48 +1,35 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
 import EChartPanel from '../components/charts/EChartPanel.vue';
-import MetricCard from '../components/MetricCard.vue';
-import { useTrendsView } from '../features/analytics/useTrendsView';
+import { useChangeHistoryView } from '../features/analytics/useChangeHistoryView';
 
 const {
   range,
   timelineExpanded,
   selectedEventKey,
+  selectedTrendMetric,
   eventPicker,
   rangeOptions,
   summary,
-  factors,
   primaryCues,
-  additionalCues,
-  hasEnoughDataForTrendCharts,
-  hasWeightData,
-  hasActionData,
+  trendMetricOptions,
+  selectedTrendMetricInfo,
+  trendMetricOption,
   eventKey,
   selectedEvent,
   eventComparison,
+  eventComparisonMetrics,
   lifeEvents,
-  results,
-  coverageOption,
-  trendOverviewOption,
-  monthRows,
   decisionTimeline,
   displayedDecisionTimeline,
   timelineSummary,
-  weightOption,
-  progressOption,
-  coverageText,
-  directionText,
-  nutritionText,
   formatComparisonValue,
   observationLabel,
-  factorSleepText,
-  factorEnergyText,
   selectEvent,
   copyPrompt,
   downloadJson,
   formatDate,
-  formatMinutes,
-} = useTrendsView();
+} = useChangeHistoryView();
 </script>
 
 <template>
@@ -50,12 +37,12 @@ const {
     <div class="page-heading">
       <div>
         <span class="eyebrow">3–12 месяцев</span>
-        <h1>Тренды</h1>
-        <p>Сравните несколько месяцев и посмотрите, какие изменения повторялись.</p>
+        <h1>История изменений</h1>
+        <p>Смотрите, какие события, решения и итоги меняли вашу траекторию.</p>
       </div>
     </div>
 
-    <div class="range-tabs" aria-label="Период динамики">
+    <div class="range-tabs" aria-label="Период истории">
       <button
         v-for="option in rangeOptions"
         :key="option.value"
@@ -74,18 +61,18 @@ const {
       <RouterLink class="secondary-button" to="/settings#analysis-settings">Выбрать даты</RouterLink>
     </div>
 
-    <section v-if="summary.coveredEntriesCount === 0" class="period-empty-guide">
-      <strong>Для сравнения пока нет записей</strong>
-      <p>Тренды становятся полезны со временем. Начните с коротких записей за день, а здесь позже можно будет сравнить месяцы.</p>
+    <section v-if="summary.coveredEntriesCount === 0 && decisionTimeline.length === 0" class="period-empty-guide">
+      <strong>Для истории пока нет записей</strong>
+      <p>Здесь появятся важные события, итоги и сохранённые решения.</p>
       <RouterLink class="secondary-button" to="/">Перейти к записи за день</RouterLink>
     </section>
 
     <template v-else>
-      <article class="dashboard-card dashboard-card--insights">
+      <article v-if="summary.coveredEntriesCount" class="dashboard-card dashboard-card--insights">
         <div class="section-heading">
           <div>
-            <span class="eyebrow">Главное и качество периода</span>
-            <h2>Что видно за выбранные месяцы</h2>
+            <span class="eyebrow">Главное за период</span>
+            <h2>Что стоит заметить</h2>
           </div>
           <div class="period-actions">
             <button class="secondary-button" type="button" @click="copyPrompt">Скопировать промпт</button>
@@ -98,146 +85,87 @@ const {
             <p>{{ cue.text }}</p>
           </article>
         </div>
+        <p class="data-note history-coverage-note">
+          Основа разбора: {{ summary.coveredEntriesCount }} дней с записями, {{ summary.ordinaryCoreEntriesCount }} обычных дней с основными
+          полями. Пропуски не заполняются.
+        </p>
       </article>
 
-      <details v-if="additionalCues.length" class="period-details trends-additional-details">
-        <summary>Показать остальные наблюдения</summary>
-        <div class="period-details__content">
-          <div class="review-cue-grid review-cue-grid--additional">
-            <article v-for="cue in additionalCues" :key="cue.id" class="review-cue" :class="'review-cue--' + cue.tone">
-              <strong>{{ cue.title }}</strong>
-              <p>{{ cue.text }}</p>
-            </article>
+      <article v-if="decisionTimeline.length" class="dashboard-card dashboard-card--timeline history-timeline--featured">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Основа истории</span>
+            <h2>События, решения и итоги</h2>
           </div>
+          <span class="count-badge">{{ decisionTimeline.length }}</span>
         </div>
-      </details>
-
-      <details class="period-details trends-quality-details">
-        <summary>Показать качество данных и динамику</summary>
-        <div class="period-details__content">
-          <div class="metrics-grid">
-            <MetricCard
-              label="Заполненных дней"
-              :value="summary.coveredEntriesCount"
-              :hint="summary.ordinaryCoreEntriesCount + ' с основными полями'"
-              accent="#1d5148"
-            />
-            <MetricCard
-              label="Средний сон"
-              :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))"
-              :hint="summary.sleepSamples + ' дн. без особых'"
-              accent="#7467e8"
-            />
-            <MetricCard
-              label="Работа"
-              :value="summary.careerDays + '/' + summary.careerSamples"
-              hint="дни с работой / дни с отметкой"
-              accent="#3f82d5"
-            />
-            <MetricCard
-              label="Шаги к цели"
-              :value="summary.externalActionDays + '/' + summary.preparationDays"
-              :hint="'шаги / подготовка · ' + summary.actionDirectionSamples + ' дн.'"
-              accent="#2eaa7f"
-            />
-            <MetricCard
-              label="Питание"
-              :value="summary.nutritionSupportDays + '/' + summary.nutritionBlockDays"
-              :hint="
-                summary.averageWeightKg === null
-                  ? summary.nutritionSamples + ' дн. с отметкой'
-                  : 'вес ' + summary.averageWeightKg.toFixed(1).replace('.0', '') + ' кг · ' + summary.weightSamples + ' изм.'
-              "
-              accent="#d9952f"
-            />
-            <MetricCard label="Итогов" :value="results.length" :hint="lifeEvents.length + ' важных событий'" accent="#e7a43b" />
-          </div>
-
-          <template v-if="hasEnoughDataForTrendCharts">
-            <article class="dashboard-card dashboard-card--quality">
-              <div class="section-heading">
-                <div>
-                  <span class="eyebrow">Качество наблюдений</span>
-                  <h2>Карта заполнения</h2>
-                </div>
-                <small>без серий и оценок</small>
-              </div>
-              <EChartPanel :option="coverageOption" :height="230" aria-label="Календарная карта полноты дневных записей" />
-              <p class="data-note trend-chart-description">
-                Заполнено {{ summary.coveredEntriesCount }} дней, из них {{ summary.ordinaryCoreEntriesCount }} обычных дней с основными
-                полями. Карта показывает пропуски и полноту, но не оценивает регулярность.
-              </p>
-            </article>
-
-            <article class="dashboard-card dashboard-card--trend">
-              <div class="section-heading">
-                <div>
-                  <span class="eyebrow">Динамика периода</span>
-                  <h2>Сон и энергия</h2>
-                </div>
-                <small>* неполный текущий месяц</small>
-              </div>
-              <EChartPanel :option="trendOverviewOption" :height="320" aria-label="Динамика сна и энергии по месяцам" />
-              <p class="data-note trend-chart-description">
-                Сон рассчитан по {{ summary.sleepSamples }} обычным дням, энергия — по {{ summary.energySamples }}. Линии показывают средние
-                значения по месяцам; неполный текущий месяц и важные события ограничивают прямое сравнение.
-              </p>
-            </article>
-          </template>
-          <div v-else class="period-review-note trends-chart-guide">
-            <strong>Для графиков пока мало сопоставимых данных</strong>
-            <p>
-              За {{ range }} мес. заполнено {{ summary.ordinaryCoveredEntriesCount }} обычных дней, из них
-              {{ summary.ordinaryCoreEntriesCount }} с основными полями. Сначала ориентируйтесь на выводы и таблицу с точным числом
-              наблюдений.
-            </p>
-          </div>
-
-          <details class="period-details trends-table-details">
-            <summary>Показать таблицу сна, состояния и действий</summary>
-            <div class="period-details__content">
-              <article class="dashboard-card dashboard-card--table">
-                <div class="section-heading">
-                  <div>
-                    <span class="eyebrow">Точные значения</span>
-                    <h2>Данные по месяцам</h2>
-                  </div>
-                </div>
-                <div class="trend-table">
-                  <div class="trend-table__head">
-                    <span>месяц</span><span>заполнено</span><span>сон (дни)</span><span>вес (изм.)</span><span>энергия (дни)</span
-                    ><span>шаги / подг.</span><span>питание + / −</span><span>особые</span>
-                  </div>
-                  <div v-for="row in monthRows" :key="row.monthStart + '-state'" class="trend-table__row">
-                    <strong>{{ row.label }}</strong>
-                    <span>{{ coverageText(row) }}</span>
-                    <span>
-                      {{ formatMinutes(row.summary.averageSleep === null ? null : Math.round(row.summary.averageSleep)) }} ({{
-                        row.summary.sleepSamples
-                      }})
-                    </span>
-                    <span>
-                      {{
-                        row.summary.averageWeightKg === null
-                          ? '—'
-                          : row.summary.averageWeightKg.toFixed(1).replace('.0', '') + ' кг (' + row.summary.weightSamples + ')'
-                      }}
-                    </span>
-                    <span>
-                      {{
-                        row.summary.averageEnergy === null
-                          ? '—'
-                          : row.summary.averageEnergy.toFixed(1).replace('.0', '') + '/5 (' + row.summary.energySamples + ')'
-                      }}
-                    </span>
-                    <span>{{ directionText(row) }}</span>
-                    <span>{{ nutritionText(row) }}</span>
-                    <span>{{ row.summary.specialDays }}</span>
-                  </div>
-                </div>
-              </article>
+        <div class="decision-timeline__summary" aria-label="Состав истории">
+          <span v-for="item in timelineSummary" :key="item.tone" :class="'decision-timeline__summary-item--' + item.tone">
+            <i></i>{{ item.label }} <strong>{{ item.count }}</strong>
+          </span>
+        </div>
+        <TransitionGroup name="reveal-list" tag="div" class="decision-timeline">
+          <article
+            v-for="(item, index) in displayedDecisionTimeline"
+            :key="item.date + '-' + item.type + '-' + item.title + '-' + index"
+            class="decision-timeline__item"
+            :class="'decision-timeline__item--' + item.tone"
+          >
+            <time>{{ formatDate(item.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</time>
+            <span>{{ item.type }}</span>
+            <div>
+              <strong>{{ item.title }}</strong>
+              <p v-if="item.detail">{{ item.detail }}</p>
+              <details v-if="item.extra" class="decision-timeline__details">
+                <summary>Показать сравнение показателей</summary>
+                <p>{{ item.extra }}</p>
+              </details>
             </div>
-          </details>
+          </article>
+        </TransitionGroup>
+        <button
+          v-if="decisionTimeline.length > 8"
+          class="secondary-button load-more timeline-toggle"
+          type="button"
+          :aria-expanded="timelineExpanded"
+          @click="timelineExpanded = !timelineExpanded"
+        >
+          {{ timelineExpanded ? 'Свернуть историю' : 'Показать всю историю (' + decisionTimeline.length + ')' }}
+        </button>
+      </article>
+
+      <details v-if="summary.coveredEntriesCount" class="period-details trends-metric-details">
+        <summary>Показать один показатель по месяцам</summary>
+        <div class="period-details__content">
+          <article v-if="trendMetricOptions.length" class="dashboard-card dashboard-card--trend">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Динамика периода</span>
+                <h2>{{ selectedTrendMetricInfo?.label }}</h2>
+              </div>
+              <small>{{ selectedTrendMetricInfo?.samples }} наблюдений · минимум два месяца</small>
+            </div>
+            <div class="metric-switcher" aria-label="Показатель графика">
+              <button
+                v-for="option in trendMetricOptions"
+                :key="option.id"
+                type="button"
+                :class="{ active: selectedTrendMetric === option.id }"
+                @click="selectedTrendMetric = option.id"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+            <EChartPanel :option="trendMetricOption" :height="300" :aria-label="`Динамика: ${selectedTrendMetricInfo?.label}`" />
+            <p class="data-note trend-chart-description">
+              Показаны месячные средние и важные события. Совпадение изменений во времени не доказывает причину; текущий месяц может быть
+              неполным.
+            </p>
+          </article>
+          <div v-else class="period-review-note trends-chart-guide">
+            <strong>Для графика пока мало сопоставимых данных</strong>
+            <p>Нужны наблюдения хотя бы в двух месяцах: 6 для сна или энергии либо 3 измерения веса.</p>
+          </div>
         </div>
       </details>
 
@@ -256,8 +184,7 @@ const {
                   <span class="event-picker__current">
                     <small>Событие для сравнения</small>
                     <strong v-if="selectedEvent">
-                      {{ formatDate(selectedEvent.date, { day: 'numeric', month: 'short', year: 'numeric' }) }} ·
-                      {{ selectedEvent.title }}
+                      {{ formatDate(selectedEvent.date, { day: 'numeric', month: 'short', year: 'numeric' }) }} · {{ selectedEvent.title }}
                     </strong>
                   </span>
                   <span class="event-picker__chevron">⌄</span>
@@ -274,10 +201,10 @@ const {
                     @click="selectEvent(event)"
                   >
                     <time>{{ formatDate(event.date, { day: 'numeric', month: 'short' }) }}</time>
-                    <span>
-                      <strong>{{ event.title }}</strong>
-                      <small v-if="event.note">{{ event.note }}</small>
-                    </span>
+                    <span
+                      ><strong>{{ event.title }}</strong
+                      ><small v-if="event.note">{{ event.note }}</small></span
+                    >
                     <i>{{ eventKey(event) === selectedEventKey ? '✓' : '' }}</i>
                   </button>
                 </div>
@@ -296,154 +223,27 @@ const {
                   {{ eventComparison.afterEntries }}/{{ eventComparison.windowDays }}
                 </span>
               </div>
-              <div class="comparison-table">
+              <div v-if="eventComparisonMetrics.length" class="comparison-table">
                 <div class="comparison-table__head"><span>Показатель</span><span>До</span><span>После</span></div>
-                <div v-for="metric in eventComparison.metrics" :key="metric.id" class="comparison-table__row">
+                <div v-for="metric in eventComparisonMetrics" :key="metric.id" class="comparison-table__row">
                   <strong>{{ metric.label }}</strong>
-                  <span>
-                    {{ formatComparisonValue(metric.before, metric.format) }}
-                    <small>{{ observationLabel(metric.beforeSamples) }}</small>
-                  </span>
-                  <span>
-                    {{ formatComparisonValue(metric.after, metric.format) }}
-                    <small>{{ observationLabel(metric.afterSamples) }}</small>
-                  </span>
+                  <span
+                    >{{ formatComparisonValue(metric.before, metric.format) }}
+                    <small>{{ observationLabel(metric.beforeSamples) }}</small></span
+                  >
+                  <span
+                    >{{ formatComparisonValue(metric.after, metric.format) }}
+                    <small>{{ observationLabel(metric.afterSamples) }}</small></span
+                  >
                 </div>
               </div>
+              <p v-else class="period-review-note">Для сравнения показателей нужно минимум по три наблюдения до и после события.</p>
               <p class="data-note">
-                Под значением указано число дневных наблюдений. Сравниваются равные календарные окна, день события исключён. Разница
-                показывает совпадение во времени, а не причинный эффект.
+                День события исключён. Показываются только показатели с достаточным числом наблюдений; совпадение во времени не означает
+                причинный эффект.
               </p>
             </template>
             <p v-else class="empty-copy">После события пока не прошло ни одного полного дня для сравнения.</p>
-          </article>
-        </div>
-      </details>
-
-      <details v-if="hasWeightData" class="period-details trends-weight-details">
-        <summary>Показать изменения веса</summary>
-        <div class="period-details__content">
-          <article class="dashboard-card dashboard-card--weight">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Тренд без разовых скачков</span>
-                <h2>Вес по месяцам</h2>
-              </div>
-              <small>среднее по месяцам</small>
-            </div>
-            <EChartPanel
-              v-if="hasEnoughDataForTrendCharts"
-              :option="weightOption"
-              :height="260"
-              aria-label="Динамика среднего веса по месяцам"
-            />
-            <p v-else class="period-review-note">Для графика веса пока мало сопоставимых дневных записей.</p>
-            <p class="data-note trend-chart-description">
-              Средние рассчитаны по {{ summary.weightSamples }} измерениям в обычные дни. Пропуски не заполняются, а текущий месяц может
-              быть неполным.
-            </p>
-          </article>
-        </div>
-      </details>
-
-      <details v-if="hasActionData" class="period-details trends-action-details">
-        <summary>Показать действия и итоги</summary>
-        <div class="period-details__content">
-          <article class="dashboard-card dashboard-card--progress">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Действия по цели</span>
-                <h2>Конкретные действия, подготовка и итоги</h2>
-              </div>
-              <small>столбцы: % отмеченных дней</small>
-            </div>
-            <EChartPanel
-              v-if="hasEnoughDataForTrendCharts"
-              :option="progressOption"
-              :height="320"
-              aria-label="Динамика конкретных действий, подготовки, других занятий и итогов"
-            />
-            <p v-else class="period-review-note">Для графика действий пока мало сопоставимых дневных записей.</p>
-            <p class="data-note trend-chart-description">
-              Доли рассчитаны по {{ summary.actionDirectionSamples }} дням с отметкой направления; линия показывает {{ results.length }}
-              итогов. Совпадение динамики не доказывает причину.
-            </p>
-          </article>
-        </div>
-      </details>
-
-      <details v-if="factors.length" class="period-details trends-factor-details">
-        <summary>Показать повторяющиеся факторы</summary>
-        <div class="period-details__content">
-          <article class="dashboard-card dashboard-card--factors">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Повторяемость</span>
-                <h2>Главные факторы дня</h2>
-              </div>
-            </div>
-            <div class="factor-summary-list">
-              <article v-for="factor in factors" :key="factor.id" class="factor-summary-item">
-                <span class="factor-summary-item__name">
-                  <i>{{ factor.icon }}</i>
-                  {{ factor.label }}
-                </span>
-                <strong>{{ factor.count }}</strong>
-                <small>{{ factorSleepText(factor) }}</small>
-                <small>{{ factorEnergyText(factor) }}</small>
-              </article>
-            </div>
-            <p class="data-note">
-              Сначала показаны дни с условием, затем обычные дни без него. Особые дни не учитываются. Совпадение не доказывает причину.
-            </p>
-          </article>
-        </div>
-      </details>
-
-      <details v-if="decisionTimeline.length" class="period-details trends-history-details">
-        <summary>Показать историю событий и решений ({{ decisionTimeline.length }})</summary>
-        <div class="period-details__content">
-          <article class="dashboard-card dashboard-card--timeline">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">История изменений</span>
-                <h2>События, решения и итоги</h2>
-              </div>
-              <span class="count-badge">{{ decisionTimeline.length }}</span>
-            </div>
-            <div class="decision-timeline__summary" aria-label="Состав истории">
-              <span v-for="item in timelineSummary" :key="item.tone" :class="'decision-timeline__summary-item--' + item.tone">
-                <i></i>{{ item.label }} <strong>{{ item.count }}</strong>
-              </span>
-            </div>
-            <TransitionGroup name="reveal-list" tag="div" class="decision-timeline">
-              <article
-                v-for="(item, index) in displayedDecisionTimeline"
-                :key="item.date + '-' + item.type + '-' + item.title + '-' + index"
-                class="decision-timeline__item"
-                :class="'decision-timeline__item--' + item.tone"
-              >
-                <time>{{ formatDate(item.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</time>
-                <span>{{ item.type }}</span>
-                <div>
-                  <strong>{{ item.title }}</strong>
-                  <p v-if="item.detail">{{ item.detail }}</p>
-                  <details v-if="item.extra" class="decision-timeline__details">
-                    <summary>Показать сравнение показателей</summary>
-                    <p>{{ item.extra }}</p>
-                  </details>
-                </div>
-              </article>
-            </TransitionGroup>
-            <button
-              v-if="decisionTimeline.length > 8"
-              class="secondary-button load-more timeline-toggle"
-              type="button"
-              :aria-expanded="timelineExpanded"
-              @click="timelineExpanded = !timelineExpanded"
-            >
-              {{ timelineExpanded ? 'Свернуть историю' : 'Показать всю историю (' + decisionTimeline.length + ')' }}
-            </button>
           </article>
         </div>
       </details>

@@ -42,7 +42,7 @@ describe('trends scenarios', () => {
     );
   }
 
-  it('shows conclusions first and reveals detailed evidence by topic', async () => {
+  it('shows conclusions and the change history before one optional metric', async () => {
     const { pinia, store } = createStore();
     store.dailyEntries = buildCoveredTrendEntries();
     store.results = [
@@ -70,27 +70,26 @@ describe('trends scenarios', () => {
     expect(wrapper.get('.range-custom-action strong').text()).toBe('Нужен другой период?');
     expect(wrapper.get('.range-custom-action a').text()).toBe('Выбрать даты');
     expect(wrapper.get('.range-custom-action a').attributes('href')).toBe('/settings#analysis-settings');
-    expect(wrapper.html().indexOf('dashboard-card--insights')).toBeLessThan(wrapper.html().indexOf('trends-quality-details'));
+    expect(wrapper.get('h1').text()).toBe('История изменений');
+    expect(wrapper.html().indexOf('dashboard-card--insights')).toBeLessThan(wrapper.html().indexOf('history-timeline--featured'));
+    expect(wrapper.html().indexOf('history-timeline--featured')).toBeLessThan(wrapper.html().indexOf('trends-metric-details'));
     expect(wrapper.findAll('.review-cue-grid--primary .review-cue')).toHaveLength(3);
-    expect(wrapper.get('.trends-quality-details').attributes('open')).toBeUndefined();
-    expect(wrapper.get('.trends-table-details').attributes('open')).toBeUndefined();
+    expect(wrapper.get('.trends-metric-details').attributes('open')).toBeUndefined();
     expect(wrapper.get('.trends-event-details').attributes('open')).toBeUndefined();
-    expect(wrapper.get('.trends-weight-details').attributes('open')).toBeUndefined();
-    expect(wrapper.get('.trends-action-details').attributes('open')).toBeUndefined();
-    expect(wrapper.get('.trends-factor-details').attributes('open')).toBeUndefined();
-    expect(wrapper.get('.trends-history-details').attributes('open')).toBeUndefined();
-    expect(wrapper.findAll('.trend-chart-description')).toHaveLength(4);
-    expect(wrapper.text()).toContain('Сон рассчитан по 24 обычным дням');
+    expect(wrapper.find('.trends-quality-details').exists()).toBe(false);
+    expect(wrapper.find('.trends-table-details').exists()).toBe(false);
+    expect(wrapper.find('.trends-action-details').exists()).toBe(false);
+    expect(wrapper.find('.trends-factor-details').exists()).toBe(false);
+    expect(wrapper.find('.trends-additional-details').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('Показать остальные наблюдения');
+    expect(wrapper.findAll('.trend-chart-description')).toHaveLength(1);
+    expect(wrapper.findAll('e-chart-panel-stub')).toHaveLength(1);
 
-    for (const [label, rowCount] of [
-      ['3 месяца', 3],
-      ['6 месяцев', 6],
-      ['12 месяцев', 12],
-    ] as const) {
+    for (const label of ['3 месяца', '6 месяцев', '12 месяцев'] as const) {
       const button = wrapper.findAll('.range-tabs button').find((item) => item.text() === label);
       await button!.trigger('click');
-      expect(wrapper.findAll('.trend-table__row')).toHaveLength(rowCount);
-      expect(wrapper.findAll('e-chart-panel-stub').length).toBeGreaterThanOrEqual(4);
+      expect(wrapper.findAll('.decision-timeline__item').length).toBeGreaterThan(0);
+      expect(wrapper.findAll('e-chart-panel-stub')).toHaveLength(1);
       expect(wrapper.find('.trends-chart-guide').exists()).toBe(false);
     }
   });
@@ -101,8 +100,8 @@ describe('trends scenarios', () => {
     const wrapper = mount(TrendsView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
 
     expect(wrapper.findAll('.review-cue-grid--primary .review-cue').length).toBeGreaterThan(0);
-    expect(wrapper.get('.trends-quality-details').attributes('open')).toBeUndefined();
-    expect(wrapper.get('.trends-chart-guide').text()).toContain('Для графиков пока мало сопоставимых данных');
+    expect(wrapper.get('.trends-metric-details').attributes('open')).toBeUndefined();
+    expect(wrapper.get('.trends-chart-guide').text()).toContain('Для графика пока мало сопоставимых данных');
     expect(wrapper.findAll('e-chart-panel-stub')).toHaveLength(0);
   });
 

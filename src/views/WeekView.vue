@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import type { EChartsCoreOption } from 'echarts/core';
-import EChartPanel from '../components/charts/EChartPanel.vue';
-import MetricCard from '../components/MetricCard.vue';
 import PeriodNavigator from '../components/PeriodNavigator.vue';
 import PeriodRecordCard from '../components/PeriodRecordCard.vue';
 import ArchivePagination from '../features/journal/ArchivePagination.vue';
@@ -12,7 +9,6 @@ import WeeklyReviewOverview from '../components/WeeklyReviewOverview.vue';
 import {
   actionDirectionLabel,
   buildReviewCues,
-  buildReviewQuestions,
   careerStatesForEntry,
   contextFactorLabel,
   entriesForWeek,
@@ -209,9 +205,6 @@ const reviewCues = computed(() =>
   buildReviewCues('week', entries.value, results.value, lifeEvents.value, externalCareerIds.value, contextFactorItems.value),
 );
 const primaryReviewCues = computed(() => reviewCues.value.slice(0, 3));
-const additionalReviewCues = computed(() => reviewCues.value.slice(3));
-const hasEnoughDataForWeekChart = computed(() => reviewCues.value.find((cue) => cue.id === 'coverage')?.tone === 'good');
-const reviewQuestions = buildReviewQuestions('week');
 const previousReview = computed(() => store.reviewByWeek(addDays(start.value, -7)));
 const savedReview = computed(() => store.reviewByWeek(start.value));
 const hasSavedReview = computed(() => Boolean(savedReview.value));
@@ -274,133 +267,22 @@ const rhythmDays = computed(() =>
     };
   }),
 );
-const rhythmOption = computed<EChartsCoreOption>(() => {
-  const labels = rhythmDays.value.map((item) => formatDate(item.day, { weekday: 'short', day: '2-digit' }));
-  const actionRows = ['Работа', 'Шаг к цели', 'Занимался другим', 'Движение', 'Питание', 'Особый день'];
-  const actionSeries = [
-    { name: 'Работа', row: 'Работа', color: '#4188e8', active: (item: (typeof rhythmDays.value)[number]) => item.hasCareer },
-    {
-      name: 'Шаг к цели',
-      row: 'Шаг к цели',
-      color: '#5264d8',
-      active: (item: (typeof rhythmDays.value)[number]) => item.hasExternalAction,
-    },
-    {
-      name: 'Занимался другим',
-      row: 'Занимался другим',
-      color: '#b85c4c',
-      active: (item: (typeof rhythmDays.value)[number]) => item.hasDrift,
-    },
-    { name: 'Движение', row: 'Движение', color: '#38b989', active: (item: (typeof rhythmDays.value)[number]) => item.hasMovement },
-    {
-      name: 'Питание поддержало',
-      row: 'Питание',
-      color: '#38b989',
-      active: (item: (typeof rhythmDays.value)[number]) => item.hasNutritionSupport,
-    },
-    {
-      name: 'Питание нейтрально',
-      row: 'Питание',
-      color: '#d39b2f',
-      active: (item: (typeof rhythmDays.value)[number]) => item.hasNutritionNeutral,
-    },
-    {
-      name: 'Питание мешало',
-      row: 'Питание',
-      color: '#b85c4c',
-      active: (item: (typeof rhythmDays.value)[number]) => item.hasNutritionBlock,
-    },
-    {
-      name: 'Особый день',
-      row: 'Особый день',
-      color: '#eb7458',
-      active: (item: (typeof rhythmDays.value)[number]) => Boolean(item.entry?.specialDay),
-    },
-  ];
-
-  return {
-    color: ['#7467e8', '#1d5148'],
-    tooltip: { trigger: 'item' },
-    legend: { data: ['Сон', 'Энергия'], top: 0, right: 0, itemWidth: 12, itemHeight: 10, textStyle: { color: '#657085', fontSize: 12 } },
-    grid: [
-      { left: 50, right: 44, top: 42, height: 178 },
-      { left: 82, right: 44, top: 244, height: 94 },
-    ],
-    xAxis: [
-      {
-        type: 'category',
-        gridIndex: 0,
-        data: labels,
-        axisLabel: { show: false },
-        axisTick: { show: false },
-        axisLine: { lineStyle: { color: '#dfe4ed' } },
-      },
-      {
-        type: 'category',
-        gridIndex: 1,
-        data: labels,
-        axisLabel: { color: '#7d8798', fontSize: 11 },
-        axisTick: { show: false },
-        axisLine: { lineStyle: { color: '#dfe4ed' } },
-      },
-    ],
-    yAxis: [
-      {
-        type: 'value',
-        gridIndex: 0,
-        min: 0,
-        max: 12,
-        interval: 3,
-        axisLabel: { formatter: '{value}ч', color: '#7d8798' },
-        splitLine: { lineStyle: { color: '#edf1f6' } },
-      },
-      { type: 'value', gridIndex: 0, min: 1, max: 5, interval: 1, axisLabel: { color: '#7d8798' }, splitLine: { show: false } },
-      {
-        type: 'category',
-        gridIndex: 1,
-        data: actionRows,
-        axisLabel: { color: '#657085', fontSize: 10 },
-        axisTick: { show: false },
-        axisLine: { show: false },
-      },
-    ],
-    series: [
-      {
-        name: 'Сон',
-        type: 'bar',
-        xAxisIndex: 0,
-        yAxisIndex: 0,
-        barMaxWidth: 34,
-        data: rhythmDays.value.map((item) =>
-          item.entry?.sleepMinutes === null || item.entry?.sleepMinutes === undefined
-            ? null
-            : {
-                value: Math.round((item.entry.sleepMinutes / 60) * 10) / 10,
-                itemStyle: { color: item.entry.specialDay ? '#eb7458' : '#7467e8', borderRadius: [6, 6, 2, 2] },
-              },
-        ),
-      },
-      {
-        name: 'Энергия',
-        type: 'line',
-        xAxisIndex: 0,
-        yAxisIndex: 1,
-        symbolSize: 9,
-        lineStyle: { width: 3 },
-        data: rhythmDays.value.map((item) => item.entry?.energy ?? null),
-      },
-      ...actionSeries.map((series) => ({
-        name: series.name,
-        type: 'scatter' as const,
-        xAxisIndex: 1,
-        yAxisIndex: 2,
-        symbolSize: 10,
-        itemStyle: { color: series.color },
-        data: rhythmDays.value.flatMap((item, index) => (series.active(item) ? [[labels[index], series.row]] : [])),
-      })),
-    ],
-  };
-});
+function weekDayFacts(item: (typeof rhythmDays.value)[number]): string[] {
+  const facts: string[] = [];
+  if (item.entry?.sleepMinutes !== null && item.entry?.sleepMinutes !== undefined) {
+    facts.push(`Сон ${formatMinutes(item.entry.sleepMinutes)}`);
+  }
+  if (item.entry?.energy !== null && item.entry?.energy !== undefined) facts.push(`Энергия ${item.entry.energy}/5`);
+  if (item.hasCareer) facts.push('Работа');
+  if (item.hasExternalAction) facts.push('Шаг к цели');
+  if (item.hasDrift) facts.push('Другие дела');
+  if (item.hasMovement) facts.push('Физическая активность');
+  if (item.hasNutritionSupport) facts.push('Питание поддержало');
+  if (item.hasNutritionNeutral) facts.push('Питание нейтрально');
+  if (item.hasNutritionBlock) facts.push('Питание мешало');
+  if (item.entry?.specialDay) facts.push(specialDayLabel(item.entry.specialDay));
+  return facts;
+}
 const review = reactive<WeeklyReview>(emptyWeeklyReview(start.value));
 const reviewSaving = ref(false);
 const promptCopying = ref(false);
@@ -577,6 +459,32 @@ function downloadJson() {
         </div>
       </article>
 
+      <section
+        v-if="results.length || lifeEvents.length"
+        class="period-records period-records--featured"
+        aria-label="Главные записи недели"
+      >
+        <PeriodRecordCard
+          v-if="results.length"
+          eyebrow="Завершённые факты"
+          title="Итоги недели"
+          :items="resultRecordItems"
+          :breakdown="resultAreaSummary"
+          breakdown-label="Итоги по областям"
+          pagination-label="итогов недели"
+        />
+
+        <PeriodRecordCard
+          v-if="lifeEvents.length"
+          eyebrow="Важный контекст"
+          title="События недели"
+          :items="eventRecordItems"
+          :breakdown="eventTypeSummary"
+          breakdown-label="События по типам"
+          pagination-label="событий недели"
+        />
+      </section>
+
       <article v-if="reviewAvailable" id="week-review" class="review-card">
         <div class="section-heading">
           <div>
@@ -643,89 +551,29 @@ function downloadJson() {
       </section>
 
       <details v-if="hasDailyData || hasJournalData" class="period-details week-data-details" :open="!hasDailyData">
-        <summary>{{ hasDailyData ? 'Показать показатели и записи недели' : 'Записи недели' }}</summary>
+        <summary>{{ hasDailyData ? 'Показать дни и дополнительный контекст' : 'Записи недели' }}</summary>
         <div class="period-details__content">
-          <section v-if="hasDailyData" class="week-detail-section" aria-labelledby="week-metrics-title">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Показатели недели</span>
-                <h2 id="week-metrics-title">Сводка по отмеченным дням</h2>
-              </div>
-            </div>
-            <div class="metrics-grid">
-              <MetricCard
-                label="Средний сон"
-                :value="formatMinutes(summary.averageSleep === null ? null : Math.round(summary.averageSleep))"
-                :hint="`${summary.sleepSamples} дн. без особых`"
-                accent="#7467e8"
-              />
-              <MetricCard
-                label="Работа"
-                :value="`${summary.careerDays}/${summary.careerSamples}`"
-                hint="дни с работой / дни с отметкой"
-                accent="#3f82d5"
-              />
-              <MetricCard
-                label="Шаги к цели"
-                :value="`${summary.externalActionDays}/${summary.preparationDays}`"
-                :hint="`шаги / подготовка · ${summary.actionDirectionSamples} дн.`"
-                accent="#1d5148"
-              />
-              <MetricCard
-                label="Дней с активностью"
-                :value="summary.movementDays"
-                :hint="`${summary.movementSamples} дн. с отметкой`"
-                accent="#2eaa7f"
-              />
-              <MetricCard
-                label="Питание"
-                :value="`${summary.nutritionSupportDays}/${summary.nutritionBlockDays}`"
-                :hint="`поддержало / мешало · ${summary.nutritionSamples} дн.`"
-                accent="#d9952f"
-              />
-              <MetricCard label="Итогов" :value="results.length" accent="#e7a43b" />
-            </div>
-          </section>
-
           <article v-if="hasDailyData" class="dashboard-card">
             <div class="section-heading">
               <div>
-                <span class="eyebrow">Ритм недели</span>
-                <h2>Сон, энергия и действия</h2>
+                <span class="eyebrow">Факты по дням</span>
+                <h2>Как проходила неделя</h2>
               </div>
             </div>
-            <template v-if="hasEnoughDataForWeekChart">
-              <EChartPanel :option="rhythmOption" :height="380" aria-label="Ритм сна, энергии и действий за неделю" />
-              <p class="data-note">
-                Столбцы показывают сон, линия — энергию. Оранжевый столбец означает особый день. В строке питания: зелёный — поддержало
-                цель, жёлтый — нейтрально, красный — мешало.
-              </p>
-            </template>
-            <div v-else class="period-review-note week-chart-guide">
-              <strong>Для графика пока мало сопоставимых данных</strong>
-              <p>
-                Нужны хотя бы 4 обычных заполненных дня, из них 2 с основными полями. Сейчас: {{ summary.ordinaryCoveredEntriesCount }} и
-                {{ summary.ordinaryCoreEntriesCount }}.
-              </p>
-            </div>
-          </article>
-
-          <article v-if="additionalReviewCues.length || reviewQuestions.length" class="dashboard-card">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Дополнительный разбор</span>
-                <h2>Другие наблюдения и вопросы</h2>
-              </div>
-            </div>
-            <div v-if="additionalReviewCues.length" class="review-cue-grid review-cue-grid--additional">
-              <article v-for="cue in additionalReviewCues" :key="cue.id" class="review-cue" :class="`review-cue--${cue.tone}`">
-                <strong>{{ cue.title }}</strong>
-                <p>{{ cue.text }}</p>
+            <div class="week-story-list">
+              <article v-for="item in rhythmDays" :key="item.day" class="week-story-day" :class="{ 'week-story-day--empty': !item.entry }">
+                <time>{{ formatDate(item.day, { weekday: 'short', day: 'numeric' }) }}</time>
+                <div>
+                  <strong v-if="item.entry?.importantFact">{{ item.entry.importantFact }}</strong>
+                  <span v-else>{{
+                    item.entry ? 'Запись без заметки дня' : item.day > todayKey() ? 'День ещё не наступил' : 'Записи нет'
+                  }}</span>
+                  <div v-if="weekDayFacts(item).length" class="week-story-day__facts">
+                    <small v-for="fact in weekDayFacts(item)" :key="fact">{{ fact }}</small>
+                  </div>
+                </div>
               </article>
             </div>
-            <ol class="review-question-list">
-              <li v-for="question in reviewQuestions" :key="question">{{ question }}</li>
-            </ol>
           </article>
 
           <article v-if="hasDailyData && experimentCards.length" class="dashboard-card">
@@ -891,26 +739,6 @@ function downloadJson() {
               </template>
             </div>
           </article>
-
-          <PeriodRecordCard
-            v-if="results.length"
-            eyebrow="Завершённые факты"
-            title="Итоги недели"
-            :items="resultRecordItems"
-            :breakdown="resultAreaSummary"
-            breakdown-label="Итоги по областям"
-            pagination-label="итогов недели"
-          />
-
-          <PeriodRecordCard
-            v-if="lifeEvents.length"
-            eyebrow="Важный контекст"
-            title="События недели"
-            :items="eventRecordItems"
-            :breakdown="eventTypeSummary"
-            breakdown-label="События по типам"
-            pagination-label="событий недели"
-          />
         </div>
       </details>
     </template>

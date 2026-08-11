@@ -255,7 +255,7 @@ describe('period review navigation', () => {
     }
   });
 
-  it('keeps the weekly decision before details and limits the first-level observations', () => {
+  it('keeps the weekly decision before compact daily context and retains the week map', () => {
     const { pinia, store } = createStore();
     store.dailyEntries = Array.from({ length: 5 }, (_, index) => ({
       ...emptyDailyEntry(`2026-07-${String(20 + index).padStart(2, '0')}`),
@@ -293,20 +293,21 @@ describe('period review navigation', () => {
     const reviewContext = review.get('details.review-context-details');
     expect(review.element.compareDocumentPosition(details.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(wrapper.findAll('.review-cue-grid--primary .review-cue')).toHaveLength(3);
-    expect(wrapper.findAll('.review-cue-grid--additional .review-cue').length).toBeGreaterThan(0);
+    expect(wrapper.find('.review-cue-grid--additional').exists()).toBe(false);
     expect((reviewContext.element as HTMLDetailsElement).open).toBe(false);
     expect(reviewContext.get('summary').text()).toBe('Добавить итоги и контекст');
     expect(
       (review.get('textarea[placeholder="Можно продолжить как есть или пока ничего не решать"]').element as HTMLTextAreaElement).value,
     ).toBe('');
     expect((details.element as HTMLDetailsElement).open).toBe(false);
-    expect(details.get('summary').text()).toBe('Показать показатели и записи недели');
-    expect(details.find('.metrics-grid').exists()).toBe(true);
-    expect(details.find('.week-chart-guide').exists()).toBe(false);
-    expect(details.find('e-chart-panel-stub').exists()).toBe(true);
+    expect(details.get('summary').text()).toBe('Показать дни и дополнительный контекст');
+    expect(details.find('.metrics-grid').exists()).toBe(false);
+    expect(details.find('.week-story-list').exists()).toBe(true);
+    expect(details.find('.heatmap').exists()).toBe(true);
+    expect(details.find('e-chart-panel-stub').exists()).toBe(false);
   });
 
-  it('explains why the weekly graph is hidden when comparable data is scarce', () => {
+  it('shows sparse weekly data as a compact day story without a graph', () => {
     const { pinia, store } = createStore();
     store.dailyEntries = [
       {
@@ -320,8 +321,8 @@ describe('period review navigation', () => {
     const wrapper = mount(WeekView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
     const details = wrapper.get('details.week-data-details');
 
-    expect(details.get('.week-chart-guide').text()).toContain('Для графика пока мало сопоставимых данных');
-    expect(details.get('.week-chart-guide').text()).toContain('Сейчас: 1 и 1');
+    expect(details.get('.week-story-list').text()).toContain('Одна заполненная запись');
+    expect(details.findAll('.week-story-day')).toHaveLength(7);
     expect(details.find('e-chart-panel-stub').exists()).toBe(false);
   });
 
@@ -349,24 +350,26 @@ describe('period review navigation', () => {
     const wrapper = mount(MonthView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
 
     const review = wrapper.get('#month-review');
-    const facts = wrapper.get('details.month-facts-details');
     const analysis = wrapper.get('details.month-analysis-details');
-    const records = wrapper.get('details.period-records');
+    const records = wrapper.get('.period-records--featured');
     const reviewContext = review.get('details.month-review-context');
     expect(review.element.compareDocumentPosition(analysis.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(review.element.compareDocumentPosition(records.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(wrapper.findAll('.month-week-overview .comparison-periods > span').length).toBeGreaterThanOrEqual(2);
+    expect(records.element.compareDocumentPosition(review.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(wrapper.findAll('.month-week-overview .month-week-story > article').length).toBeGreaterThanOrEqual(2);
     expect(wrapper.findAll('.review-cue-grid--primary .review-cue')).toHaveLength(3);
     expect(wrapper.find('.month-featured-events').exists()).toBe(false);
     expect(records.text()).toContain('Событие, которое изменило месяц');
     expect((reviewContext.element as HTMLDetailsElement).open).toBe(false);
     expect(reviewContext.get('summary').text()).toBe('Добавить разбор месяца');
-    expect((facts.element as HTMLDetailsElement).open).toBe(false);
-    expect(facts.find('.metrics-grid').exists()).toBe(true);
-    expect(facts.find('.month-calendar').exists()).toBe(true);
+    expect(wrapper.find('.month-facts-details').exists()).toBe(false);
+    expect(wrapper.find('.metrics-grid').exists()).toBe(false);
+    expect(wrapper.find('.month-calendar').exists()).toBe(false);
     expect((analysis.element as HTMLDetailsElement).open).toBe(false);
     expect(analysis.find('.month-chart-guide').exists()).toBe(false);
-    expect(analysis.find('e-chart-panel-stub').exists()).toBe(true);
+    expect(analysis.findAll('e-chart-panel-stub')).toHaveLength(1);
+    expect(analysis.text()).toContain('Области жизни');
+    expect(analysis.find('.review-cue-grid--additional').exists()).toBe(false);
+    expect(analysis.text()).not.toContain('Другие наблюдения и вопросы');
   });
 
   it('explains why monthly graphs are hidden when comparable data is scarce', () => {
@@ -384,9 +387,28 @@ describe('period review navigation', () => {
     const analysis = wrapper.get('details.month-analysis-details');
 
     expect(wrapper.get('.month-week-overview').text()).toContain('Для сравнения нужны записи хотя бы за две недели');
-    expect(analysis.get('.month-chart-guide').text()).toContain('Для графиков пока мало сопоставимых данных');
-    expect(analysis.get('.month-chart-guide').text()).toContain('Сейчас: 1 и 1');
+    expect(analysis.get('.month-chart-guide').text()).toContain('Для графика пока мало данных');
+    expect(analysis.get('.month-chart-guide').text()).toContain('сон — 1, энергия — 1, вес — 0');
     expect(analysis.find('e-chart-panel-stub').exists()).toBe(false);
+  });
+
+  it('shows the monthly weight graph from the first measurement', () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [
+      {
+        ...emptyDailyEntry('2026-07-21'),
+        recordedFields: ['weightKg', 'importantFact'],
+        weightKg: 81.4,
+        importantFact: 'Первое измерение веса за месяц',
+      },
+    ];
+    const wrapper = mount(MonthView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+    const analysis = wrapper.get('details.month-analysis-details');
+
+    expect(analysis.get('.metric-switcher').text()).toContain('Вес');
+    expect(analysis.get('.month-metric-card').text()).toContain('1 изм.');
+    expect(analysis.findAll('e-chart-panel-stub')).toHaveLength(1);
+    expect(analysis.find('.month-chart-guide').exists()).toBe(false);
   });
 
   it('keeps monthly record groups together and paginates detailed notes', async () => {
@@ -418,16 +440,16 @@ describe('period review navigation', () => {
     }));
     const wrapper = mount(MonthView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
 
-    expect(wrapper.text()).toContain('Показать графики и подробный разбор');
-    expect(wrapper.text()).toContain('Показать записи месяца');
+    expect(wrapper.text()).toContain('Показать выбранный показатель и подробный разбор');
+    expect(wrapper.text()).toContain('Показать действия и дополнительный контекст');
     expect(wrapper.text()).not.toContain('Открыть все итоги');
     expect(wrapper.text()).not.toContain('Открыть все события');
-    const recordGroups = wrapper.get('.period-records').findAll('article.period-record-card');
+    const recordGroups = wrapper.get('.period-records--featured').findAll('article.period-record-card');
     expect(recordGroups[0].text()).toContain('Итоги месяца');
     expect(recordGroups[1].text()).toContain('События месяца');
     expect(wrapper.text()).toContain('Итог месяца 4');
 
-    const actions = wrapper.get('.period-record-card--disclosure');
+    const actions = wrapper.get('details.period-records').get('.period-record-card--disclosure');
     await actions.get('summary').trigger('click');
     expect(actions.findAll('.note-item')).toHaveLength(7);
     expect(actions.text()).toContain('1 из 2');
@@ -470,7 +492,8 @@ describe('period review navigation', () => {
       expect(wrapper.text()).toContain('Важное событие без дневной записи');
     }
     expect((week.get('details.week-data-details').element as HTMLDetailsElement).open).toBe(true);
-    expect((month.get('details.period-records').element as HTMLDetailsElement).open).toBe(true);
+    expect(month.get('.period-records--featured').text()).toContain('Итоги месяца');
+    expect(month.find('details.period-records').exists()).toBe(false);
   });
 
   it('keeps a saved period review visible without daily or journal records', () => {
@@ -574,7 +597,7 @@ describe('period review navigation', () => {
     });
 
     expect(wrapper.get('.period-nav__label').text()).toContain('Текущая неделя');
-    expect(wrapper.find('.metrics-grid').exists()).toBe(true);
+    expect(wrapper.find('.week-story-list').exists()).toBe(true);
     expect(wrapper.find('.period-empty-guide').exists()).toBe(false);
     expect(wrapper.get('.recovered-week-link').text()).toContain('Ваш первый обзор сохранён');
   });

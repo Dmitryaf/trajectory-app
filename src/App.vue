@@ -149,7 +149,7 @@ const navItems = [
   { to: '/', label: 'Сегодня', icon: '●' },
   { to: '/week', label: 'Неделя', icon: '▦' },
   { to: '/month', label: 'Месяц', icon: '▥' },
-  { to: '/trends', label: 'Тренды', icon: '≋' },
+  { to: '/trends', label: 'История', icon: '≋' },
   { to: '/more', label: 'Журнал', icon: '◇' },
 ];
 </script>
