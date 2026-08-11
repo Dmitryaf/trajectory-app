@@ -562,10 +562,13 @@ function downloadJson() {
             <button class="secondary-button" type="button" @click="downloadJson">Скачать данные</button>
           </div>
         </div>
-        <p class="data-note range-custom-action">
-          Нужен другой период?
-          <RouterLink to="/settings#analysis-settings">Выбрать даты и скопировать промпт</RouterLink>
-        </p>
+        <div class="review-nudge range-custom-action" style="margin-top: 16px">
+          <div>
+            <strong>Нужен другой период?</strong>
+            <p>Выберите точные даты и скопируйте промпт в настройках.</p>
+          </div>
+          <RouterLink class="secondary-button" to="/settings#analysis-settings">Выбрать даты</RouterLink>
+        </div>
         <div class="review-cue-grid review-cue-grid--primary">
           <article v-for="cue in primaryReviewCues" :key="cue.id" class="review-cue" :class="`review-cue--${cue.tone}`">
             <strong>{{ cue.title }}</strong>

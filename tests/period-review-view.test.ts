@@ -83,7 +83,8 @@ describe('period review navigation', () => {
 
     for (const wrapper of [week, month]) {
       const customPeriodLink = wrapper.get('.range-custom-action a');
-      expect(customPeriodLink.text()).toBe('Выбрать даты и скопировать промпт');
+      expect(wrapper.get('.range-custom-action strong').text()).toBe('Нужен другой период?');
+      expect(customPeriodLink.text()).toBe('Выбрать даты');
       expect(customPeriodLink.attributes('href')).toBe('/settings#analysis-settings');
     }
 

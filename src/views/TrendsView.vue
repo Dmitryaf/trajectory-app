@@ -66,10 +66,13 @@ const {
         {{ option.label }}
       </button>
     </div>
-    <p class="data-note range-custom-action">
-      Нужен другой период?
-      <RouterLink to="/settings#analysis-settings">Выбрать даты и скопировать промпт</RouterLink>
-    </p>
+    <div class="review-nudge range-custom-action">
+      <div>
+        <strong>Нужен другой период?</strong>
+        <p>Выберите точные даты и скопируйте промпт в настройках.</p>
+      </div>
+      <RouterLink class="secondary-button" to="/settings#analysis-settings">Выбрать даты</RouterLink>
+    </div>
 
     <section v-if="summary.coveredEntriesCount === 0" class="period-empty-guide">
       <strong>Для сравнения пока нет записей</strong>
