@@ -65,7 +65,7 @@ Pinia stores
 → db.dailyEntries.put()
 → Pinia обновляет dailyEntries и запускает cloud sync
 → форма получает нормализованную запись и показывает результат
-→ tests/view-scenarios.test.ts, tests/daily-entry-model.test.ts, tests/backup-import.test.ts
+→ tests/daily-entry-view.test.ts, tests/daily-entry-model.test.ts, tests/backup-import.test.ts
 ```
 
 Главные контракты:
@@ -108,7 +108,7 @@ Pinia stores
 → транзакция Dexie по всем таблицам
 → при необходимости syncCloudSnapshot({ force: true })
 → обновление store и уведомление
-→ tests/backup-import.test.ts, tests/view-scenarios.test.ts
+→ tests/backup-import.test.ts, tests/settings-view.test.ts
 ```
 
 `src/features/backup/snapshot.ts` проверяет версию и структуру до очистки базы. Только после успешной нормализации `useAppStore.importData()` заменяет все таблицы одной транзакцией и повторно загружает store. Неподдерживаемая версия или некорректная запись не должна уничтожить текущие данные.
@@ -124,7 +124,7 @@ Pinia stores
 → src/features/analytics/periodSummary.ts
 → данные Pinia store
 → computed summary, MetricCard и график
-→ tests/analytics.test.ts, tests/view-scenarios.test.ts
+→ tests/analytics.test.ts, tests/period-review-view.test.ts
 ```
 
 `summarize()` исключает особые дни из обычных средних, считает выборку каждого показателя отдельно и использует `dailyFieldWasRecorded()` для знаменателей категориальных ответов. Пустая выборка возвращает `null`, а не вымышленный ноль. `WeekView.vue` отдельно формирует текст сводки, подсказки обзора и экспортируемый пакет.
@@ -297,7 +297,7 @@ Beta-релиз:
 2. Прочитай `src/main.ts` и `src/App.vue`.
 3. Проследи сохранение дня по разделу 4.1.
 4. Открой `src/db.ts` и определения главных сущностей в `src/types.ts`.
-5. Сопоставь `TodayView.vue` с одним сценарием из `tests/view-scenarios.test.ts`.
+5. Сопоставь `TodayView.vue` с одним сценарием из `tests/daily-entry-view.test.ts`.
 
 ### Второй проход
 

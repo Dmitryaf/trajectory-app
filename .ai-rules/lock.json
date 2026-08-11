@@ -1,9 +1,9 @@
 ﻿{
     "schemaVersion":  "0.2",
-    "generatedAtUtc":  "2026-08-09T08:28:56.6409608Z",
+    "generatedAtUtc":  "2026-08-11T06:19:56.8171085Z",
     "source":  {
                    "repository":  "ai-rules-hub",
-                   "revision":  "8f1c39faa14d41c0541ab7cc0e09a635f885bc26",
+                   "revision":  "9153d716425f165c5f9fde3b2fc7085eb06be563",
                    "dirty":  false,
                    "catalogVersion":  "0.1"
                },
@@ -53,7 +53,7 @@
                   {
                       "source":  "rules/AI_COLLABORATION.md",
                       "target":  ".ai-rules/upstream/rules/AI_COLLABORATION.md",
-                      "sha256":  "c0346eb44aafd2a9c2d6b9160d170dc93971da9b76e49de0067ce017f340628d",
+                      "sha256":  "2182c05f4120cfddc6fc6e62027a78d7ffc37a459f8a5370bb50667c5f6ff70f",
                       "state":  "managed"
                   },
                   {
