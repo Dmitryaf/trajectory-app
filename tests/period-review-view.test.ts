@@ -81,6 +81,13 @@ describe('period review navigation', () => {
     const weekButton = week.findAll('button').find((button) => button.text() === 'Скопировать промпт')!;
     const monthButton = month.findAll('button').find((button) => button.text() === 'Скопировать промпт')!;
 
+    for (const wrapper of [week, month]) {
+      const customPeriodLink = wrapper.get('.range-custom-action a');
+      expect(wrapper.get('.range-custom-action strong').text()).toBe('Нужен другой период?');
+      expect(customPeriodLink.text()).toBe('Выбрать даты');
+      expect(customPeriodLink.attributes('href')).toBe('/settings#analysis-settings');
+    }
+
     await weekButton.trigger('click');
     await weekButton.trigger('click');
     await monthButton.trigger('click');
@@ -100,6 +107,79 @@ describe('period review navigation', () => {
     expect(monthButton.text()).toBe('Скопировать промпт');
     expect(weekButton.attributes('disabled')).toBeUndefined();
     expect(monthButton.attributes('disabled')).toBeUndefined();
+  });
+
+  it('keeps long experiments compact and pages their daily notes inside the matching experiment', async () => {
+    const { pinia, store } = createStore();
+    const completed = { ...store.settings.experiment, title: 'Завтрак без телефона', startDate: '2026-07-19', endDate: '2026-07-20' };
+    const { active: _active, ...completedRecord } = completed;
+    store.settings.experiment = {
+      ...store.settings.experiment,
+      active: true,
+      title: 'Каждый день начинать важное действие, даже если условие эксперимента занимает несколько строк '.repeat(4),
+      hypothesis: 'Станет ли легче начинать без ожидания подходящего состояния',
+      startDate: '2026-07-21',
+      endDate: '2026-07-26',
+    };
+    store.settings.experimentHistory = [
+      {
+        ...completedRecord,
+        conclusion: 'Телефон влиял меньше, чем ожидалось',
+        decision: 'stop',
+        id: 'completed-breakfast',
+        completedAt: '2026-07-20T20:00:00.000Z',
+      },
+    ];
+    store.dailyEntries = [
+      {
+        ...emptyDailyEntry('2026-07-20'),
+        importantFact: 'Есть запись',
+        experimentCompleted: true,
+        experimentNote: 'Заранее оставил телефон в другой комнате',
+      },
+      {
+        ...emptyDailyEntry('2026-07-21'),
+        importantFact: 'Есть запись',
+        experimentCompleted: false,
+        experimentNote: 'Долго выбирал первое действие',
+      },
+      {
+        ...emptyDailyEntry('2026-07-22'),
+        importantFact: 'Есть запись',
+        experimentCompleted: true,
+        experimentNote: 'Подготовил задачу с вечера',
+      },
+    ];
+    const wrapper = mount(WeekView, {
+      global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } },
+    });
+    let cards = wrapper.findAll('.experiment-period-card');
+
+    expect(cards).toHaveLength(2);
+    expect(cards[0]!.attributes('open')).toBeDefined();
+    expect(cards[1]!.attributes('open')).toBeUndefined();
+    expect(cards[0]!.get('summary strong').text().endsWith('…')).toBe(true);
+    expect(cards[0]!.text()).toContain('Заметки по дням · 2');
+    expect(cards[0]!.find('.experiment-note-page').exists()).toBe(false);
+
+    await cards[0]!
+      .findAll('button')
+      .find((button) => button.text() === 'Заметки по дням · 2')!
+      .trigger('click');
+    expect(cards[0]!.get('.experiment-note-page').text()).toContain('Долго выбирал первое действие');
+    expect(cards[0]!.get('.experiment-note-page').text()).toContain('1 из 2');
+
+    await cards[0]!.get('[aria-label="Страницы заметок эксперимента"] button:last-child').trigger('click');
+    expect(cards[0]!.get('.experiment-note-page').text()).toContain('Подготовил задачу с вечера');
+
+    (cards[1]!.element as HTMLDetailsElement).open = true;
+    await cards[1]!.trigger('toggle');
+    await flushPromises();
+    cards = wrapper.findAll('.experiment-period-card');
+    expect(cards[0]!.attributes('open')).toBeUndefined();
+    expect(cards[1]!.attributes('open')).toBeDefined();
+    expect(cards[1]!.text()).toContain('Телефон влиял меньше, чем ожидалось');
+    expect(cards[1]!.text()).toContain('Заметки по дням · 1');
   });
 
   it('keeps weekly and monthly results and events in matching bounded pages', async () => {

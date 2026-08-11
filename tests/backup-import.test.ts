@@ -120,7 +120,7 @@ describe('backup import', () => {
     expect(storedDates).toEqual(['2025-02-01']);
 
     const exported = store.exportData();
-    expect(exported.version).toBe(9);
+    expect(exported.version).toBe(10);
     expect(exported).not.toHaveProperty('firstUseFunnel');
     expect(exported.dailyEntries[0].careerStates).toEqual(['external']);
     expect(exported.monthlyReviews).toEqual([]);
@@ -147,7 +147,7 @@ describe('backup import', () => {
     });
 
     const exported = store.exportData();
-    expect(exported.version).toBe(9);
+    expect(exported.version).toBe(10);
     expect(exported.weeklyReviews[0]).toMatchObject({
       highlights: ['Важный разговор изменил планы', 'Появилась новая мысль о проекте', ''],
       stateContext: 'Неделя была тяжёлой из-за болезни и нехватки сна.',

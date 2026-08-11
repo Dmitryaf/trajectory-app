@@ -170,7 +170,7 @@ describe('daily entry scenario', () => {
     expect(notifySaved).toHaveBeenCalledWith('День сохранён на устройстве');
     expect(saveEntry.mock.calls[0][0]).toMatchObject({
       date: '2026-07-21',
-      entrySchemaVersion: 2,
+      entrySchemaVersion: 3,
       activeDailyBlocksSnapshot: ['sleep', 'context', 'movement', 'nutrition'],
       bedtime: '23:40',
       wakeTime: '07:30',
@@ -185,6 +185,44 @@ describe('daily entry scenario', () => {
       activities: ['bachata'],
     });
     expect(wrapper.find('.mobile-save-button').exists()).toBe(false);
+  });
+
+  it('saves an optional daily experiment note and rejects a bypassed length limit', async () => {
+    const { pinia, store } = createStore();
+    store.settings.experiment = {
+      ...store.settings.experiment,
+      active: true,
+      title: 'Не читать новости после 22:00',
+      startDate: '2026-07-20',
+      endDate: '2026-07-27',
+    };
+    const saveEntry = vi.spyOn(store, 'saveEntry').mockImplementation(async (entry) => entry);
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+    const experimentCard = wrapper.get('#experiment');
+    const note = experimentCard.get('#experiment-note');
+
+    expect(note.attributes('maxlength')).toBe('500');
+    await note.setValue('x'.repeat(501));
+    await wrapper.get('form').trigger('submit');
+    expect(saveEntry).not.toHaveBeenCalled();
+    expect(wrapper.get('[role="alert"]').text()).toContain('Заметка к эксперименту длиннее 500 символов');
+
+    await note.setValue('Заранее убрал телефон, но поздний звонок сбил план');
+    await experimentCard
+      .findAll('button')
+      .find((button) => button.text() === 'Нет')!
+      .trigger('click');
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+
+    expect(saveEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        experimentCompleted: false,
+        experimentNote: 'Заранее убрал телефон, но поздний звонок сбил план',
+      }),
+    );
   });
 
   it('saves explicit empty career and goal answers separately from skipped blocks', async () => {

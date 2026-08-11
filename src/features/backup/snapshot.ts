@@ -13,9 +13,10 @@ import {
   type ResultRecord,
   type WeeklyReview,
 } from '../../types';
+import { BACKUP_VERSION } from './version';
 
 export type ExportPayload = {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | typeof BACKUP_VERSION;
   exportedAt: string;
   dailyEntries: DailyEntry[];
   results: ResultRecord[];
@@ -39,7 +40,8 @@ export function normalizeSnapshot(input: unknown): ExportPayload {
     version !== 6 &&
     version !== 7 &&
     version !== 8 &&
-    version !== 9
+    version !== 9 &&
+    version !== 10
   ) {
     throw new Error('Неподдерживаемый формат резервной копии');
   }

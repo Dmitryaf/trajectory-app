@@ -33,6 +33,9 @@ describe('form components', () => {
     expect(toggle.attributes('aria-label')).toBe('Показать пароль');
     expect(toggle.attributes('aria-pressed')).toBe('false');
     expect(toggle.attributes('aria-controls')).toBe('test-password');
+    expect(toggle.text()).toBe('');
+    expect(toggle.get('svg').attributes('aria-hidden')).toBe('true');
+    expect(wrapper.get('.password-field').element.children[1]).toBe(toggle.element);
 
     await toggle.trigger('click');
 

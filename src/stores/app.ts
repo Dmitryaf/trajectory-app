@@ -19,6 +19,7 @@ import {
   type WeeklyReview,
 } from '../types';
 import { normalizeSnapshot, type ExportPayload } from '../features/backup/snapshot';
+import { BACKUP_VERSION } from '../features/backup/version';
 import { clearFirstUseFunnel } from '../features/first-use/funnel';
 
 export type { ExportPayload } from '../features/backup/snapshot';
@@ -168,7 +169,7 @@ export const useAppStore = defineStore('app', {
     },
     exportData(): ExportPayload {
       return {
-        version: 9,
+        version: BACKUP_VERSION,
         exportedAt: new Date().toISOString(),
         dailyEntries: this.dailyEntries,
         results: this.results,

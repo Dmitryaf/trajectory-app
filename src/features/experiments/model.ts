@@ -1,5 +1,12 @@
 import type { Experiment, ExperimentDecision, ExperimentRecord } from '../../types';
 
+export const experimentTextLimits = {
+  title: 800,
+  hypothesis: 800,
+  conclusion: 2000,
+  dailyNote: 500,
+} as const;
+
 export const experimentDecisionOptions: Array<{ id: ExperimentDecision; label: string; icon: string }> = [
   { id: 'continue', label: 'Продолжить', icon: '→' },
   { id: 'adjust', label: 'Изменить', icon: '⌁' },
@@ -48,4 +55,14 @@ export function experimentPeriodsOverlap(
     first.startDate <= second.endDate &&
     second.startDate <= first.endDate,
   );
+}
+
+export function validateExperimentTextLengths(experiment: Experiment): string {
+  if (experiment.title.length > experimentTextLimits.title)
+    return `Условие эксперимента длиннее ${experimentTextLimits.title} символов. Сократите текст, чтобы сохранить его.`;
+  if (experiment.hypothesis.length > experimentTextLimits.hypothesis)
+    return `Вопрос эксперимента длиннее ${experimentTextLimits.hypothesis} символов. Сократите текст, чтобы сохранить его.`;
+  if (experiment.conclusion.length > experimentTextLimits.conclusion)
+    return `Итог эксперимента длиннее ${experimentTextLimits.conclusion} символов. Сократите текст, чтобы сохранить его.`;
+  return '';
 }

@@ -347,16 +347,9 @@
   .context-factor-list {
     grid-template-columns: 1fr;
   }
-  .cloud-auth-grid {
-    grid-template-columns: 1fr;
-  }
   .cloud-session {
     align-items: flex-start;
     flex-direction: column;
-  }
-  .cloud-actions .primary-button,
-  .cloud-actions .secondary-button {
-    flex: 1;
   }
   .range-tabs {
     display: grid;

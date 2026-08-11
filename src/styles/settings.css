@@ -231,6 +231,7 @@
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  margin-top: 12px;
 }
 .cloud-sync-note {
   padding: 14px 16px;
@@ -246,18 +247,6 @@
 .cloud-session p {
   margin: 4px 0 0;
   font-size: 13px;
-}
-.cloud-auth-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  align-items: end;
-}
-.cloud-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  grid-column: 1 / -1;
 }
 .cloud-session {
   display: flex;
@@ -308,6 +297,7 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
+  margin-top: 12px;
 }
 .settings-status {
   margin: 12px 0 0;
