@@ -394,19 +394,3 @@
   font-size: 12px;
   line-height: 1.45;
 }
-.decision-timeline__details {
-  margin-top: 7px;
-}
-.decision-timeline__details summary {
-  width: fit-content;
-  cursor: pointer;
-  color: #2c745e;
-  font-size: 11px;
-  font-weight: 800;
-}
-.decision-timeline__details[open] summary {
-  margin-bottom: 4px;
-}
-.timeline-toggle {
-  margin-top: 12px;
-}

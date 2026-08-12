@@ -2,10 +2,12 @@
 import { RouterLink } from 'vue-router';
 import EChartPanel from '../components/charts/EChartPanel.vue';
 import { useChangeHistoryView } from '../features/analytics/useChangeHistoryView';
+import ArchivePagination from '../features/journal/ArchivePagination.vue';
 
 const {
   range,
-  timelineExpanded,
+  timelinePage,
+  timelinePageCount,
   selectedEventKey,
   selectedTrendMetric,
   eventPicker,
@@ -116,22 +118,10 @@ const {
             <div>
               <strong>{{ item.title }}</strong>
               <p v-if="item.detail">{{ item.detail }}</p>
-              <details v-if="item.extra" class="decision-timeline__details">
-                <summary>Показать сравнение показателей</summary>
-                <p>{{ item.extra }}</p>
-              </details>
             </div>
           </article>
         </TransitionGroup>
-        <button
-          v-if="decisionTimeline.length > 8"
-          class="secondary-button load-more timeline-toggle"
-          type="button"
-          :aria-expanded="timelineExpanded"
-          @click="timelineExpanded = !timelineExpanded"
-        >
-          {{ timelineExpanded ? 'Свернуть историю' : 'Показать всю историю (' + decisionTimeline.length + ')' }}
-        </button>
+        <ArchivePagination v-model:page="timelinePage" :page-count="timelinePageCount" context-label="истории изменений" />
       </article>
 
       <details v-if="summary.coveredEntriesCount" class="period-details trends-metric-details">

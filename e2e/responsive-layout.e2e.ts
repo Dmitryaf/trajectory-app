@@ -110,6 +110,9 @@ test('keeps change history visible and one metric behind a compact mobile disclo
   await expect(insights).toBeVisible();
   await expect(history).toBeVisible();
   await expect(metric).not.toHaveAttribute('open', '');
+  await expect(history.locator('.decision-timeline__item')).toHaveCount(10);
+  await expect(history.locator('.archive-pagination')).toBeVisible();
+  await expect(history.locator('.archive-pagination span')).toHaveText(/^1 из \d+$/);
   const primaryCueCount = await page.locator('.review-cue-grid--primary .review-cue').count();
   expect(primaryCueCount).toBeGreaterThan(0);
   expect(primaryCueCount).toBeLessThanOrEqual(3);
@@ -124,6 +127,10 @@ test('keeps change history visible and one metric behind a compact mobile disclo
   await expect(metric).toHaveAttribute('open', '');
   await expect(metric.locator('.metric-switcher')).toBeVisible();
   await expect(page.locator('.trend-table')).toHaveCount(0);
+
+  await history.locator('.archive-pagination button', { hasText: 'Дальше' }).click();
+  await expect(history.locator('.decision-timeline__item')).toHaveCount(10);
+  await expect(history.locator('.archive-pagination span')).toHaveText(/^2 из \d+$/);
 
   const widths = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,
