@@ -84,6 +84,11 @@ describe('trends scenarios', () => {
     expect(wrapper.text()).not.toContain('Показать остальные наблюдения');
     expect(wrapper.findAll('.trend-chart-description')).toHaveLength(1);
     expect(wrapper.findAll('e-chart-panel-stub')).toHaveLength(1);
+    const chartOption = wrapper.getComponent({ name: 'EChartPanel' }).props('option') as {
+      series: Array<{ tooltip: { valueFormatter: (value: unknown) => string } }>;
+    };
+    expect(chartOption.series[0]!.tooltip.valueFormatter(undefined)).toBe('—');
+    expect(chartOption.series[0]!.tooltip.valueFormatter(7.5)).toBe('7,5 ч');
 
     for (const label of ['3 месяца', '6 месяцев', '12 месяцев'] as const) {
       const button = wrapper.findAll('.range-tabs button').find((item) => item.text() === label);
@@ -105,24 +110,60 @@ describe('trends scenarios', () => {
     expect(wrapper.findAll('e-chart-panel-stub')).toHaveLength(0);
   });
 
-  it('keeps the change history compact until the user expands it', async () => {
+  it('keeps a long change history on pages of ten records', async () => {
     const { pinia, store } = createStore();
     store.dailyEntries = [{ ...emptyDailyEntry('2026-07-21'), importantFact: 'Есть данные для трендов' }];
-    store.results = Array.from({ length: 10 }, (_, index) => ({
+    store.results = Array.from({ length: 21 }, (_, index) => ({
       id: index + 1,
-      date: `2026-07-${String(21 - index).padStart(2, '0')}`,
+      date: '2026-07-21',
       area: 'career' as const,
       title: `Итог ${index + 1}`,
       note: '',
-      createdAt: `2026-07-${String(21 - index).padStart(2, '0')}T12:00:00.000Z`,
+      createdAt: `2026-07-21T12:${String(index).padStart(2, '0')}:00.000Z`,
     }));
     const wrapper = mount(TrendsView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
 
-    expect(wrapper.findAll('.decision-timeline__item')).toHaveLength(8);
-    const toggle = wrapper.get('.timeline-toggle');
-    expect(toggle.attributes('aria-expanded')).toBe('false');
-    await toggle.trigger('click');
     expect(wrapper.findAll('.decision-timeline__item')).toHaveLength(10);
-    expect(toggle.attributes('aria-expanded')).toBe('true');
+    expect(wrapper.get('.archive-pagination span').text()).toBe('1 из 3');
+    expect(wrapper.text()).toContain('Итог 1');
+    expect(wrapper.text()).not.toContain('Итог 11');
+
+    await wrapper.findAll('.archive-pagination button')[1]!.trigger('click');
+
+    expect(wrapper.findAll('.decision-timeline__item')).toHaveLength(10);
+    expect(wrapper.get('.archive-pagination span').text()).toBe('2 из 3');
+    expect(wrapper.findAll('.decision-timeline__item strong').map((item) => item.text())).toEqual(
+      Array.from({ length: 10 }, (_, index) => `Итог ${index + 11}`),
+    );
+
+    await wrapper.findAll('.archive-pagination button')[1]!.trigger('click');
+
+    expect(wrapper.findAll('.decision-timeline__item')).toHaveLength(1);
+    expect(wrapper.get('.archive-pagination span').text()).toBe('3 из 3');
+    expect(wrapper.get('.decision-timeline__item strong').text()).toBe('Итог 21');
+  });
+
+  it('does not show metric comparisons inside experiment history records', () => {
+    const { pinia, store } = createStore();
+    store.settings.experimentHistory = [
+      {
+        id: 'completed-experiment',
+        title: 'Спокойный вечер',
+        hypothesis: 'Станет ли легче завершать день',
+        targetMetric: '',
+        targetDirection: 'increase',
+        minimumMeaningfulChange: null,
+        startDate: '2026-07-14',
+        endDate: '2026-07-21',
+        targetMetricId: 'energy',
+        conclusion: 'Вечером было спокойнее',
+        decision: 'continue',
+        completedAt: '2026-07-21T20:00:00.000Z',
+      },
+    ];
+    const wrapper = mount(TrendsView, { global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } } });
+
+    expect(wrapper.text()).toContain('Спокойный вечер');
+    expect(wrapper.text()).not.toContain('Показать сравнение показателей');
   });
 });

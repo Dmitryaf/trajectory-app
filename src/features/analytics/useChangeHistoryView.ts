@@ -23,8 +23,9 @@ import { buildRangePackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage
 import { buildExperimentSummary } from './experimentComparison';
 import { experimentDecisionLabel } from '../experiments/model';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../../services/notifications';
+import { pageCount, pageItems } from '../../services/pagination';
 import { useAppStore } from '../../stores/app';
-import { contextFactorOptions, externalCareerIdsForOptions, type ExperimentMetricId, type ExperimentRecord } from '../../types';
+import { contextFactorOptions, externalCareerIdsForOptions, type ExperimentRecord } from '../../types';
 
 type RangeMonths = 3 | 6 | 12;
 type TrendMetricId = 'sleep' | 'energy' | 'weight';
@@ -34,13 +35,14 @@ type DecisionTimelineItem = {
   tone: 'event' | 'result' | 'decision' | 'outcome' | 'experiment';
   title: string;
   detail: string;
-  extra?: string;
 };
+
+const timelinePageSize = 10;
 
 export function useChangeHistoryView() {
   const store = useAppStore();
   const range = ref<RangeMonths>(3);
-  const timelineExpanded = ref(false);
+  const timelinePage = ref(1);
   const selectedEventKey = ref('');
   const selectedTrendMetric = ref<TrendMetricId>('sleep');
   const eventPicker = ref<HTMLDetailsElement>();
@@ -161,6 +163,9 @@ export function useChangeHistoryView() {
           data: values,
           connectNulls: false,
           lineStyle: { width: 3 },
+          tooltip: {
+            valueFormatter: (value: unknown) => formatTrendTooltipValue(metric, value),
+          },
           markLine: {
             symbol: ['none', 'none'],
             lineStyle: { color: '#eb7458', type: 'dashed', width: 1.5 },
@@ -185,7 +190,7 @@ export function useChangeHistoryView() {
     { immediate: true },
   );
   watch(range, () => {
-    timelineExpanded.value = false;
+    timelinePage.value = 1;
   });
   const selectedEvent = computed(() => lifeEvents.value.find((event) => eventKey(event) === selectedEventKey.value) ?? null);
   const eventComparison = computed(() =>
@@ -204,12 +209,7 @@ export function useChangeHistoryView() {
     const date = new Date(updatedAt);
     return Number.isNaN(date.getTime()) ? fallback : toDateKey(date);
   }
-  function experimentMetricValue(metricId: ExperimentMetricId, value: number): string {
-    if (metricId === 'sleepMinutes' || metricId === 'timeInBedMinutes') return formatMinutes(Math.round(value));
-    if (metricId === 'sleepQuality' || metricId === 'energy') return `${value.toLocaleString('ru-RU', { maximumFractionDigits: 1 })}/5`;
-    return `${value.toLocaleString('ru-RU', { maximumFractionDigits: 1 })} кг`;
-  }
-  function experimentTimelineContent(record: ExperimentRecord): Pick<DecisionTimelineItem, 'detail' | 'extra'> {
+  function experimentTimelineContent(record: ExperimentRecord): Pick<DecisionTimelineItem, 'detail'> {
     const experimentSummary = buildExperimentSummary(store.dailyEntries, record);
     const parts = [`Вывод: ${record.conclusion}`];
     const decision = experimentDecisionLabel(record.decision);
@@ -218,14 +218,7 @@ export function useChangeHistoryView() {
     parts.push(
       `Условие выполнено в ${experimentSummary.adherenceCompletedDays} из ${experimentSummary.adherenceMarkedDays} отмеченных дней; без отметки — ${experimentSummary.adherenceUnmarkedDays}`,
     );
-    const metrics = experimentSummary.metrics.flatMap((metric) =>
-      metric.baselineAverage === null || metric.experimentAverage === null
-        ? []
-        : [
-            `${metric.label.toLocaleLowerCase('ru-RU')} ${experimentMetricValue(metric.id, metric.baselineAverage)} → ${experimentMetricValue(metric.id, metric.experimentAverage)} (${metric.baselineSamples}/${metric.experimentSamples} изм.)`,
-          ],
-    );
-    return { detail: parts.join('. '), extra: metrics.length ? `До → во время: ${metrics.join(', ')}` : undefined };
+    return { detail: parts.join('. ') };
   }
 
   const decisionTimeline = computed<DecisionTimelineItem[]>(() =>
@@ -267,7 +260,11 @@ export function useChangeHistoryView() {
       .filter((item) => item.date >= start.value && item.date <= end.value)
       .sort((a, b) => b.date.localeCompare(a.date)),
   );
-  const displayedDecisionTimeline = computed(() => (timelineExpanded.value ? decisionTimeline.value : decisionTimeline.value.slice(0, 8)));
+  const timelinePageCount = computed(() => pageCount(decisionTimeline.value.length, timelinePageSize));
+  const displayedDecisionTimeline = computed(() => pageItems(decisionTimeline.value, timelinePage.value, timelinePageSize));
+  watch(timelinePageCount, (count) => {
+    timelinePage.value = Math.min(timelinePage.value, count);
+  });
   const timelineSummary = computed(() =>
     [
       { tone: 'event', label: 'События', count: decisionTimeline.value.filter((item) => item.tone === 'event').length },
@@ -332,9 +329,32 @@ export function useChangeHistoryView() {
     return value === null ? null : Math.round(value * 10) / 10;
   }
 
+  function formatTrendTooltipValue(metric: TrendMetricId, rawValue: unknown): string {
+    const value = numericTrendValue(rawValue);
+    if (value === null) return '—';
+    const formatted = value.toLocaleString('ru-RU', { maximumFractionDigits: 1 });
+    if (metric === 'sleep') return `${formatted} ч`;
+    if (metric === 'energy') return `${formatted}/5`;
+    return `${formatted} кг`;
+  }
+
+  function numericTrendValue(value: unknown): number | null {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+    if (Array.isArray(value)) {
+      for (let index = value.length - 1; index >= 0; index -= 1) {
+        const item = value[index];
+        if (typeof item === 'number' && Number.isFinite(item)) return item;
+      }
+      return null;
+    }
+    if (value && typeof value === 'object' && 'value' in value) return numericTrendValue(value.value);
+    return null;
+  }
+
   return {
     range,
-    timelineExpanded,
+    timelinePage,
+    timelinePageCount,
     selectedEventKey,
     selectedTrendMetric,
     eventPicker,
