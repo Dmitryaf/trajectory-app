@@ -60,6 +60,44 @@ describe('auth store beta lifecycle', () => {
     expect(cloud.signUp).toHaveBeenCalledWith('friend@example.com', 'safe-password', 'BETA-INVITE-2026');
   });
 
+  it('exposes the current registration operation and clears it after completion', async () => {
+    let finishSignup: ((value: { session: null; confirmationRequired: true }) => void) | undefined;
+    cloud.signUp.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishSignup = resolve;
+        }),
+    );
+    const auth = useAuthStore();
+
+    const signup = auth.signUp('friend@example.com', 'safe-password', 'BETA-INVITE-2026');
+    expect(auth.operation).toBe('signing-up');
+    expect(auth.loading).toBe(true);
+
+    finishSignup?.({ session: null, confirmationRequired: true });
+    await signup;
+    expect(auth.operation).toBeNull();
+    expect(auth.loading).toBe(false);
+  });
+
+  it.each([
+    [{ status: 429, message: 'rate limit exceeded' }, 'Слишком много попыток. Подожди несколько минут и попробуй ещё раз.'],
+    [{ message: 'Код приглашения не подошёл' }, 'Код приглашения не подошёл. Проверь код или запроси новый.'],
+    [{ message: 'Регистрация временно закрыта' }, 'Регистрация временно закрыта. Попробуй позже.'],
+    [{ message: 'Набор участников завершён' }, 'Набор участников завершён. Новый аккаунт сейчас создать нельзя.'],
+    [{ code: 'email_address_invalid' }, 'Не удалось использовать этот email. Проверь адрес и попробуй ещё раз.'],
+    [{ code: 'weak_password' }, 'Пароль не подходит. Используй не меньше 8 символов и попробуй ещё раз.'],
+    [{ message: 'Failed to fetch' }, 'Нет связи с сервисом. Проверь интернет — введённые данные остались в форме.'],
+    [{ status: 503 }, 'Сервис регистрации временно недоступен. Попробуй ещё раз позже.'],
+  ])('turns a signup failure into an actionable message', async (error, message) => {
+    cloud.signUp.mockRejectedValue(error);
+    const auth = useAuthStore();
+
+    await expect(auth.signUp('friend@example.com', 'safe-password', 'BETA-INVITE-2026')).rejects.toBe(error);
+    expect(auth.error).toBe(message);
+    expect(auth.operation).toBeNull();
+  });
+
   it('fails closed when a deployed preview requires auth but has no backend configuration', async () => {
     cloud.authRequired.mockReturnValue(true);
     cloud.configured.mockReturnValue(false);
