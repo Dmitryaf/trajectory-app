@@ -20,6 +20,51 @@ import {
 let unsubscribeAuth: (() => void) | null = null;
 const passwordRecoveryKey = 'trajectory:password-recovery-required';
 
+export type AuthOperation =
+  | 'initializing'
+  | 'signing-in'
+  | 'signing-up'
+  | 'requesting-password-reset'
+  | 'resending-confirmation'
+  | 'updating-password'
+  | 'completing-password-recovery'
+  | 'canceling-password-recovery'
+  | 'deleting-account'
+  | 'signing-out';
+
+type AuthErrorDetails = { code: string; message: string; status: number | null };
+
+function authErrorDetails(error: unknown): AuthErrorDetails {
+  if (!error || typeof error !== 'object') return { code: '', message: '', status: null };
+  const source = error as { code?: unknown; message?: unknown; status?: unknown };
+  return {
+    code: typeof source.code === 'string' ? source.code.toLocaleLowerCase() : '',
+    message: typeof source.message === 'string' ? source.message.toLocaleLowerCase() : '',
+    status: typeof source.status === 'number' ? source.status : null,
+  };
+}
+
+function signupErrorMessage(error: unknown): string {
+  const details = authErrorDetails(error);
+  if (details.status === 429 || details.code.includes('rate_limit') || details.message.includes('rate limit')) {
+    return 'Слишком много попыток. Подожди несколько минут и попробуй ещё раз.';
+  }
+  if (details.message.includes('код приглашения не подошёл')) return 'Код приглашения не подошёл. Проверь код или запроси новый.';
+  if (details.message.includes('регистрация временно закрыта')) return 'Регистрация временно закрыта. Попробуй позже.';
+  if (details.message.includes('набор участников завершён')) return 'Набор участников завершён. Новый аккаунт сейчас создать нельзя.';
+  if (details.code.includes('email') || details.message.includes('email address') || details.message.includes('invalid email')) {
+    return 'Не удалось использовать этот email. Проверь адрес и попробуй ещё раз.';
+  }
+  if (details.code.includes('weak_password') || details.message.includes('password')) {
+    return 'Пароль не подходит. Используй не меньше 8 символов и попробуй ещё раз.';
+  }
+  if (details.message.includes('fetch') || details.message.includes('network') || details.message.includes('offline')) {
+    return 'Нет связи с сервисом. Проверь интернет — введённые данные остались в форме.';
+  }
+  if (details.status !== null && details.status >= 500) return 'Сервис регистрации временно недоступен. Попробуй ещё раз позже.';
+  return 'Не удалось создать аккаунт. Проверь введённые данные и попробуй ещё раз.';
+}
+
 function hasPasswordRecoveryRedirect() {
   const url = new URL(window.location.href);
   return (
@@ -40,13 +85,14 @@ export const useAuthStore = defineStore('auth', {
     authRequired: isCloudAuthRequired(),
     signupEnabled: isBetaSignupConfigured(),
     initialized: false,
-    loading: false,
+    operation: null as AuthOperation | null,
     session: null as Session | null,
     recoveryRequired: false,
     error: '',
     notice: '',
   }),
   getters: {
+    loading: (state) => state.operation !== null,
     requiresAuth: (state) => state.configured || state.authRequired,
     configurationMissing: (state) => state.authRequired && !state.configured,
     isAuthenticated: (state) => (state.configured ? Boolean(state.session && !state.recoveryRequired) : !state.authRequired),
@@ -55,7 +101,7 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async init() {
       if (this.initialized || this.loading) return;
-      this.loading = true;
+      this.operation = 'initializing';
       this.error = '';
       try {
         if (!this.configured) {
@@ -81,11 +127,11 @@ export const useAuthStore = defineStore('auth', {
         this.error = error instanceof Error ? error.message : 'Не удалось проверить вход';
         this.initialized = true;
       } finally {
-        this.loading = false;
+        this.operation = null;
       }
     },
     async signIn(email: string, password: string) {
-      this.loading = true;
+      this.operation = 'signing-in';
       this.error = '';
       this.notice = '';
       try {
@@ -94,25 +140,25 @@ export const useAuthStore = defineStore('auth', {
         this.error = 'Не удалось войти. Проверь email и пароль.';
         throw error;
       } finally {
-        this.loading = false;
+        this.operation = null;
       }
     },
     async signUp(email: string, password: string, inviteCode: string) {
-      this.loading = true;
+      this.operation = 'signing-up';
       this.error = '';
       try {
         const result = await signUpToCloud(email, password, inviteCode);
         this.session = result.session;
         return result;
       } catch (error) {
-        this.error = 'Не удалось создать аккаунт. Проверь код приглашения и введённые данные.';
+        this.error = signupErrorMessage(error);
         throw error;
       } finally {
-        this.loading = false;
+        this.operation = null;
       }
     },
     async requestPasswordReset(email: string) {
-      this.loading = true;
+      this.operation = 'requesting-password-reset';
       this.error = '';
       try {
         await requestCloudPasswordReset(email);
@@ -120,11 +166,11 @@ export const useAuthStore = defineStore('auth', {
         this.error = 'Не удалось отправить письмо. Попробуй ещё раз позже.';
         throw error;
       } finally {
-        this.loading = false;
+        this.operation = null;
       }
     },
     async resendSignupConfirmation(email: string) {
-      this.loading = true;
+      this.operation = 'resending-confirmation';
       this.error = '';
       try {
         await resendCloudSignupConfirmation(email);
@@ -132,11 +178,11 @@ export const useAuthStore = defineStore('auth', {
         this.error = 'Не удалось отправить письмо повторно. Попробуй ещё раз позже.';
         throw error;
       } finally {
-        this.loading = false;
+        this.operation = null;
       }
     },
     async updatePassword(password: string) {
-      this.loading = true;
+      this.operation = 'updating-password';
       this.error = '';
       try {
         await updateCloudPassword(password);
@@ -144,12 +190,12 @@ export const useAuthStore = defineStore('auth', {
         this.error = 'Не удалось изменить пароль. Попробуй ещё раз.';
         throw error;
       } finally {
-        this.loading = false;
+        this.operation = null;
       }
     },
     async completePasswordRecovery(password: string) {
       if (!this.recoveryRequired || !this.session) throw new Error('Ссылка восстановления недействительна');
-      this.loading = true;
+      this.operation = 'completing-password-recovery';
       this.error = '';
       try {
         await updateCloudPassword(password);
@@ -162,11 +208,11 @@ export const useAuthStore = defineStore('auth', {
         this.error = 'Не удалось изменить пароль. Запроси новую ссылку и попробуй ещё раз.';
         throw error;
       } finally {
-        this.loading = false;
+        this.operation = null;
       }
     },
     async cancelPasswordRecovery() {
-      this.loading = true;
+      this.operation = 'canceling-password-recovery';
       this.error = '';
       try {
         if (this.session) await signOutFromCloud();
@@ -174,14 +220,14 @@ export const useAuthStore = defineStore('auth', {
         this.session = null;
         this.recoveryRequired = false;
         persistPasswordRecovery(false);
-        this.loading = false;
+        this.operation = null;
       }
     },
     async deleteAccount() {
       const userId = this.session?.user.id;
       if (!userId) throw new Error('Сессия не найдена');
 
-      this.loading = true;
+      this.operation = 'deleting-account';
       this.error = '';
       try {
         await deleteCloudAccount();
@@ -197,11 +243,11 @@ export const useAuthStore = defineStore('auth', {
         this.error = 'Аккаунт удалён. Локальный выход завершится после обновления страницы.';
       } finally {
         this.session = null;
-        this.loading = false;
+        this.operation = null;
       }
     },
     async signOut() {
-      this.loading = true;
+      this.operation = 'signing-out';
       this.error = '';
       try {
         await signOutFromCloud();
@@ -209,7 +255,7 @@ export const useAuthStore = defineStore('auth', {
         this.recoveryRequired = false;
         persistPasswordRecovery(false);
       } finally {
-        this.loading = false;
+        this.operation = null;
       }
     },
   },

@@ -193,9 +193,12 @@ test('explains the app from the permanent help button', async ({ page }) => {
   await page.getByRole('button', { name: 'Как работает приложение' }).click();
   const dialog = page.getByRole('dialog', { name: 'Зачем нужна «Траектория»' });
 
-  await expect(dialog).toContainText('Заполнять всё не обязательно');
-  await expect(dialog).toContainText('Журнал: сохранить важное отдельно');
-  await expect(dialog).toContainText('Эксперимент: проверить одно изменение');
+  await expect(dialog.locator('.help-steps > li')).toHaveCount(3);
+  await expect(dialog).toContainText('Записать важное');
+  await expect(dialog).toContainText('Увидеть период целиком');
+  await expect(dialog).toContainText('Сохранить следующее решение');
+  await page.getByRole('button', { name: 'Закрыть объяснение' }).click();
+  await expect(page.getByRole('button', { name: 'Как работает приложение' })).toBeFocused();
 });
 
 test('opens the exact settings section from a daily card', async ({ page }) => {
