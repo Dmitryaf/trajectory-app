@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import ChipGroup from '../components/ChipGroup.vue';
-import DurationInput from '../components/DurationInput.vue';
-import FirstUseRecovery from '../components/FirstUseRecovery.vue';
-import HowItWorksDialog from '../components/HowItWorksDialog.vue';
-import ScalePicker from '../components/ScalePicker.vue';
-import AutoGrowTextarea from '../components/AutoGrowTextarea.vue';
+import FirstUseRecovery from '../features/first-use/ui/FirstUseRecovery.vue';
+import HowItWorksDialog from '../features/first-use/ui/HowItWorksDialog.vue';
+import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
+import ChipGroup from '../shared/ui/forms/ChipGroup.vue';
+import DurationInput from '../shared/ui/forms/DurationInput.vue';
+import ScalePicker from '../shared/ui/forms/ScalePicker.vue';
 import { experimentTextLimits } from '../features/experiments/model';
 import { useDailyEntryForm } from '../features/daily-entry/useDailyEntryForm';
 import { useAppStore } from '../stores/app';

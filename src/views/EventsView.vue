@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import AutoGrowTextarea from '../components/AutoGrowTextarea.vue';
-import ChipGroup from '../components/ChipGroup.vue';
-import ArchiveDateRange from '../features/journal/ArchiveDateRange.vue';
-import ArchivePagination from '../features/journal/ArchivePagination.vue';
+import ArchiveDateRange from '../features/journal/ui/ArchiveDateRange.vue';
+import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
+import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
+import ChipGroup from '../shared/ui/forms/ChipGroup.vue';
 import { archiveRangeFromQuery } from '../features/journal/archiveQuery';
 import { useArchiveList } from '../features/journal/useArchiveList';
 import { formatDate, todayKey } from '../services/dates';

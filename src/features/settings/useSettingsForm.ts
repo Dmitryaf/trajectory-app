@@ -1,5 +1,5 @@
 import { computed, reactive, ref } from 'vue';
-import ChipGroup from '../../components/ChipGroup.vue';
+import ChipGroup from '../../shared/ui/forms/ChipGroup.vue';
 import { useAppStore } from '../../stores/app';
 import { useAuthStore } from '../../stores/auth';
 import { copyText, downloadJson } from '../export/browser';

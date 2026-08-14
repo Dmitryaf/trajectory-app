@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
-import EChartPanel from '../components/charts/EChartPanel.vue';
+import EChartPanel from '../shared/ui/charts/EChartPanel.vue';
 import { useChangeHistoryView } from '../features/analytics/useChangeHistoryView';
-import ArchivePagination from '../features/journal/ArchivePagination.vue';
+import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
 
 const {
   range,

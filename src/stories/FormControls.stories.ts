@@ -1,8 +1,8 @@
 import { ref } from 'vue';
 import type { Meta, StoryObj } from '@storybook/vue3-vite';
-import ChipGroup from '../components/ChipGroup.vue';
-import DurationInput from '../components/DurationInput.vue';
-import ScalePicker from '../components/ScalePicker.vue';
+import ChipGroup from '../shared/ui/forms/ChipGroup.vue';
+import DurationInput from '../shared/ui/forms/DurationInput.vue';
+import ScalePicker from '../shared/ui/forms/ScalePicker.vue';
 
 const meta = {
   title: 'Формы/Основные поля',

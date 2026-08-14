@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
-import PasswordField from '../components/PasswordField.vue';
-import AutoGrowTextarea from '../components/AutoGrowTextarea.vue';
+import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
+import PasswordField from '../shared/ui/forms/PasswordField.vue';
 import { useSettingsForm } from '../features/settings/useSettingsForm';
 import type { DailyBlockId, LifeAreaId } from '../types';
 

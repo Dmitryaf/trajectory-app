@@ -2,10 +2,10 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import type { EChartsCoreOption } from 'echarts/core';
-import EChartPanel from '../components/charts/EChartPanel.vue';
-import PeriodNavigator from '../components/PeriodNavigator.vue';
-import PeriodRecordCard from '../components/PeriodRecordCard.vue';
-import ArchivePagination from '../features/journal/ArchivePagination.vue';
+import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
+import PeriodRecordCard from '../features/reviews/ui/PeriodRecordCard.vue';
+import EChartPanel from '../shared/ui/charts/EChartPanel.vue';
+import PeriodNavigator from '../shared/ui/navigation/PeriodNavigator.vue';
 import {
   actionDirectionLabel,
   buildObservations,
