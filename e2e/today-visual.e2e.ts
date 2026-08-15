@@ -1,0 +1,47 @@
+import { expect, test, type Page } from '@playwright/test';
+import { resolve } from 'node:path';
+import { demoFilePath, emptyPeriodDate } from './demo-data';
+
+const visualStylePath = resolve(process.cwd(), 'e2e/visual-regression.css');
+
+test.beforeEach(async ({ page }) => {
+  await page.goto('/settings');
+  await page.locator('input[type="file"]').setInputFiles(demoFilePath);
+  await page.getByText('Резервная копия восстановлена', { exact: true }).waitFor();
+  await page.goto('/');
+  await page.locator('.page--today').waitFor();
+  await page.evaluate(() => document.fonts.ready);
+});
+
+async function expectTodayScreenshot(page: Page, name: string) {
+  await expect(page).toHaveScreenshot(name, {
+    animations: 'disabled',
+    caret: 'hide',
+    maxDiffPixelRatio: 0.03,
+    stylePath: visualStylePath,
+  });
+}
+
+test('keeps Today visually stable across its critical states', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.locator('.page--today').waitFor();
+  await expectTodayScreenshot(page, 'today-mobile-with-goal.png');
+
+  await page.getByRole('button', { name: 'Изменить' }).click();
+  await page.getByRole('button', { name: 'Убрать цель' }).click();
+  await expect(page.getByLabel('Текущая цель')).toContainText('Пока не выбрана');
+  await expectTodayScreenshot(page, 'today-mobile-without-goal.png');
+
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.getByLabel('Дата записи').fill(emptyPeriodDate());
+  await page.locator('.page--today > .page-heading h1').evaluate((heading) => heading.classList.add('visual-dynamic-text'));
+  await page.getByPlaceholder('Например: после прогулки стало легче собраться с мыслями').fill('Проверка новой записи на планшете');
+  await expect(page.getByText('Черновик сохранён на этом устройстве', { exact: false })).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expectTodayScreenshot(page, 'today-tablet-new-dirty-entry.png');
+
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.locator('.form-card--daily-summary').scrollIntoViewIfNeeded();
+  await expectTodayScreenshot(page, 'today-desktop-daily-summary.png');
+});
