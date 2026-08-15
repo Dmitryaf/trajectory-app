@@ -11,13 +11,25 @@ export default defineConfig({
   snapshotPathTemplate: '{testDir}/{testFilePath}-snapshots/{arg}-{projectName}{ext}',
   use: {
     baseURL: 'http://127.0.0.1:4173',
-    permissions: ['clipboard-read', 'clipboard-write'],
     trace: 'on-first-retry',
   },
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        permissions: ['clipboard-read', 'clipboard-write'],
+      },
+    },
+    {
+      name: 'webkit',
+      testIgnore: '**/today-visual.e2e.ts',
+      use: { ...devices['Desktop Safari'] },
+    },
+    {
+      name: 'mobile-webkit',
+      testMatch: ['**/daily-entry.e2e.ts', '**/first-use-recovery.e2e.ts'],
+      use: { ...devices['iPhone 13'] },
     },
   ],
 });

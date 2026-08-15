@@ -1,14 +1,28 @@
-import { expect, test } from './fixtures';
+import { expect, test, type Page } from './fixtures';
 
 test.use({ viewport: { width: 390, height: 844 }, isMobile: true });
 
-test('saves a dirty daily entry from the mobile action', async ({ page }) => {
+async function openDailyEntry(page: Page) {
   await page.goto('/');
   const introClose = page.getByRole('button', { name: 'Закрыть объяснение' });
   if (await introClose.isVisible()) await introClose.click();
   const startToday = page.getByRole('button', { name: 'Начать с сегодняшнего дня' });
   await expect(startToday).toBeVisible();
   await startToday.click();
+}
+
+async function selectEntryDate(page: Page, value: string) {
+  const dateInput = page.getByLabel('Дата записи');
+  await dateInput.evaluate((input, nextValue) => {
+    const dateField = input as HTMLInputElement;
+    dateField.value = nextValue;
+    dateField.dispatchEvent(new Event('change', { bubbles: true }));
+  }, value);
+  await expect(dateInput).toHaveValue(value);
+}
+
+test('saves a dirty daily entry from the mobile action', async ({ page }) => {
+  await openDailyEntry(page);
   const floatingSave = page.locator('.floating-save-button');
   await expect(floatingSave).toBeHidden();
 
@@ -41,4 +55,27 @@ test('saves a dirty daily entry from the mobile action', async ({ page }) => {
   await floatingSave.click();
   await expect(page.getByText('День сохранён на устройстве', { exact: true })).toBeVisible();
   await expect(floatingSave).toBeHidden();
+});
+
+test('selects and preserves a past daily entry on mobile', async ({ page }) => {
+  await openDailyEntry(page);
+  const dateInput = page.getByLabel('Дата записи');
+  const today = await dateInput.getAttribute('max');
+  expect(today).not.toBeNull();
+  const pastDate = new Date(`${today}T12:00:00`);
+  pastDate.setDate(pastDate.getDate() - 1);
+  const pastDateKey = pastDate.toISOString().slice(0, 10);
+
+  await selectEntryDate(page, pastDateKey);
+  await expect(page.getByRole('heading', { name: 'Сегодня', exact: true })).toBeHidden();
+
+  const note = page.getByPlaceholder('Например: после прогулки стало легче собраться с мыслями');
+  await note.fill('Запись за выбранную дату');
+  await page.locator('.floating-save-button').click();
+  await expect(page.getByText('День сохранён на устройстве', { exact: true })).toBeVisible();
+
+  await selectEntryDate(page, today!);
+  await expect(note).toHaveValue('');
+  await selectEntryDate(page, pastDateKey);
+  await expect(note).toHaveValue('Запись за выбранную дату');
 });
