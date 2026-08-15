@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { demoAnchor, demoFilePath, emptyPeriodDate } from './demo-data';
 
 const routes = ['/', '/week', '/month', '/trends', '/more', '/results', '/events', '/settings'];
