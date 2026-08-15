@@ -35,6 +35,8 @@ describe('settings scenarios', () => {
     expect(wrapper.get('#daily-settings').attributes('style')).toContain('animation: page-in 0.25s ease-out');
     expect(wrapper.get('#daily-settings').attributes('style')).not.toContain('display: none');
     expect(wrapper.get('#data-settings').attributes('style')).toContain('display: none');
+    expect(wrapper.find('#goal-settings').exists()).toBe(false);
+    expect(wrapper.get('#daily-settings').text()).not.toContain('Текущая цель');
 
     await tabs[2]!.trigger('click');
     expect(wrapper.get('#daily-settings').attributes('style')).toContain('display: none');
@@ -174,7 +176,7 @@ describe('settings scenarios', () => {
     await restoreButton!.trigger('click');
     await flushPromises();
 
-    expect(importData).toHaveBeenCalledWith(snapshot!.payload, { syncCloud: false });
+    expect(importData).toHaveBeenCalledWith(snapshot!.payload, { syncCloud: false, preserveDailyDrafts: true });
     expect(markCloudSyncSynced).toHaveBeenCalledWith('user-1', snapshot!.updatedAt);
     expect(setCloudSyncState).toHaveBeenCalledWith('synced', expect.stringContaining('Загружена облачная копия'), {
       updatedAt: snapshot!.updatedAt,

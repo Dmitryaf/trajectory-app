@@ -43,7 +43,7 @@ describe('startup cloud reconciliation', () => {
 
     await reconcileCloudSnapshotOnStartup(store, 'user-1', services);
 
-    expect(store.importData).toHaveBeenCalledWith(snapshot.payload, { syncCloud: false });
+    expect(store.importData).toHaveBeenCalledWith(snapshot.payload, { syncCloud: false, preserveDailyDrafts: true });
     expect(services.markSynced).toHaveBeenCalledWith('user-1', snapshot.updatedAt);
   });
 
@@ -84,7 +84,7 @@ describe('startup cloud reconciliation', () => {
 
     await reconcileCloudSnapshotOnStartup(store, 'user-1', services);
 
-    expect(store.importData).toHaveBeenCalledWith(snapshot.payload, { syncCloud: false });
+    expect(store.importData).toHaveBeenCalledWith(snapshot.payload, { syncCloud: false, preserveDailyDrafts: true });
     expect(services.markSynced).toHaveBeenCalledWith('user-1', snapshot.updatedAt);
     expect(services.markConflict).not.toHaveBeenCalled();
   });

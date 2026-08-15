@@ -86,6 +86,12 @@ export type DailyEntry = {
   updatedAt: string;
 };
 
+export type DailyEntryDraft = {
+  date: string;
+  entry: DailyEntry;
+  updatedAt: string;
+};
+
 export type ResultRecord = {
   id?: number;
   date: string;

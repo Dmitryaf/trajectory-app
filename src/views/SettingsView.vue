@@ -20,7 +20,6 @@ const dailySectionHashes = new Set([
   'movement-options',
   'life-areas',
   'context-options',
-  'goal-settings',
   'work-settings',
   'nutrition-settings',
 ]);
@@ -359,47 +358,6 @@ const {
           </div>
           <p class="data-note">Минус убирает вариант из ежедневной записи. Прежние отметки остаются в истории, графиках и выгрузке.</p>
         </div>
-      </article>
-
-      <article id="goal-settings" class="settings-card settings-card--career">
-        <div class="form-card__heading">
-          <span class="section-icon section-icon--blue">⌁</span>
-          <div>
-            <h2>Текущая цель</h2>
-            <p>Запишите, что хотите изменить или закончить. Цель может относиться к любой части жизни.</p>
-          </div>
-        </div>
-        <div class="settings-field-stack">
-          <label class="field-label" for="active-focus">Над чем ты сейчас работаешь</label>
-          <input
-            id="active-focus"
-            v-model="settings.activeFocusTitle"
-            type="text"
-            maxlength="100"
-            placeholder="Например: восстановить режим сна или закончить обучение"
-          />
-          <label class="field-label" for="focus-outcome">Как понять, что получилось</label>
-          <textarea
-            id="focus-outcome"
-            v-model="settings.focusOutcomeCriterion"
-            rows="2"
-            maxlength="220"
-            placeholder="Например: пять дней подряд вставать до 08:00 или закончить выбранный курс"
-          ></textarea>
-          <label class="field-label" for="focus-review-date">Когда проверить цель</label>
-          <input id="focus-review-date" v-model="settings.focusReviewDate" type="date" />
-          <label class="field-label" for="external-evidence">Что считать шагом к цели</label>
-          <textarea
-            id="external-evidence"
-            v-model="settings.externalEvidenceCriterion"
-            rows="2"
-            maxlength="220"
-            placeholder="Например: выполненное задание, тренировка, разговор или принятое решение"
-          ></textarea>
-        </div>
-        <button class="primary-button" type="button" :disabled="isSaving('goal')" @click="save('Настройки цели сохранены', 'goal')">
-          {{ isSaving('goal') ? 'Сохраняю…' : 'Сохранить цель' }}
-        </button>
       </article>
 
       <article id="work-settings" class="settings-card settings-card--career">

@@ -16,6 +16,36 @@ afterAll(async () => {
 });
 
 describe('backup import', () => {
+  it('keeps a daily draft local, restores it on load, and removes it when the day is saved', async () => {
+    const store = useAppStore();
+    const draftEntry = {
+      ...emptyDailyEntry('2026-07-21'),
+      importantFact: 'Несохранённая мысль',
+    };
+
+    await store.saveDailyEntryDraft(draftEntry);
+    expect(store.draftByDate('2026-07-21')?.entry.importantFact).toBe('Несохранённая мысль');
+    const cloudPayload = store.exportData();
+    expect(cloudPayload).not.toHaveProperty('dailyEntryDrafts');
+
+    await store.importData(cloudPayload, { syncCloud: false, preserveDailyDrafts: true });
+    expect(store.draftByDate('2026-07-21')?.entry.importantFact).toBe('Несохранённая мысль');
+
+    store.unload();
+    await store.load();
+    expect(store.draftByDate('2026-07-21')?.entry.importantFact).toBe('Несохранённая мысль');
+
+    await store.saveEntry(draftEntry);
+    expect(store.draftByDate('2026-07-21')).toBeUndefined();
+    expect(await db.dailyEntryDrafts.get('2026-07-21')).toBeUndefined();
+    expect(store.entryByDate('2026-07-21')?.importantFact).toBe('Несохранённая мысль');
+
+    await store.saveDailyEntryDraft({ ...emptyDailyEntry('2026-07-22'), importantFact: 'Личный черновик' });
+    await store.clearAll({ syncCloud: false });
+    expect(store.dailyEntryDrafts).toEqual([]);
+    expect(await db.dailyEntryDrafts.count()).toBe(0);
+  });
+
   it('returns the normalized daily entry that was actually stored', async () => {
     const store = useAppStore();
     const saved = await store.saveEntry({

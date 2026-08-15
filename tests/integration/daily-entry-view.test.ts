@@ -4,6 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import { describe, expect, it, vi } from 'vitest';
 import { notifySaved, notifyUnknownError } from '../../src/services/notifications';
+import CurrentGoalDialog from '../../src/features/daily-entry/ui/CurrentGoalDialog.vue';
 import { emptyDailyEntry, emptyWeeklyReview } from '../../src/types';
 import TodayView from '../../src/views/TodayView.vue';
 import { createStore, routerLinkStub } from '../helpers/viewScenario';
@@ -151,7 +152,7 @@ describe('daily entry scenario', () => {
     await wrapper.get('#wake-time').setValue('07:30');
     await wrapper.get('#sleep-hours').setValue('9');
     await flushPromises();
-    expect(wrapper.get('.mobile-save-button').text()).toContain('Сохранить день');
+    expect(document.body.querySelector('.floating-save-button')?.textContent).toContain('Сохранить день');
     await wrapper.get('form').trigger('submit');
 
     expect(wrapper.get('[role="alert"]').text()).toBe('Время сна не может быть больше времени в кровати.');
@@ -184,7 +185,7 @@ describe('daily entry scenario', () => {
       nutritionCriterion: 'Обычный режим питания',
       activities: ['bachata'],
     });
-    expect(wrapper.find('.mobile-save-button').exists()).toBe(false);
+    expect(document.body.querySelector('.floating-save-button')).toBeNull();
   });
 
   it('saves an optional daily experiment note and rejects a bypassed length limit', async () => {
@@ -380,6 +381,88 @@ describe('daily entry scenario', () => {
     expect(factCard!.get('textarea').element).toHaveProperty('value', 'Сохранённый факт за вчера');
   });
 
+  it('protects a daily draft locally and restores it without creating a completed entry', async () => {
+    const { pinia, store } = createStore();
+    vi.spyOn(store, 'saveDailyEntryDraft').mockImplementation(async (entry) => {
+      const draft = { date: entry.date, entry: structuredClone(entry), updatedAt: '2026-07-21T12:00:00.000Z' };
+      store.dailyEntryDrafts = [draft];
+      return draft;
+    });
+    const firstWrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+    const firstFact = firstWrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Заметка дня');
+
+    await firstFact!.get('textarea').setValue('Черновик важной мысли');
+    expect(document.body.querySelector('.floating-save-button')?.textContent).toContain('Сохранить день');
+    await vi.advanceTimersByTimeAsync(500);
+    await flushPromises();
+
+    expect(store.saveDailyEntryDraft).toHaveBeenCalledWith(expect.objectContaining({ importantFact: 'Черновик важной мысли' }));
+    expect(store.dailyEntries).toEqual([]);
+    expect(firstWrapper.text()).toContain('Черновик сохранён на этом устройстве');
+    firstWrapper.unmount();
+
+    const restoredWrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+    const restoredFact = restoredWrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Заметка дня');
+    expect(restoredFact!.get('textarea').element).toHaveProperty('value', 'Черновик важной мысли');
+    expect(restoredWrapper.text()).toContain('Восстановлены несохранённые изменения');
+  });
+
+  it('edits the current goal on Today without leaving or losing a dirty daily form', async () => {
+    const { pinia, store } = createStore();
+    vi.spyOn(store, 'saveSettings').mockImplementation(async (settings) => {
+      store.settings = JSON.parse(JSON.stringify(settings));
+    });
+    const confirm = vi.spyOn(window, 'confirm');
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub, Teleport: true } },
+    });
+    const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Заметка дня');
+    await factCard!.get('textarea').setValue('Не потерять введённый текст');
+
+    await wrapper.get('.current-goal-summary button').trigger('click');
+    const goalDialog = wrapper.getComponent(CurrentGoalDialog);
+    expect(goalDialog.props('open')).toBe(true);
+    await flushPromises();
+    await goalDialog.get('#current-goal-title').setValue('Подготовиться к собеседованию');
+    await goalDialog.get('#current-goal-outcome').setValue('Провести пробную встречу');
+    await goalDialog.get('#current-goal-review-date').setValue('2026-08-01');
+    await goalDialog.get('#current-goal-evidence').setValue('Получить независимую обратную связь');
+    await goalDialog.get('form').trigger('submit');
+    await flushPromises();
+
+    expect(store.settings.activeFocusTitle).toBe('Подготовиться к собеседованию');
+    expect(store.settings.externalEvidenceCriterion).toBe('Получить независимую обратную связь');
+    expect(wrapper.get('.current-goal-summary').text()).toContain('Подготовиться к собеседованию');
+    expect(factCard!.get('textarea').element).toHaveProperty('value', 'Не потерять введённый текст');
+    expect(confirm).not.toHaveBeenCalled();
+    expect(notifySaved).toHaveBeenCalledWith('Текущая цель сохранена');
+  });
+
+  it('allows removing the current goal after its settings block was moved to Today', async () => {
+    const { pinia, store } = createStore();
+    store.settings.activeFocusTitle = 'Старая цель';
+    vi.spyOn(store, 'saveSettings').mockImplementation(async (settings) => {
+      store.settings = JSON.parse(JSON.stringify(settings));
+    });
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub, Teleport: true } },
+    });
+
+    await wrapper.get('.current-goal-summary button').trigger('click');
+    const goalDialog = wrapper.getComponent(CurrentGoalDialog);
+    const removeButton = goalDialog.findAll('button').find((button) => button.text() === 'Убрать цель');
+    await removeButton!.trigger('click');
+    await flushPromises();
+
+    expect(store.settings.activeFocusTitle).toBe('');
+    expect(wrapper.get('.current-goal-summary').text()).toContain('Пока не выбрана');
+    expect(notifySaved).toHaveBeenCalledWith('Текущая цель убрана');
+  });
+
   it('reports a local save error and allows retrying', async () => {
     const { pinia, store } = createStore();
     const saveEntry = vi.spyOn(store, 'saveEntry').mockRejectedValue(new Error('IndexedDB unavailable'));
@@ -388,15 +471,15 @@ describe('daily entry scenario', () => {
     });
     const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Заметка дня');
     await factCard!.get('textarea').setValue('Не потерять эту запись');
-    expect(wrapper.find('.mobile-save-button').exists()).toBe(true);
+    expect(document.body.querySelector('.floating-save-button')).not.toBeNull();
     await wrapper.get('form').trigger('submit');
     await flushPromises();
 
     expect(saveEntry).toHaveBeenCalledOnce();
     expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось сохранить день');
     expect(notifySaved).not.toHaveBeenCalled();
-    expect(wrapper.get('.primary-button--save').attributes('disabled')).toBeUndefined();
-    expect(wrapper.find('.mobile-save-button').exists()).toBe(true);
+    expect((document.body.querySelector('.floating-save-button') as HTMLButtonElement).disabled).toBe(false);
+    expect(document.body.querySelector('.floating-save-button')).not.toBeNull();
     expect(factCard!.get('textarea').element).toHaveProperty('value', 'Не потерять эту запись');
   });
 
@@ -420,7 +503,7 @@ describe('daily entry scenario', () => {
   });
 
   it('blocks route navigation while the daily entry is dirty', async () => {
-    const { pinia } = createStore();
+    const { pinia, store } = createStore();
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [
@@ -433,6 +516,8 @@ describe('daily entry scenario', () => {
     const wrapper = mount({ template: '<RouterView />' }, { global: { plugins: [pinia, router], stubs: { RouterLink: routerLinkStub } } });
     const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Заметка дня');
     await factCard!.get('textarea').setValue('Несохранённая запись');
+    vi.spyOn(store, 'saveDailyEntryDraft').mockRejectedValue(new Error('IndexedDB unavailable'));
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
 
     await router.push('/next');

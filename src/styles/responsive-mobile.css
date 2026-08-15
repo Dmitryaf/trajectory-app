@@ -234,10 +234,30 @@
   .today-pulse,
   .recovery-nudge,
   .review-nudge,
-  .entry-change-notice {
+  .entry-change-notice,
+  .current-goal-summary {
     flex-direction: column;
     align-items: stretch;
     padding: 15px;
+  }
+  .current-goal-summary .context-action {
+    width: 100%;
+  }
+  .goal-dialog-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+  .goal-dialog {
+    width: 100%;
+    max-height: calc(100vh - 24px);
+    padding: 22px 18px calc(22px + env(safe-area-inset-bottom, 0px));
+    border-radius: 24px 24px 0 0;
+  }
+  .goal-dialog__actions {
+    flex-direction: column-reverse;
+  }
+  .goal-dialog__actions button {
+    width: 100%;
   }
   .sync-banner {
     grid-template-columns: 38px 1fr;
@@ -276,11 +296,8 @@
   .checkin-grid--dirty {
     padding-bottom: 64px;
   }
-  .primary-button--save {
-    display: none;
-  }
-  .mobile-save-button {
-    position: fixed;
+  .floating-save-button {
+    right: auto;
     left: 50%;
     bottom: 76px;
     bottom: calc(76px + env(safe-area-inset-bottom, 0px));
@@ -295,14 +312,8 @@
     border: 1px solid rgba(140, 225, 191, 0.28);
     box-shadow: 0 14px 34px rgba(16, 45, 44, 0.28);
   }
-  .mobile-save-enter-active,
-  .mobile-save-leave-active {
-    transition:
-      opacity var(--motion-fast) var(--motion-ease),
-      transform var(--motion-fast) var(--motion-ease);
-  }
-  .mobile-save-enter-from,
-  .mobile-save-leave-to {
+  .floating-save-enter-from,
+  .floating-save-leave-to {
     opacity: 0;
     transform: translate(-50%, 6px);
   }
@@ -614,5 +625,15 @@
   }
   .coverage-row {
     grid-template-columns: 115px 1fr 42px;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 979px) {
+  .floating-save-button {
+    bottom: 112px;
+  }
+
+  .checkin-grid--dirty {
+    padding-bottom: 152px;
   }
 }

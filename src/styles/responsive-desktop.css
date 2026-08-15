@@ -41,8 +41,7 @@
     align-items: start;
     gap: 16px;
   }
-  .checkin-grid > .form-card--wide,
-  .checkin-grid > .primary-button--save {
+  .checkin-grid > .form-card--wide {
     grid-column: 1 / -1;
   }
 }

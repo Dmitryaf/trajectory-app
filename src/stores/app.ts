@@ -13,6 +13,7 @@ import {
   normalizeWeeklyReview,
   type AppSettings,
   type DailyEntry,
+  type DailyEntryDraft,
   type LifeEventRecord,
   type MonthlyReview,
   type ResultRecord,
@@ -39,6 +40,7 @@ export const useAppStore = defineStore('app', {
     cloudSyncError: '',
     cloudSyncQueued: false,
     dailyEntries: [] as DailyEntry[],
+    dailyEntryDrafts: [] as DailyEntryDraft[],
     results: [] as ResultRecord[],
     lifeEvents: [] as LifeEventRecord[],
     weeklyReviews: [] as WeeklyReview[],
@@ -47,6 +49,7 @@ export const useAppStore = defineStore('app', {
   }),
   getters: {
     entryByDate: (state) => (date: string) => state.dailyEntries.find((entry) => entry.date === date),
+    draftByDate: (state) => (date: string) => state.dailyEntryDrafts.find((draft) => draft.date === date),
     reviewByWeek: (state) => (weekStart: string) => state.weeklyReviews.find((review) => review.weekStart === weekStart),
     reviewByMonth: (state) => (monthStart: string) => state.monthlyReviews.find((review) => review.monthStart === monthStart),
   },
@@ -54,8 +57,9 @@ export const useAppStore = defineStore('app', {
     async load() {
       this.loadError = '';
       try {
-        const [dailyEntries, results, lifeEvents, weeklyReviews, monthlyReviews, settings] = await Promise.all([
+        const [dailyEntries, dailyEntryDrafts, results, lifeEvents, weeklyReviews, monthlyReviews, settings] = await Promise.all([
           db.dailyEntries.toArray(),
+          db.dailyEntryDrafts.toArray(),
           db.results.toArray(),
           db.lifeEvents.toArray(),
           db.weeklyReviews.toArray(),
@@ -63,6 +67,10 @@ export const useAppStore = defineStore('app', {
           db.settings.get('main'),
         ]);
         this.dailyEntries = dailyEntries.map((entry) => normalizeDailyEntry(entry));
+        this.dailyEntryDrafts = dailyEntryDrafts.map((draft) => ({
+          ...draft,
+          entry: normalizeDailyEntry(draft.entry),
+        }));
         this.results = results.map((result) => normalizeResult(result)).sort((a, b) => b.date.localeCompare(a.date));
         this.lifeEvents = lifeEvents.map((event) => normalizeLifeEvent(event)).sort((a, b) => b.date.localeCompare(a.date));
         this.weeklyReviews = weeklyReviews.map((review) => normalizeWeeklyReview(review));
@@ -79,12 +87,32 @@ export const useAppStore = defineStore('app', {
     },
     async saveEntry(entry: DailyEntry) {
       const saved = plainCopy(normalizeDailyEntry({ ...entry, updatedAt: new Date().toISOString() }));
-      await db.dailyEntries.put(saved);
+      await db.transaction('rw', [db.dailyEntries, db.dailyEntryDrafts], async () => {
+        await db.dailyEntries.put(saved);
+        await db.dailyEntryDrafts.delete(saved.date);
+      });
       const index = this.dailyEntries.findIndex((item) => item.date === saved.date);
       if (index >= 0) this.dailyEntries[index] = saved;
       else this.dailyEntries.push(saved);
+      this.dailyEntryDrafts = this.dailyEntryDrafts.filter((draft) => draft.date !== saved.date);
       void this.syncCloudSnapshot();
       return saved;
+    },
+    async saveDailyEntryDraft(entry: DailyEntry) {
+      const draft: DailyEntryDraft = {
+        date: entry.date,
+        entry: plainCopy(entry),
+        updatedAt: new Date().toISOString(),
+      };
+      await db.dailyEntryDrafts.put(draft);
+      const index = this.dailyEntryDrafts.findIndex((item) => item.date === draft.date);
+      if (index >= 0) this.dailyEntryDrafts[index] = draft;
+      else this.dailyEntryDrafts.push(draft);
+      return draft;
+    },
+    async removeDailyEntryDraft(date: string) {
+      await db.dailyEntryDrafts.delete(date);
+      this.dailyEntryDrafts = this.dailyEntryDrafts.filter((draft) => draft.date !== date);
     },
     async addResult(result: Omit<ResultRecord, 'id' | 'createdAt'>) {
       const record: ResultRecord = plainCopy(
@@ -179,14 +207,15 @@ export const useAppStore = defineStore('app', {
         settings: this.settings,
       };
     },
-    async importData(payload: unknown, options: { syncCloud?: boolean } = {}) {
+    async importData(payload: unknown, options: { syncCloud?: boolean; preserveDailyDrafts?: boolean } = {}) {
       const prepared = normalizeSnapshot(payload);
       await db.transaction(
         'rw',
-        [db.dailyEntries, db.results, db.lifeEvents, db.weeklyReviews, db.monthlyReviews, db.settings],
+        [db.dailyEntries, db.dailyEntryDrafts, db.results, db.lifeEvents, db.weeklyReviews, db.monthlyReviews, db.settings],
         async () => {
           await Promise.all([
             db.dailyEntries.clear(),
+            options.preserveDailyDrafts ? Promise.resolve() : db.dailyEntryDrafts.clear(),
             db.results.clear(),
             db.lifeEvents.clear(),
             db.weeklyReviews.clear(),
@@ -207,10 +236,11 @@ export const useAppStore = defineStore('app', {
     async clearAll(options: { syncCloud?: boolean } = { syncCloud: true }) {
       await db.transaction(
         'rw',
-        [db.dailyEntries, db.results, db.lifeEvents, db.weeklyReviews, db.monthlyReviews, db.settings],
+        [db.dailyEntries, db.dailyEntryDrafts, db.results, db.lifeEvents, db.weeklyReviews, db.monthlyReviews, db.settings],
         async () => {
           await Promise.all([
             db.dailyEntries.clear(),
+            db.dailyEntryDrafts.clear(),
             db.results.clear(),
             db.lifeEvents.clear(),
             db.weeklyReviews.clear(),
@@ -220,6 +250,7 @@ export const useAppStore = defineStore('app', {
         },
       );
       this.dailyEntries = [];
+      this.dailyEntryDrafts = [];
       this.results = [];
       this.lifeEvents = [];
       this.weeklyReviews = [];
@@ -275,6 +306,7 @@ export const useAppStore = defineStore('app', {
       this.cloudSyncError = '';
       this.cloudSyncQueued = false;
       this.dailyEntries = [];
+      this.dailyEntryDrafts = [];
       this.results = [];
       this.lifeEvents = [];
       this.weeklyReviews = [];

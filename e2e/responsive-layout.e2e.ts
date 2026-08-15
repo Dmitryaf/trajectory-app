@@ -72,6 +72,14 @@ test('keeps mobile form controls inside their cards', async ({ page }) => {
       }),
     );
     expect(overflow, `form controls should stay inside cards at ${width}px`).toEqual([]);
+
+    const quickCaptureBox = await page.locator('.quick-capture').boundingBox();
+    const goalSummaryBox = await page.locator('.current-goal-summary').boundingBox();
+    expect(quickCaptureBox).not.toBeNull();
+    expect(goalSummaryBox).not.toBeNull();
+    expect(goalSummaryBox!.y, `goal should stay below quick actions at ${width}px`).toBeGreaterThanOrEqual(
+      quickCaptureBox!.y + quickCaptureBox!.height + 12,
+    );
   }
 });
 
@@ -148,7 +156,7 @@ test('keeps the returning daily form compact and visibly grouped', async ({ page
   expect(headingBox!.height).toBeLessThanOrEqual(150);
   await expect(page.getByText('Запись за дату', { exact: true })).toBeVisible();
   await expect(page.getByText('Состояние и условия', { exact: true })).toBeVisible();
-  await expect(page.getByText('Текущая цель', { exact: true })).toBeVisible();
+  await expect(page.locator('form').getByText('Текущая цель', { exact: true })).toBeVisible();
   await expect(page.getByText('Остальные части дня', { exact: true })).toBeVisible();
   await expect(page.getByText('Короткий итог дня', { exact: true })).toBeVisible();
   await expect(page.getByText('Сон перед этой датой и сколько сил было в этот день.', { exact: true })).toBeHidden();
@@ -162,11 +170,47 @@ test('keeps the returning daily form compact and visibly grouped', async ({ page
   expect(goalBox!.y).toBeLessThan(workBox!.y);
   await expect(workCard.locator('textarea')).toHaveCount(0);
 
+  const goalSummaryBox = await page.locator('.current-goal-summary').boundingBox();
+  const quickCaptureBox = await page.locator('.quick-capture').boundingBox();
+  expect(goalSummaryBox).not.toBeNull();
+  expect(quickCaptureBox).not.toBeNull();
+  expect(goalSummaryBox!.y).toBeGreaterThanOrEqual(quickCaptureBox!.y + quickCaptureBox!.height + 12);
+
+  const dailySummaryHeadingBox = await page.getByText('Короткий итог дня', { exact: true }).boundingBox();
+  const dailySummaryCardBox = await page.locator('.form-card--daily-summary').boundingBox();
+  expect(dailySummaryHeadingBox).not.toBeNull();
+  expect(dailySummaryCardBox).not.toBeNull();
+  expect(dailySummaryCardBox!.y).toBeGreaterThan(dailySummaryHeadingBox!.y + dailySummaryHeadingBox!.height);
+
   const goalCriteria = goalCard.locator('.goal-context-details');
   await expect(goalCriteria).not.toHaveAttribute('open', '');
   await goalCriteria.locator('summary').focus();
   await goalCriteria.locator('summary').press('Enter');
   await expect(goalCriteria).toHaveAttribute('open', '');
+
+  await page.getByPlaceholder('Например: после прогулки стало легче собраться с мыслями').fill('Проверка fixed-сохранения');
+  const floatingSave = page.locator('.floating-save-button');
+  await expect(floatingSave).toBeVisible();
+  await expect(floatingSave).toHaveCSS('position', 'fixed');
+  const floatingSaveBox = await floatingSave.boundingBox();
+  expect(floatingSaveBox).not.toBeNull();
+  expect(floatingSaveBox!.x + floatingSaveBox!.width).toBeLessThanOrEqual(1280);
+  expect(floatingSaveBox!.y + floatingSaveBox!.height).toBeLessThanOrEqual(720);
+});
+
+test('keeps the save action above tablet bottom navigation', async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.goto('/');
+  await page.getByPlaceholder('Например: после прогулки стало легче собраться с мыслями').fill('Проверка сохранения на планшете');
+
+  const floatingSave = page.locator('.floating-save-button');
+  const bottomNavigation = page.locator('.bottom-nav');
+  await expect(floatingSave).toBeVisible();
+  const floatingSaveBox = await floatingSave.boundingBox();
+  const bottomNavigationBox = await bottomNavigation.boundingBox();
+  expect(floatingSaveBox).not.toBeNull();
+  expect(bottomNavigationBox).not.toBeNull();
+  expect(floatingSaveBox!.y + floatingSaveBox!.height).toBeLessThanOrEqual(bottomNavigationBox!.y - 10);
 });
 
 test('keeps result details editable when Backspace clears the field', async ({ page }) => {

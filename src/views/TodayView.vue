@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import CurrentGoalDialog from '../features/daily-entry/ui/CurrentGoalDialog.vue';
 import FirstUseRecovery from '../features/first-use/ui/FirstUseRecovery.vue';
 import HowItWorksDialog from '../features/first-use/ui/HowItWorksDialog.vue';
 import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
@@ -9,6 +10,7 @@ import ScalePicker from '../shared/ui/forms/ScalePicker.vue';
 import { experimentTextLimits } from '../features/experiments/model';
 import { useDailyEntryForm } from '../features/daily-entry/useDailyEntryForm';
 import { useAppStore } from '../stores/app';
+import { notifySaved, notifyUnknownError } from '../services/notifications';
 import { addDays, endOfMonth, endOfWeek, formatDate, formatMinutes, startOfMonth, startOfWeek, todayKey } from '../services/dates';
 import { buildObservations, entriesForPeriod, entriesForWeek, summarize } from '../services/analytics';
 import {
@@ -34,12 +36,13 @@ import {
 } from '../types';
 
 const store = useAppStore();
+const goalDialogOpen = ref(false);
+const goalSaving = ref(false);
 const {
   selectedDate,
   sleepDurationMinutes,
   timeInBedDurationMinutes,
   weightKg,
-  saved,
   validationMessage,
   form,
   hasSavedEntry,
@@ -105,6 +108,7 @@ const firstUseTakesPriority = computed(
       (firstUseEditRequested && store.settings.firstUse.status === 'completed')),
 );
 const hasSelectedFocus = computed(() => Boolean((form.focusTitle || store.settings.activeFocusTitle).trim()));
+const currentGoalTitle = computed(() => store.settings.activeFocusTitle.trim());
 const hasRecordedGoalAction = computed(() => form.recordedFields.includes('actionDirection'));
 const showGoalActionChoices = computed(() => hasSelectedFocus.value || hasRecordedGoalAction.value);
 const showLifeAreas = computed(() => activeLifeOptions.value.length > 0 || form.lifeAreas.length > 0 || form.lifeAreasRecorded);
@@ -215,6 +219,38 @@ function markRecorded(field: DailyRecordedFieldId) {
 function unmarkRecorded(field: DailyRecordedFieldId) {
   form.recordedFields = form.recordedFields.filter((item) => item !== field);
 }
+
+async function saveCurrentGoal(
+  goal: {
+    title: string;
+    outcomeCriterion: string;
+    reviewDate: string;
+    externalEvidenceCriterion: string;
+  },
+  successMessage = 'Текущая цель сохранена',
+) {
+  if (goalSaving.value) return;
+  goalSaving.value = true;
+  try {
+    await store.saveSettings({
+      ...store.settings,
+      activeFocusTitle: goal.title,
+      focusOutcomeCriterion: goal.outcomeCriterion,
+      focusReviewDate: goal.reviewDate,
+      externalEvidenceCriterion: goal.externalEvidenceCriterion,
+    });
+    goalDialogOpen.value = false;
+    notifySaved(successMessage);
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось сохранить цель');
+  } finally {
+    goalSaving.value = false;
+  }
+}
+
+async function removeCurrentGoal() {
+  await saveCurrentGoal({ title: '', outcomeCriterion: '', reviewDate: '', externalEvidenceCriterion: '' }, 'Текущая цель убрана');
+}
 </script>
 
 <template>
@@ -238,6 +274,17 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
       <RouterLink to="/events"><span>✦</span><strong>Записать мысль или событие</strong></RouterLink>
     </nav>
 
+    <section v-if="!firstUseTakesPriority && isToday" class="current-goal-summary" aria-label="Текущая цель">
+      <div>
+        <span class="eyebrow">Текущая цель</span>
+        <strong>{{ currentGoalTitle || 'Пока не выбрана' }}</strong>
+        <p v-if="!currentGoalTitle">Можно продолжать заполнять день без цели.</p>
+      </div>
+      <button class="secondary-button context-action" type="button" aria-haspopup="dialog" @click="goalDialogOpen = true">
+        {{ currentGoalTitle ? 'Изменить' : 'Выбрать цель' }}
+      </button>
+    </section>
+
     <section v-if="isFirstEntry && !firstUseTakesPriority" class="first-entry-guide" aria-label="Первая запись">
       <div>
         <span class="eyebrow">С чего начать</span>
@@ -255,9 +302,11 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
       <RouterLink to="/settings#daily-blocks">Настроить главную →</RouterLink>
     </div>
 
-    <section v-if="!firstUseTakesPriority && !isFirstEntry && entryChangeNotice" class="entry-change-notice" aria-live="polite">
-      <strong>{{ hasSavedEntry ? 'Изменения не сохранены' : 'Новая запись не сохранена' }}</strong>
-      <p>{{ entryChangeNotice }}</p>
+    <section v-if="!firstUseTakesPriority && entryChangeNotice" class="entry-change-notice" aria-live="polite">
+      <div>
+        <strong>{{ hasSavedEntry ? 'Изменения не сохранены' : 'Новая запись не сохранена' }}</strong>
+        <p>{{ entryChangeNotice }}</p>
+      </div>
     </section>
 
     <section v-else-if="!firstUseTakesPriority && activeReviewReminder" class="review-nudge" aria-label="Период готов к обзору">
@@ -408,7 +457,9 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
               }}
             </p>
           </div>
-          <RouterLink v-if="hasSelectedFocus" class="card-settings-link" to="/settings#goal-settings">Настроить</RouterLink>
+          <button v-if="hasSelectedFocus" class="card-settings-link" type="button" aria-haspopup="dialog" @click="goalDialogOpen = true">
+            Настроить
+          </button>
         </div>
         <template v-if="showGoalActionChoices">
           <p class="field-hint">Что лучше всего описывает этот день относительно выбранной цели?</p>
@@ -467,7 +518,9 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
         </template>
         <div v-else class="empty-block-note">
           <p>После выбора цели здесь можно будет отмечать конкретные шаги, подготовку или дни, занятые другими делами.</p>
-          <RouterLink class="secondary-button context-action" to="/settings#goal-settings">Выбрать цель</RouterLink>
+          <button class="secondary-button context-action" type="button" aria-haspopup="dialog" @click="goalDialogOpen = true">
+            Выбрать цель
+          </button>
         </div>
       </article>
 
@@ -619,7 +672,7 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
       <div class="checkin-group-heading">
         <span>Короткий итог дня</span>
       </div>
-      <article class="form-card">
+      <article class="form-card form-card--daily-summary form-card--wide">
         <div class="form-card__heading">
           <span class="section-icon">·</span>
           <div>
@@ -634,17 +687,27 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
           placeholder="Например: после прогулки стало легче собраться с мыслями"
         ></textarea>
       </article>
+    </form>
 
-      <button class="primary-button primary-button--save" type="submit" :disabled="saveButtonDisabled">
-        <span>{{ saveButtonText }}</span
-        ><span>{{ saved ? '✓' : '→' }}</span>
-      </button>
-      <Transition name="mobile-save">
-        <button v-if="isDirty" class="primary-button mobile-save-button" type="submit" :disabled="saveButtonDisabled">
+    <Teleport to="body">
+      <Transition name="floating-save">
+        <button v-if="isDirty" class="primary-button floating-save-button" type="button" :disabled="saveButtonDisabled" @click="save">
           <span>{{ saveButtonText }}</span
           ><span aria-hidden="true">→</span>
         </button>
       </Transition>
-    </form>
+    </Teleport>
+
+    <CurrentGoalDialog
+      :open="goalDialogOpen"
+      :title="store.settings.activeFocusTitle"
+      :outcome-criterion="store.settings.focusOutcomeCriterion"
+      :review-date="store.settings.focusReviewDate"
+      :external-evidence-criterion="store.settings.externalEvidenceCriterion"
+      :saving="goalSaving"
+      @close="goalDialogOpen = false"
+      @remove="removeCurrentGoal"
+      @save="saveCurrentGoal"
+    />
   </section>
 </template>
