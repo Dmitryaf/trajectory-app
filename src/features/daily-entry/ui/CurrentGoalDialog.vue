@@ -21,6 +21,7 @@ const draftOutcomeCriterion = ref('');
 const draftReviewDate = ref('');
 const draftExternalEvidenceCriterion = ref('');
 const titleInput = ref<HTMLInputElement>();
+const backdropPointerId = ref<number | null>(null);
 
 watch(
   () => props.open,
@@ -37,6 +38,20 @@ watch(
 
 function close() {
   if (!props.saving) emit('close');
+}
+
+function startBackdropClose(event: PointerEvent) {
+  backdropPointerId.value = event.target === event.currentTarget ? event.pointerId : null;
+}
+
+function finishBackdropClose(event: PointerEvent) {
+  const shouldClose = event.target === event.currentTarget && backdropPointerId.value === event.pointerId;
+  backdropPointerId.value = null;
+  if (shouldClose) close();
+}
+
+function cancelBackdropClose() {
+  backdropPointerId.value = null;
 }
 
 function submit() {
@@ -57,14 +72,33 @@ function remove() {
 
 <template>
   <Teleport to="body">
-    <div v-if="open" class="goal-dialog-backdrop" @click.self="close">
+    <div
+      v-if="open"
+      class="goal-dialog-backdrop"
+      @pointerdown="startBackdropClose"
+      @pointerup="finishBackdropClose"
+      @pointercancel="cancelBackdropClose"
+    >
       <section class="goal-dialog" role="dialog" aria-modal="true" aria-labelledby="current-goal-dialog-title" @keydown.esc="close">
         <div class="goal-dialog__heading">
           <div>
             <span class="eyebrow">Текущая цель</span>
             <h2 id="current-goal-dialog-title">Над чем вы сейчас работаете</h2>
           </div>
-          <button type="button" :disabled="saving" aria-label="Закрыть выбор цели" @click="close">×</button>
+          <button type="button" :disabled="saving" aria-label="Закрыть выбор цели" @click="close">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-width="1.8"
+            >
+              <path d="M6 6 18 18M18 6 6 18" />
+            </svg>
+          </button>
         </div>
 
         <form @submit.prevent="submit">

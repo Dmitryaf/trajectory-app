@@ -442,6 +442,35 @@ describe('daily entry scenario', () => {
     expect(notifySaved).toHaveBeenCalledWith('Текущая цель сохранена');
   });
 
+  it('keeps an edited goal open when a pointer starts inside the dialog and ends on the backdrop', async () => {
+    const { pinia } = createStore();
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub, Teleport: true } },
+    });
+
+    await wrapper.get('.current-goal-summary button').trigger('click');
+    const goalDialog = wrapper.getComponent(CurrentGoalDialog);
+    const titleInput = goalDialog.get('#current-goal-title');
+    await titleInput.setValue('Несохранённое изменение цели');
+
+    await goalDialog.get('.goal-dialog').trigger('pointerdown', { pointerId: 1 });
+    await goalDialog.get('.goal-dialog-backdrop').trigger('pointerup', { pointerId: 1 });
+    await goalDialog.get('.goal-dialog-backdrop').trigger('click');
+
+    expect(goalDialog.props('open')).toBe(true);
+    expect(titleInput.element).toHaveProperty('value', 'Несохранённое изменение цели');
+
+    await goalDialog.get('.goal-dialog-backdrop').trigger('pointerdown', { pointerId: 2 });
+    await goalDialog.get('.goal-dialog').trigger('pointerup', { pointerId: 2 });
+    await goalDialog.get('.goal-dialog').trigger('pointerdown', { pointerId: 2 });
+    await goalDialog.get('.goal-dialog-backdrop').trigger('pointerup', { pointerId: 2 });
+    expect(goalDialog.props('open')).toBe(true);
+
+    await goalDialog.get('.goal-dialog-backdrop').trigger('pointerdown', { pointerId: 3 });
+    await goalDialog.get('.goal-dialog-backdrop').trigger('pointerup', { pointerId: 3 });
+    expect(goalDialog.props('open')).toBe(false);
+  });
+
   it('allows removing the current goal after its settings block was moved to Today', async () => {
     const { pinia, store } = createStore();
     store.settings.activeFocusTitle = 'Старая цель';

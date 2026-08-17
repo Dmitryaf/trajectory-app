@@ -85,11 +85,16 @@
   background: linear-gradient(135deg, #f2faf7, #fbfdfc);
   border-color: #cfe5dc;
 }
+.current-goal-summary > div {
+  min-width: 0;
+  flex: 1;
+}
 .current-goal-summary strong {
   display: block;
   margin-top: 3px;
   color: var(--navy);
   font-size: 16px;
+  overflow-wrap: anywhere;
 }
 .current-goal-summary p {
   margin: 3px 0 0;
@@ -241,16 +246,17 @@
   font-size: 25px;
 }
 .goal-dialog__heading > button {
-  width: 38px;
-  height: 38px;
+  display: grid;
+  width: 44px;
+  height: 44px;
   flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface-soft);
   color: #5f6d68;
   cursor: pointer;
-  font-size: 24px;
-  line-height: 1;
 }
 .goal-dialog form {
   display: grid;

@@ -57,6 +57,89 @@ test('saves a dirty daily entry from the mobile action', async ({ page }) => {
   await expect(floatingSave).toBeHidden();
 });
 
+test('keeps a long current goal contained and does not dismiss an edited dialog on a stray pointer gesture', async ({ page }) => {
+  await openDailyEntry(page);
+  await page.getByRole('button', { name: 'Выбрать цель' }).first().click();
+
+  const dialog = page.getByRole('dialog', { name: 'Над чем вы сейчас работаете' });
+  const titleInput = page.getByLabel('Что хотите изменить или закончить');
+  const longGoal = 'ц'.repeat(100);
+  await titleInput.fill(longGoal);
+
+  const closeButton = page.getByRole('button', { name: 'Закрыть выбор цели' });
+  const closeIcon = closeButton.locator('svg');
+  await expect(closeIcon).toBeVisible();
+  const closeButtonBox = await closeButton.boundingBox();
+  const closeIconBox = await closeIcon.boundingBox();
+  expect(closeButtonBox).not.toBeNull();
+  expect(closeIconBox).not.toBeNull();
+  expect(closeButtonBox!.width).toBeGreaterThanOrEqual(44);
+  expect(closeButtonBox!.height).toBeGreaterThanOrEqual(44);
+  expect(Math.abs(closeButtonBox!.x + closeButtonBox!.width / 2 - (closeIconBox!.x + closeIconBox!.width / 2))).toBeLessThanOrEqual(1);
+  expect(Math.abs(closeButtonBox!.y + closeButtonBox!.height / 2 - (closeIconBox!.y + closeIconBox!.height / 2))).toBeLessThanOrEqual(1);
+
+  const dialogBox = await dialog.boundingBox();
+  expect(dialogBox).not.toBeNull();
+  await page.mouse.move(dialogBox!.x + dialogBox!.width / 2, dialogBox!.y + 20);
+  await page.mouse.down();
+  await page.mouse.move(5, 5);
+  await page.mouse.up();
+
+  await expect(dialog).toBeVisible();
+  await expect(titleInput).toHaveValue(longGoal);
+  await page.getByRole('button', { name: 'Сохранить цель' }).click();
+
+  const summary = page.getByLabel('Текущая цель');
+  await expect(summary).toContainText(longGoal);
+  await summary.getByRole('button', { name: 'Изменить' }).click();
+  await page.mouse.click(5, 5);
+  await expect(dialog).toBeHidden();
+
+  const assertContained = async () => {
+    const layout = await summary.evaluate((element) => {
+      const title = element.querySelector('strong')!;
+      const action = element.querySelector('button')!;
+      const summaryBox = element.getBoundingClientRect();
+      const titleBox = title.getBoundingClientRect();
+      const actionBox = action.getBoundingClientRect();
+      return {
+        summaryOverflow: element.scrollWidth - element.clientWidth,
+        titleOverlapsAction:
+          titleBox.left < actionBox.right &&
+          titleBox.right > actionBox.left &&
+          titleBox.top < actionBox.bottom &&
+          titleBox.bottom > actionBox.top,
+        titleLeft: titleBox.left - summaryBox.left,
+        titleRight: summaryBox.right - titleBox.right,
+        actionLeft: actionBox.left - summaryBox.left,
+        actionRight: summaryBox.right - actionBox.right,
+      };
+    });
+    expect(layout.summaryOverflow).toBeLessThanOrEqual(1);
+    expect(layout.titleOverlapsAction).toBe(false);
+    expect(layout.titleLeft).toBeGreaterThanOrEqual(-1);
+    expect(layout.titleRight).toBeGreaterThanOrEqual(-1);
+    expect(layout.actionLeft).toBeGreaterThanOrEqual(-1);
+    expect(layout.actionRight).toBeGreaterThanOrEqual(-1);
+  };
+
+  for (const viewport of [
+    { width: 320, height: 720 },
+    { width: 390, height: 844 },
+    { width: 768, height: 1024 },
+    { width: 1280, height: 720 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await assertContained();
+  }
+
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.evaluate(() => {
+    document.documentElement.style.zoom = '2';
+  });
+  await assertContained();
+});
+
 test('selects and preserves a past daily entry on mobile', async ({ page }) => {
   await openDailyEntry(page);
   const dateInput = page.getByLabel('Дата записи');
