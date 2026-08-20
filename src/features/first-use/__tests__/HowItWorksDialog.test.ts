@@ -56,6 +56,8 @@ describe('HowItWorksDialog', () => {
 
     await wrapper.get('button').trigger('click');
     const closeButton = document.querySelector('[aria-label="Закрыть объяснение"]') as HTMLButtonElement;
+    expect(closeButton.querySelector('svg')).not.toBeNull();
+    expect(closeButton.textContent).toBe('');
     expect(closeButton).toBe(document.activeElement);
     closeButton.click();
     await flushPromises();

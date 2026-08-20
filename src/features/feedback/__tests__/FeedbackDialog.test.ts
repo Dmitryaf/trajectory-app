@@ -39,4 +39,25 @@ describe('feedback dialog', () => {
     expect(document.body.querySelector('.feedback-dialog')).toBeNull();
     wrapper.unmount();
   });
+
+  it('uses the shared close icon and ignores a gesture that starts inside the dialog', async () => {
+    const wrapper = mount(FeedbackDialog, { props: { accessToken: 'session-token' }, attachTo: document.body });
+
+    await wrapper.get('.beta-feedback-link').trigger('click');
+    const backdrop = document.body.querySelector<HTMLElement>('.feedback-backdrop')!;
+    const dialog = document.body.querySelector<HTMLElement>('.feedback-dialog')!;
+    const closeButton = document.body.querySelector<HTMLButtonElement>('[aria-label="Закрыть форму"]')!;
+
+    expect(closeButton.querySelector('svg')).not.toBeNull();
+    expect(closeButton.textContent).toBe('');
+    dialog.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 1 }));
+    backdrop.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 1 }));
+    await flushPromises();
+
+    expect(document.body.querySelector('.feedback-dialog')).not.toBeNull();
+    closeButton.click();
+    await flushPromises();
+    expect(document.body.querySelector('.feedback-dialog')).toBeNull();
+    wrapper.unmount();
+  });
 });

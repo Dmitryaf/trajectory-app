@@ -2,6 +2,8 @@
 import { nextTick, ref } from 'vue';
 import { sendFeedback } from '../../../services/feedback';
 import { notifyError, notifySaved } from '../../../services/notifications';
+import DialogCloseButton from '../../../shared/ui/overlays/DialogCloseButton.vue';
+import { useDialogBackdropClose } from '../../../shared/ui/overlays/useDialogBackdropClose';
 
 const props = defineProps<{
   accessToken: string;
@@ -22,6 +24,8 @@ function close() {
   if (isSending.value) return;
   isOpen.value = false;
 }
+
+const { startBackdropClose, finishBackdropClose, cancelBackdropClose } = useDialogBackdropClose(close);
 
 async function submit() {
   const value = message.value.trim();
@@ -51,14 +55,20 @@ async function submit() {
   </button>
 
   <Teleport to="body">
-    <div v-if="isOpen" class="feedback-backdrop" @click.self="close">
+    <div
+      v-if="isOpen"
+      class="feedback-backdrop"
+      @pointerdown="startBackdropClose"
+      @pointerup="finishBackdropClose"
+      @pointercancel="cancelBackdropClose"
+    >
       <section class="feedback-dialog" role="dialog" aria-modal="true" aria-labelledby="feedback-title" @keydown.esc="close">
         <div class="feedback-dialog__heading">
           <div>
             <span class="eyebrow">Закрытая бета</span>
             <h2 id="feedback-title">Написать разработчику</h2>
           </div>
-          <button class="feedback-dialog__close" type="button" :disabled="isSending" aria-label="Закрыть форму" @click="close">×</button>
+          <DialogCloseButton label="Закрыть форму" :disabled="isSending" @click="close" />
         </div>
 
         <form @submit.prevent="submit">

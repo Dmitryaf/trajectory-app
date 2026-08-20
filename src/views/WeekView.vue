@@ -458,8 +458,8 @@ function downloadJson() {
             <h2>На что обратить внимание</h2>
           </div>
           <div class="period-actions">
-            <button class="secondary-button" type="button" :disabled="promptCopying" @click="copyPrompt">
-              {{ promptCopying ? 'Копирую…' : 'Скопировать промпт' }}
+            <button class="secondary-button" type="button" :disabled="promptCopying" :aria-busy="promptCopying" @click="copyPrompt">
+              Скопировать промпт
             </button>
             <button class="secondary-button" type="button" @click="downloadJson">Скачать данные</button>
           </div>

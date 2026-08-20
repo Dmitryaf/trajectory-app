@@ -157,6 +157,10 @@ test('selects and preserves a past daily entry on mobile', async ({ page }) => {
   const dateInput = page.getByLabel('Дата записи');
   const today = await dateInput.getAttribute('max');
   expect(today).not.toBeNull();
+  await expect(page.locator('.entry-date-control')).toContainText(today!.split('-').reverse().join('.'));
+  const dateControlBox = await page.locator('.entry-date-control').boundingBox();
+  expect(dateControlBox).not.toBeNull();
+  expect(dateControlBox!.width).toBeGreaterThanOrEqual(132);
   const pastDate = new Date(`${today}T12:00:00`);
   pastDate.setDate(pastDate.getDate() - 1);
   const pastDateKey = pastDate.toISOString().slice(0, 10);

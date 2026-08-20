@@ -179,19 +179,20 @@
   color: var(--navy);
   font-size: 25px;
 }
-.feedback-dialog__close {
-  width: 38px;
-  height: 38px;
+.dialog-close-button {
+  display: grid;
+  width: 44px;
+  height: 44px;
   flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface-soft);
   color: #5f6d68;
   cursor: pointer;
-  font-size: 24px;
-  line-height: 1;
 }
-.feedback-dialog__close:disabled {
+.dialog-close-button:disabled {
   opacity: 0.58;
   cursor: not-allowed;
 }
@@ -243,18 +244,6 @@
   margin: 0;
   color: var(--navy);
   font-size: 26px;
-}
-.help-dialog__close {
-  width: 38px;
-  height: 38px;
-  flex: 0 0 auto;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface-soft);
-  color: #5f6d68;
-  cursor: pointer;
-  font-size: 24px;
-  line-height: 1;
 }
 .help-dialog__lead {
   margin: 14px 0 20px;

@@ -80,6 +80,22 @@ describe('auth store beta lifecycle', () => {
     expect(auth.loading).toBe(false);
   });
 
+  it('releases a registration button when the service never answers', async () => {
+    vi.useFakeTimers();
+    cloud.signUp.mockReturnValue(new Promise(() => undefined));
+    const auth = useAuthStore();
+
+    const signup = auth.signUp('friend@example.com', 'safe-password', 'BETA-INVITE-2026');
+    const rejection = expect(signup).rejects.toMatchObject({ code: 'request_timeout' });
+    await vi.advanceTimersByTimeAsync(20_000);
+
+    await rejection;
+    expect(auth.operation).toBeNull();
+    expect(auth.loading).toBe(false);
+    expect(auth.error).toContain('Сервис долго не отвечает');
+    vi.useRealTimers();
+  });
+
   it.each([
     [{ status: 429, message: 'rate limit exceeded' }, 'Слишком много попыток. Подожди несколько минут и попробуй ещё раз.'],
     [{ message: 'Код приглашения не подошёл' }, 'Код приглашения не подошёл. Проверь код или запроси новый.'],

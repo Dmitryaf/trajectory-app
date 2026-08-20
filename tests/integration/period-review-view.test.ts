@@ -94,8 +94,10 @@ describe('period review navigation', () => {
     await monthButton.trigger('click');
 
     expect(copyAiPrompt).toHaveBeenCalledTimes(2);
-    expect(weekButton.text()).toBe('Копирую…');
-    expect(monthButton.text()).toBe('Копирую…');
+    expect(weekButton.text()).toBe('Скопировать промпт');
+    expect(monthButton.text()).toBe('Скопировать промпт');
+    expect(weekButton.attributes('aria-busy')).toBe('true');
+    expect(monthButton.attributes('aria-busy')).toBe('true');
     expect(weekButton.attributes('disabled')).toBeDefined();
     expect(monthButton.attributes('disabled')).toBeDefined();
 

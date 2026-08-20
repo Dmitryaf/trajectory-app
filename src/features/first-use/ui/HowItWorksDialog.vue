@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue';
+import DialogCloseButton from '../../../shared/ui/overlays/DialogCloseButton.vue';
+import { useDialogBackdropClose } from '../../../shared/ui/overlays/useDialogBackdropClose';
 
 const props = withDefaults(
   defineProps<{
@@ -13,7 +15,7 @@ const props = withDefaults(
 const emit = defineEmits<{ 'intro-seen': [] }>();
 const isOpen = ref(false);
 const triggerButton = ref<HTMLButtonElement>();
-const closeButton = ref<HTMLButtonElement>();
+const closeButton = ref<InstanceType<typeof DialogCloseButton>>();
 const openedAsIntro = ref(false);
 
 watch(
@@ -52,6 +54,8 @@ async function close() {
     triggerButton.value?.focus();
   }
 }
+
+const { startBackdropClose, finishBackdropClose, cancelBackdropClose } = useDialogBackdropClose(close);
 </script>
 
 <template>
@@ -70,14 +74,20 @@ async function close() {
   </button>
 
   <Teleport to="body">
-    <div v-if="isOpen" class="help-backdrop" @click.self="close">
+    <div
+      v-if="isOpen"
+      class="help-backdrop"
+      @pointerdown="startBackdropClose"
+      @pointerup="finishBackdropClose"
+      @pointercancel="cancelBackdropClose"
+    >
       <section class="help-dialog" role="dialog" aria-modal="true" aria-labelledby="how-it-works-title" @keydown.esc="close">
         <div class="help-dialog__heading">
           <div>
             <span class="eyebrow">Зачем нужны записи</span>
             <h2 id="how-it-works-title">Зачем нужна «Траектория»</h2>
           </div>
-          <button ref="closeButton" class="help-dialog__close" type="button" aria-label="Закрыть объяснение" @click="close">×</button>
+          <DialogCloseButton ref="closeButton" label="Закрыть объяснение" @click="close" />
         </div>
 
         <p class="help-dialog__lead">

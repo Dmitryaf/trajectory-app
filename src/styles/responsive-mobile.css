@@ -159,22 +159,15 @@
     right: 10px;
     font-size: 100px;
   }
-  .page-heading .date-input {
-    width: 46px;
-    min-width: 46px;
-    color: transparent;
-    padding: 10px;
-  }
-  .page-heading .date-input::-webkit-calendar-picker-indicator {
-    margin: 0;
-    opacity: 1;
-  }
   .entry-date-picker {
     gap: 3px;
   }
-  .entry-date-picker > span,
+  .entry-date-picker__label,
   .entry-date-picker > small {
     display: none;
+  }
+  .entry-date-control {
+    min-width: 132px;
   }
   h1 {
     font-size: 36px;

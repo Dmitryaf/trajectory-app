@@ -58,6 +58,8 @@ const {
   save,
 } = useDailyEntryForm(store);
 
+const selectedDateLabel = computed(() => selectedDate.value.split('-').reverse().join('.'));
+
 const careerItems = computed(() => {
   const usedIds = new Set([
     ...store.dailyEntries.flatMap((entry) => entry.careerStates),
@@ -293,8 +295,14 @@ async function removeCurrentGoal() {
         <h1>{{ isToday ? 'Сегодня' : formatDate(selectedDate, { day: 'numeric', month: 'long', weekday: 'long' }) }}</h1>
       </div>
       <label class="entry-date-picker">
-        <span>Запись за дату</span>
-        <input :value="selectedDate" class="date-input" type="date" :max="todayKey()" aria-label="Дата записи" @change="selectDate" />
+        <span class="entry-date-picker__label">Запись за дату</span>
+        <span class="entry-date-control">
+          <span aria-hidden="true">{{ selectedDateLabel }}</span>
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
+          </svg>
+          <input :value="selectedDate" class="date-input" type="date" :max="todayKey()" aria-label="Дата записи" @change="selectDate" />
+        </span>
         <small>Можно выбрать любой прошедший день</small>
       </label>
     </div>

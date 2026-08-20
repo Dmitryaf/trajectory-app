@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue';
+import DialogCloseButton from '../../../shared/ui/overlays/DialogCloseButton.vue';
+import { useDialogBackdropClose } from '../../../shared/ui/overlays/useDialogBackdropClose';
 
 const props = defineProps<{
   open: boolean;
@@ -21,7 +23,6 @@ const draftOutcomeCriterion = ref('');
 const draftReviewDate = ref('');
 const draftExternalEvidenceCriterion = ref('');
 const titleInput = ref<HTMLInputElement>();
-const backdropPointerId = ref<number | null>(null);
 
 watch(
   () => props.open,
@@ -40,19 +41,7 @@ function close() {
   if (!props.saving) emit('close');
 }
 
-function startBackdropClose(event: PointerEvent) {
-  backdropPointerId.value = event.target === event.currentTarget ? event.pointerId : null;
-}
-
-function finishBackdropClose(event: PointerEvent) {
-  const shouldClose = event.target === event.currentTarget && backdropPointerId.value === event.pointerId;
-  backdropPointerId.value = null;
-  if (shouldClose) close();
-}
-
-function cancelBackdropClose() {
-  backdropPointerId.value = null;
-}
+const { startBackdropClose, finishBackdropClose, cancelBackdropClose } = useDialogBackdropClose(close);
 
 function submit() {
   const preparedTitle = draftTitle.value.trim();
@@ -85,20 +74,7 @@ function remove() {
             <span class="eyebrow">Текущая цель</span>
             <h2 id="current-goal-dialog-title">Над чем вы сейчас работаете</h2>
           </div>
-          <button type="button" :disabled="saving" aria-label="Закрыть выбор цели" @click="close">
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              width="20"
-              height="20"
-              fill="none"
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-width="1.8"
-            >
-              <path d="M6 6 18 18M18 6 6 18" />
-            </svg>
-          </button>
+          <DialogCloseButton label="Закрыть выбор цели" :disabled="saving" @click="close" />
         </div>
 
         <form @submit.prevent="submit">

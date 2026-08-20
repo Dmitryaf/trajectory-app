@@ -622,11 +622,23 @@ const {
           </div>
         </div>
         <div class="ai-actions">
-          <button class="secondary-button" type="button" :disabled="isSaving('analysis-week')" @click="copyAnalysisPrompt('week')">
-            {{ isSaving('analysis-week') ? 'Копирую…' : 'Промпт недели' }}
+          <button
+            class="secondary-button"
+            type="button"
+            :disabled="isSaving('analysis-week')"
+            :aria-busy="isSaving('analysis-week')"
+            @click="copyAnalysisPrompt('week')"
+          >
+            Промпт недели
           </button>
-          <button class="secondary-button" type="button" :disabled="isSaving('analysis-month')" @click="copyAnalysisPrompt('month')">
-            {{ isSaving('analysis-month') ? 'Копирую…' : 'Промпт месяца' }}
+          <button
+            class="secondary-button"
+            type="button"
+            :disabled="isSaving('analysis-month')"
+            :aria-busy="isSaving('analysis-month')"
+            @click="copyAnalysisPrompt('month')"
+          >
+            Промпт месяца
           </button>
           <button class="secondary-button" type="button" @click="downloadAnalysisData('week')">Данные недели</button>
           <button class="secondary-button" type="button" @click="downloadAnalysisData('month')">Данные месяца</button>
@@ -653,8 +665,14 @@ const {
               </div>
             </div>
             <div class="ai-actions">
-              <button class="secondary-button" type="button" :disabled="isSaving('analysis-range')" @click="copyCustomAnalysisPrompt">
-                {{ isSaving('analysis-range') ? 'Копирую…' : 'Скопировать промпт периода' }}
+              <button
+                class="secondary-button"
+                type="button"
+                :disabled="isSaving('analysis-range')"
+                :aria-busy="isSaving('analysis-range')"
+                @click="copyCustomAnalysisPrompt"
+              >
+                Скопировать промпт периода
               </button>
               <button class="secondary-button" type="button" @click="downloadCustomAnalysisData">Скачать данные периода</button>
             </div>
