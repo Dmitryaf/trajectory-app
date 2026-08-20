@@ -1,8 +1,11 @@
 create table if not exists public.trajectory_snapshots (
   user_id uuid primary key references auth.users(id) on delete cascade,
   payload jsonb not null,
+  revision bigint not null default 1 check (revision > 0),
   updated_at timestamptz not null default now()
 );
+
+alter table public.trajectory_snapshots add column if not exists revision bigint not null default 1;
 
 alter table public.trajectory_snapshots enable row level security;
 

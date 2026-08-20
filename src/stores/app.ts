@@ -1,6 +1,13 @@
 import { defineStore } from 'pinia';
 import { db } from '../db';
-import { isCloudSyncConfigured, markCloudSyncPending, saveCloudSnapshot } from '../services/cloudSync';
+import {
+  CloudRevisionConflictError,
+  getCloudSyncMeta,
+  isCloudSyncConfigured,
+  loadCloudSnapshot,
+  markCloudSyncPending,
+  saveCloudSnapshot,
+} from '../services/cloudSync';
 import { plainCopy } from '../services/plain';
 import { useAuthStore } from './auth';
 import {
@@ -25,6 +32,8 @@ import { clearFirstUseFunnel } from '../features/first-use/funnel';
 import { experimentEntryLinkError, experimentIntegrityError, linkLegacyExperimentEntries } from '../features/experiments/model';
 import { validDate } from '../model/normalization';
 import { startOfMonth, startOfWeek } from '../services/dates';
+import { loadCloudSyncBase, saveCloudSyncBase } from '../features/sync/base';
+import { mergeCloudSnapshots } from '../features/sync/merge';
 import {
   checkStoragePersistence,
   requestStoragePersistence,
@@ -306,7 +315,16 @@ export const useAppStore = defineStore('app', {
       await runStorageWrite(() =>
         db.transaction(
           'rw',
-          [db.dailyEntries, db.dailyEntryDrafts, db.results, db.lifeEvents, db.weeklyReviews, db.monthlyReviews, db.settings],
+          [
+            db.dailyEntries,
+            db.dailyEntryDrafts,
+            db.results,
+            db.lifeEvents,
+            db.weeklyReviews,
+            db.monthlyReviews,
+            db.settings,
+            db.cloudSyncBases,
+          ],
           async () => {
             await Promise.all([
               db.dailyEntries.clear(),
@@ -316,6 +334,7 @@ export const useAppStore = defineStore('app', {
               db.weeklyReviews.clear(),
               db.monthlyReviews.clear(),
               db.settings.clear(),
+              options.syncCloud ? Promise.resolve() : db.cloudSyncBases.clear(),
             ]);
           },
         ),
@@ -354,11 +373,11 @@ export const useAppStore = defineStore('app', {
       return status;
     },
     async syncCloudSnapshot(options: { force?: boolean } = {}) {
+      void options;
       if (!isCloudSyncConfigured()) {
         this.setCloudSyncState('disabled');
         return { status: 'disabled' } as CloudSyncResult;
       }
-      if (this.cloudSyncStatus === 'conflict' && !options.force) return { status: 'conflict' } as CloudSyncResult;
       if (this.cloudSyncStatus === 'syncing') {
         this.cloudSyncQueued = true;
         return { status: 'queued' } as CloudSyncResult;
@@ -367,11 +386,31 @@ export const useAppStore = defineStore('app', {
       const userId = useAuthStore().session?.user.id;
       if (userId) markCloudSyncPending(userId, 'Локальные изменения ожидают синхронизации');
       this.setCloudSyncState('syncing', 'Сохраняю облачную копию…');
-      let updatedAt: string;
+      let updatedAt = '';
       do {
         this.cloudSyncQueued = false;
         try {
-          updatedAt = await saveCloudSnapshot(this.exportData());
+          let payload = this.exportData();
+          let expectedRevision = userId ? getCloudSyncMeta(userId).lastCloudRevision : 0;
+          for (let attempt = 0; attempt < 3; attempt += 1) {
+            try {
+              const saved = await saveCloudSnapshot(payload, expectedRevision);
+              updatedAt = saved.updatedAt;
+              if (userId) await saveCloudSyncBase(userId, saved.revision ?? expectedRevision + 1, saved.payload);
+              break;
+            } catch (error) {
+              if (!(error instanceof CloudRevisionConflictError) || !userId || attempt === 2) throw error;
+              const remote = await loadCloudSnapshot();
+              if (!remote) {
+                expectedRevision = 0;
+                continue;
+              }
+              const base = await loadCloudSyncBase(userId);
+              payload = mergeCloudSnapshots(base?.snapshot ?? emptyExportPayload(), payload, remote.payload);
+              await this.importData(payload, { syncCloud: false, preserveDailyDrafts: true });
+              expectedRevision = remote.revision ?? 1;
+            }
+          }
           this.setCloudSyncState('synced', `Облако обновлено: ${new Date(updatedAt).toLocaleString('ru-RU')}`, { updatedAt });
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Не удалось сохранить облачную копию';
@@ -405,3 +444,16 @@ export const useAppStore = defineStore('app', {
     },
   },
 });
+
+function emptyExportPayload(): ExportPayload {
+  return {
+    version: BACKUP_VERSION,
+    exportedAt: '',
+    dailyEntries: [],
+    results: [],
+    lifeEvents: [],
+    weeklyReviews: [],
+    monthlyReviews: [],
+    settings: structuredClone(defaultSettings),
+  };
+}

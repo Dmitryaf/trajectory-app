@@ -43,7 +43,7 @@ export type DailyRecordedFieldId =
   | 'experimentCompleted'
   | 'experimentNote';
 
-export const currentDailyEntrySchemaVersion = 4;
+export { DAILY_ENTRY_SCHEMA_VERSION as currentDailyEntrySchemaVersion } from './dataVersions';
 export type ExperimentMetricId = 'sleepMinutes' | 'timeInBedMinutes' | 'sleepQuality' | 'energy' | 'weightKg';
 export type ExperimentDirection = 'increase' | 'decrease';
 export type ExperimentDecision = 'continue' | 'adjust' | 'stop' | 'more_data';

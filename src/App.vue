@@ -10,6 +10,8 @@ import PasswordResetView from './views/PasswordResetView.vue';
 import { recordFirstUseReturnEvents } from './features/first-use/funnel';
 import { createResumeCloudRefresh } from './features/sync/resume';
 import { prepareLocalCacheOwner, reconcileCloudSnapshotAfterResume, reconcileCloudSnapshotOnStartup } from './features/sync/startup';
+import { hasUnsavedSyncEditors, onUnsavedSyncEditorsChange } from './features/sync/editing';
+import { subscribeToCloudSnapshot } from './services/cloudSync';
 import { notifyInfo, notifyUnknownError } from './services/notifications';
 import { useAppStore } from './stores/app';
 import { useAuthStore } from './stores/auth';
@@ -25,6 +27,10 @@ const appDataLoadError = ref('');
 const appDataLoadingText = ref('Загружаю записи…');
 const effectiveLoadError = computed(() => store.loadError || appDataLoadError.value);
 let appDataLoadPromise: Promise<void> | null = null;
+let stopCloudSubscription: (() => void) | undefined;
+let stopEditingSubscription: (() => void) | undefined;
+let cloudRefreshTimer: number | undefined;
+let cloudRefreshDeferred = false;
 const refreshCloudAfterResume = createResumeCloudRefresh(async () => {
   await reconcileCloudSnapshotAfterResume(store, auth.requiresAuth ? auth.session?.user.id : null);
 });
@@ -37,8 +43,17 @@ function currentCloudRefreshState() {
   };
 }
 
+function requestAutomaticCloudRefresh(force = false) {
+  if (hasUnsavedSyncEditors()) {
+    cloudRefreshDeferred = true;
+    return;
+  }
+  cloudRefreshDeferred = false;
+  void refreshCloudAfterResume(currentCloudRefreshState(), force);
+}
+
 function handleWindowFocus() {
-  void refreshCloudAfterResume(currentCloudRefreshState());
+  requestAutomaticCloudRefresh();
 }
 
 function handleVisibilityChange() {
@@ -46,7 +61,18 @@ function handleVisibilityChange() {
 }
 
 function handleOnline() {
-  void refreshCloudAfterResume(currentCloudRefreshState(), true);
+  requestAutomaticCloudRefresh(true);
+}
+
+function startCloudUpdates() {
+  stopCloudSubscription?.();
+  stopCloudSubscription = undefined;
+  if (cloudRefreshTimer !== undefined) window.clearInterval(cloudRefreshTimer);
+  const userId = auth.requiresAuth ? auth.session?.user.id : null;
+  if (userId) stopCloudSubscription = subscribeToCloudSnapshot(userId, () => requestAutomaticCloudRefresh(true));
+  cloudRefreshTimer = window.setInterval(() => {
+    if (document.visibilityState === 'visible') requestAutomaticCloudRefresh();
+  }, 30_000);
 }
 
 async function keepUnauthenticatedRouteAtEntry() {
@@ -58,25 +84,37 @@ onMounted(async () => {
   window.addEventListener('focus', handleWindowFocus);
   window.addEventListener('online', handleOnline);
   document.addEventListener('visibilitychange', handleVisibilityChange);
+  stopEditingSubscription = onUnsavedSyncEditorsChange((dirty) => {
+    if (!dirty && cloudRefreshDeferred) requestAutomaticCloudRefresh(true);
+  });
   await auth.init();
   if (auth.recoveryRequired && router.currentRoute.value.path !== '/password-reset') {
     await router.replace('/password-reset');
   } else {
     await keepUnauthenticatedRouteAtEntry();
   }
-  if (canOpenApp.value) await loadAppData();
+  if (canOpenApp.value) {
+    await loadAppData();
+    startCloudUpdates();
+  }
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('focus', handleWindowFocus);
   window.removeEventListener('online', handleOnline);
   document.removeEventListener('visibilitychange', handleVisibilityChange);
+  stopCloudSubscription?.();
+  stopEditingSubscription?.();
+  if (cloudRefreshTimer !== undefined) window.clearInterval(cloudRefreshTimer);
 });
 
 watch(canOpenApp, async (allowed) => {
   if (allowed) {
     await loadAppData();
+    startCloudUpdates();
   } else if (auth.requiresAuth) {
+    stopCloudSubscription?.();
+    stopCloudSubscription = undefined;
     resetAppDataState();
     store.unload();
   }
@@ -204,12 +242,12 @@ const navItems = [
           class="sync-banner"
           :class="`sync-banner--${store.cloudSyncStatus}`"
         >
-          <span class="sync-banner__mark" aria-hidden="true">{{ store.cloudSyncStatus === 'conflict' ? '!' : '↥' }}</span>
+          <span class="sync-banner__mark" aria-hidden="true">↥</span>
           <div>
-            <strong>{{ store.cloudSyncStatus === 'conflict' ? 'Нужен выбор по облаку' : 'Облако не обновлено' }}</strong>
+            <strong>Облако не обновлено</strong>
             <p>{{ store.cloudSyncMessage }}</p>
           </div>
-          <RouterLink class="secondary-button" to="/settings#cloud-settings">Данные и синхронизация</RouterLink>
+          <RouterLink class="secondary-button" to="/settings#cloud-settings">Настройки синхронизации</RouterLink>
         </section>
         <RouterView />
       </template>

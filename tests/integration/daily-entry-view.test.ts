@@ -7,6 +7,7 @@ import { notifyError, notifySaved, notifyUnknownError } from '../../src/services
 import { LocalStorageQuotaError } from '../../src/services/storageProtection';
 import CurrentGoalDialog from '../../src/features/daily-entry/ui/CurrentGoalDialog.vue';
 import { emptyDailyEntry, emptyWeeklyReview } from '../../src/types';
+import { DAILY_ENTRY_SCHEMA_VERSION } from '../../src/model/dataVersions';
 import TodayView from '../../src/views/TodayView.vue';
 import { createStore, routerLinkStub } from '../helpers/viewScenario';
 
@@ -172,7 +173,7 @@ describe('daily entry scenario', () => {
     expect(notifySaved).toHaveBeenCalledWith('День сохранён на устройстве');
     expect(saveEntry.mock.calls[0][0]).toMatchObject({
       date: '2026-07-21',
-      entrySchemaVersion: 4,
+      entrySchemaVersion: DAILY_ENTRY_SCHEMA_VERSION,
       activeDailyBlocksSnapshot: ['sleep', 'context', 'movement', 'nutrition'],
       bedtime: '23:40',
       wakeTime: '07:30',
@@ -231,6 +232,8 @@ describe('daily entry scenario', () => {
     const experimentCard = wrapper.get('#experiment');
     const note = experimentCard.get('#experiment-note');
 
+    expect(experimentCard.text()).toContain('Период: 20 июля — 27 июля 2026 г.');
+
     expect(note.attributes('maxlength')).toBe('500');
     await note.setValue('x'.repeat(501));
     await wrapper.get('form').trigger('submit');
@@ -252,6 +255,20 @@ describe('daily entry scenario', () => {
         experimentNote: 'Заранее убрал телефон, но поздний звонок сбил план',
       }),
     );
+  });
+
+  it('opens the native date picker from the full desktop date control', async () => {
+    const { pinia } = createStore();
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+    const input = wrapper.get<HTMLInputElement>('[aria-label="Дата записи"]');
+    const showPicker = vi.fn();
+    Object.defineProperty(input.element, 'showPicker', { configurable: true, value: showPicker });
+
+    await wrapper.get('[aria-label="Выбрать дату записи"]').trigger('click');
+
+    expect(showPicker).toHaveBeenCalledOnce();
   });
 
   it('saves explicit empty career and goal answers separately from skipped blocks', async () => {

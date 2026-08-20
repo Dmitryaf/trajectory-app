@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { FIRST_USE_FUNNEL_VERSION } from '../../../model/dataVersions';
 import { clearFirstUseFunnel, readFirstUseFunnel, recordFirstUseEvent, recordFirstUseReturnEvents } from '../funnel';
 
 function memoryStorage(initial: Record<string, string> = {}) {
@@ -28,10 +29,10 @@ describe('local first-use funnel', () => {
   });
 
   it('ignores unknown fields, invalid timestamps and broken local data', () => {
-    const key = 'trajectory:first-use-funnel:v1';
+    const key = `trajectory:first-use-funnel:v${FIRST_USE_FUNNEL_VERSION}`;
     const storage = memoryStorage({
       [key]: JSON.stringify({
-        version: 1,
+        version: FIRST_USE_FUNNEL_VERSION,
         events: {
           first_use_presentation_viewed: '2026-08-01T09:00:00.000Z',
           first_use_signup_completed: 'not-a-date',

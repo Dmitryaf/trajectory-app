@@ -19,7 +19,8 @@ describe('AccountMenu', () => {
     expect(wrapper.text()).toContain('friend@example.com');
     expect(wrapper.text()).toContain('Настройки');
     expect(wrapper.find('a[href="/settings#install-settings"]').exists()).toBe(false);
-    await wrapper.get('button').trigger('click');
+    expect(wrapper.text()).not.toContain('Обновить данные');
+    await wrapper.get('.account-menu__logout').trigger('click');
     expect(wrapper.emitted('signOut')).toHaveLength(1);
   });
 });

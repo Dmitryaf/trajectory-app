@@ -16,7 +16,7 @@ export function createResumeCloudRefresh(refresh: () => Promise<void>, options: 
   let inFlight: Promise<boolean> | null = null;
 
   return function requestRefresh(state: ResumeCloudRefreshState, force = false): Promise<boolean> {
-    if (!state.authenticated || !state.loaded || state.status === 'disabled' || state.status === 'syncing' || state.status === 'conflict') {
+    if (!state.authenticated || !state.loaded || state.status === 'disabled' || state.status === 'syncing') {
       return Promise.resolve(false);
     }
     if (inFlight) return inFlight;

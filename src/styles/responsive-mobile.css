@@ -279,7 +279,6 @@
     padding: 15px;
   }
   .sync-banner .secondary-button {
-    grid-column: 1 / -1;
     width: 100%;
     text-align: center;
   }

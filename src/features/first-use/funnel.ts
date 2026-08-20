@@ -1,3 +1,5 @@
+import { FIRST_USE_FUNNEL_VERSION } from '../../model/dataVersions';
+
 export const firstUseFunnelEventNames = [
   'first_use_presentation_viewed',
   'first_use_signup_completed',
@@ -19,11 +21,11 @@ export type FirstUseFunnelEvent = {
 type FunnelStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
 type StoredFunnel = {
-  version: 1;
+  version: number;
   events: Partial<Record<FirstUseFunnelEventName, string>>;
 };
 
-const storageKey = 'trajectory:first-use-funnel:v1';
+const storageKey = `trajectory:first-use-funnel:v${FIRST_USE_FUNNEL_VERSION}`;
 
 function defaultStorage(): FunnelStorage | undefined {
   if (typeof window === 'undefined') return undefined;
@@ -35,7 +37,7 @@ function defaultStorage(): FunnelStorage | undefined {
 }
 
 function emptyFunnel(): StoredFunnel {
-  return { version: 1, events: {} };
+  return { version: FIRST_USE_FUNNEL_VERSION, events: {} };
 }
 
 function isValidTimestamp(value: unknown): value is string {
@@ -48,7 +50,12 @@ function readStoredFunnel(storage: FunnelStorage | undefined): StoredFunnel {
     const raw = storage.getItem(storageKey);
     if (!raw) return emptyFunnel();
     const parsed = JSON.parse(raw) as { version?: unknown; events?: unknown };
-    if (parsed.version !== 1 || !parsed.events || typeof parsed.events !== 'object' || Array.isArray(parsed.events)) {
+    if (
+      parsed.version !== FIRST_USE_FUNNEL_VERSION ||
+      !parsed.events ||
+      typeof parsed.events !== 'object' ||
+      Array.isArray(parsed.events)
+    ) {
       return emptyFunnel();
     }
     const source = parsed.events as Record<string, unknown>;
@@ -56,7 +63,7 @@ function readStoredFunnel(storage: FunnelStorage | undefined): StoredFunnel {
     for (const name of firstUseFunnelEventNames) {
       if (isValidTimestamp(source[name])) events[name] = source[name];
     }
-    return { version: 1, events };
+    return { version: FIRST_USE_FUNNEL_VERSION, events };
   } catch {
     return emptyFunnel();
   }

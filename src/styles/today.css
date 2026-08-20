@@ -85,6 +85,15 @@
   opacity: 0;
   cursor: pointer;
 }
+@media (hover: hover) and (pointer: fine) {
+  .entry-date-control .date-input {
+    pointer-events: none;
+  }
+}
+.experiment-period {
+  margin-bottom: 7px;
+  font-weight: 750;
+}
 
 .today-pulse,
 .recovery-nudge,

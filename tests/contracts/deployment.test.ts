@@ -18,6 +18,10 @@ const betaSignupMigration = readFileSync(
   new URL('../../supabase/migrations/20260723000000_add_beta_signup_gate.sql', import.meta.url),
   'utf8',
 );
+const snapshotRevisionMigration = readFileSync(
+  new URL('../../supabase/migrations/20260820000000_add_snapshot_revision.sql', import.meta.url),
+  'utf8',
+);
 const deleteAccountFunction = readFileSync(new URL('../../supabase/functions/delete-account/index.ts', import.meta.url), 'utf8');
 const deleteAccountHandler = readFileSync(new URL('../../supabase/functions/delete-account/handler.ts', import.meta.url), 'utf8');
 const feedbackFunction = readFileSync(new URL('../../api/feedback.ts', import.meta.url), 'utf8');
@@ -66,6 +70,14 @@ describe('deployment configuration', () => {
     expect(envExample).toContain('VITE_REQUIRE_AUTH=false');
     expect(envExample).toContain('VITE_FEEDBACK_ENABLED=false');
     expect(cloudSyncService).toContain("import.meta.env.VITE_REQUIRE_AUTH === 'true'");
+  });
+
+  it('installs the revision and realtime contract required for automatic multi-device sync', () => {
+    expect(snapshotRevisionMigration).toContain('add column if not exists revision bigint');
+    expect(snapshotRevisionMigration).toContain('trajectory_snapshots_revision_check');
+    expect(snapshotRevisionMigration).toContain('alter publication supabase_realtime add table public.trajectory_snapshots');
+    expect(cloudSyncService).toContain(".eq('revision', expectedRevision)");
+    expect(cloudSyncService).toContain("'postgres_changes'");
   });
 
   it('keeps feedback delivery credentials and recipient on the server', () => {
