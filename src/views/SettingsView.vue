@@ -11,7 +11,7 @@ type SettingsGroup = 'daily' | 'experiment' | 'data' | 'account';
 const settingsGroups: Array<{ id: SettingsGroup; label: string; hash: string }> = [
   { id: 'daily', label: 'Ежедневная запись', hash: 'daily-settings' },
   { id: 'experiment', label: 'Эксперимент', hash: 'experiment-settings' },
-  { id: 'data', label: 'Данные и синхронизация', hash: 'data-settings' },
+  { id: 'data', label: 'Установка и данные', hash: 'data-settings' },
   { id: 'account', label: 'Аккаунт и безопасность', hash: 'account-settings' },
 ];
 const settingsGroupStyle = { animation: 'page-in 0.25s ease-out' };

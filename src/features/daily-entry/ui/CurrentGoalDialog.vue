@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue';
+import { nextTick, ref, toRef, watch } from 'vue';
 import DialogCloseButton from '../../../shared/ui/overlays/DialogCloseButton.vue';
+import { useBodyScrollLock } from '../../../shared/ui/overlays/useBodyScrollLock';
 import { useDialogBackdropClose } from '../../../shared/ui/overlays/useDialogBackdropClose';
 
 const props = defineProps<{
@@ -23,6 +24,8 @@ const draftOutcomeCriterion = ref('');
 const draftReviewDate = ref('');
 const draftExternalEvidenceCriterion = ref('');
 const titleInput = ref<HTMLInputElement>();
+
+useBodyScrollLock(toRef(props, 'open'));
 
 watch(
   () => props.open,

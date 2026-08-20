@@ -19,6 +19,7 @@ describe('unknown route', () => {
     const wrapper = mount({ template: '<RouterView />' }, { global: { plugins: [router] } });
 
     expect(wrapper.get('h1').text()).toBe('Такой страницы нет');
+    expect(wrapper.get('.not-found-card').text()).toContain('адрес устарел');
     expect(wrapper.get('a').text()).toBe('Перейти к «Сегодня»');
 
     await wrapper.get('a').trigger('click');

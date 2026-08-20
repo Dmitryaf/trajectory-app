@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue';
 import DialogCloseButton from '../../../shared/ui/overlays/DialogCloseButton.vue';
+import { useBodyScrollLock } from '../../../shared/ui/overlays/useBodyScrollLock';
 import { useDialogBackdropClose } from '../../../shared/ui/overlays/useDialogBackdropClose';
 
 const props = withDefaults(
@@ -17,6 +18,8 @@ const isOpen = ref(false);
 const triggerButton = ref<HTMLButtonElement>();
 const closeButton = ref<InstanceType<typeof DialogCloseButton>>();
 const openedAsIntro = ref(false);
+
+useBodyScrollLock(isOpen);
 
 watch(
   () => props.openForFirstVisit,

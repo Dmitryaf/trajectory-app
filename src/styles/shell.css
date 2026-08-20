@@ -165,6 +165,7 @@
 .goal-dialog {
   max-height: 100%;
   overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1px solid rgba(213, 224, 217, 0.95);
   border-radius: 26px;
   background: #fff;
@@ -232,6 +233,17 @@
 .feedback-dialog__actions,
 .help-dialog__actions {
   margin-top: 20px;
+}
+.help-dialog__actions a {
+  min-width: 0;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-right: 14px;
+  padding-left: 14px;
+  line-height: 1.25;
+  text-align: center;
 }
 .feedback-dialog__actions button {
   min-width: 120px;
@@ -355,7 +367,7 @@
   position: absolute;
   right: 0;
   top: calc(100% + 8px);
-  width: 190px;
+  width: 220px;
   display: grid;
   gap: 4px;
   padding: 7px;
@@ -413,6 +425,26 @@
 }
 .app-main--auth {
   max-width: 1168px;
+}
+.not-found-card {
+  display: grid;
+  gap: 14px;
+  max-width: 620px;
+  margin: 48px auto 0;
+}
+.not-found-card .eyebrow,
+.not-found-card h1,
+.not-found-card p {
+  margin-bottom: 0;
+}
+.not-found-card .primary-button {
+  width: fit-content;
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+  text-align: center;
 }
 .page {
   min-width: 0;

@@ -12,7 +12,9 @@ describe('PwaInstallGuide', () => {
     expect(wrapper.text()).toContain('Установить приложение');
     expect(wrapper.text()).toContain('На экран Домой');
     expect(wrapper.text()).toContain('фоновая синхронизация не гарантируется');
-    expect(wrapper.text()).toContain('удаление значка не гарантирует удаление аккаунта');
+    expect(wrapper.text()).toContain('Удаление значка не удаляет аккаунт');
+    expect(wrapper.findAll('.install-platform')).toHaveLength(2);
+    expect(wrapper.findAll('.install-platform h3').map((heading) => heading.text())).toEqual(['Android', 'iPhone и iPad']);
 
     const prompt = vi.fn().mockResolvedValue(undefined);
     const event = new Event('beforeinstallprompt', { cancelable: true });

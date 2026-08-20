@@ -515,6 +515,25 @@ describe('period review navigation', () => {
     expect(actions.text()).toContain('Действие 9');
   });
 
+  it('does not render an empty actions disclosure for daily records without actions or context', () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [
+      {
+        ...emptyDailyEntry('2026-07-21'),
+        recordedFields: ['sleepMinutes', 'energy'],
+        sleepMinutes: 420,
+        energy: 3,
+      },
+    ];
+
+    const wrapper = mount(MonthView, {
+      global: { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } },
+    });
+
+    expect(wrapper.find('details.period-records').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('Показать действия и дополнительный контекст');
+  });
+
   it('shows journal records without pretending that daily analytics exist', () => {
     const { pinia, store } = createStore();
     store.results = [

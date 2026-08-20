@@ -51,6 +51,35 @@ async function emulateSafeViewport(
   );
 }
 
+test('keeps native mobile date and time inputs inside their cards', async ({ page }) => {
+  await openDailyEntry(page);
+
+  const sleepCard = page.locator('.form-card--sleep');
+  const timeInputs = sleepCard.locator('input[type="time"]');
+  await expect(timeInputs).toHaveCount(2);
+
+  const overflow = await sleepCard.evaluate((card) => {
+    const cardBox = card.getBoundingClientRect();
+    return Array.from(card.querySelectorAll<HTMLInputElement>('input[type="time"]')).filter((input) => {
+      const box = input.getBoundingClientRect();
+      return box.left < cardBox.left + 12 || box.right > cardBox.right - 12;
+    }).length;
+  });
+  expect(overflow).toBe(0);
+
+  await page.goto('/settings#experiment-settings');
+  await page.getByRole('button', { name: 'Эксперимент', exact: true }).click();
+  const experimentCard = page.locator('.settings-card--experiment');
+  const dateOverflow = await experimentCard.evaluate((card) => {
+    const cardBox = card.getBoundingClientRect();
+    return Array.from(card.querySelectorAll<HTMLInputElement>('input[type="date"]')).filter((input) => {
+      const box = input.getBoundingClientRect();
+      return box.left < cardBox.left + 12 || box.right > cardBox.right - 12;
+    }).length;
+  });
+  expect(dateOverflow).toBe(0);
+});
+
 test('saves a dirty daily entry from the mobile action', async ({ page }) => {
   await openDailyEntry(page);
   const floatingSave = page.locator('.floating-save-button');

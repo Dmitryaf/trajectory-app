@@ -74,6 +74,9 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
   }
+  .help-dialog__actions a {
+    width: 100%;
+  }
   .first-entry-guide {
     align-items: stretch;
     flex-direction: column;
@@ -94,6 +97,17 @@
     justify-content: space-between;
     margin-right: 2px;
     margin-left: 2px;
+  }
+  input[type='date'],
+  input[type='time'] {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    inline-size: 100% !important;
+    min-inline-size: 0 !important;
+    max-inline-size: 100% !important;
+    appearance: none;
+    -webkit-appearance: none;
   }
   .card-settings-link {
     padding: 5px 4px;
@@ -154,8 +168,7 @@
     font-size: 40px;
   }
   .page--settings > .page-heading::after {
-    right: 10px;
-    font-size: 100px;
+    display: none;
   }
   .entry-date-picker {
     gap: 3px;
@@ -233,6 +246,16 @@
   }
   .current-goal-summary .context-action {
     width: 100%;
+  }
+  .pwa-install-nudge {
+    grid-template-columns: 38px minmax(0, 1fr);
+    align-items: start;
+  }
+  .pwa-install-nudge__actions {
+    grid-column: 1 / -1;
+  }
+  .pwa-install-nudge__actions .secondary-button {
+    flex: 1;
   }
   .goal-dialog-backdrop {
     align-items: end;
@@ -315,6 +338,15 @@
   .settings-card {
     padding: 18px;
     border-radius: 18px;
+  }
+  .install-platforms {
+    grid-template-columns: 1fr;
+  }
+  .not-found-card {
+    margin-top: 24px;
+  }
+  .not-found-card .primary-button {
+    width: 100%;
   }
   .section-heading:has(.period-actions) {
     align-items: flex-start;
