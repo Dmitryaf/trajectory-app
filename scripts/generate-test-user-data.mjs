@@ -4,7 +4,9 @@ import path from 'node:path';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-export const DEMO_BACKUP_VERSION = 11;
+import dataVersions from '../src/model/data-versions.json' with { type: 'json' };
+
+export const DEMO_BACKUP_VERSION = dataVersions.backup;
 export const DEMO_OUTPUT_RELATIVE_PATH = 'demo/generated/trajectory-full.json';
 
 export function todayKey(now = new Date()) {
@@ -100,7 +102,7 @@ export function buildDemoPayload(anchor = todayKey()) {
 
     return {
       date,
-      entrySchemaVersion: 4,
+      entrySchemaVersion: dataVersions.dailyEntry,
       activeDailyBlocksSnapshot: ['sleep', 'context', 'career', 'movement', 'nutrition'],
       recordedFields: [
         'bedtime',
@@ -265,7 +267,7 @@ export function buildDemoPayload(anchor = todayKey()) {
     monthlyReviews,
     settings: {
       id: 'main',
-      settingsVersion: 14,
+      settingsVersion: dataVersions.settings,
       firstUse: {
         status: 'completed',
         weekStart: currentWeekStart,

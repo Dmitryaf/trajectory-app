@@ -3,10 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { hasLocalUserData, prepareLocalCacheOwner, reconcileCloudSnapshotAfterResume, reconcileCloudSnapshotOnStartup } from '../startup';
 import type { CloudSnapshot, CloudSyncMeta } from '../../../services/cloudSync';
 import { useAppStore } from '../../../stores/app';
-import { defaultSettings } from '../../../types';
+import { defaultSettings, emptyDailyEntry } from '../../../types';
+
+vi.mock('../base', () => ({ saveCloudSyncBase: vi.fn() }));
 
 const emptyMeta: CloudSyncMeta = {
   lastCloudUpdatedAt: '',
+  lastCloudRevision: 0,
   lastSyncedAt: '',
   pending: false,
   conflict: false,
@@ -28,7 +31,6 @@ function createServices(snapshot: CloudSnapshot | null, meta: Partial<CloudSyncM
   return {
     loadSnapshot: vi.fn().mockResolvedValue(snapshot),
     getMeta: vi.fn(() => ({ ...emptyMeta, ...meta })),
-    markConflict: vi.fn(),
     markSynced: vi.fn(),
   };
 }
@@ -38,37 +40,32 @@ beforeEach(() => vi.clearAllMocks());
 describe('startup cloud reconciliation', () => {
   it('restores cloud data into a genuinely empty local store', async () => {
     const store = createStore();
-    const snapshot = { payload: { version: 3 }, updatedAt: '2026-07-22T10:00:00.000Z', userId: 'user-1' };
+    const snapshot = { payload: { version: 3 }, updatedAt: '2026-07-22T10:00:00.000Z', userId: 'user-1', revision: 4 };
     const services = createServices(snapshot);
 
     await reconcileCloudSnapshotOnStartup(store, 'user-1', services);
 
     expect(store.importData).toHaveBeenCalledWith(snapshot.payload, { syncCloud: false, preserveDailyDrafts: true });
-    expect(services.markSynced).toHaveBeenCalledWith('user-1', snapshot.updatedAt);
+    expect(services.markSynced).toHaveBeenCalledWith('user-1', snapshot.updatedAt, 4);
   });
 
-  it('does not overwrite locally changed settings with an unrelated cloud snapshot', async () => {
+  it('applies the cloud snapshot automatically when there are no pending local changes', async () => {
     const store = createStore();
     store.settings.activeFocusTitle = 'Локальная цель';
-    const snapshot = { payload: { version: 3 }, updatedAt: '2026-07-22T10:00:00.000Z', userId: 'user-1' };
+    const snapshot = { payload: { version: 3 }, updatedAt: '2026-07-22T10:00:00.000Z', userId: 'user-1', revision: 2 };
     const services = createServices(snapshot);
 
     expect(hasLocalUserData(store)).toBe(true);
     await reconcileCloudSnapshotOnStartup(store, 'user-1', services);
 
-    expect(store.importData).not.toHaveBeenCalled();
-    expect(services.markConflict).toHaveBeenCalledWith('user-1', snapshot.updatedAt);
-    expect(store.setCloudSyncState).toHaveBeenCalledWith(
-      'conflict',
-      'В этом браузере и в облаке есть разные данные. Выберите нужную копию в разделе «Данные и синхронизация».',
-      { updatedAt: snapshot.updatedAt },
-    );
+    expect(store.importData).toHaveBeenCalledWith(snapshot.payload, { syncCloud: false, preserveDailyDrafts: true });
+    expect(services.markSynced).toHaveBeenCalledWith('user-1', snapshot.updatedAt, 2);
   });
 
   it('uploads pending local changes when the known cloud revision is unchanged', async () => {
     const store = createStore();
-    const snapshot = { payload: {}, updatedAt: '2026-07-22T10:00:00.000+00:00', userId: 'user-1' };
-    const services = createServices(snapshot, { lastCloudUpdatedAt: '2026-07-22T10:00:00.000Z', pending: true });
+    const snapshot = { payload: {}, updatedAt: '2026-07-22T10:00:00.000+00:00', userId: 'user-1', revision: 3 };
+    const services = createServices(snapshot, { lastCloudUpdatedAt: '2026-07-22T10:00:00.000Z', lastCloudRevision: 3, pending: true });
 
     await reconcileCloudSnapshotOnStartup(store, 'user-1', services);
 
@@ -78,45 +75,43 @@ describe('startup cloud reconciliation', () => {
 
   it('imports a newer known cloud revision before working screens mount', async () => {
     const store = createStore();
-    store.dailyEntries = [{ date: '2026-07-21' } as (typeof store.dailyEntries)[number]];
-    const snapshot = { payload: { version: 3 }, updatedAt: '2026-07-22T10:00:00.000Z', userId: 'user-1' };
+    store.dailyEntries = [emptyDailyEntry('2026-07-21')];
+    const snapshot = { payload: { version: 3 }, updatedAt: '2026-07-22T10:00:00.000Z', userId: 'user-1', revision: 5 };
     const services = createServices(snapshot, { lastCloudUpdatedAt: '2026-07-21T10:00:00.000Z' });
 
     await reconcileCloudSnapshotOnStartup(store, 'user-1', services);
 
     expect(store.importData).toHaveBeenCalledWith(snapshot.payload, { syncCloud: false, preserveDailyDrafts: true });
-    expect(services.markSynced).toHaveBeenCalledWith('user-1', snapshot.updatedAt);
-    expect(services.markConflict).not.toHaveBeenCalled();
+    expect(services.markSynced).toHaveBeenCalledWith('user-1', snapshot.updatedAt, 5);
   });
 
-  it('does not replace mounted screens when a newer cloud revision appears after resume', async () => {
+  it('applies a newer cloud revision after resume without asking the user to refresh', async () => {
     const store = createStore();
-    store.dailyEntries = [{ date: '2026-07-21' } as (typeof store.dailyEntries)[number]];
-    const snapshot = { payload: { version: 3 }, updatedAt: '2026-07-22T10:00:00.000Z', userId: 'user-1' };
+    store.dailyEntries = [emptyDailyEntry('2026-07-21')];
+    const snapshot = { payload: { version: 3 }, updatedAt: '2026-07-22T10:00:00.000Z', userId: 'user-1', revision: 6 };
     const services = createServices(snapshot, { lastCloudUpdatedAt: '2026-07-21T10:00:00.000Z' });
 
     await reconcileCloudSnapshotAfterResume(store, 'user-1', services);
 
-    expect(store.importData).not.toHaveBeenCalled();
-    expect(services.markConflict).toHaveBeenCalledWith('user-1', snapshot.updatedAt);
-    expect(store.setCloudSyncState).toHaveBeenCalledWith(
-      'conflict',
-      'В облаке появились более свежие данные. Открытые записи не заменены. Выберите нужную копию в разделе «Данные и синхронизация».',
-      { updatedAt: snapshot.updatedAt },
-    );
+    expect(store.importData).toHaveBeenCalledWith(snapshot.payload, { syncCloud: false, preserveDailyDrafts: true });
+    expect(services.markSynced).toHaveBeenCalledWith('user-1', snapshot.updatedAt, 6);
   });
 
-  it('does not report a conflict when Supabase returns the known revision with another UTC notation', async () => {
+  it('recognizes identical data regardless of the timestamp notation', async () => {
     const store = createStore();
-    store.dailyEntries = [{ date: '2026-07-21' } as (typeof store.dailyEntries)[number]];
-    const snapshot = { payload: { version: 9 }, updatedAt: '2026-07-22T10:00:00.000+00:00', userId: 'user-1' };
+    store.dailyEntries = [emptyDailyEntry('2026-07-21')];
+    const snapshot = {
+      payload: { ...store.exportData(), exportedAt: '2026-07-22T10:00:00.000Z' },
+      updatedAt: '2026-07-22T10:00:00.000+00:00',
+      userId: 'user-1',
+      revision: 7,
+    };
     const services = createServices(snapshot, { lastCloudUpdatedAt: '2026-07-22T10:00:00.000Z' });
 
     await reconcileCloudSnapshotAfterResume(store, 'user-1', services);
 
     expect(store.importData).not.toHaveBeenCalled();
-    expect(services.markConflict).not.toHaveBeenCalled();
-    expect(services.markSynced).toHaveBeenCalledWith('user-1', snapshot.updatedAt);
+    expect(services.markSynced).toHaveBeenCalledWith('user-1', snapshot.updatedAt, 7);
     expect(store.setCloudSyncState).toHaveBeenCalledWith('synced', expect.stringContaining('Облако синхронизировано:'), {
       updatedAt: snapshot.updatedAt,
     });
@@ -126,21 +121,25 @@ describe('startup cloud reconciliation', () => {
     const store = createStore();
     store.settings.activeFocusTitle = 'Одна и та же цель';
     const updatedAt = '2026-07-22T10:00:00.000+00:00';
-    const snapshot = { payload: { ...store.exportData(), exportedAt: '2026-07-22T10:00:00.000Z' }, updatedAt, userId: 'user-1' };
+    const snapshot = {
+      payload: { ...store.exportData(), exportedAt: '2026-07-22T10:00:00.000Z' },
+      updatedAt,
+      userId: 'user-1',
+      revision: 8,
+    };
     const services = createServices(snapshot, { lastCloudUpdatedAt: updatedAt, conflict: true });
 
     await reconcileCloudSnapshotOnStartup(store, 'user-1', services);
 
     expect(store.importData).not.toHaveBeenCalled();
     expect(store.syncCloudSnapshot).not.toHaveBeenCalled();
-    expect(services.markConflict).not.toHaveBeenCalled();
-    expect(services.markSynced).toHaveBeenCalledWith('user-1', updatedAt);
+    expect(services.markSynced).toHaveBeenCalledWith('user-1', updatedAt, 8);
     expect(store.setCloudSyncState).toHaveBeenCalledWith('synced', expect.stringContaining('Облако синхронизировано:'), {
       updatedAt,
     });
   });
 
-  it('keeps a confirmed conflict when local and cloud data differ', async () => {
+  it('replaces a stale conflict with the current cloud snapshot', async () => {
     const store = createStore();
     store.settings.activeFocusTitle = 'Локальная цель';
     const updatedAt = '2026-07-22T10:00:00.000+00:00';
@@ -148,19 +147,14 @@ describe('startup cloud reconciliation', () => {
       ...store.exportData(),
       settings: { ...store.settings, activeFocusTitle: 'Облачная цель' },
     };
-    const snapshot = { payload: cloudPayload, updatedAt, userId: 'user-1' };
+    const snapshot = { payload: cloudPayload, updatedAt, userId: 'user-1', revision: 9 };
     const services = createServices(snapshot, { lastCloudUpdatedAt: updatedAt, conflict: true });
 
     await reconcileCloudSnapshotOnStartup(store, 'user-1', services);
 
-    expect(store.importData).not.toHaveBeenCalled();
+    expect(store.importData).toHaveBeenCalledWith(cloudPayload, { syncCloud: false, preserveDailyDrafts: true });
     expect(store.syncCloudSnapshot).not.toHaveBeenCalled();
-    expect(services.markSynced).not.toHaveBeenCalled();
-    expect(store.setCloudSyncState).toHaveBeenCalledWith(
-      'conflict',
-      'В этом браузере и в облаке есть разные данные. Выберите нужную копию в разделе «Данные и синхронизация».',
-      { updatedAt },
-    );
+    expect(services.markSynced).toHaveBeenCalledWith('user-1', updatedAt, 9);
   });
 
   it('keeps local data available when the cloud check fails', async () => {

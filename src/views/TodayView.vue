@@ -37,6 +37,7 @@ import {
 } from '../types';
 
 const store = useAppStore();
+const entryDateInput = ref<HTMLInputElement>();
 const goalDialogOpen = ref(false);
 const goalSaving = ref(false);
 const {
@@ -158,6 +159,13 @@ const isMonthReviewWindow = computed(() => isToday.value && todayKey() >= addDay
 const experimentAppliesToSelectedDate = computed(() => {
   return experimentAppliesToDate(store.settings.experiment, selectedDate.value);
 });
+const experimentPeriodLabel = computed(
+  () =>
+    `${formatDate(store.settings.experiment.startDate, { day: 'numeric', month: 'long' })} — ${formatDate(
+      store.settings.experiment.endDate,
+      { day: 'numeric', month: 'long', year: 'numeric' },
+    )}`,
+);
 const hasAdditionalDayBlocks = computed(
   () =>
     blockIsActive('career') ||
@@ -286,6 +294,13 @@ async function saveCurrentGoal(
 async function removeCurrentGoal() {
   await saveCurrentGoal({ title: '', outcomeCriterion: '', reviewDate: '', externalEvidenceCriterion: '' }, 'Текущая цель убрана');
 }
+
+function openEntryDatePicker() {
+  const input = entryDateInput.value;
+  if (!input) return;
+  if (typeof input.showPicker === 'function') input.showPicker();
+  else input.focus();
+}
 </script>
 
 <template>
@@ -295,17 +310,34 @@ async function removeCurrentGoal() {
         <span class="eyebrow">Ежедневная запись</span>
         <h1>{{ isToday ? 'Сегодня' : formatDate(selectedDate, { day: 'numeric', month: 'long', weekday: 'long' }) }}</h1>
       </div>
-      <label class="entry-date-picker">
+      <div class="entry-date-picker">
         <span class="entry-date-picker__label">Запись за дату</span>
-        <span class="entry-date-control">
+        <span
+          class="entry-date-control"
+          role="button"
+          tabindex="0"
+          aria-label="Выбрать дату записи"
+          @click="openEntryDatePicker"
+          @keydown.enter.prevent="openEntryDatePicker"
+          @keydown.space.prevent="openEntryDatePicker"
+        >
           <span aria-hidden="true">{{ selectedDateLabel }}</span>
           <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
             <path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
           </svg>
-          <input :value="selectedDate" class="date-input" type="date" :max="todayKey()" aria-label="Дата записи" @change="selectDate" />
+          <input
+            ref="entryDateInput"
+            :value="selectedDate"
+            class="date-input"
+            type="date"
+            :max="todayKey()"
+            aria-label="Дата записи"
+            @click.stop
+            @change="selectDate"
+          />
         </span>
         <small>Можно выбрать любой прошедший день</small>
-      </label>
+      </div>
     </div>
 
     <FirstUseRecovery v-if="isToday" />
@@ -696,6 +728,7 @@ async function removeCurrentGoal() {
           </div>
           <RouterLink class="card-settings-link" to="/settings#experiment-settings">Настроить</RouterLink>
         </div>
+        <p class="form-context experiment-period">Период: {{ experimentPeriodLabel }}</p>
         <p v-if="store.settings.experiment.hypothesis" class="form-context">
           Что хотите узнать: {{ store.settings.experiment.hypothesis }}
         </p>

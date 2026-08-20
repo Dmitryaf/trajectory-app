@@ -1,4 +1,4 @@
-import { computed, reactive, ref } from 'vue';
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
 import ChipGroup from '../../shared/ui/forms/ChipGroup.vue';
 import { useAppStore } from '../../stores/app';
 import { useAuthStore } from '../../stores/auth';
@@ -13,11 +13,10 @@ import {
   experimentTextLimits,
   validateExperimentTextLengths,
 } from '../experiments/model';
-import { loadCloudSnapshot } from '../../services/cloudSync';
 import { addDays, todayKey } from '../../services/dates';
 import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../../services/notifications';
 import { plainCopy } from '../../services/plain';
-import { applyCloudSnapshot, formatCloudUpdatedAt } from '../sync/snapshot';
+import { setSyncEditorDirty } from '../sync/editing';
 import {
   activityOptions,
   careerOptions,
@@ -38,6 +37,21 @@ import {
 export function useSettingsForm() {
   const store = useAppStore();
   const settings = reactive<AppSettings>(plainCopy(store.settings));
+  const settingsBaseline = ref(JSON.stringify(store.settings));
+  const settingsDirty = computed(() => JSON.stringify(settings) !== settingsBaseline.value);
+  watch(settingsDirty, (dirty) => setSyncEditorDirty('settings', dirty), { immediate: true });
+  function replaceSettingsFromStore() {
+    Object.assign(settings, plainCopy(store.settings));
+    settingsBaseline.value = JSON.stringify(store.settings);
+  }
+  function handleCloudSnapshotApplied() {
+    if (!settingsDirty.value) replaceSettingsFromStore();
+  }
+  window.addEventListener('trajectory:cloud-snapshot-applied', handleCloudSnapshotApplied);
+  onBeforeUnmount(() => {
+    setSyncEditorDirty('settings', false);
+    window.removeEventListener('trajectory:cloud-snapshot-applied', handleCloudSnapshotApplied);
+  });
   const importInput = ref<HTMLInputElement>();
   const newCareerLabel = ref('');
   const newActivityLabel = ref('');
@@ -49,7 +63,6 @@ export function useSettingsForm() {
   const analysisEnd = ref(todayKey());
   const analysisMaxDate = todayKey();
   const savingActions = reactive(new Set<string>());
-  const cloudAction = ref<'save' | 'restore' | null>(null);
   const auth = useAuthStore();
   const allCareerOptions = computed(() => {
     const usedIds = new Set([
@@ -90,7 +103,7 @@ export function useSettingsForm() {
     if (store.cloudSyncStatus === 'synced') return 'Облако синхронизировано';
     if (store.cloudSyncStatus === 'syncing') return 'Идёт синхронизация';
     if (store.cloudSyncStatus === 'pending') return 'Есть локальные изменения';
-    if (store.cloudSyncStatus === 'conflict') return 'Нужен выбор';
+    if (store.cloudSyncStatus === 'conflict') return 'Синхронизация повторяется';
     return 'Статус облака';
   });
   const cloudStatusText = computed(() => store.cloudSyncMessage || 'Синхронизация готова.');
@@ -143,6 +156,7 @@ export function useSettingsForm() {
   async function save(message = 'Настройки сохранены', action = 'settings', nextSettings: AppSettings = plainCopy(settings)) {
     return runAction(action, 'Не удалось сохранить настройки', async () => {
       await store.saveSettings(nextSettings);
+      settingsBaseline.value = JSON.stringify(nextSettings);
       notifySaved(message);
     });
   }
@@ -417,54 +431,6 @@ export function useSettingsForm() {
     }
   }
 
-  async function saveBackupToCloud() {
-    await runCloudAction('save', async () => {
-      const result = await store.syncCloudSnapshot({ force: true });
-      if (result.status === 'synced') {
-        notifySaved('Локальная версия сохранена в облако');
-      } else if (result.status === 'pending') {
-        notifyError('Облачная копия не обновлена. Локальные данные сохранены.');
-      } else if (result.status === 'queued') {
-        notifyInfo('Обновление облачной копии уже выполняется');
-      } else if (result.status === 'disabled') {
-        notifyInfo('Облачная копия недоступна в этой сборке');
-      } else {
-        notifyInfo('Сначала выбери, какую версию данных сохранить');
-      }
-    });
-  }
-
-  async function restoreBackupFromCloud() {
-    await runCloudAction('restore', async () => {
-      const snapshot = await loadCloudSnapshot();
-      if (!snapshot) {
-        notifyInfo('В облаке пока нет копии');
-        return;
-      }
-
-      const updatedAt = formatCloudUpdatedAt(snapshot.updatedAt);
-      if (!window.confirm(`Заменить локальные данные облачной копией от ${updatedAt}? Перед этим лучше скачать локальную копию.`)) return;
-      const userId = auth.session?.user.id;
-      if (!userId) {
-        notifyInfo('Сначала войдите в аккаунт');
-        return;
-      }
-      await applyCloudSnapshot(store, userId, snapshot, 'Загружена облачная копия');
-      Object.assign(settings, plainCopy(store.settings));
-      notifySaved(`Данные восстановлены из облака: ${updatedAt}`);
-    });
-  }
-
-  async function runCloudAction(kind: 'save' | 'restore', action: () => Promise<void>) {
-    if (isSaving('cloud')) return;
-    cloudAction.value = kind;
-    try {
-      await runAction('cloud', 'Облачное действие не выполнено', action);
-    } finally {
-      cloudAction.value = null;
-    }
-  }
-
   async function copyAnalysisPrompt(period: Exclude<AiReportPeriod, 'range'>) {
     await runAction(`analysis-${period}`, 'Не удалось скопировать промпт', async () => {
       const payload = createAnalysisPayload(period);
@@ -545,7 +511,7 @@ export function useSettingsForm() {
       await runAction('import', 'Не удалось импортировать данные', async () => {
         const payload = JSON.parse(await file.text());
         await store.importData(payload, { syncCloud: Boolean(cloudSession.value) });
-        Object.assign(settings, plainCopy(store.settings));
+        replaceSettingsFromStore();
         if (cloudSession.value) {
           notifySaved('Резервная копия восстановлена. Облако обновляется.');
         } else {
@@ -563,7 +529,7 @@ export function useSettingsForm() {
     if (!window.confirm('Это действие нельзя отменить. Точно удалить все данные?')) return;
     await runAction('clear-data', 'Не удалось удалить данные', async () => {
       await store.clearAll({ syncCloud: Boolean(cloudSession.value) });
-      Object.assign(settings, plainCopy(store.settings));
+      replaceSettingsFromStore();
       notifyInfo('Все данные удалены');
     });
   }
@@ -592,11 +558,11 @@ export function useSettingsForm() {
 
     try {
       await store.clearAll({ syncCloud: false });
-      Object.assign(settings, plainCopy(store.settings));
+      replaceSettingsFromStore();
       notifyInfo(auth.error || 'Аккаунт и его данные удалены');
     } catch {
       store.unload();
-      Object.assign(settings, plainCopy(store.settings));
+      replaceSettingsFromStore();
       notifyError(
         'Аккаунт и облачная копия удалены, но данные на этом устройстве очистить не удалось. Очистите данные сайта в настройках браузера.',
       );
@@ -620,7 +586,6 @@ export function useSettingsForm() {
     analysisStart,
     analysisEnd,
     analysisMaxDate,
-    cloudAction,
     auth,
     allCareerOptions,
     activeActivityOptions,
@@ -654,8 +619,6 @@ export function useSettingsForm() {
     exportData,
     signOutCloud,
     changePassword,
-    saveBackupToCloud,
-    restoreBackupFromCloud,
     copyAnalysisPrompt,
     downloadAnalysisData,
     copyCustomAnalysisPrompt,

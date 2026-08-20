@@ -3,20 +3,37 @@ import { createPinia, setActivePinia } from 'pinia';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../../src/db';
 import { BACKUP_VERSION } from '../../src/features/backup/version';
-import { markCloudSyncPending, saveCloudSnapshot } from '../../src/services/cloudSync';
+import { saveCloudSyncBase } from '../../src/features/sync/base';
+import {
+  CloudRevisionConflictError,
+  getCloudSyncMeta,
+  loadCloudSnapshot,
+  markCloudSyncPending,
+  saveCloudSnapshot,
+} from '../../src/services/cloudSync';
 import { useAppStore } from '../../src/stores/app';
 import { useAuthStore } from '../../src/stores/auth';
 import { defaultSettings, emptyDailyEntry, emptyMonthlyReview, emptyWeeklyReview } from '../../src/types';
 
 vi.mock('../../src/services/cloudSync', () => ({
+  CloudRevisionConflictError: class CloudRevisionConflictError extends Error {},
   clearCloudSyncMeta: vi.fn(),
   clearLocalCloudSession: vi.fn(),
   deleteCloudAccount: vi.fn(),
   getVerifiedCloudSession: vi.fn(),
+  getCloudSyncMeta: vi.fn(() => ({
+    lastCloudUpdatedAt: '',
+    lastCloudRevision: 0,
+    lastSyncedAt: '',
+    pending: false,
+    conflict: false,
+    error: '',
+  })),
   isBetaSignupConfigured: () => false,
   isCloudAuthRequired: () => false,
   isCloudSyncConfigured: () => true,
   markCloudSyncPending: vi.fn(),
+  loadCloudSnapshot: vi.fn(),
   onCloudAuthChange: vi.fn(),
   saveCloudSnapshot: vi.fn(),
   signInToCloud: vi.fn(),
@@ -38,7 +55,12 @@ describe('cloud synchronization state', () => {
   it('marks local data as pending before the cloud request starts', async () => {
     const auth = useAuthStore();
     auth.session = { user: { id: 'user-1' } } as typeof auth.session;
-    vi.mocked(saveCloudSnapshot).mockResolvedValue('2026-07-22T10:00:00.000Z');
+    vi.mocked(saveCloudSnapshot).mockImplementation(async (payload) => ({
+      payload,
+      updatedAt: '2026-07-22T10:00:00.000Z',
+      revision: 1,
+      userId: 'user-1',
+    }));
 
     const store = useAppStore();
     store.weeklyReviews = [
@@ -69,6 +91,7 @@ describe('cloud synchronization state', () => {
           }),
         ],
       }),
+      0,
     );
     expect(vi.mocked(saveCloudSnapshot).mock.calls[0]![0]).not.toHaveProperty('firstUseFunnel');
   });
@@ -111,6 +134,61 @@ describe('cloud synchronization state', () => {
 
     expect(store.cloudSyncStatus).toBe('pending');
     expect(store.cloudSyncError).toBe('network unavailable');
+  });
+
+  it('merges independent edits after a concurrent cloud update and retries automatically', async () => {
+    const auth = useAuthStore();
+    auth.session = { user: { id: 'user-1' } } as typeof auth.session;
+    const store = useAppStore();
+    const baseEntry = { ...emptyDailyEntry('2026-08-20'), energy: 3, importantFact: '' };
+    store.dailyEntries = [baseEntry];
+    const basePayload = store.exportData();
+    await saveCloudSyncBase('user-1', 1, basePayload);
+    store.dailyEntries = [{ ...baseEntry, energy: 4 }];
+    const remotePayload = {
+      ...basePayload,
+      dailyEntries: [{ ...baseEntry, importantFact: 'Изменение с телефона' }],
+    };
+    vi.mocked(getCloudSyncMeta).mockReturnValue({
+      lastCloudUpdatedAt: '2026-08-20T10:00:00.000Z',
+      lastCloudRevision: 1,
+      lastSyncedAt: '2026-08-20T10:00:00.000Z',
+      pending: true,
+      conflict: false,
+      error: '',
+    });
+    vi.mocked(loadCloudSnapshot).mockResolvedValue({
+      payload: remotePayload,
+      updatedAt: '2026-08-20T10:01:00.000Z',
+      revision: 2,
+      userId: 'user-1',
+    });
+    vi.mocked(saveCloudSnapshot)
+      .mockRejectedValueOnce(new CloudRevisionConflictError())
+      .mockImplementationOnce(async (payload) => ({
+        payload,
+        updatedAt: '2026-08-20T10:02:00.000Z',
+        revision: 3,
+        userId: 'user-1',
+      }));
+
+    await expect(store.syncCloudSnapshot()).resolves.toEqual({
+      status: 'synced',
+      updatedAt: '2026-08-20T10:02:00.000Z',
+    });
+
+    expect(saveCloudSnapshot).toHaveBeenNthCalledWith(1, expect.any(Object), 1);
+    expect(saveCloudSnapshot).toHaveBeenNthCalledWith(2, expect.any(Object), 2);
+    expect(store.dailyEntries[0]).toMatchObject({ energy: 4, importantFact: 'Изменение с телефона' });
+  });
+
+  it('removes the saved sync base when local data is cleared for an account boundary', async () => {
+    const store = useAppStore();
+    await saveCloudSyncBase('user-1', 2, store.exportData());
+
+    await store.clearAll({ syncCloud: false });
+
+    expect(await db.cloudSyncBases.get('user-1')).toBeUndefined();
   });
 
   it('rejects journal records with invalid dates before writing to IndexedDB', async () => {

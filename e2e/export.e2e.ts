@@ -66,7 +66,7 @@ test('includes daily reflections from an exact cross-month period', async ({ pag
   await page.locator('input[type="file"]').setInputFiles(demoFilePath);
   await page.getByText('Резервная копия восстановлена', { exact: true }).waitFor();
 
-  await page.getByRole('button', { name: 'Установка и данные' }).click();
+  await page.getByRole('button', { name: 'Данные и синхронизация' }).click();
   await page.getByText('Выбрать другой период', { exact: true }).click();
   const range = completedCrossMonthRange();
   await page.getByLabel('Начало периода анализа').fill(range.start);

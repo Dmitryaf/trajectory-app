@@ -14,6 +14,7 @@ import {
   buildAiReportRangePayload,
 } from '../../export/report';
 import { addMonths, monthsBetween } from '../../../services/dates';
+import { AI_REPORT_VERSION } from '../../../model/dataVersions';
 import {
   defaultSettings,
   emptyDailyEntry,
@@ -250,7 +251,7 @@ describe('analytics', () => {
       settings,
     });
 
-    expect(payload.version).toBe(11);
+    expect(payload.version).toBe(AI_REPORT_VERSION);
     expect(payload.dataThrough).toBe('2026-07-19');
     expect(payload.labels.contextFactors).toContainEqual(expect.objectContaining({ id: 'custom:context:rain', label: 'Шум за окном' }));
     expect(payload.labels.activities).toContainEqual(expect.objectContaining({ id: 'custom:activity:swimming', label: 'Плавание' }));

@@ -22,14 +22,17 @@ The first backend layer uses Supabase:
 - When an authenticated browser has an empty local cache, the app tries to bootstrap it from the user's cloud snapshot.
 - Local changes are saved to IndexedDB first, then the app tries to update the cloud snapshot.
 - If cloud save fails, the local data remains available and the app marks sync as pending.
-- If the local cache and cloud snapshot both contain data and the app cannot prove they are the same lineage, it marks a conflict and asks the user to choose manually.
+- Every cloud snapshot has a monotonically increasing revision. A save succeeds only against the revision last read by that device.
+- When another device has already advanced the revision, the app downloads it, performs a three-way merge against the last common snapshot stored in IndexedDB, and retries automatically.
+- Open forms with unsaved input defer incoming cloud application until the input is saved or discarded; the user is not asked to choose a whole-device copy.
+- Supabase Realtime, app focus, restored connectivity and a visible-app interval trigger background reconciliation.
 - Importing a JSON backup while signed in updates the cloud snapshot after the local import succeeds.
 
-This is intentionally simpler than normalizing every entity into separate tables. It preserves the current analytics code and reduces migration risk. A normalized schema can be added later when multi-device conflict resolution, server-side analytics, or collaboration becomes necessary.
+This remains intentionally simpler than normalizing every entity into separate tables. It preserves the current analytics code and limits migration risk while supporting optimistic multi-device synchronization. A normalized schema can be added later when per-record collaboration or server-side analytics becomes necessary.
 
 IndexedDB is still relevant in this phase. Supabase is not yet the primary per-record database for daily entries, results, events, and reviews; it stores one protected snapshot per user. Removing IndexedDB before implementing per-record sync would break offline use and increase the risk of data loss or conflicts.
 
-The safety rule is that the app never silently overwrites non-empty local data with a different non-empty cloud snapshot. Empty local cache can be filled from cloud automatically. A known stale local cache can be refreshed from cloud automatically. Unknown divergence becomes an explicit conflict.
+The safety rule is that the app never writes a stale whole snapshot over a newer cloud revision. A clean local cache accepts the cloud copy automatically. Pending local changes are merged with the newer cloud snapshot from their last common base; on a same-field conflict the current device wins, while unrelated fields and records from both devices are preserved.
 
 The next backend phase, when needed, should make Supabase the source of truth with normalized tables, `updated_at` fields per record, RLS policies per table, explicit conflict rules, and automatic sync from the local cache.
 

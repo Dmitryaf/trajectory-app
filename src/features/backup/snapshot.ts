@@ -13,12 +13,12 @@ import {
   type ResultRecord,
   type WeeklyReview,
 } from '../../types';
-import { BACKUP_VERSION } from './version';
+import { BACKUP_VERSION, MIN_SUPPORTED_BACKUP_VERSION } from '../../model/dataVersions';
 import { experimentEntryLinkError, experimentIntegrityError, linkLegacyExperimentEntries } from '../experiments/model';
 import { startOfMonth, startOfWeek } from '../../services/dates';
 
 export type ExportPayload = {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | typeof BACKUP_VERSION;
+  version: number;
   exportedAt: string;
   dailyEntries: DailyEntry[];
   results: ResultRecord[];
@@ -33,19 +33,7 @@ type UnknownRecord = Record<string, unknown>;
 export function normalizeSnapshot(input: unknown): ExportPayload {
   const source = requireRecord(input, 'резервная копия');
   const version = source.version;
-  if (
-    version !== 1 &&
-    version !== 2 &&
-    version !== 3 &&
-    version !== 4 &&
-    version !== 5 &&
-    version !== 6 &&
-    version !== 7 &&
-    version !== 8 &&
-    version !== 9 &&
-    version !== 10 &&
-    version !== 11
-  ) {
+  if (!Number.isInteger(version) || (version as number) < MIN_SUPPORTED_BACKUP_VERSION || (version as number) > BACKUP_VERSION) {
     throw new Error('Неподдерживаемый формат резервной копии');
   }
 
@@ -100,7 +88,7 @@ export function normalizeSnapshot(input: unknown): ExportPayload {
   const entryLinkError = experimentEntryLinkError(dailyEntries, settings);
   if (entryLinkError) throw new Error(entryLinkError);
   return {
-    version,
+    version: version as number,
     exportedAt: typeof source.exportedAt === 'string' ? source.exportedAt : '',
     dailyEntries,
     results,

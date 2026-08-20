@@ -1,5 +1,12 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type { AppSettings, DailyEntry, DailyEntryDraft, LifeEventRecord, MonthlyReview, ResultRecord, WeeklyReview } from './types';
+import { INDEXED_DB_VERSION } from './model/dataVersions';
+
+export type CloudSyncBase = {
+  userId: string;
+  revision: number;
+  snapshot: unknown;
+};
 
 class TrajectoryDatabase extends Dexie {
   dailyEntries!: EntityTable<DailyEntry, 'date'>;
@@ -9,6 +16,7 @@ class TrajectoryDatabase extends Dexie {
   weeklyReviews!: EntityTable<WeeklyReview, 'weekStart'>;
   monthlyReviews!: EntityTable<MonthlyReview, 'monthStart'>;
   settings!: EntityTable<AppSettings, 'id'>;
+  cloudSyncBases!: EntityTable<CloudSyncBase, 'userId'>;
 
   constructor() {
     super('trajectory');
@@ -33,7 +41,7 @@ class TrajectoryDatabase extends Dexie {
       monthlyReviews: '&monthStart',
       settings: '&id',
     });
-    this.version(4).stores({
+    this.version(INDEXED_DB_VERSION).stores({
       dailyEntries: '&date, updatedAt, careerState',
       dailyEntryDrafts: '&date, updatedAt',
       results: '++id, date, area, createdAt',
@@ -41,6 +49,7 @@ class TrajectoryDatabase extends Dexie {
       weeklyReviews: '&weekStart',
       monthlyReviews: '&monthStart',
       settings: '&id',
+      cloudSyncBases: '&userId',
     });
   }
 }

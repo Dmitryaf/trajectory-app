@@ -267,7 +267,7 @@ test('switches settings scenarios with the keyboard on a mobile screen', async (
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/settings');
 
-  const dataTab = page.getByRole('button', { name: 'Установка и данные' });
+  const dataTab = page.getByRole('button', { name: 'Данные и синхронизация' });
   await dataTab.focus();
   await dataTab.press('Enter');
   await expect(page.locator('#data-settings')).toBeVisible();

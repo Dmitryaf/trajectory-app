@@ -33,15 +33,21 @@ describe('resume cloud refresh', () => {
     expect(refresh).toHaveBeenCalledTimes(2);
   });
 
-  it('does not refresh before login, before loading, while syncing, or during a conflict', async () => {
+  it('does not refresh before login, before loading, or while syncing', async () => {
     const refresh = vi.fn().mockResolvedValue(undefined);
     const requestRefresh = createResumeCloudRefresh(refresh, { now: () => 20_000 });
 
     await requestRefresh({ ...readyState, authenticated: false });
     await requestRefresh({ ...readyState, loaded: false });
     await requestRefresh({ ...readyState, status: 'syncing' });
-    await requestRefresh({ ...readyState, status: 'conflict' });
-
     expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it('rechecks a legacy conflict automatically', async () => {
+    const refresh = vi.fn().mockResolvedValue(undefined);
+    const requestRefresh = createResumeCloudRefresh(refresh, { now: () => 20_000 });
+
+    await expect(requestRefresh({ ...readyState, status: 'conflict' })).resolves.toBe(true);
+    expect(refresh).toHaveBeenCalledOnce();
   });
 });

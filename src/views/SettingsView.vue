@@ -12,7 +12,7 @@ type SettingsGroup = 'daily' | 'experiment' | 'data' | 'account';
 const settingsGroups: Array<{ id: SettingsGroup; label: string; hash: string }> = [
   { id: 'daily', label: 'Ежедневная запись', hash: 'daily-settings' },
   { id: 'experiment', label: 'Эксперимент', hash: 'experiment-settings' },
-  { id: 'data', label: 'Установка и данные', hash: 'data-settings' },
+  { id: 'data', label: 'Данные и синхронизация', hash: 'data-settings' },
   { id: 'account', label: 'Аккаунт и безопасность', hash: 'account-settings' },
 ];
 const settingsGroupStyle = { animation: 'page-in 0.25s ease-out' };
@@ -80,7 +80,6 @@ const {
   analysisStart,
   analysisEnd,
   analysisMaxDate,
-  cloudAction,
   auth,
   allCareerOptions,
   activeActivityOptions,
@@ -114,8 +113,6 @@ const {
   exportData,
   signOutCloud,
   changePassword,
-  saveBackupToCloud,
-  restoreBackupFromCloud,
   copyAnalysisPrompt,
   downloadAnalysisData,
   copyCustomAnalysisPrompt,
@@ -618,14 +615,7 @@ const {
             <strong>Сессия не найдена</strong>
             <p>Обнови страницу и войди снова. До входа приложение не загружает записи.</p>
           </div>
-          <div class="data-actions">
-            <button class="secondary-button" type="button" :disabled="!cloudSession || isSaving('cloud')" @click="saveBackupToCloud">
-              {{ cloudAction === 'save' ? 'Обновляю…' : 'Обновить копию сейчас' }}
-            </button>
-            <button class="secondary-button" type="button" :disabled="!cloudSession || isSaving('cloud')" @click="restoreBackupFromCloud">
-              {{ cloudAction === 'restore' ? 'Загружаю…' : 'Загрузить из облака' }}
-            </button>
-          </div>
+          <p v-if="cloudSession" class="muted">Изменения с других устройств появляются автоматически, когда приложение открыто.</p>
         </template>
       </article>
 

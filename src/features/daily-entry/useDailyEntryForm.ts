@@ -14,6 +14,7 @@ import {
   validateDailyEntryText,
   type DailyEntryMetrics,
 } from './model';
+import { setSyncEditorDirty } from '../sync/editing';
 
 type AppStore = ReturnType<typeof useAppStore>;
 
@@ -147,6 +148,10 @@ export function useDailyEntryForm(store: AppStore) {
     event.returnValue = '';
   }
 
+  function handleCloudSnapshotApplied() {
+    if (!isDirty.value) void loadEntry(selectedDate.value);
+  }
+
   function queueDraftSave() {
     if (draftTimer !== undefined) window.clearTimeout(draftTimer);
     draftStatus.value = 'saving';
@@ -262,6 +267,7 @@ export function useDailyEntryForm(store: AppStore) {
   }
 
   watch(selectedDate, loadEntry, { immediate: true });
+  watch(isDirty, (dirty) => setSyncEditorDirty('daily-entry', dirty), { immediate: true });
   watch(
     currentEntrySnapshot,
     (snapshot) => {
@@ -304,9 +310,14 @@ export function useDailyEntryForm(store: AppStore) {
       return (await persistDraft()) || confirmDiscardChanges();
     });
   }
-  onMounted(() => window.addEventListener('beforeunload', handleBeforeUnload));
+  onMounted(() => {
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('trajectory:cloud-snapshot-applied', handleCloudSnapshotApplied);
+  });
   onBeforeUnmount(() => {
+    setSyncEditorDirty('daily-entry', false);
     window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.removeEventListener('trajectory:cloud-snapshot-applied', handleCloudSnapshotApplied);
     if (savedTimer !== undefined) window.clearTimeout(savedTimer);
     if (draftTimer !== undefined) window.clearTimeout(draftTimer);
   });

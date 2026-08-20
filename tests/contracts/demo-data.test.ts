@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildDemoPayload, DEMO_BACKUP_VERSION } from '../../scripts/generate-test-user-data.mjs';
 import { normalizeSnapshot } from '../../src/features/backup/snapshot';
 import { BACKUP_VERSION } from '../../src/features/backup/version';
+import { SETTINGS_VERSION } from '../../src/model/dataVersions';
 import { currentDailyEntrySchemaVersion } from '../../src/model/schema';
 import { normalizeDailyEntry, normalizeLifeEvent, normalizeSettings } from '../../src/types';
 
@@ -17,7 +18,7 @@ describe('test user generator', () => {
     expect(DEMO_BACKUP_VERSION).toBe(BACKUP_VERSION);
     expect(first.version).toBe(BACKUP_VERSION);
     expect(first.exportedAt.slice(0, 10)).toBe(anchor);
-    expect(settings.settingsVersion).toBe(14);
+    expect(settings.settingsVersion).toBe(SETTINGS_VERSION);
     expect(settings.firstUse).toMatchObject({ status: 'completed', lastStep: 'overview', overviewSeen: true });
     expect(settings.focusReviewDate > anchor).toBe(true);
     expect(settings.experiment.startDate <= anchor).toBe(true);

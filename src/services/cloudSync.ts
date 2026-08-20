@@ -11,10 +11,12 @@ export type CloudSnapshot = {
   payload: unknown;
   updatedAt: string;
   userId: string;
+  revision?: number;
 };
 
 export type CloudSyncMeta = {
   lastCloudUpdatedAt: string;
+  lastCloudRevision: number;
   lastSyncedAt: string;
   pending: boolean;
   conflict: boolean;
@@ -23,6 +25,7 @@ export type CloudSyncMeta = {
 
 const emptyMeta: CloudSyncMeta = {
   lastCloudUpdatedAt: '',
+  lastCloudRevision: 0,
   lastSyncedAt: '',
   pending: false,
   conflict: false,
@@ -154,7 +157,7 @@ export async function loadCloudSnapshot(): Promise<CloudSnapshot | null> {
   const session = await requireSession();
   const { data, error } = await getSupabaseClient()
     .from('trajectory_snapshots')
-    .select('payload, updated_at')
+    .select('payload, updated_at, revision')
     .eq('user_id', session.user.id)
     .maybeSingle();
 
@@ -165,27 +168,55 @@ export async function loadCloudSnapshot(): Promise<CloudSnapshot | null> {
     payload: data.payload,
     updatedAt: data.updated_at,
     userId: session.user.id,
+    revision: Number(data.revision),
   };
 }
 
-export async function saveCloudSnapshot(payload: unknown): Promise<string> {
+export class CloudRevisionConflictError extends Error {
+  constructor() {
+    super('Облачные данные изменились на другом устройстве');
+    this.name = 'CloudRevisionConflictError';
+  }
+}
+
+export async function saveCloudSnapshot(payload: unknown, expectedRevision: number): Promise<CloudSnapshot> {
   const session = await requireSession();
   const updatedAt = new Date().toISOString();
-  const { error } = await getSupabaseClient().from('trajectory_snapshots').upsert({
-    user_id: session.user.id,
-    payload,
-    updated_at: updatedAt,
-  });
+  const nextRevision = expectedRevision + 1;
+  const query =
+    expectedRevision === 0
+      ? getSupabaseClient()
+          .from('trajectory_snapshots')
+          .insert({ user_id: session.user.id, payload, revision: nextRevision, updated_at: updatedAt })
+          .select('payload, updated_at, revision')
+          .maybeSingle()
+      : getSupabaseClient()
+          .from('trajectory_snapshots')
+          .update({ payload, revision: nextRevision, updated_at: updatedAt })
+          .eq('user_id', session.user.id)
+          .eq('revision', expectedRevision)
+          .select('payload, updated_at, revision')
+          .maybeSingle();
+  const { data, error } = await query;
 
+  if (error?.code === '23505' || (!error && !data)) throw new CloudRevisionConflictError();
   if (error) throw error;
+  if (!data) throw new CloudRevisionConflictError();
+  const snapshot = {
+    payload: data.payload,
+    updatedAt: data.updated_at,
+    revision: Number(data.revision),
+    userId: session.user.id,
+  };
   saveCloudSyncMeta(session.user.id, {
-    lastCloudUpdatedAt: updatedAt,
+    lastCloudUpdatedAt: snapshot.updatedAt,
+    lastCloudRevision: snapshot.revision,
     lastSyncedAt: new Date().toISOString(),
     pending: false,
     conflict: false,
     error: '',
   });
-  return updatedAt;
+  return snapshot;
 }
 
 export function getCloudSyncMeta(userId: string): CloudSyncMeta {
@@ -210,23 +241,38 @@ export function markCloudSyncPending(userId: string, error: string) {
   });
 }
 
-export function markCloudSyncConflict(userId: string, cloudUpdatedAt: string) {
+export function markCloudSyncConflict(userId: string, cloudUpdatedAt: string, cloudRevision = 0) {
   return saveCloudSyncMeta(userId, {
     lastCloudUpdatedAt: cloudUpdatedAt,
+    lastCloudRevision: cloudRevision,
     pending: false,
     conflict: true,
     error: '',
   });
 }
 
-export function markCloudSyncSynced(userId: string, cloudUpdatedAt: string) {
+export function markCloudSyncSynced(userId: string, cloudUpdatedAt: string, cloudRevision = 0) {
   return saveCloudSyncMeta(userId, {
     lastCloudUpdatedAt: cloudUpdatedAt,
+    lastCloudRevision: cloudRevision,
     lastSyncedAt: new Date().toISOString(),
     pending: false,
     conflict: false,
     error: '',
   });
+}
+
+export function subscribeToCloudSnapshot(userId: string, onChange: () => void) {
+  const supabase = getSupabaseClient();
+  const channel = supabase
+    .channel(`trajectory-snapshot:${userId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'trajectory_snapshots', filter: `user_id=eq.${userId}` }, () =>
+      onChange(),
+    )
+    .subscribe();
+  return () => {
+    void supabase.removeChannel(channel);
+  };
 }
 
 export function clearCloudSyncMeta(userId: string) {

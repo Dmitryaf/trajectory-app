@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { contextFactorLabel } from '../../src/services/analytics';
 import { contextFactorOptions, normalizeDailyEntry, normalizeSettings, normalizeWeeklyReview } from '../../src/types';
+import { SETTINGS_VERSION } from '../../src/model/dataVersions';
 
 describe('settings migrations', () => {
   it('removes obsolete demo options while preserving old response entries', () => {
@@ -16,7 +17,7 @@ describe('settings migrations', () => {
     });
 
     expect(settings.customCareerOptions).toEqual([]);
-    expect(settings.settingsVersion).toBe(14);
+    expect(settings.settingsVersion).toBe(SETTINGS_VERSION);
     expect(settings.introSeen).toBe(false);
     expect(settings.firstUse.status).toBe('available');
     expect(settings.activeDailyBlocks).toContain('context');

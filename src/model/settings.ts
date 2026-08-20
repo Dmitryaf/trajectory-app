@@ -1,5 +1,6 @@
 import { activityOptions, contextFactorOptions, dailyBlockOptions, experimentMetricOptions, legacyLifeAreaOptions } from './options';
 import { removedDemoCareerOptionId, removedDemoContextFactorId, validDate } from './normalization';
+import { SETTINGS_VERSION } from './dataVersions';
 import type {
   ActivityId,
   AppSettings,
@@ -18,7 +19,7 @@ import type {
 
 export const defaultSettings: AppSettings = {
   id: 'main',
-  settingsVersion: 14,
+  settingsVersion: SETTINGS_VERSION,
   introSeen: false,
   firstUse: {
     status: 'not_started',

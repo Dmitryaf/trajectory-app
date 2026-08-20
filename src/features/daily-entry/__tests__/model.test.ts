@@ -8,6 +8,7 @@ import {
   validateDailyEntryText,
 } from '../model';
 import { emptyDailyEntry, type DailyBlockId } from '../../../types';
+import { DAILY_ENTRY_SCHEMA_VERSION } from '../../../model/dataVersions';
 
 describe('daily entry model', () => {
   it('calculates time in bed across midnight and rejects invalid ranges', () => {
@@ -49,7 +50,7 @@ describe('daily entry model', () => {
       focusReviewDate: '2026-08-01',
       externalEvidenceCriterion: 'Внешний результат',
       nutritionCriterion: 'Обычный режим',
-      entrySchemaVersion: 4,
+      entrySchemaVersion: DAILY_ENTRY_SCHEMA_VERSION,
       experimentId: 'experiment-current',
       activeDailyBlocksSnapshot: ['sleep', 'context', 'movement'],
     });

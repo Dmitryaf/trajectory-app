@@ -2,6 +2,7 @@ import { buildObservations, entriesForPeriod, factorSummaries, resultsForPeriod,
 import { buildExperimentSummary, type ExperimentSummary } from '../analytics/experimentComparison';
 import { experimentOverlapsRange } from '../experiments/model';
 import { addDays, addMonths, endOfMonth, endOfWeek, startOfMonth, startOfWeek, todayKey } from '../../services/dates';
+import { AI_REPORT_VERSION } from '../../model/dataVersions';
 import {
   actionDirectionOptions,
   activityOptions,
@@ -30,7 +31,7 @@ export const AI_PROMPT_CHARACTER_LIMIT = 48_000;
 
 export type AiReportPayload = {
   app: 'trajectory';
-  version: 11;
+  version: number;
   period: AiReportPeriod;
   rangeMonths?: number;
   start: string;
@@ -129,7 +130,7 @@ function buildPayload(
 
   return {
     app: 'trajectory',
-    version: 11,
+    version: AI_REPORT_VERSION,
     period,
     start,
     end,

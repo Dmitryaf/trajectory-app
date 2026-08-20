@@ -8,6 +8,7 @@ import {
   linkLegacyExperimentEntries,
 } from '../../src/features/experiments/model';
 import { buildAiReportPayload, buildAiReportPrompt } from '../../src/features/export/report';
+import { AI_REPORT_VERSION } from '../../src/model/dataVersions';
 import { defaultSettings, emptyDailyEntry, type DailyEntry, type Experiment } from '../../src/types';
 
 function entry(date: string, patch: Partial<DailyEntry>): DailyEntry {
@@ -104,7 +105,7 @@ describe('experiment summary', () => {
       settings,
     });
 
-    expect(payload.version).toBe(11);
+    expect(payload.version).toBe(AI_REPORT_VERSION);
     expect(payload.experimentHistory).toHaveLength(1);
     const prompt = buildAiReportPrompt(payload, settings);
     expect(prompt).toContain('вывод пользователя: Утром было немного легче');

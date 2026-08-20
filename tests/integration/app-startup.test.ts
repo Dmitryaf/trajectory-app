@@ -12,15 +12,27 @@ const sync = vi.hoisted(() => ({
   prepareLocalCacheOwner: vi.fn(),
   reconcileCloudSnapshotAfterResume: vi.fn(),
   reconcileCloudSnapshotOnStartup: vi.fn(),
+  sameSnapshotData: vi.fn(),
 }));
 const resume = vi.hoisted(() => ({
   refresh: undefined as (() => Promise<void>) | undefined,
   request: vi.fn().mockResolvedValue(false),
 }));
 const funnel = vi.hoisted(() => ({ recordFirstUseEvent: vi.fn(), recordFirstUseReturnEvents: vi.fn() }));
+const cloud = vi.hoisted(() => ({
+  callback: undefined as (() => void) | undefined,
+  subscribe: vi.fn((_userId: string, callback: () => void) => {
+    cloud.callback = callback;
+    return vi.fn();
+  }),
+}));
 
 vi.mock('../../src/features/sync/startup', () => sync);
 vi.mock('../../src/features/first-use/funnel', () => funnel);
+vi.mock('../../src/services/cloudSync', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/services/cloudSync')>()),
+  subscribeToCloudSnapshot: cloud.subscribe,
+}));
 vi.mock('../../src/features/sync/resume', () => ({
   createResumeCloudRefresh: (refresh: () => Promise<void>) => {
     resume.refresh = refresh;
@@ -29,7 +41,9 @@ vi.mock('../../src/features/sync/resume', () => ({
 }));
 vi.mock('../../src/services/notifications', () => ({
   notifyInfo: vi.fn(),
+  notifySaved: vi.fn(),
   notifyUnknownError: vi.fn(),
+  notifyWarning: vi.fn(),
 }));
 
 describe('application startup', () => {
@@ -129,13 +143,18 @@ describe('application startup', () => {
     expect(wrapper.find('[data-testid="working-screen"]').exists()).toBe(true);
     expect(wrapper.find('.bottom-nav').exists()).toBe(true);
     expect(funnel.recordFirstUseReturnEvents).toHaveBeenCalledOnce();
+    expect(cloud.subscribe).toHaveBeenCalledWith('user-1', expect.any(Function));
+
+    cloud.callback!();
+    expect(resume.request).toHaveBeenCalledWith(expect.objectContaining({ authenticated: true, loaded: true }), true);
 
     store.cloudSyncStatus = 'conflict';
     store.cloudSyncMessage =
       'В облаке появились более свежие данные. Открытые записи не заменены. Выберите нужную копию в разделе «Данные и синхронизация».';
     await flushPromises();
+    expect(wrapper.find('.sync-banner button').exists()).toBe(false);
     const cloudSettingsLink = wrapper.get('.sync-banner a');
-    expect(cloudSettingsLink.text()).toBe('Данные и синхронизация');
+    expect(cloudSettingsLink.text()).toBe('Настройки синхронизации');
     expect(cloudSettingsLink.attributes('href')).toBe('/settings#cloud-settings');
 
     const startupCalls = sync.reconcileCloudSnapshotOnStartup.mock.calls.length;

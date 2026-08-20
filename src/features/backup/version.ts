@@ -1,1 +1,1 @@
-export const BACKUP_VERSION = 11 as const;
+export { BACKUP_VERSION } from '../../model/dataVersions';
