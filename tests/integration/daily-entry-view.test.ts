@@ -4,6 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import { describe, expect, it, vi } from 'vitest';
 import { notifyError, notifySaved, notifyUnknownError } from '../../src/services/notifications';
+import { LocalStorageQuotaError } from '../../src/services/storageProtection';
 import CurrentGoalDialog from '../../src/features/daily-entry/ui/CurrentGoalDialog.vue';
 import { emptyDailyEntry, emptyWeeklyReview } from '../../src/types';
 import TodayView from '../../src/views/TodayView.vue';
@@ -627,9 +628,10 @@ describe('daily entry scenario', () => {
     expect(notifySaved).toHaveBeenCalledWith('Текущая цель убрана');
   });
 
-  it('reports a local save error and allows retrying', async () => {
+  it('reports that a quota write was not saved and allows retrying', async () => {
     const { pinia, store } = createStore();
-    const saveEntry = vi.spyOn(store, 'saveEntry').mockRejectedValue(new Error('IndexedDB unavailable'));
+    const quotaError = new LocalStorageQuotaError();
+    const saveEntry = vi.spyOn(store, 'saveEntry').mockRejectedValue(quotaError);
     const wrapper = mount(TodayView, {
       global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
     });
@@ -640,7 +642,9 @@ describe('daily entry scenario', () => {
     await flushPromises();
 
     expect(saveEntry).toHaveBeenCalledOnce();
-    expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось сохранить день');
+    expect(notifyUnknownError).toHaveBeenCalledWith(quotaError, 'Не удалось сохранить день');
+    expect(quotaError.message).toContain('Ранее сохранённые записи остались');
+    expect(quotaError.message).toContain('повторите сохранение');
     expect(notifySaved).not.toHaveBeenCalled();
     expect((document.body.querySelector('.floating-save-button') as HTMLButtonElement).disabled).toBe(false);
     expect(document.body.querySelector('.floating-save-button')).not.toBeNull();

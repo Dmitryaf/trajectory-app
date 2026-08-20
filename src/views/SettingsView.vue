@@ -90,6 +90,8 @@ const {
   cloudUserEmail,
   cloudStatusTitle,
   cloudStatusText,
+  storageProtectionTitle,
+  storageProtectionText,
   experimentCanConclude,
   experimentIdentityLocked,
   experimentSaveLabel,
@@ -548,6 +550,10 @@ const {
             <h2>Копия отдельным файлом</h2>
             <p>Для обычной работы скачивать файл не требуется. Он нужен только как дополнительная личная копия или для переноса данных.</p>
           </div>
+        </div>
+        <div class="cloud-sync-note" role="status">
+          <strong>{{ storageProtectionTitle }}</strong>
+          <p>{{ storageProtectionText }}</p>
         </div>
         <div class="data-actions">
           <button class="secondary-button" type="button" @click="exportData">Скачать копию</button>

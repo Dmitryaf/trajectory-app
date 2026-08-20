@@ -94,6 +94,23 @@ export function useSettingsForm() {
     return 'Статус облака';
   });
   const cloudStatusText = computed(() => store.cloudSyncMessage || 'Синхронизация готова.');
+  const storageProtectionTitle = computed(() => {
+    if (store.storagePersistenceStatus === 'persisted') return 'Локальное хранилище защищено';
+    if (store.storagePersistenceStatus === 'checking' || store.storagePersistenceStatus === 'unknown')
+      return 'Проверяю локальное хранилище';
+    if (store.storagePersistenceStatus === 'best-effort') return 'Локальное хранилище работает без дополнительной защиты';
+    if (store.storagePersistenceStatus === 'unsupported') return 'Режим хранения не сообщается браузером';
+    return 'Не удалось проверить режим хранения';
+  });
+  const storageProtectionText = computed(() => {
+    if (store.storagePersistenceStatus === 'persisted') {
+      return 'Браузер постарается не удалять локальные записи автоматически. Это не заменяет облачную копию или экспорт JSON.';
+    }
+    if (store.storagePersistenceStatus === 'checking' || store.storagePersistenceStatus === 'unknown') {
+      return 'Записи уже доступны. Проверка не блокирует работу приложения.';
+    }
+    return 'Записи сохраняются на устройстве, но браузер может очистить их при нехватке места. Используйте облачную копию и периодически скачивайте JSON.';
+  });
   const experimentCanConclude = computed(() => Boolean(settings.experiment.endDate && settings.experiment.endDate <= todayKey()));
   const experimentIdentityLocked = computed(() => {
     const saved = store.settings.experiment;
@@ -615,6 +632,8 @@ export function useSettingsForm() {
     cloudUserEmail,
     cloudStatusTitle,
     cloudStatusText,
+    storageProtectionTitle,
+    storageProtectionText,
     experimentCanConclude,
     experimentIdentityLocked,
     experimentSaveLabel,
