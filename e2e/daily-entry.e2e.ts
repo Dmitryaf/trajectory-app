@@ -114,6 +114,14 @@ test('saves a dirty daily entry from the mobile action', async ({ page }) => {
   await floatingSave.click();
   await expect(page.getByText('День сохранён на устройстве', { exact: true })).toBeVisible();
   await expect(floatingSave).toBeHidden();
+
+  const weight = page.getByLabel('Вес');
+  await weight.fill('88,2');
+  await expect(floatingSave).toContainText('Сохранить изменения');
+  await floatingSave.click();
+  await expect(page.getByText(/Запись за .* обновлена на устройстве/)).toBeVisible();
+  await page.reload();
+  await expect(weight).toHaveValue('88.2');
 });
 
 test('keeps a long current goal contained and does not dismiss an edited dialog on a stray pointer gesture', async ({ page }) => {

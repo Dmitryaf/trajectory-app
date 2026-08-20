@@ -189,6 +189,31 @@ describe('daily entry scenario', () => {
     expect(document.body.querySelector('.floating-save-button')).toBeNull();
   });
 
+  it('treats a mobile weight with a decimal comma as a saved change', async () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [{ ...emptyDailyEntry('2026-07-21'), weightKg: 88 }];
+    const saveEntry = vi.spyOn(store, 'saveEntry').mockImplementation(async (entry) => {
+      store.dailyEntries = [entry];
+      return entry;
+    });
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+
+    const weight = wrapper.get('#weight-kg');
+    expect(weight.attributes('inputmode')).toBe('decimal');
+    await weight.setValue('88,2');
+    await flushPromises();
+
+    expect(document.body.querySelector('.floating-save-button')?.textContent).toContain('Сохранить изменения');
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+
+    expect(saveEntry).toHaveBeenCalledTimes(1);
+    expect(saveEntry.mock.calls[0][0].weightKg).toBe(88.2);
+    expect(wrapper.get('#weight-kg').element).toHaveProperty('value', '88.2');
+  });
+
   it('saves an optional daily experiment note and rejects a bypassed length limit', async () => {
     const { pinia, store } = createStore();
     store.settings.experiment = {

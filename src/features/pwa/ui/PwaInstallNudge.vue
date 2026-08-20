@@ -15,7 +15,6 @@ const visible = computed(() =>
     savedEntryCount: props.savedEntryCount,
     installed: pwaInstalled.value,
     platform: pwaPlatform.value,
-    promptAvailable: pwaInstallPromptAvailable.value,
     dismissedUntil: dismissedUntil.value,
   }),
 );

@@ -19,8 +19,10 @@ describe('daily entry model', () => {
 
   it('normalizes weight without inventing a value', () => {
     expect(normalizeWeight(82.46)).toBe(82.5);
+    expect(normalizeWeight('88,2')).toBe(88.2);
+    expect(normalizeWeight('88.2')).toBe(88.2);
     expect(normalizeWeight(Number.NaN)).toBeNull();
-    expect(normalizeWeight('82.4')).toBeNull();
+    expect(normalizeWeight('88,2 кг')).toBeNull();
     expect(normalizeWeight(null)).toBeNull();
   });
 

@@ -3,6 +3,7 @@ import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
 import PasswordField from '../shared/ui/forms/PasswordField.vue';
 import PwaInstallGuide from '../features/pwa/ui/PwaInstallGuide.vue';
+import { pwaPlatform } from '../features/pwa/installation';
 import { useSettingsForm } from '../features/settings/useSettingsForm';
 import type { DailyBlockId, LifeAreaId } from '../types';
 
@@ -544,7 +545,7 @@ const {
       :style="settingsGroupStyle"
       aria-label="Данные и синхронизация"
     >
-      <article id="install-settings" class="settings-card settings-card--backup">
+      <article v-if="pwaPlatform !== 'other'" id="install-settings" class="settings-card settings-card--backup">
         <div class="form-card__heading">
           <span class="section-icon section-icon--blue">⌂</span>
           <div>

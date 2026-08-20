@@ -24,15 +24,9 @@ export function shouldShowPwaInstallNudge(options: {
   savedEntryCount: number;
   installed: boolean;
   platform: 'ios' | 'android' | 'other';
-  promptAvailable: boolean;
   dismissedUntil: number;
   now?: number;
 }): boolean {
   const now = options.now ?? Date.now();
-  return (
-    options.savedEntryCount >= 2 &&
-    !options.installed &&
-    (options.platform !== 'other' || options.promptAvailable) &&
-    options.dismissedUntil <= now
-  );
+  return options.savedEntryCount >= 2 && !options.installed && options.platform !== 'other' && options.dismissedUntil <= now;
 }
