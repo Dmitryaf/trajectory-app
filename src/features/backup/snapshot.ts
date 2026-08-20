@@ -14,9 +14,10 @@ import {
   type WeeklyReview,
 } from '../../types';
 import { BACKUP_VERSION } from './version';
+import { linkLegacyExperimentEntries } from '../experiments/model';
 
 export type ExportPayload = {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | typeof BACKUP_VERSION;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | typeof BACKUP_VERSION;
   exportedAt: string;
   dailyEntries: DailyEntry[];
   results: ResultRecord[];
@@ -41,15 +42,26 @@ export function normalizeSnapshot(input: unknown): ExportPayload {
     version !== 7 &&
     version !== 8 &&
     version !== 9 &&
-    version !== 10
+    version !== 10 &&
+    version !== 11
   ) {
     throw new Error('Неподдерживаемый формат резервной копии');
   }
 
-  const dailyEntries = requireArray(source.dailyEntries, 'dailyEntries').map((value, index) => {
-    const entry = requireRecord(value, `dailyEntries[${index}]`);
-    return normalizeDailyEntry({ ...entry, date: requireDate(entry.date, `dailyEntries[${index}].date`) });
-  });
+  const settings =
+    source.settings === undefined
+      ? normalizeSettings({
+          ...structuredClone(defaultSettings),
+          firstUse: { ...structuredClone(defaultSettings.firstUse), status: 'available' },
+        })
+      : normalizeSettings(requireRecord(source.settings, 'settings') as Partial<AppSettings>);
+  const dailyEntries = linkLegacyExperimentEntries(
+    requireArray(source.dailyEntries, 'dailyEntries').map((value, index) => {
+      const entry = requireRecord(value, `dailyEntries[${index}]`);
+      return normalizeDailyEntry({ ...entry, date: requireDate(entry.date, `dailyEntries[${index}].date`) });
+    }),
+    settings,
+  );
   const results = requireArray(source.results, 'results').map((value, index) => normalizeSnapshotResult(value, index));
   const lifeEvents = optionalArray(source.lifeEvents, 'lifeEvents').map((value, index) => {
     const event = requireRecord(value, `lifeEvents[${index}]`);
@@ -67,14 +79,6 @@ export function normalizeSnapshot(input: unknown): ExportPayload {
     const review = requireRecord(value, `monthlyReviews[${index}]`);
     return normalizeMonthlyReview({ ...review, monthStart: requireDate(review.monthStart, `monthlyReviews[${index}].monthStart`) });
   });
-  const settings =
-    source.settings === undefined
-      ? normalizeSettings({
-          ...structuredClone(defaultSettings),
-          firstUse: { ...structuredClone(defaultSettings.firstUse), status: 'available' },
-        })
-      : normalizeSettings(requireRecord(source.settings, 'settings') as Partial<AppSettings>);
-
   return {
     version,
     exportedAt: typeof source.exportedAt === 'string' ? source.exportedAt : '',

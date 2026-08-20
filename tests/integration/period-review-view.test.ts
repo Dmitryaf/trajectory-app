@@ -115,6 +115,7 @@ describe('period review navigation', () => {
     const { active: _active, ...completedRecord } = completed;
     store.settings.experiment = {
       ...store.settings.experiment,
+      id: 'active-important-action',
       active: true,
       title: 'Каждый день начинать важное действие, даже если условие эксперимента занимает несколько строк '.repeat(4),
       hypothesis: 'Станет ли легче начинать без ожидания подходящего состояния',
@@ -134,18 +135,21 @@ describe('period review navigation', () => {
       {
         ...emptyDailyEntry('2026-07-20'),
         importantFact: 'Есть запись',
+        experimentId: 'completed-breakfast',
         experimentCompleted: true,
         experimentNote: 'Заранее оставил телефон в другой комнате',
       },
       {
         ...emptyDailyEntry('2026-07-21'),
         importantFact: 'Есть запись',
+        experimentId: 'active-important-action',
         experimentCompleted: false,
         experimentNote: 'Долго выбирал первое действие',
       },
       {
         ...emptyDailyEntry('2026-07-22'),
         importantFact: 'Есть запись',
+        experimentId: 'active-important-action',
         experimentCompleted: true,
         experimentNote: 'Подготовил задачу с вечера',
       },
@@ -159,12 +163,12 @@ describe('period review navigation', () => {
     expect(cards[0]!.attributes('open')).toBeDefined();
     expect(cards[1]!.attributes('open')).toBeUndefined();
     expect(cards[0]!.get('summary strong').text().endsWith('…')).toBe(true);
-    expect(cards[0]!.text()).toContain('Заметки по дням · 2');
+    expect(cards[0]!.text()).toContain('Заметки этой недели · 2');
     expect(cards[0]!.find('.experiment-note-page').exists()).toBe(false);
 
     await cards[0]!
       .findAll('button')
-      .find((button) => button.text() === 'Заметки по дням · 2')!
+      .find((button) => button.text() === 'Заметки этой недели · 2')!
       .trigger('click');
     expect(cards[0]!.get('.experiment-note-page').text()).toContain('Долго выбирал первое действие');
     expect(cards[0]!.get('.experiment-note-page').text()).toContain('1 из 2');
@@ -179,7 +183,58 @@ describe('period review navigation', () => {
     expect(cards[0]!.attributes('open')).toBeUndefined();
     expect(cards[1]!.attributes('open')).toBeDefined();
     expect(cards[1]!.text()).toContain('Телефон влиял меньше, чем ожидалось');
-    expect(cards[1]!.text()).toContain('Заметки по дням · 1');
+    expect(cards[1]!.text()).toContain('Заметки этой недели · 1');
+  });
+
+  it('shows one cross-week experiment as clearly scoped weekly slices with one stable identity', () => {
+    const { pinia, store } = createStore();
+    store.settings.experiment = {
+      ...store.settings.experiment,
+      id: 'cross-week-experiment',
+      active: true,
+      title: 'Начинать важное действие сразу',
+      startDate: '2026-07-16',
+      endDate: '2026-07-27',
+    };
+    store.dailyEntries = [
+      {
+        ...emptyDailyEntry('2026-07-17'),
+        experimentId: 'cross-week-experiment',
+        experimentCompleted: true,
+        experimentNote: 'Подготовил задачу заранее',
+      },
+      {
+        ...emptyDailyEntry('2026-07-18'),
+        experimentId: 'cross-week-experiment',
+        experimentCompleted: false,
+      },
+      {
+        ...emptyDailyEntry('2026-07-21'),
+        experimentId: 'cross-week-experiment',
+        experimentCompleted: true,
+        experimentNote: 'Начал без долгой подготовки',
+      },
+    ];
+    const global = { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } };
+
+    const currentWeek = mount(WeekView, { global });
+    expect(currentWeek.find('.period-empty-guide').exists()).toBe(false);
+    expect((currentWeek.get('details.week-data-details').element as HTMLDetailsElement).open).toBe(false);
+    const currentCard = currentWeek.get('.experiment-period-card');
+    expect(currentCard.text()).toContain('Идёт сейчас');
+    expect(currentCard.text()).toContain('Период: 16 июл. — 27 июл.');
+    expect(currentCard.get('[aria-label="Отметки эксперимента за эту неделю"]').text()).toContain('За неделю: получилось · 1');
+    expect(currentCard.get('[aria-label="Отметки эксперимента за эту неделю"]').text()).toContain('Без отметки · 6 из 7');
+    expect(currentCard.text()).toContain('За весь период: получилось 2, не получилось 1, без отметки 9 из 12');
+    expect(currentCard.text()).toContain('Заметки этой недели · 1');
+
+    const previousWeek = mount(WeekView, { props: { initialWeek: '2026-07-13' }, global });
+    const previousCard = previousWeek.get('.experiment-period-card');
+    expect(previousCard.text()).toContain('Шёл в эту неделю');
+    expect(previousCard.get('[aria-label="Отметки эксперимента за эту неделю"]').text()).toContain('За неделю: получилось · 1');
+    expect(previousCard.get('[aria-label="Отметки эксперимента за эту неделю"]').text()).toContain('Не получилось · 1');
+    expect(previousCard.get('[aria-label="Отметки эксперимента за эту неделю"]').text()).toContain('Без отметки · 2 из 4');
+    expect(previousCard.text()).toContain('Заметки этой недели · 1');
   });
 
   it('keeps weekly and monthly results and events in matching bounded pages', async () => {

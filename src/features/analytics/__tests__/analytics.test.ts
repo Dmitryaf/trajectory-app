@@ -164,6 +164,17 @@ describe('analytics', () => {
     expect(summary.experimentCompletedDays).toBe(1);
   });
 
+  it('counts experiment-only and nutrition-note-only entries as days with data', () => {
+    const entries = [
+      entry('2026-07-13', { experimentCompleted: false }),
+      entry('2026-07-14', { experimentNote: 'Поздний звонок помешал выполнить условие' }),
+      entry('2026-07-15', { nutritionNote: 'Поздний ужин вне обычного режима' }),
+    ];
+
+    expect(entries.map(dataCoverageLevel)).toEqual([1, 1, 1]);
+    expect(summarize(entries).coveredEntriesCount).toBe(3);
+  });
+
   it('shows an active experiment only inside its configured dates', () => {
     const experiment = { ...defaultSettings.experiment, active: true, startDate: '2026-07-10', endDate: '2026-07-20' };
     expect(experimentAppliesToDate(experiment, '2026-07-09')).toBe(false);
@@ -239,7 +250,7 @@ describe('analytics', () => {
       settings,
     });
 
-    expect(payload.version).toBe(10);
+    expect(payload.version).toBe(11);
     expect(payload.dataThrough).toBe('2026-07-19');
     expect(payload.labels.contextFactors).toContainEqual(expect.objectContaining({ id: 'custom:context:rain', label: 'Шум за окном' }));
     expect(payload.labels.activities).toContainEqual(expect.objectContaining({ id: 'custom:activity:swimming', label: 'Плавание' }));

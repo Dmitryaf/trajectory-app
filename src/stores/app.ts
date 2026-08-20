@@ -22,6 +22,8 @@ import {
 import { normalizeSnapshot, type ExportPayload } from '../features/backup/snapshot';
 import { BACKUP_VERSION } from '../features/backup/version';
 import { clearFirstUseFunnel } from '../features/first-use/funnel';
+import { linkLegacyExperimentEntries } from '../features/experiments/model';
+import { validDate } from '../model/normalization';
 
 export type { ExportPayload } from '../features/backup/snapshot';
 
@@ -66,18 +68,31 @@ export const useAppStore = defineStore('app', {
           db.monthlyReviews.toArray(),
           db.settings.get('main'),
         ]);
-        this.dailyEntries = dailyEntries.map((entry) => normalizeDailyEntry(entry));
-        this.dailyEntryDrafts = dailyEntryDrafts.map((draft) => ({
+        const activeSettings = normalizeSettings(settings);
+        const normalizedEntries = dailyEntries.map((entry) => normalizeDailyEntry(entry));
+        const linkedEntries = linkLegacyExperimentEntries(normalizedEntries, activeSettings);
+        const normalizedDrafts = dailyEntryDrafts.map((draft) => ({
           ...draft,
           entry: normalizeDailyEntry(draft.entry),
         }));
+        const linkedDrafts = normalizedDrafts.map((draft) => ({
+          ...draft,
+          entry: linkLegacyExperimentEntries([draft.entry], activeSettings)[0]!,
+        }));
+        this.dailyEntries = linkedEntries;
+        this.dailyEntryDrafts = linkedDrafts;
         this.results = results.map((result) => normalizeResult(result)).sort((a, b) => b.date.localeCompare(a.date));
         this.lifeEvents = lifeEvents.map((event) => normalizeLifeEvent(event)).sort((a, b) => b.date.localeCompare(a.date));
         this.weeklyReviews = weeklyReviews.map((review) => normalizeWeeklyReview(review));
         this.monthlyReviews = monthlyReviews.map((review) => normalizeMonthlyReview(review));
-        const activeSettings = normalizeSettings(settings);
         this.settings = activeSettings;
-        await db.settings.put(plainCopy(activeSettings));
+        await db.transaction('rw', [db.dailyEntries, db.dailyEntryDrafts, db.settings], async () => {
+          await Promise.all([
+            linkedEntries.length ? db.dailyEntries.bulkPut(plainCopy(linkedEntries)) : Promise.resolve(),
+            linkedDrafts.length ? db.dailyEntryDrafts.bulkPut(plainCopy(linkedDrafts)) : Promise.resolve(),
+            db.settings.put(plainCopy(activeSettings)),
+          ]);
+        });
       } catch (error) {
         this.loadError = error instanceof Error ? error.message : 'Не удалось открыть локальное хранилище';
         throw error;
@@ -115,6 +130,7 @@ export const useAppStore = defineStore('app', {
       this.dailyEntryDrafts = this.dailyEntryDrafts.filter((draft) => draft.date !== date);
     },
     async addResult(result: Omit<ResultRecord, 'id' | 'createdAt'>) {
+      if (!validDate(result.date)) throw new Error('Укажите корректную дату итога');
       const record: ResultRecord = plainCopy(
         normalizeResult({
           ...result,
@@ -127,6 +143,7 @@ export const useAppStore = defineStore('app', {
     },
     async updateResult(result: ResultRecord) {
       if (result.id === undefined) return;
+      if (!validDate(result.date)) throw new Error('Укажите корректную дату итога');
       const record = plainCopy(normalizeResult(result));
       await db.results.put(record);
       const index = this.results.findIndex((item) => item.id === record.id);
@@ -140,6 +157,7 @@ export const useAppStore = defineStore('app', {
       void this.syncCloudSnapshot();
     },
     async addLifeEvent(event: Omit<LifeEventRecord, 'id' | 'createdAt'>) {
+      if (!validDate(event.date)) throw new Error('Укажите корректную дату события');
       const record: LifeEventRecord = plainCopy({
         ...event,
         createdAt: new Date().toISOString(),
@@ -151,6 +169,7 @@ export const useAppStore = defineStore('app', {
     },
     async updateLifeEvent(event: LifeEventRecord) {
       if (event.id === undefined) return;
+      if (!validDate(event.date)) throw new Error('Укажите корректную дату события');
       const record = plainCopy(event);
       await db.lifeEvents.put(record);
       const index = this.lifeEvents.findIndex((item) => item.id === record.id);

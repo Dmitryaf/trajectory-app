@@ -21,6 +21,18 @@ async function selectEntryDate(page: Page, value: string) {
   await expect(dateInput).toHaveValue(value);
 }
 
+function addDays(dateKey: string, amount: number): string {
+  const date = new Date(`${dateKey}T12:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + amount);
+  return date.toISOString().slice(0, 10);
+}
+
+function startOfWeek(dateKey: string): string {
+  const date = new Date(`${dateKey}T12:00:00.000Z`);
+  const weekday = date.getUTCDay() || 7;
+  return addDays(dateKey, 1 - weekday);
+}
+
 test('saves a dirty daily entry from the mobile action', async ({ page }) => {
   await openDailyEntry(page);
   const floatingSave = page.locator('.floating-save-button');
@@ -161,4 +173,66 @@ test('selects and preserves a past daily entry on mobile', async ({ page }) => {
   await expect(note).toHaveValue('');
   await selectEntryDate(page, pastDateKey);
   await expect(note).toHaveValue('Запись за выбранную дату');
+});
+
+test('keeps one experiment identity while extending it across weekly slices', async ({ page }) => {
+  await openDailyEntry(page);
+  const today = await page.getByLabel('Дата записи').getAttribute('max');
+  expect(today).not.toBeNull();
+  const currentWeekStart = startOfWeek(today!);
+  const previousWeekStart = addDays(currentWeekStart, -7);
+  const previousEntryDate = addDays(previousWeekStart, 2);
+  const extendedEnd = addDays(today!, 5);
+
+  await page.goto('/settings#experiment-settings');
+  await page.getByRole('button', { name: 'Эксперимент', exact: true }).click();
+  const settingsCard = page.locator('.settings-card--experiment');
+  await settingsCard.getByRole('checkbox', { name: 'Включить эксперимент' }).check();
+  await settingsCard.getByLabel('Что хотите попробовать').fill('Начинать важное действие сразу');
+  const dates = settingsCard.locator('input[type="date"]');
+  await dates.nth(0).fill(previousEntryDate);
+  await dates.nth(1).fill(today!);
+  await settingsCard.getByRole('button', { name: 'Сохранить настройки' }).click();
+  await expect(page.getByText('Эксперимент сохранён', { exact: true })).toBeVisible();
+
+  const saveExperimentDay = async (date: string, answer: 'Да' | 'Нет', note: string) => {
+    if (new URL(page.url()).pathname !== '/') await page.goto('/');
+    await selectEntryDate(page, date);
+    const startToday = page.getByRole('button', { name: 'Начать с сегодняшнего дня' });
+    if (await startToday.isVisible()) await startToday.click();
+    const experimentCard = page.locator('#experiment');
+    await expect(experimentCard).toBeVisible();
+    await experimentCard.getByRole('button', { name: answer, exact: true }).click();
+    await experimentCard.getByLabel('Что помогло или помешало?').fill(note);
+    const saveButton = page.locator('.floating-save-button');
+    await saveButton.click();
+    await expect(saveButton).toBeHidden();
+    await expect(page.getByText('День сохранён на устройстве', { exact: true }).last()).toBeVisible();
+  };
+
+  await saveExperimentDay(previousEntryDate, 'Нет', 'В прошлой неделе долго готовился');
+  await saveExperimentDay(today!, 'Да', 'Сегодня начал сразу');
+
+  await page.goto('/settings#experiment-settings');
+  await page.getByRole('button', { name: 'Эксперимент', exact: true }).click();
+  const lockedCard = page.locator('.settings-card--experiment');
+  await expect(lockedCard.getByLabel('Что хотите попробовать')).toHaveAttribute('readonly', '');
+  await expect(lockedCard.locator('input[type="date"]').nth(0)).toBeDisabled();
+  await lockedCard.locator('input[type="date"]').nth(1).fill(extendedEnd);
+  await lockedCard.getByRole('button', { name: 'Продлить эксперимент' }).click();
+  await expect(page.getByText('Эксперимент продлён', { exact: true })).toBeVisible();
+
+  await page.locator('.bottom-nav a[href="/week"]').click();
+  await expect(page).toHaveURL(/\/week/);
+  const currentCard = page.locator('.experiment-period-card');
+  await expect(currentCard).toContainText('Идёт сейчас');
+  await expect(currentCard).toContainText('За неделю: получилось · 1');
+  await expect(currentCard).toContainText('За весь период: получилось 1, не получилось 1');
+  await expect(currentCard).toContainText('Заметки этой недели · 1');
+
+  await page.getByRole('button', { name: 'Предыдущий период' }).click();
+  const previousCard = page.locator('.experiment-period-card');
+  await expect(previousCard).toContainText('Шёл в эту неделю');
+  await expect(previousCard).toContainText('Не получилось · 1');
+  await expect(previousCard).toContainText('Заметки этой недели · 1');
 });

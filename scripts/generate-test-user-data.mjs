@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-export const DEMO_BACKUP_VERSION = 10;
+export const DEMO_BACKUP_VERSION = 11;
 export const DEMO_OUTPUT_RELATIVE_PATH = 'demo/generated/trajectory-full.json';
 
 export function todayKey(now = new Date()) {
@@ -40,8 +40,10 @@ export function buildDemoPayload(anchor = todayKey()) {
   const rangeStart = startOfMonth(addMonths(anchor, -3));
   const activeExperimentStart = currentWeekStart;
   const activeExperimentEnd = addDays(activeExperimentStart, 13);
+  const activeExperimentId = `experiment-${activeExperimentStart}-notifications`;
   const completedExperimentStart = addDays(currentWeekStart, -35);
   const completedExperimentEnd = addDays(completedExperimentStart, 6);
+  const completedExperimentId = `experiment-${completedExperimentStart}-walk`;
   const focusReviewDate = addDays(anchor, 21);
 
   const trackedDates = eachDate(rangeStart, anchor).filter((date) => {
@@ -86,6 +88,7 @@ export function buildDemoPayload(anchor = todayKey()) {
     const inActiveExperiment = date >= activeExperimentStart && date <= anchor;
     const inCompletedExperiment = date >= completedExperimentStart && date <= completedExperimentEnd;
     const experimentCompleted = inActiveExperiment ? index % 4 !== 0 : inCompletedExperiment ? index % 3 !== 0 : null;
+    const experimentId = inActiveExperiment ? activeExperimentId : inCompletedExperiment ? completedExperimentId : null;
     const experimentNote =
       experimentCompleted === null
         ? ''
@@ -97,7 +100,7 @@ export function buildDemoPayload(anchor = todayKey()) {
 
     return {
       date,
-      entrySchemaVersion: 2,
+      entrySchemaVersion: 4,
       activeDailyBlocksSnapshot: ['sleep', 'context', 'career', 'movement', 'nutrition'],
       recordedFields: [
         'bedtime',
@@ -153,6 +156,7 @@ export function buildDemoPayload(anchor = todayKey()) {
       lifeAreasRecorded: true,
       importantFact: factCycles[index % factCycles.length],
       experimentCompleted,
+      experimentId,
       experimentNote,
       updatedAt: isoAt(date, 21),
     };
@@ -261,7 +265,7 @@ export function buildDemoPayload(anchor = todayKey()) {
     monthlyReviews,
     settings: {
       id: 'main',
-      settingsVersion: 13,
+      settingsVersion: 14,
       firstUse: {
         status: 'completed',
         weekStart: currentWeekStart,
@@ -294,6 +298,7 @@ export function buildDemoPayload(anchor = todayKey()) {
       externalEvidenceCriterion: 'Отправленный черновик, полученный комментарий или назначенная репетиция',
       nutritionGoalCriterion: 'Регулярные приёмы пищи без позднего переедания',
       experiment: {
+        id: activeExperimentId,
         active: true,
         title: 'Первый час без уведомлений',
         hypothesis: 'Станет ли проще начать запланированную задачу без переключений.',
@@ -308,7 +313,7 @@ export function buildDemoPayload(anchor = todayKey()) {
       },
       experimentHistory: [
         {
-          id: `experiment-${completedExperimentStart}-walk`,
+          id: completedExperimentId,
           title: 'Короткая прогулка после обеда',
           hypothesis: 'Поможет ли прогулка легче переключаться между задачами.',
           targetMetricId: null,

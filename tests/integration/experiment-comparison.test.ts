@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { buildExperimentSummary } from '../../src/features/analytics/experimentComparison';
-import { createExperimentRecord, emptyExperiment, experimentPeriodsOverlap } from '../../src/features/experiments/model';
+import {
+  createExperimentRecord,
+  emptyExperiment,
+  experimentPeriodsOverlap,
+  linkLegacyExperimentEntries,
+} from '../../src/features/experiments/model';
 import { buildAiReportPayload, buildAiReportPrompt } from '../../src/features/export/report';
 import { defaultSettings, emptyDailyEntry, type DailyEntry, type Experiment } from '../../src/types';
 
@@ -11,6 +16,7 @@ function entry(date: string, patch: Partial<DailyEntry>): DailyEntry {
 function experiment(patch: Partial<Experiment> = {}): Experiment {
   return {
     ...emptyExperiment(),
+    id: 'experiment-evening',
     active: true,
     title: 'Спокойный вечер',
     hypothesis: 'Станет ли проще завершать день',
@@ -27,9 +33,9 @@ describe('experiment summary', () => {
       entry('2026-07-02', { energy: 2, sleepMinutes: 400 }),
       entry('2026-07-03', { energy: 5, sleepMinutes: 300, specialDay: 'travel' }),
       entry('2026-07-04', { energy: 2, sleepMinutes: 410 }),
-      entry('2026-07-05', { energy: 3, sleepMinutes: 430, experimentCompleted: true }),
-      entry('2026-07-06', { energy: 3, sleepMinutes: 440, experimentCompleted: true }),
-      entry('2026-07-07', { energy: 3, sleepMinutes: 450, experimentCompleted: false }),
+      entry('2026-07-05', { energy: 3, sleepMinutes: 430, experimentId: 'experiment-evening', experimentCompleted: true }),
+      entry('2026-07-06', { energy: 3, sleepMinutes: 440, experimentId: 'experiment-evening', experimentCompleted: true }),
+      entry('2026-07-07', { energy: 3, sleepMinutes: 450, experimentId: 'experiment-evening', experimentCompleted: false }),
     ];
 
     const summary = buildExperimentSummary(entries, experiment());
@@ -63,9 +69,24 @@ describe('experiment summary', () => {
     expect(experimentPeriodsOverlap(record, { startDate: '2026-07-09', endDate: '2026-07-10' })).toBe(false);
   });
 
+  it('does not guess which experiment owns an ambiguous legacy mark', () => {
+    const settings = structuredClone(defaultSettings);
+    settings.experiment = experiment({ id: 'active-experiment' });
+    settings.experimentHistory = [
+      createExperimentRecord(experiment({ id: 'completed-experiment', active: false }), '2026-07-08T20:00:00.000Z'),
+    ];
+    const legacyEntry = entry('2026-07-06', { experimentCompleted: true });
+
+    expect(linkLegacyExperimentEntries([legacyEntry], settings)[0]!.experimentId).toBeNull();
+  });
+
   it('includes user conclusions and a factual summary in the manual analysis package', () => {
     const entries = Array.from({ length: 8 }, (_, index) =>
-      entry(`2026-07-${String(index + 1).padStart(2, '0')}`, { energy: index < 4 ? 2 : 3, experimentCompleted: index < 4 ? null : true }),
+      entry(`2026-07-${String(index + 1).padStart(2, '0')}`, {
+        energy: index < 4 ? 2 : 3,
+        experimentId: index < 4 ? null : 'experiment-evening',
+        experimentCompleted: index < 4 ? null : true,
+      }),
     );
     const settings = structuredClone(defaultSettings);
     const completed = experiment({ active: false, conclusion: 'Утром было немного легче', decision: 'more_data' });
@@ -79,7 +100,7 @@ describe('experiment summary', () => {
       settings,
     });
 
-    expect(payload.version).toBe(10);
+    expect(payload.version).toBe(11);
     expect(payload.experimentHistory).toHaveLength(1);
     const prompt = buildAiReportPrompt(payload, settings);
     expect(prompt).toContain('вывод пользователя: Утром было немного легче');

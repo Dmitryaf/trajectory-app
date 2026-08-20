@@ -3,7 +3,7 @@ import { onBeforeRouteLeave } from 'vue-router';
 import { formatDate, todayKey } from '../../services/dates';
 import { notifyError, notifySaved, notifyUnknownError } from '../../services/notifications';
 import { plainCopy } from '../../services/plain';
-import { emptyDailyEntry, type DailyBlockId, type DailyEntry } from '../../types';
+import { emptyDailyEntry, experimentAppliesToDate, type DailyBlockId, type DailyEntry } from '../../types';
 import type { useAppStore } from '../../stores/app';
 import {
   prepareDailyEntryForSave,
@@ -25,9 +25,11 @@ export function useDailyEntryForm(store: AppStore) {
   const saving = ref(false);
   const draftStatus = ref<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const restoredDraft = ref(false);
+  const draftConflict = ref(false);
   const validationMessage = ref('');
   const originalEntrySnapshot = ref('');
   const persistedDraftSnapshot = ref('');
+  const conflictingSavedEntry = ref<DailyEntry | null>(null);
   const form = reactive<DailyEntry>(emptyDailyEntry(selectedDate.value));
   let syncingEntry = false;
   let lastDerivedTimeInBed: number | null = null;
@@ -58,7 +60,7 @@ export function useDailyEntryForm(store: AppStore) {
     if (hasSavedEntry.value) return 'Запись сохранена';
     return 'Сохранить день';
   });
-  const saveButtonDisabled = computed(() => saving.value || (hasSavedEntry.value && !isDirty.value && !saved.value));
+  const saveButtonDisabled = computed(() => draftConflict.value || saving.value || (hasSavedEntry.value && !isDirty.value && !saved.value));
 
   function currentMetrics(): DailyEntryMetrics {
     return {
@@ -90,6 +92,8 @@ export function useDailyEntryForm(store: AppStore) {
   function loadEntry(date: string) {
     validationMessage.value = '';
     restoredDraft.value = false;
+    draftConflict.value = false;
+    conflictingSavedEntry.value = null;
     draftStatus.value = 'idle';
     persistedDraftSnapshot.value = '';
     const savedEntry = store.entryByDate(date) ?? emptyDailyEntry(date);
@@ -97,9 +101,14 @@ export function useDailyEntryForm(store: AppStore) {
     originalEntrySnapshot.value = snapshotDailyEntry(form, currentMetrics());
     const draft = store.draftByDate(date);
     if (draft) {
+      const savedEntryChanged = hasSavedEntry.value && draft.entry.updatedAt !== savedEntry.updatedAt;
       applyEntry(draft.entry);
       const draftSnapshot = snapshotDailyEntry(form, currentMetrics());
       if (draftSnapshot !== originalEntrySnapshot.value) {
+        if (savedEntryChanged) {
+          draftConflict.value = true;
+          conflictingSavedEntry.value = plainCopy(savedEntry);
+        }
         persistedDraftSnapshot.value = draftSnapshot;
         draftStatus.value = 'saved';
         restoredDraft.value = true;
@@ -181,6 +190,10 @@ export function useDailyEntryForm(store: AppStore) {
 
   async function save() {
     if (saving.value) return;
+    if (draftConflict.value) {
+      notifyError('Сначала выберите, какую версию записи оставить.');
+      return;
+    }
     validationMessage.value = validateDailyEntryMetrics(currentMetrics(), blockIsActive('sleep')) || validateDailyEntryText(form);
     if (validationMessage.value) {
       notifyError(validationMessage.value);
@@ -195,6 +208,7 @@ export function useDailyEntryForm(store: AppStore) {
         focusReviewDate: store.settings.focusReviewDate,
         externalEvidenceCriterion: store.settings.externalEvidenceCriterion,
         nutritionCriterion: store.settings.nutritionGoalCriterion,
+        experimentId: experimentAppliesToDate(store.settings.experiment, selectedDate.value) ? store.settings.experiment.id || null : null,
         activeDailyBlocks: store.settings.activeDailyBlocks,
       },
       !hasSavedEntry.value,
@@ -225,6 +239,25 @@ export function useDailyEntryForm(store: AppStore) {
     } finally {
       saving.value = false;
     }
+  }
+
+  async function resolveDraftConflict(useDraft: boolean) {
+    if (!draftConflict.value) return;
+    if (!useDraft && conflictingSavedEntry.value) {
+      try {
+        await store.removeDailyEntryDraft(selectedDate.value);
+        applyEntry(conflictingSavedEntry.value);
+        originalEntrySnapshot.value = snapshotDailyEntry(form, currentMetrics());
+        persistedDraftSnapshot.value = '';
+        draftStatus.value = 'idle';
+        restoredDraft.value = false;
+      } catch (error) {
+        notifyUnknownError(error, 'Не удалось удалить локальный черновик');
+        return;
+      }
+    }
+    draftConflict.value = false;
+    conflictingSavedEntry.value = null;
   }
 
   watch(selectedDate, loadEntry, { immediate: true });
@@ -286,6 +319,7 @@ export function useDailyEntryForm(store: AppStore) {
     saving,
     draftStatus,
     restoredDraft,
+    draftConflict,
     validationMessage,
     form,
     hasSavedEntry,
@@ -296,6 +330,7 @@ export function useDailyEntryForm(store: AppStore) {
     blockIsActive,
     changeSelectedDate,
     selectDate,
+    resolveDraftConflict,
     save,
   };
 }

@@ -20,12 +20,13 @@ export function dataCoverageLevel(entry: DailyEntry): DataCoverageLevel {
     dailyFieldWasRecorded(entry, 'activities') ||
     dailyFieldWasRecorded(entry, 'lifeAreas') ||
     entry.importantFact.trim().length > 0;
-  const hasNutrition = entry.nutritionState !== null || entry.weightKg !== null;
+  const hasNutrition = entry.nutritionState !== null || entry.weightKg !== null || entry.nutritionNote.trim().length > 0;
   const coreDomains = [hasState, hasAction, hasNutrition].filter(Boolean).length;
   if (coreDomains >= 2) return 2;
 
   const hasContext = entry.specialDay !== null || dailyFieldWasRecorded(entry, 'contextFactors') || entry.contextNote.trim().length > 0;
-  return coreDomains === 1 || hasContext ? 1 : 0;
+  const hasExperiment = entry.experimentCompleted !== null || entry.experimentNote.trim().length > 0;
+  return coreDomains === 1 || hasContext || hasExperiment ? 1 : 0;
 }
 
 export function buildCoverageSeries(entries: DailyEntry[], start: string, end: string): Array<[string, DataCoverageLevel]> {

@@ -2,6 +2,7 @@ import 'fake-indexeddb/auto';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../../src/db';
+import { BACKUP_VERSION } from '../../src/features/backup/version';
 import { markCloudSyncPending, saveCloudSnapshot } from '../../src/services/cloudSync';
 import { useAppStore } from '../../src/stores/app';
 import { useAuthStore } from '../../src/stores/auth';
@@ -59,7 +60,7 @@ describe('cloud synchronization state', () => {
     );
     expect(saveCloudSnapshot).toHaveBeenCalledWith(
       expect.objectContaining({
-        version: 10,
+        version: BACKUP_VERSION,
         settings: expect.objectContaining({ firstUse: expect.objectContaining({ status: 'not_started' }) }),
         weeklyReviews: [
           expect.objectContaining({
@@ -110,5 +111,23 @@ describe('cloud synchronization state', () => {
 
     expect(store.cloudSyncStatus).toBe('pending');
     expect(store.cloudSyncError).toBe('network unavailable');
+  });
+
+  it('rejects journal records with invalid dates before writing to IndexedDB', async () => {
+    const store = useAppStore();
+
+    await expect(store.addResult({ date: '', area: 'career', title: 'Итог', note: '' })).rejects.toThrow('Укажите корректную дату итога');
+    await expect(store.updateResult({ id: 1, date: '2026-02-30', area: 'career', title: 'Итог', note: '', createdAt: '' })).rejects.toThrow(
+      'Укажите корректную дату итога',
+    );
+    await expect(store.addLifeEvent({ date: '', type: 'event', title: 'Событие', note: '' })).rejects.toThrow(
+      'Укажите корректную дату события',
+    );
+    await expect(
+      store.updateLifeEvent({ id: 1, date: '2026-02-30', type: 'event', title: 'Событие', note: '', createdAt: '' }),
+    ).rejects.toThrow('Укажите корректную дату события');
+
+    expect(await db.results.count()).toBe(0);
+    expect(await db.lifeEvents.count()).toBe(0);
   });
 });

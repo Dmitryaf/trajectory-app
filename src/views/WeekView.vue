@@ -18,7 +18,7 @@ import {
   summarize,
   weekSummaryText,
 } from '../services/analytics';
-import { addDays, endOfWeek, formatDate, formatMinutes, fromDateKey, startOfWeek, todayKey, toDateKey } from '../services/dates';
+import { addDays, dateRange, endOfWeek, formatDate, formatMinutes, fromDateKey, startOfWeek, todayKey, toDateKey } from '../services/dates';
 import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../features/export/browser';
 import { experimentDecisionLabel } from '../features/experiments/model';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
@@ -105,10 +105,15 @@ type WeekExperimentCard = {
   conclusion: string;
   decision: ExperimentDecision | null;
   statusLabel: string;
+  periodLabel: string;
   plannedDays: number;
   completedDays: number;
   notCompletedDays: number;
   unmarkedDays: number;
+  totalPlannedDays: number;
+  totalCompletedDays: number;
+  totalNotCompletedDays: number;
+  totalUnmarkedDays: number;
   notes: DailyEntry[];
 };
 
@@ -125,7 +130,7 @@ const activeExperiment = computed(() => {
   return experiment;
 });
 const completedExperiments = computed(() =>
-  store.settings.experimentHistory.filter((experiment) => experiment.endDate >= start.value && experiment.endDate <= end.value),
+  store.settings.experimentHistory.filter((experiment) => experiment.startDate <= end.value && experiment.endDate >= start.value),
 );
 const experimentCards = computed<WeekExperimentCard[]>(() => [
   ...(activeExperiment.value ? [buildExperimentCard('active-experiment', activeExperiment.value, true)] : []),
@@ -149,8 +154,11 @@ watch(
 
 function buildExperimentCard(id: string, experiment: Experiment | ExperimentRecord, active: boolean): WeekExperimentCard {
   const experimentDays = days.value.filter((day) => day >= experiment.startDate && day <= experiment.endDate);
-  const experimentEntries = entries.value.filter((entry) => entry.date >= experiment.startDate && entry.date <= experiment.endDate);
+  const experimentEntries = entries.value.filter((entry) => entry.experimentId === experiment.id);
   const marked = experimentEntries.filter((entry) => entry.experimentCompleted !== null);
+  const totalDays = dateRange(experiment.startDate, experiment.endDate);
+  const totalEntries = store.dailyEntries.filter((entry) => entry.experimentId === experiment.id);
+  const totalMarked = totalEntries.filter((entry) => entry.experimentCompleted !== null);
   return {
     id,
     active,
@@ -159,11 +167,25 @@ function buildExperimentCard(id: string, experiment: Experiment | ExperimentReco
     hypothesis: experiment.hypothesis,
     conclusion: experiment.conclusion,
     decision: experiment.decision,
-    statusLabel: active ? 'Идёт сейчас' : `Завершён · ${formatDate(experiment.endDate, { weekday: 'short', day: 'numeric' })}`,
+    statusLabel: active
+      ? start.value === startOfWeek(todayKey())
+        ? 'Идёт сейчас'
+        : end.value < startOfWeek(todayKey())
+          ? 'Шёл в эту неделю'
+          : 'Запланирован'
+      : `Завершён · ${formatDate(experiment.endDate, { weekday: 'short', day: 'numeric' })}`,
+    periodLabel: `${formatDate(experiment.startDate, { day: 'numeric', month: 'short' })} — ${formatDate(experiment.endDate, {
+      day: 'numeric',
+      month: 'short',
+    })}`,
     plannedDays: experimentDays.length,
     completedDays: marked.filter((entry) => entry.experimentCompleted === true).length,
     notCompletedDays: marked.filter((entry) => entry.experimentCompleted === false).length,
     unmarkedDays: Math.max(0, experimentDays.length - marked.length),
+    totalPlannedDays: totalDays.length,
+    totalCompletedDays: totalMarked.filter((entry) => entry.experimentCompleted === true).length,
+    totalNotCompletedDays: totalMarked.filter((entry) => entry.experimentCompleted === false).length,
+    totalUnmarkedDays: Math.max(0, totalDays.length - totalMarked.length),
     notes: experimentEntries.filter((entry) => entry.experimentNote.trim()),
   };
 }
@@ -234,7 +256,9 @@ const recoveredPeriodIsIncomplete = computed(
 );
 const hasDailyData = computed(() => summary.value.coveredEntriesCount > 0);
 const hasJournalData = computed(() => results.value.length > 0 || lifeEvents.value.length > 0);
-const hasPeriodData = computed(() => hasDailyData.value || hasJournalData.value || hasSavedReview.value);
+const hasPeriodData = computed(
+  () => hasDailyData.value || hasJournalData.value || hasSavedReview.value || experimentCards.value.length > 0,
+);
 const reviewAvailable = computed(
   () => hasSavedReview.value || end.value < todayKey() || (start.value === startOfWeek(todayKey()) && todayKey() >= addDays(end.value, -1)),
 );
@@ -402,8 +426,11 @@ function downloadJson() {
 
     <template v-else>
       <section v-if="!hasDailyData" class="period-review-note period-data-guide">
-        <strong>За эту неделю нет дневных записей</strong>
-        <p>Итоги, события и сохранённый обзор показаны ниже. Данных для сравнения сна, состояния и действий пока нет.</p>
+        <strong>{{ experimentCards.length ? 'Есть только отметки эксперимента' : 'За эту неделю нет дневных записей' }}</strong>
+        <p>
+          {{ experimentCards.length ? 'Отметки эксперимента показаны ниже.' : 'Итоги, события и сохранённый обзор показаны ниже.' }} Данных
+          для сравнения сна, состояния и действий пока нет.
+        </p>
       </section>
 
       <article v-if="showRecoveredOverview && savedReview" id="first-use-overview" class="restored-week-overview">
@@ -550,7 +577,11 @@ function downloadJson() {
         <p>Его можно пропустить — дневные записи и сводка недели останутся на месте.</p>
       </section>
 
-      <details v-if="hasDailyData || hasJournalData" class="period-details week-data-details" :open="!hasDailyData">
+      <details
+        v-if="hasDailyData || hasJournalData || experimentCards.length"
+        class="period-details week-data-details"
+        :open="!hasDailyData"
+      >
         <summary>{{ hasDailyData ? 'Показать дни и дополнительный контекст' : 'Записи недели' }}</summary>
         <div class="period-details__content">
           <article v-if="hasDailyData" class="dashboard-card">
@@ -576,11 +607,11 @@ function downloadJson() {
             </div>
           </article>
 
-          <article v-if="hasDailyData && experimentCards.length" class="dashboard-card">
+          <article v-if="experimentCards.length" class="dashboard-card">
             <div class="section-heading">
               <div>
                 <span class="eyebrow">Личные проверки</span>
-                <h2>Эксперименты недели</h2>
+                <h2>Эксперименты в эту неделю</h2>
               </div>
               <span class="count-badge">{{ experimentCards.length }}</span>
             </div>
@@ -596,14 +627,15 @@ function downloadJson() {
                   <span class="period-record-card__heading">
                     <span
                       ><span class="eyebrow">{{ experiment.statusLabel }}</span
-                      ><strong>{{ experiment.titlePreview }}</strong></span
+                      ><strong>{{ experiment.titlePreview }}</strong
+                      ><span class="eyebrow">Период: {{ experiment.periodLabel }}</span></span
                     >
                     <span v-if="experiment.notes.length" class="count-badge" :aria-label="`Заметок: ${experiment.notes.length}`">
                       {{ experiment.notes.length }}
                     </span>
                   </span>
-                  <span class="period-record-card__breakdown" aria-label="Отметки выполнения эксперимента">
-                    <span>Получилось · {{ experiment.completedDays }}</span>
+                  <span class="period-record-card__breakdown" aria-label="Отметки эксперимента за эту неделю">
+                    <span>За неделю: получилось · {{ experiment.completedDays }}</span>
                     <span>Не получилось · {{ experiment.notCompletedDays }}</span>
                     <span>Без отметки · {{ experiment.unmarkedDays }} из {{ experiment.plannedDays }}</span>
                   </span>
@@ -615,8 +647,15 @@ function downloadJson() {
                       <strong>{{ experiment.title }}</strong>
                     </p>
                     <p v-if="experiment.hypothesis">Что хотите узнать: {{ experiment.hypothesis }}</p>
-                    <p v-if="experiment.conclusion"><strong>Что заметили:</strong><br />{{ experiment.conclusion }}</p>
+                    <p v-if="experiment.conclusion">
+                      <strong>{{ experiment.active ? 'Промежуточное наблюдение:' : 'Что заметили:' }}</strong
+                      ><br />{{ experiment.conclusion }}
+                    </p>
                     <p v-if="experiment.decision">Дальше: {{ experimentDecisionLabel(experiment.decision).toLocaleLowerCase('ru-RU') }}</p>
+                    <p v-if="experiment.totalPlannedDays !== experiment.plannedDays">
+                      За весь период: получилось {{ experiment.totalCompletedDays }}, не получилось {{ experiment.totalNotCompletedDays }},
+                      без отметки {{ experiment.totalUnmarkedDays }} из {{ experiment.totalPlannedDays }}.
+                    </p>
                   </div>
                   <button
                     v-if="experiment.notes.length"
@@ -626,8 +665,9 @@ function downloadJson() {
                     :aria-controls="`experiment-notes-${index}`"
                     @click="toggleExperimentNotes(experiment.id)"
                   >
-                    {{ openExperimentNotesId === experiment.id ? 'Скрыть заметки' : `Заметки по дням · ${experiment.notes.length}` }}
+                    {{ openExperimentNotesId === experiment.id ? 'Скрыть заметки' : `Заметки этой недели · ${experiment.notes.length}` }}
                   </button>
+                  <p v-else class="field-hint">Заметок за эту неделю нет.</p>
                   <div
                     v-if="openExperimentNotesId === experiment.id && visibleExperimentNote(experiment)"
                     :id="`experiment-notes-${index}`"

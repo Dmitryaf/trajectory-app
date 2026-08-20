@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildDemoPayload, DEMO_BACKUP_VERSION } from '../../scripts/generate-test-user-data.mjs';
 import { normalizeSnapshot } from '../../src/features/backup/snapshot';
 import { BACKUP_VERSION } from '../../src/features/backup/version';
+import { currentDailyEntrySchemaVersion } from '../../src/model/schema';
 import { normalizeDailyEntry, normalizeLifeEvent, normalizeSettings } from '../../src/types';
 
 const anchor = '2026-08-11';
@@ -16,7 +17,7 @@ describe('test user generator', () => {
     expect(DEMO_BACKUP_VERSION).toBe(BACKUP_VERSION);
     expect(first.version).toBe(BACKUP_VERSION);
     expect(first.exportedAt.slice(0, 10)).toBe(anchor);
-    expect(settings.settingsVersion).toBe(13);
+    expect(settings.settingsVersion).toBe(14);
     expect(settings.firstUse).toMatchObject({ status: 'completed', lastStep: 'overview', overviewSeen: true });
     expect(settings.focusReviewDate > anchor).toBe(true);
     expect(settings.experiment.startDate <= anchor).toBe(true);
@@ -36,7 +37,8 @@ describe('test user generator', () => {
     expect(entries.some((entry) => entry.experimentNote.trim().length > 0)).toBe(true);
     expect(entries.some((entry) => entry.experimentCompleted === true)).toBe(true);
     expect(entries.some((entry) => entry.experimentCompleted === false)).toBe(true);
-    expect(entries.every((entry) => entry.entrySchemaVersion === 2)).toBe(true);
+    expect(entries.every((entry) => entry.entrySchemaVersion === currentDailyEntrySchemaVersion)).toBe(true);
+    expect(entries.filter((entry) => entry.experimentCompleted !== null).every((entry) => entry.experimentId)).toBe(true);
     expect(entries.every((entry) => entry.activeDailyBlocksSnapshot?.includes('context'))).toBe(true);
     expect(fixture.results.length).toBeGreaterThan(20);
     expect(fixture.lifeEvents).toHaveLength(10);

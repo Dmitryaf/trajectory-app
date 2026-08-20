@@ -16,7 +16,7 @@ describe('settings migrations', () => {
     });
 
     expect(settings.customCareerOptions).toEqual([]);
-    expect(settings.settingsVersion).toBe(13);
+    expect(settings.settingsVersion).toBe(14);
     expect(settings.introSeen).toBe(false);
     expect(settings.firstUse.status).toBe('available');
     expect(settings.activeDailyBlocks).toContain('context');
@@ -140,6 +140,7 @@ describe('settings migrations', () => {
     });
 
     expect(oldEntry.experimentNote).toBe('');
+    expect(oldEntry.experimentId).toBeNull();
     expect(oldEntry.recordedFields).not.toContain('experimentNote');
     expect(notedEntry.experimentNote).toBe('Подготовил всё заранее');
     expect(notedEntry.recordedFields).toContain('experimentNote');
@@ -176,7 +177,22 @@ describe('settings migrations', () => {
 
     expect(settings.experiment.startDate).toBe('');
     expect(settings.experiment.endDate).toBe('2026-07-29');
+    expect(settings.experiment.id).toBe('');
     expect(settings.experimentHistory).toEqual([expect.objectContaining({ id: 'valid', title: 'Спокойный вечер' })]);
+  });
+
+  it('gives a legacy active experiment a stable identity', () => {
+    const settings = normalizeSettings({
+      experiment: {
+        ...normalizeSettings(undefined).experiment,
+        active: true,
+        title: 'Спокойное утро',
+        startDate: '2026-07-20',
+        endDate: '2026-07-27',
+      },
+    });
+
+    expect(settings.experiment.id).toBe('legacy-active-2026-07-20-2026-07-27');
   });
 
   it('moves an active legacy personal area into user options', () => {

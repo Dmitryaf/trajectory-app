@@ -2,7 +2,7 @@
 
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import { notifyInfo, notifyUnknownError } from '../../src/services/notifications';
+import { notifyError, notifyInfo, notifyUnknownError } from '../../src/services/notifications';
 import EventsView from '../../src/views/EventsView.vue';
 import ResultsView from '../../src/views/ResultsView.vue';
 import { createStore, routerLinkStub } from '../helpers/viewScenario';
@@ -127,6 +127,29 @@ describe('journal scenarios', () => {
       title: 'Закончил курс',
       note: 'Собрал финальный проект и получил обратную связь',
     });
+  });
+
+  it('does not send an outcome or event without a date to the store', async () => {
+    const { pinia, store } = createStore();
+    const addResult = vi.spyOn(store, 'addResult').mockResolvedValue(undefined);
+    const addLifeEvent = vi.spyOn(store, 'addLifeEvent').mockResolvedValue(undefined);
+    const global = { plugins: [pinia], stubs: { RouterLink: routerLinkStub } };
+    const results = mount(ResultsView, { global });
+    const events = mount(EventsView, { global });
+
+    await results.get('.result-composer input[type="text"]').setValue('Итог без даты');
+    await results.get('[aria-label="Дата итога"]').setValue('');
+    await results.get('.result-composer input[type="text"]').trigger('keyup.enter');
+    await events.get('.result-composer input[type="text"]').setValue('Событие без даты');
+    await events.get('[aria-label="Дата события"]').setValue('');
+    await events.get('.result-composer input[type="text"]').trigger('keyup.enter');
+
+    expect(addResult).not.toHaveBeenCalled();
+    expect(addLifeEvent).not.toHaveBeenCalled();
+    expect(notifyError).toHaveBeenCalledWith('Укажите дату итога');
+    expect(notifyError).toHaveBeenCalledWith('Укажите дату события');
+    expect(results.get('.result-composer .primary-button').attributes('disabled')).toBeDefined();
+    expect(events.get('.result-composer .primary-button').attributes('disabled')).toBeDefined();
   });
 
   it('adds an insight and finds an event by its note', async () => {

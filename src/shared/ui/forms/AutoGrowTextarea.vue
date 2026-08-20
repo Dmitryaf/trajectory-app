@@ -7,11 +7,13 @@ const props = withDefaults(
     rows?: number;
     maxLength?: number;
     placeholder?: string;
+    readOnly?: boolean;
   }>(),
   {
     rows: 3,
     maxLength: 2000,
     placeholder: '',
+    readOnly: false,
   },
 );
 
@@ -48,6 +50,7 @@ onMounted(resize);
     :rows="rows"
     :maxlength="maxLength"
     :placeholder="placeholder"
+    :readonly="readOnly"
     @input="update"
   ></textarea>
 </template>

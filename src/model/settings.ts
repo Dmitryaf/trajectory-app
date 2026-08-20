@@ -18,7 +18,7 @@ import type {
 
 export const defaultSettings: AppSettings = {
   id: 'main',
-  settingsVersion: 13,
+  settingsVersion: 14,
   introSeen: false,
   firstUse: {
     status: 'not_started',
@@ -42,6 +42,7 @@ export const defaultSettings: AppSettings = {
   externalEvidenceCriterion: '',
   nutritionGoalCriterion: '',
   experiment: {
+    id: '',
     active: false,
     title: '',
     hypothesis: '',
@@ -187,12 +188,22 @@ function isFirstUseStep(value: unknown): value is FirstUseStep {
 
 function normalizeExperiment(value: unknown): Experiment {
   const source = value && typeof value === 'object' && !Array.isArray(value) ? (value as Partial<Experiment>) : {};
+  const active = typeof source.active === 'boolean' ? source.active : false;
+  const title = typeof source.title === 'string' ? source.title : '';
+  const startDate = validDate(source.startDate);
+  const endDate = validDate(source.endDate);
   const targetMetric = typeof source.targetMetric === 'string' ? source.targetMetric : '';
   const targetMetricId = isExperimentMetricId(source.targetMetricId) ? source.targetMetricId : legacyExperimentMetricId(targetMetric);
   const metricOption = experimentMetricOptions.find((option) => option.id === targetMetricId);
   return {
-    active: typeof source.active === 'boolean' ? source.active : false,
-    title: typeof source.title === 'string' ? source.title : '',
+    id:
+      typeof source.id === 'string' && source.id.trim()
+        ? source.id.trim()
+        : active && title.trim() && startDate && endDate
+          ? `legacy-active-${startDate}-${endDate}`
+          : '',
+    active,
+    title,
     hypothesis: typeof source.hypothesis === 'string' ? source.hypothesis : '',
     targetMetricId,
     targetMetric: metricOption?.label ?? targetMetric,
@@ -205,8 +216,8 @@ function normalizeExperiment(value: unknown): Experiment {
         : targetMetricId
           ? (metricOption?.defaultMinimumChange ?? null)
           : null,
-    startDate: validDate(source.startDate),
-    endDate: validDate(source.endDate),
+    startDate,
+    endDate,
     conclusion: typeof source.conclusion === 'string' ? source.conclusion : '',
     decision: isExperimentDecision(source.decision) ? source.decision : null,
   };

@@ -2,6 +2,7 @@ import { addDays, dateRange } from '../../services/dates';
 import { experimentMetricOptions, type DailyEntry, type ExperimentMetricId } from '../../types';
 
 type ExperimentPeriod = {
+  id?: string;
   startDate: string;
   endDate: string;
 };
@@ -38,7 +39,9 @@ export function buildExperimentSummary(entries: DailyEntry[], experiment: Experi
   const baselineStart = addDays(experiment.startDate, -plannedDays);
   const baselineEntries = ordinaryEntriesInRange(entries, baselineStart, baselineEnd);
   const experimentEntries = ordinaryEntriesInRange(entries, experiment.startDate, experiment.endDate);
-  const plannedExperimentEntries = entries.filter((entry) => entry.date >= experiment.startDate && entry.date <= experiment.endDate);
+  const plannedExperimentEntries = experiment.id
+    ? entries.filter((entry) => entry.experimentId === experiment.id)
+    : entries.filter((entry) => entry.date >= experiment.startDate && entry.date <= experiment.endDate);
   const markedDays = plannedExperimentEntries.filter((entry) => entry.experimentCompleted !== null);
 
   return {

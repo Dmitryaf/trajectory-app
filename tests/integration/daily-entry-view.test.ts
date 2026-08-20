@@ -3,7 +3,7 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import { describe, expect, it, vi } from 'vitest';
-import { notifySaved, notifyUnknownError } from '../../src/services/notifications';
+import { notifyError, notifySaved, notifyUnknownError } from '../../src/services/notifications';
 import CurrentGoalDialog from '../../src/features/daily-entry/ui/CurrentGoalDialog.vue';
 import { emptyDailyEntry, emptyWeeklyReview } from '../../src/types';
 import TodayView from '../../src/views/TodayView.vue';
@@ -171,7 +171,7 @@ describe('daily entry scenario', () => {
     expect(notifySaved).toHaveBeenCalledWith('День сохранён на устройстве');
     expect(saveEntry.mock.calls[0][0]).toMatchObject({
       date: '2026-07-21',
-      entrySchemaVersion: 3,
+      entrySchemaVersion: 4,
       activeDailyBlocksSnapshot: ['sleep', 'context', 'movement', 'nutrition'],
       bedtime: '23:40',
       wakeTime: '07:30',
@@ -192,6 +192,7 @@ describe('daily entry scenario', () => {
     const { pinia, store } = createStore();
     store.settings.experiment = {
       ...store.settings.experiment,
+      id: 'daily-experiment',
       active: true,
       title: 'Не читать новости после 22:00',
       startDate: '2026-07-20',
@@ -220,6 +221,7 @@ describe('daily entry scenario', () => {
 
     expect(saveEntry).toHaveBeenCalledWith(
       expect.objectContaining({
+        experimentId: 'daily-experiment',
         experimentCompleted: false,
         experimentNote: 'Заранее убрал телефон, но поздний звонок сбил план',
       }),
@@ -337,6 +339,35 @@ describe('daily entry scenario', () => {
     );
   });
 
+  it('does not label an existing historical entry with the current goal or nutrition criterion', async () => {
+    const { pinia, store } = createStore();
+    store.settings.activeFocusTitle = 'Новая текущая цель';
+    store.settings.focusOutcomeCriterion = 'Новый критерий результата';
+    store.settings.focusReviewDate = '2026-08-01';
+    store.settings.externalEvidenceCriterion = 'Новое внешнее подтверждение';
+    store.settings.nutritionGoalCriterion = 'Новый ориентир питания';
+    store.dailyEntries = [
+      {
+        ...emptyDailyEntry('2026-07-20'),
+        actionDirection: 'preparation',
+        recordedFields: ['actionDirection'],
+      },
+    ];
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+
+    await wrapper.get('[aria-label="Дата записи"]').setValue('2026-07-20');
+
+    const goalCard = wrapper.get('#goal-actions');
+    expect(goalCard.text()).toContain('Для этой записи цель не была сохранена.');
+    expect(goalCard.text()).not.toContain('Новая текущая цель');
+    expect(goalCard.text()).not.toContain('Новый критерий результата');
+    expect(goalCard.text()).not.toContain('Новое внешнее подтверждение');
+    expect(goalCard.find('.card-settings-link').exists()).toBe(false);
+    expect(wrapper.get('#nutrition').text()).not.toContain('Новый ориентир питания');
+  });
+
   it('shows context independently when the sleep block is hidden', () => {
     const { pinia, store } = createStore();
     store.settings.activeDailyBlocks = ['context'];
@@ -409,6 +440,83 @@ describe('daily entry scenario', () => {
     const restoredFact = restoredWrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Заметка дня');
     expect(restoredFact!.get('textarea').element).toHaveProperty('value', 'Черновик важной мысли');
     expect(restoredWrapper.text()).toContain('Восстановлены несохранённые изменения');
+  });
+
+  it('requires an explicit choice when a draft belongs to another saved entry version', async () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [
+      {
+        ...emptyDailyEntry('2026-07-21'),
+        importantFact: 'Более свежая сохранённая запись',
+        updatedAt: '2026-07-21T12:00:00.000Z',
+      },
+    ];
+    store.dailyEntryDrafts = [
+      {
+        date: '2026-07-21',
+        entry: {
+          ...emptyDailyEntry('2026-07-21'),
+          importantFact: 'Локальный черновик',
+          updatedAt: '2026-07-21T10:00:00.000Z',
+        },
+        updatedAt: '2026-07-21T11:00:00.000Z',
+      },
+    ];
+    const saveEntry = vi.spyOn(store, 'saveEntry').mockImplementation(async (entry) => entry);
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+
+    expect(wrapper.get('.draft-conflict-notice').text()).toContain('Черновик и сохранённая запись отличаются');
+    expect(wrapper.get('.form-card--daily-summary textarea').element).toHaveProperty('value', 'Локальный черновик');
+    expect(document.body.querySelector<HTMLButtonElement>('.floating-save-button')?.disabled).toBe(true);
+
+    await wrapper.get('form').trigger('submit');
+    expect(saveEntry).not.toHaveBeenCalled();
+    expect(notifyError).toHaveBeenCalledWith('Сначала выберите, какую версию записи оставить.');
+
+    const useDraft = wrapper.findAll('.draft-conflict-notice button').find((button) => button.text() === 'Продолжить с черновиком');
+    await useDraft!.trigger('click');
+    expect(wrapper.find('.draft-conflict-notice').exists()).toBe(false);
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(saveEntry).toHaveBeenCalledWith(expect.objectContaining({ importantFact: 'Локальный черновик' }));
+  });
+
+  it('can discard a conflicting draft and keep the saved entry', async () => {
+    const { pinia, store } = createStore();
+    store.dailyEntries = [
+      {
+        ...emptyDailyEntry('2026-07-21'),
+        importantFact: 'Сохранённая запись',
+        updatedAt: '2026-07-21T12:00:00.000Z',
+      },
+    ];
+    store.dailyEntryDrafts = [
+      {
+        date: '2026-07-21',
+        entry: {
+          ...emptyDailyEntry('2026-07-21'),
+          importantFact: 'Конфликтующий черновик',
+          updatedAt: '2026-07-21T10:00:00.000Z',
+        },
+        updatedAt: '2026-07-21T11:00:00.000Z',
+      },
+    ];
+    const removeDraft = vi.spyOn(store, 'removeDailyEntryDraft').mockImplementation(async (date) => {
+      store.dailyEntryDrafts = store.dailyEntryDrafts.filter((draft) => draft.date !== date);
+    });
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+
+    const keepSaved = wrapper.findAll('.draft-conflict-notice button').find((button) => button.text() === 'Оставить сохранённую');
+    await keepSaved!.trigger('click');
+    await flushPromises();
+
+    expect(removeDraft).toHaveBeenCalledWith('2026-07-21');
+    expect(wrapper.find('.draft-conflict-notice').exists()).toBe(false);
+    expect(wrapper.get('.form-card--daily-summary textarea').element).toHaveProperty('value', 'Сохранённая запись');
   });
 
   it('edits the current goal on Today without leaving or losing a dirty daily form', async () => {

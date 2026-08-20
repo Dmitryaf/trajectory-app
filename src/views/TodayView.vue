@@ -48,11 +48,13 @@ const {
   hasSavedEntry,
   isDirty,
   entryChangeNotice,
+  draftConflict,
   saveButtonText,
   saveButtonDisabled,
   blockIsActive,
   changeSelectedDate,
   selectDate,
+  resolveDraftConflict,
   save,
 } = useDailyEntryForm(store);
 
@@ -107,7 +109,20 @@ const firstUseTakesPriority = computed(
       store.settings.firstUse.status === 'in_progress' ||
       (firstUseEditRequested && store.settings.firstUse.status === 'completed')),
 );
-const hasSelectedFocus = computed(() => Boolean((form.focusTitle || store.settings.activeFocusTitle).trim()));
+const displayedFocusTitle = computed(() => (hasSavedEntry.value ? form.focusTitle : form.focusTitle || store.settings.activeFocusTitle));
+const displayedFocusOutcomeCriterion = computed(() =>
+  hasSavedEntry.value ? form.focusOutcomeCriterion : form.focusOutcomeCriterion || store.settings.focusOutcomeCriterion,
+);
+const displayedFocusReviewDate = computed(() =>
+  hasSavedEntry.value ? form.focusReviewDate : form.focusReviewDate || store.settings.focusReviewDate,
+);
+const displayedExternalEvidenceCriterion = computed(() =>
+  hasSavedEntry.value ? form.externalEvidenceCriterion : form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion,
+);
+const displayedNutritionCriterion = computed(() =>
+  hasSavedEntry.value ? form.nutritionCriterion : form.nutritionCriterion || store.settings.nutritionGoalCriterion,
+);
+const hasSelectedFocus = computed(() => Boolean(displayedFocusTitle.value.trim()));
 const currentGoalTitle = computed(() => store.settings.activeFocusTitle.trim());
 const hasRecordedGoalAction = computed(() => form.recordedFields.includes('actionDirection'));
 const showGoalActionChoices = computed(() => hasSelectedFocus.value || hasRecordedGoalAction.value);
@@ -302,7 +317,18 @@ async function removeCurrentGoal() {
       <RouterLink to="/settings#daily-blocks">Настроить главную →</RouterLink>
     </div>
 
-    <section v-if="!firstUseTakesPriority && entryChangeNotice" class="entry-change-notice" aria-live="polite">
+    <section v-if="!firstUseTakesPriority && draftConflict" class="entry-change-notice draft-conflict-notice" role="alert">
+      <div>
+        <strong>Черновик и сохранённая запись отличаются</strong>
+        <p>Выберите локальный черновик или другую сохранённую версию. До выбора запись нельзя сохранить.</p>
+      </div>
+      <div class="goal-dialog__actions">
+        <button class="secondary-button" type="button" @click="resolveDraftConflict(false)">Оставить сохранённую</button>
+        <button class="primary-button" type="button" @click="resolveDraftConflict(true)">Продолжить с черновиком</button>
+      </div>
+    </section>
+
+    <section v-else-if="!firstUseTakesPriority && entryChangeNotice" class="entry-change-notice" aria-live="polite">
       <div>
         <strong>{{ hasSavedEntry ? 'Изменения не сохранены' : 'Новая запись не сохранена' }}</strong>
         <p>{{ entryChangeNotice }}</p>
@@ -450,14 +476,20 @@ async function removeCurrentGoal() {
             <p>
               {{
                 hasSelectedFocus
-                  ? `Текущая цель: ${form.focusTitle || store.settings.activeFocusTitle}`
+                  ? `${hasSavedEntry ? 'Цель на эту дату' : 'Текущая цель'}: ${displayedFocusTitle}`
                   : hasRecordedGoalAction
                     ? 'Для этой записи цель не была сохранена.'
                     : 'Сначала выберите, над чем сейчас хотите работать.'
               }}
             </p>
           </div>
-          <button v-if="hasSelectedFocus" class="card-settings-link" type="button" aria-haspopup="dialog" @click="goalDialogOpen = true">
+          <button
+            v-if="hasSelectedFocus && !hasSavedEntry"
+            class="card-settings-link"
+            type="button"
+            aria-haspopup="dialog"
+            @click="goalDialogOpen = true"
+          >
             Настроить
           </button>
         </div>
@@ -491,34 +523,34 @@ async function removeCurrentGoal() {
             ></textarea>
           </template>
           <details
-            v-if="
-              form.focusOutcomeCriterion ||
-              store.settings.focusOutcomeCriterion ||
-              form.focusReviewDate ||
-              store.settings.focusReviewDate ||
-              form.externalEvidenceCriterion ||
-              store.settings.externalEvidenceCriterion
-            "
+            v-if="displayedFocusOutcomeCriterion || displayedFocusReviewDate || displayedExternalEvidenceCriterion"
             class="analysis-range goal-context-details"
           >
             <summary>Показать критерии цели</summary>
             <div class="analysis-range__content">
-              <p v-if="form.focusOutcomeCriterion || store.settings.focusOutcomeCriterion" class="form-context">
-                Как понять, что получилось: {{ form.focusOutcomeCriterion || store.settings.focusOutcomeCriterion }}
+              <p v-if="displayedFocusOutcomeCriterion" class="form-context">
+                Как понять, что получилось: {{ displayedFocusOutcomeCriterion }}
               </p>
-              <p v-if="form.focusReviewDate || store.settings.focusReviewDate" class="form-context">
+              <p v-if="displayedFocusReviewDate" class="form-context">
                 Проверить цель:
-                {{ formatDate(form.focusReviewDate || store.settings.focusReviewDate, { day: 'numeric', month: 'long', year: 'numeric' }) }}
+                {{ formatDate(displayedFocusReviewDate, { day: 'numeric', month: 'long', year: 'numeric' }) }}
               </p>
-              <p v-if="form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion" class="form-context">
-                Что считать шагом: {{ form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion }}
+              <p v-if="displayedExternalEvidenceCriterion" class="form-context">
+                Что считать шагом: {{ displayedExternalEvidenceCriterion }}
               </p>
             </div>
           </details>
         </template>
         <div v-else class="empty-block-note">
-          <p>После выбора цели здесь можно будет отмечать конкретные шаги, подготовку или дни, занятые другими делами.</p>
-          <button class="secondary-button context-action" type="button" aria-haspopup="dialog" @click="goalDialogOpen = true">
+          <p v-if="hasSavedEntry">Для этой даты цель не была сохранена. Текущие настройки не изменяют историю.</p>
+          <p v-else>После выбора цели здесь можно будет отмечать конкретные шаги, подготовку или дни, занятые другими делами.</p>
+          <button
+            v-if="!hasSavedEntry"
+            class="secondary-button context-action"
+            type="button"
+            aria-haspopup="dialog"
+            @click="goalDialogOpen = true"
+          >
             Выбрать цель
           </button>
         </div>
@@ -579,11 +611,7 @@ async function removeCurrentGoal() {
           <div>
             <h2>Питание</h2>
             <p>
-              {{
-                form.nutritionCriterion ||
-                store.settings.nutritionGoalCriterion ||
-                'Отметьте, как прошёл день относительно вашего ориентира в питании.'
-              }}
+              {{ displayedNutritionCriterion || 'Отметьте, как прошёл день относительно вашего ориентира в питании.' }}
             </p>
           </div>
           <RouterLink class="card-settings-link" to="/settings#nutrition-settings">Настроить</RouterLink>

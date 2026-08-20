@@ -33,6 +33,7 @@ describe('daily entry model', () => {
       focusReviewDate: '2026-08-01',
       externalEvidenceCriterion: ' Внешний результат ',
       nutritionCriterion: ' Обычный режим ',
+      experimentId: 'experiment-current',
       activeDailyBlocks: ['sleep', 'context', 'movement'] as DailyBlockId[],
     };
 
@@ -46,7 +47,8 @@ describe('daily entry model', () => {
       focusReviewDate: '2026-08-01',
       externalEvidenceCriterion: 'Внешний результат',
       nutritionCriterion: 'Обычный режим',
-      entrySchemaVersion: 3,
+      entrySchemaVersion: 4,
+      experimentId: 'experiment-current',
       activeDailyBlocksSnapshot: ['sleep', 'context', 'movement'],
     });
     expect(source.focusTitle).toBe('');

@@ -6,6 +6,7 @@ import { copyText, downloadJson } from '../export/browser';
 import { buildAiReportCustomRangePayload, buildAiReportPayload, buildAiReportPrompt, type AiReportPeriod } from '../export/report';
 import {
   createExperimentRecord,
+  createExperimentId,
   emptyExperiment,
   experimentDecisionOptions,
   experimentPeriodsOverlap,
@@ -94,6 +95,15 @@ export function useSettingsForm() {
   });
   const cloudStatusText = computed(() => store.cloudSyncMessage || 'Синхронизация готова.');
   const experimentCanConclude = computed(() => Boolean(settings.experiment.endDate && settings.experiment.endDate <= todayKey()));
+  const experimentIdentityLocked = computed(() => {
+    const saved = store.settings.experiment;
+    return Boolean(saved.active && saved.id && store.dailyEntries.some((entry) => entry.experimentId === saved.id));
+  });
+  const experimentSaveLabel = computed(() => {
+    if (isSaving('experiment')) return 'Сохраняю…';
+    const saved = store.settings.experiment;
+    return experimentIdentityLocked.value && settings.experiment.endDate > saved.endDate ? 'Продлить эксперимент' : 'Сохранить настройки';
+  });
 
   function isSaving(action: string) {
     return savingActions.has(action);
@@ -120,9 +130,23 @@ export function useSettingsForm() {
     });
   }
 
+  function validateStartedExperimentChange(experiment: AppSettings['experiment']): string {
+    if (!experimentIdentityLocked.value) return '';
+    const saved = store.settings.experiment;
+    if (experiment.id !== saved.id || experiment.title.trim() !== saved.title.trim() || experiment.startDate !== saved.startDate) {
+      return 'После первой записи условие и дату начала нельзя менять. Завершите этот эксперимент и создайте новый.';
+    }
+    if (experiment.endDate < saved.endDate) {
+      return 'Начавшийся эксперимент можно только продлить. Уже сохранённые дни останутся в текущем периоде.';
+    }
+    return '';
+  }
+
   async function saveExperiment() {
     if (isSaving('experiment')) return;
-    const experiment = settings.experiment;
+    const nextSettings = plainCopy(settings);
+    const experiment = nextSettings.experiment;
+    if (experiment.active && !experiment.id) experiment.id = createExperimentId();
     const lengthError = validateExperimentTextLengths(experiment);
     if (lengthError) {
       notifyError(lengthError);
@@ -140,16 +164,26 @@ export function useSettingsForm() {
       notifyError('Дата окончания эксперимента должна быть не раньше даты начала');
       return;
     }
+    const identityError = validateStartedExperimentChange(experiment);
+    if (identityError) {
+      notifyError(identityError);
+      return;
+    }
     if (experiment.active && settings.experimentHistory.some((record) => experimentPeriodsOverlap(experiment, record))) {
       notifyError('Период пересекается с завершённым экспериментом');
       return;
     }
-    await save('Эксперимент сохранён', 'experiment');
+    const extending = experimentIdentityLocked.value && experiment.endDate > store.settings.experiment.endDate;
+    if (await save(extending ? 'Эксперимент продлён' : 'Эксперимент сохранён', 'experiment', nextSettings)) {
+      Object.assign(settings, nextSettings);
+    }
   }
 
   async function completeExperiment() {
     if (isSaving('experiment')) return;
-    const experiment = settings.experiment;
+    const nextSettings = plainCopy(settings);
+    const experiment = nextSettings.experiment;
+    if (!experiment.id) experiment.id = createExperimentId();
     const lengthError = validateExperimentTextLengths(experiment);
     if (lengthError) {
       notifyError(lengthError);
@@ -161,6 +195,11 @@ export function useSettingsForm() {
     }
     if (experiment.startDate > experiment.endDate) {
       notifyError('Дата окончания эксперимента должна быть не раньше даты начала');
+      return;
+    }
+    const identityError = validateStartedExperimentChange(experiment);
+    if (identityError) {
+      notifyError(identityError);
       return;
     }
     if (!experimentCanConclude.value) {
@@ -175,7 +214,6 @@ export function useSettingsForm() {
       notifyError('Период пересекается с завершённым экспериментом');
       return;
     }
-    const nextSettings = plainCopy(settings);
     nextSettings.experimentHistory.unshift(createExperimentRecord(experiment));
     nextSettings.experiment = emptyExperiment();
     if (await save('Эксперимент добавлен в историю', 'experiment', nextSettings)) {
@@ -568,6 +606,8 @@ export function useSettingsForm() {
     cloudStatusTitle,
     cloudStatusText,
     experimentCanConclude,
+    experimentIdentityLocked,
+    experimentSaveLabel,
     isSaving,
     save,
     saveExperiment,

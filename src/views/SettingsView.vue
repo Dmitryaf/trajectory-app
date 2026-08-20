@@ -91,6 +91,8 @@ const {
   cloudStatusTitle,
   cloudStatusText,
   experimentCanConclude,
+  experimentIdentityLocked,
+  experimentSaveLabel,
   isSaving,
   save,
   saveExperiment,
@@ -467,8 +469,12 @@ const {
           v-model="settings.experiment.title"
           :rows="5"
           :max-length="experimentTextLimits.title"
+          :read-only="experimentIdentityLocked"
           placeholder="Не читать новости после 22:00"
         />
+        <p v-if="experimentIdentityLocked" class="field-hint">
+          Условие и дата начала зафиксированы после первой дневной записи. Дату окончания можно продлить.
+        </p>
         <label class="field-label" for="experiment-hypothesis">Что хотите узнать <span class="field-optional">необязательно</span></label>
         <AutoGrowTextarea
           id="experiment-hypothesis"
@@ -479,14 +485,21 @@ const {
         />
         <div class="form-row">
           <label class="form-control"
-            ><span class="field-label">С какого дня</span><input v-model="settings.experiment.startDate" type="date"
+            ><span class="field-label">С какого дня</span
+            ><input v-model="settings.experiment.startDate" type="date" :disabled="experimentIdentityLocked"
           /></label>
           <label class="form-control"
-            ><span class="field-label">До какого дня</span><input v-model="settings.experiment.endDate" type="date"
+            ><span class="field-label">До какого дня</span
+            ><input
+              v-model="settings.experiment.endDate"
+              type="date"
+              :min="experimentIdentityLocked ? store.settings.experiment.endDate : undefined"
           /></label>
         </div>
-        <template v-if="experimentCanConclude">
-          <label class="field-label" for="experiment-conclusion">Что вы заметили?</label>
+        <template v-if="experimentCanConclude || settings.experiment.conclusion.trim()">
+          <label class="field-label" for="experiment-conclusion">
+            {{ experimentCanConclude ? 'Что вы заметили?' : 'Промежуточное наблюдение' }}
+          </label>
           <AutoGrowTextarea
             id="experiment-conclusion"
             v-model="settings.experiment.conclusion"
@@ -494,14 +507,17 @@ const {
             :max-length="experimentTextLimits.conclusion"
             placeholder="Опиши наблюдения своими словами. Совпадение показателей не обязательно означает влияние эксперимента."
           />
-          <label class="field-label">Что хотите делать дальше? <span class="field-optional">необязательно</span></label>
+          <label class="field-label">
+            {{ experimentCanConclude ? 'Что хотите делать дальше?' : 'Ранее выбранное решение' }}
+            <span class="field-optional">необязательно</span>
+          </label>
           <ChipGroup v-model="settings.experiment.decision" :options="experimentDecisionOptions" allow-clear />
         </template>
         <p v-else-if="settings.experiment.endDate" class="field-hint">
           После последнего дня здесь можно записать, что вы заметили. Завершённый эксперимент появится в разделе «История».
         </p>
         <button class="primary-button" type="button" :disabled="isSaving('experiment')" @click="saveExperiment">
-          {{ isSaving('experiment') ? 'Сохраняю…' : 'Сохранить настройки' }}
+          {{ experimentSaveLabel }}
         </button>
         <button
           v-if="experimentCanConclude"

@@ -7,7 +7,7 @@ import ChipGroup from '../shared/ui/forms/ChipGroup.vue';
 import { archiveRangeFromQuery } from '../features/journal/archiveQuery';
 import { useArchiveList } from '../features/journal/useArchiveList';
 import { formatDate, todayKey } from '../services/dates';
-import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
+import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { useAppStore } from '../stores/app';
 import { resultAreaOptions, type ResultRecord } from '../types';
 
@@ -46,6 +46,10 @@ const {
 async function saveResult() {
   const clean = title.value.trim();
   if (!clean) return;
+  if (!date.value) {
+    notifyError('Укажите дату итога');
+    return;
+  }
   saving.value = true;
   const wasEditing = editingId.value !== null;
   try {
@@ -150,8 +154,8 @@ function toggleNote(result: ResultRecord) {
           placeholder="Что вы сделали или какой результат получили"
           @keyup.enter="saveResult"
         />
-        <input v-model="date" class="date-input" type="date" aria-label="Дата итога" />
-        <button class="primary-button" type="button" :disabled="!title.trim() || saving" @click="saveResult">
+        <input v-model="date" class="date-input" type="date" required aria-label="Дата итога" />
+        <button class="primary-button" type="button" :disabled="!title.trim() || !date || saving" @click="saveResult">
           {{ editingId === null ? 'Добавить итог' : 'Сохранить итог' }}
         </button>
       </div>

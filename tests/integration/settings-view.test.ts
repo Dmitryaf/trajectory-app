@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { loadCloudSnapshot, markCloudSyncSynced } from '../../src/services/cloudSync';
 import { notifyError, notifySaved, notifyUnknownError } from '../../src/services/notifications';
 import { useAuthStore } from '../../src/stores/auth';
+import { emptyDailyEntry } from '../../src/types';
 import SettingsView from '../../src/views/SettingsView.vue';
 import { createStore } from '../helpers/viewScenario';
 
@@ -421,6 +422,7 @@ describe('settings scenarios', () => {
     expect(saveSettings).toHaveBeenCalledWith(
       expect.objectContaining({
         experiment: expect.objectContaining({
+          id: expect.stringMatching(/^experiment-/),
           title: experimentTitle,
           targetMetricId: null,
           minimumMeaningfulChange: null,
@@ -442,5 +444,51 @@ describe('settings scenarios', () => {
         experimentHistory: [expect.objectContaining({ title: experimentTitle, conclusion: 'Вечером было спокойнее' })],
       }),
     );
+  });
+
+  it('keeps a started experiment identity stable and allows only extending its end date', async () => {
+    const { pinia, store } = createStore();
+    store.settings.experiment = {
+      ...store.settings.experiment,
+      id: 'started-experiment',
+      active: true,
+      title: 'Начинать важное действие сразу',
+      startDate: '2026-07-15',
+      endDate: '2026-07-21',
+    };
+    store.dailyEntries = [
+      {
+        ...emptyDailyEntry('2026-07-20'),
+        experimentId: 'started-experiment',
+        experimentCompleted: true,
+      },
+    ];
+    const saveSettings = vi.spyOn(store, 'saveSettings').mockImplementation(async (nextSettings) => {
+      store.settings = structuredClone(nextSettings);
+    });
+    const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
+    const card = wrapper.get('.settings-card--experiment');
+    const dates = card.findAll('input[type="date"]');
+
+    expect(card.get('#experiment-title').attributes('readonly')).toBeDefined();
+    expect(dates[0]!.attributes('disabled')).toBeDefined();
+    expect(dates[1]!.attributes('min')).toBe('2026-07-21');
+
+    await dates[1]!.setValue('2026-07-20');
+    await card.get('.primary-button').trigger('click');
+    expect(notifyError).toHaveBeenCalledWith(
+      'Начавшийся эксперимент можно только продлить. Уже сохранённые дни останутся в текущем периоде.',
+    );
+    expect(saveSettings).not.toHaveBeenCalled();
+
+    await dates[1]!.setValue('2026-07-28');
+    expect(card.get('.primary-button').text()).toBe('Продлить эксперимент');
+    await card.get('.primary-button').trigger('click');
+    await flushPromises();
+
+    expect(saveSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ experiment: expect.objectContaining({ id: 'started-experiment', endDate: '2026-07-28' }) }),
+    );
+    expect(notifySaved).toHaveBeenCalledWith('Эксперимент продлён');
   });
 });
