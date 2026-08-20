@@ -15,7 +15,6 @@ describe('PWA install suggestion', () => {
   it('appears only after repeated use and outside standalone mode', () => {
     const base = {
       platform: 'ios' as const,
-      promptAvailable: false,
       dismissedUntil: 0,
       now: 1_000,
     };
@@ -23,9 +22,7 @@ describe('PWA install suggestion', () => {
     expect(shouldShowPwaInstallNudge({ ...base, savedEntryCount: 1, installed: false })).toBe(false);
     expect(shouldShowPwaInstallNudge({ ...base, savedEntryCount: 2, installed: false })).toBe(true);
     expect(shouldShowPwaInstallNudge({ ...base, savedEntryCount: 2, installed: true })).toBe(false);
-    expect(shouldShowPwaInstallNudge({ ...base, savedEntryCount: 2, installed: false, platform: 'other', promptAvailable: false })).toBe(
-      false,
-    );
+    expect(shouldShowPwaInstallNudge({ ...base, savedEntryCount: 2, installed: false, platform: 'other' })).toBe(false);
   });
 
   it('postpones the suggestion for thirty days', () => {
@@ -40,7 +37,6 @@ describe('PWA install suggestion', () => {
         savedEntryCount: 2,
         installed: false,
         platform: 'ios',
-        promptAvailable: false,
         dismissedUntil,
         now: dismissedUntil - 1,
       }),

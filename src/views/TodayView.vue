@@ -649,16 +649,7 @@ async function removeCurrentGoal() {
           <div>
             <label class="field-label" for="weight-kg">Вес</label>
             <div class="number-field">
-              <input
-                id="weight-kg"
-                v-model.number="weightKg"
-                type="number"
-                min="30"
-                max="250"
-                step="0.1"
-                inputmode="decimal"
-                placeholder="82.4"
-              />
+              <input id="weight-kg" v-model="weightKg" type="text" inputmode="decimal" autocomplete="off" placeholder="82.4" />
               <span>кг</span>
             </div>
           </div>

@@ -28,7 +28,7 @@ async function install() {
 </script>
 
 <template>
-  <details class="analysis-range" :open="open">
+  <details v-if="pwaPlatform !== 'other'" class="analysis-range" :open="open">
     <summary>{{ summary }}</summary>
     <div class="analysis-range__content">
       <div v-if="pwaInstalled" class="cloud-sync-note" role="status">

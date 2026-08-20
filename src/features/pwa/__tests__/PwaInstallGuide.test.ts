@@ -1,10 +1,14 @@
 // @vitest-environment happy-dom
 
 import { flushPromises, mount } from '@vue/test-utils';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PwaInstallGuide from '../ui/PwaInstallGuide.vue';
 
 describe('PwaInstallGuide', () => {
+  beforeEach(() => {
+    Object.defineProperty(window.navigator, 'userAgent', { configurable: true, value: 'Mozilla/5.0 (iPhone)' });
+  });
+
   it('keeps one honest guide for browser installation, iOS fallback and removal', async () => {
     const wrapper = mount(PwaInstallGuide, { props: { open: true }, attachTo: document.body });
 

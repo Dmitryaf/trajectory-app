@@ -7,6 +7,7 @@ import { emptyDailyEntry, experimentAppliesToDate, type DailyBlockId, type Daily
 import type { useAppStore } from '../../stores/app';
 import {
   prepareDailyEntryForSave,
+  normalizeWeight,
   snapshotDailyEntry,
   timeBetween,
   validateDailyEntryMetrics,
@@ -20,7 +21,7 @@ export function useDailyEntryForm(store: AppStore) {
   const selectedDate = ref(todayKey());
   const sleepDurationMinutes = ref<number | null>(null);
   const timeInBedDurationMinutes = ref<number | null>(null);
-  const weightKg = ref<number | null>(null);
+  const weightKg = ref('');
   const saved = ref(false);
   const saving = ref(false);
   const draftStatus = ref<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -75,7 +76,7 @@ export function useDailyEntryForm(store: AppStore) {
     Object.assign(form, plainCopy(entry));
     sleepDurationMinutes.value = entry.sleepMinutes;
     timeInBedDurationMinutes.value = entry.timeInBedMinutes;
-    weightKg.value = entry.weightKg;
+    weightKg.value = entry.weightKg === null ? '' : String(entry.weightKg);
     syncingEntry = false;
     lastDerivedTimeInBed = null;
   }
@@ -85,7 +86,7 @@ export function useDailyEntryForm(store: AppStore) {
       ...form,
       sleepMinutes: sleepDurationMinutes.value,
       timeInBedMinutes: timeInBedDurationMinutes.value,
-      weightKg: weightKg.value,
+      weightKg: normalizeWeight(weightKg.value),
     });
   }
 

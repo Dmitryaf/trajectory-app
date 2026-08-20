@@ -5,7 +5,7 @@ import { experimentTextLimits } from '../experiments/model';
 export type DailyEntryMetrics = {
   sleepMinutes: number | null;
   timeInBedMinutes: number | null;
-  weightKg: number | null;
+  weightKg: number | string | null;
 };
 
 export type DailyEntryDefaults = {
@@ -29,14 +29,26 @@ export function timeBetween(start: string, end: string): number | null {
 }
 
 export function normalizeWeight(value: unknown): number | null {
-  return typeof value === 'number' && Number.isFinite(value) ? Math.round(value * 10) / 10 : null;
+  const numericValue =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string' && /^\d+(?:[.,]\d+)?$/.test(value.trim())
+        ? Number(value.trim().replace(',', '.'))
+        : Number.NaN;
+  return Number.isFinite(numericValue) ? Math.round(numericValue * 10) / 10 : null;
+}
+
+function weightSnapshotValue(value: DailyEntryMetrics['weightKg']): number | string | null {
+  const normalized = normalizeWeight(value);
+  if (normalized !== null) return normalized;
+  return typeof value === 'string' && value.trim() ? `invalid:${value.trim()}` : null;
 }
 
 export function snapshotDailyEntry(entry: DailyEntry, metrics: DailyEntryMetrics): string {
   return JSON.stringify({
     ...plainCopy(entry),
     ...metrics,
-    weightKg: normalizeWeight(metrics.weightKg),
+    weightKg: weightSnapshotValue(metrics.weightKg),
     updatedAt: '',
   });
 }
@@ -65,6 +77,13 @@ export function prepareDailyEntryForSave(
 }
 
 export function validateDailyEntryMetrics(metrics: DailyEntryMetrics, sleepBlockActive: boolean): string {
+  const normalizedWeight = normalizeWeight(metrics.weightKg);
+  if (typeof metrics.weightKg === 'string' && metrics.weightKg.trim() && normalizedWeight === null) {
+    return 'Введите вес числом, например 88,2.';
+  }
+  if (normalizedWeight !== null && (normalizedWeight < 30 || normalizedWeight > 250)) {
+    return 'Укажите вес от 30 до 250 кг.';
+  }
   if (
     sleepBlockActive &&
     metrics.sleepMinutes !== null &&

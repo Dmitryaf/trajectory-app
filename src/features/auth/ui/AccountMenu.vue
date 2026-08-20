@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
+import { pwaPlatform } from '../../pwa/installation';
 
 const props = defineProps<{
   email: string;
@@ -33,7 +34,7 @@ function signOut() {
       <RouterLink to="/settings" class="account-menu__action" @click="close">
         <span aria-hidden="true">⚙</span><strong>Настройки</strong>
       </RouterLink>
-      <RouterLink to="/settings#install-settings" class="account-menu__action" @click="close">
+      <RouterLink v-if="pwaPlatform !== 'other'" to="/settings#install-settings" class="account-menu__action" @click="close">
         <span aria-hidden="true">⌂</span><strong>Установить приложение</strong>
       </RouterLink>
       <button class="account-menu__action account-menu__logout" type="button" :disabled="loading" @click="signOut">
