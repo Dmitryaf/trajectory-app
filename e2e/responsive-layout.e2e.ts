@@ -275,9 +275,9 @@ test('switches settings scenarios with the keyboard on a mobile screen', async (
     expect(cloudActionsBox!.y - (cloudStatusBox!.y + cloudStatusBox!.height)).toBeGreaterThanOrEqual(10);
   }
 
-  await page.locator('.analysis-range > summary').click();
-  const rangeFieldsBox = await page.locator('.analysis-range .form-row').boundingBox();
-  const rangeActionsBox = await page.locator('.analysis-range .ai-actions').boundingBox();
+  await page.locator('#analysis-settings .analysis-range > summary').click();
+  const rangeFieldsBox = await page.locator('#analysis-settings .analysis-range .form-row').boundingBox();
+  const rangeActionsBox = await page.locator('#analysis-settings .analysis-range .ai-actions').boundingBox();
   expect(rangeFieldsBox).not.toBeNull();
   expect(rangeActionsBox).not.toBeNull();
   expect(rangeActionsBox!.y - (rangeFieldsBox!.y + rangeFieldsBox!.height)).toBeGreaterThanOrEqual(10);

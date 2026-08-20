@@ -3,6 +3,7 @@ import { createPinia } from 'pinia';
 import { createRouter, createWebHistory } from 'vue-router';
 import { registerSW } from 'virtual:pwa-register';
 import App from './App.vue';
+import { initPwaInstallation } from './features/pwa/installation';
 import './style.css';
 
 const preloadRecoveryKey = 'trajectory:preload-recovery';
@@ -14,6 +15,7 @@ window.addEventListener('vite:preloadError', (event) => {
   window.location.reload();
 });
 
+initPwaInstallation();
 registerSW({ immediate: true });
 
 const router = createRouter({

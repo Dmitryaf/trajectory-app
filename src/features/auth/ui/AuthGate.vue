@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, ref } from 'vue';
 import { recordFirstUseEvent } from '../../first-use/funnel';
 import PasswordField from '../../../shared/ui/forms/PasswordField.vue';
+import PwaInstallGuide from '../../pwa/ui/PwaInstallGuide.vue';
 import { useAuthStore } from '../../../stores/auth';
 
 type PreviewLevelId = 'today' | 'journal' | 'week' | 'month';
@@ -360,6 +361,7 @@ async function requestPasswordReset() {
         >
           {{ status || auth.error || auth.notice }}
         </p>
+        <PwaInstallGuide />
       </article>
     </div>
   </section>

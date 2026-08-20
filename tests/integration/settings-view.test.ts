@@ -414,7 +414,7 @@ describe('settings scenarios', () => {
 
     await start.setValue('2026-07-10');
     await end.setValue('2026-07-09');
-    await wrapper.get('.analysis-range').findAll('button')[0]!.trigger('click');
+    await wrapper.get('#analysis-settings .analysis-range').findAll('button')[0]!.trigger('click');
 
     expect(notifyError).toHaveBeenCalledWith('Начало периода должно быть не позже окончания');
   });

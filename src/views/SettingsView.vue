@@ -2,6 +2,7 @@
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
 import PasswordField from '../shared/ui/forms/PasswordField.vue';
+import PwaInstallGuide from '../features/pwa/ui/PwaInstallGuide.vue';
 import { useSettingsForm } from '../features/settings/useSettingsForm';
 import type { DailyBlockId, LifeAreaId } from '../types';
 
@@ -23,7 +24,7 @@ const dailySectionHashes = new Set([
   'work-settings',
   'nutrition-settings',
 ]);
-const dataSectionHashes = new Set(['data-settings', 'backup-settings', 'cloud-settings', 'analysis-settings']);
+const dataSectionHashes = new Set(['data-settings', 'install-settings', 'backup-settings', 'cloud-settings', 'analysis-settings']);
 const activeSettingsGroup = ref<SettingsGroup>('daily');
 const passwordRecoveryRequested = new URLSearchParams(window.location.search).get('password-recovery') === '1';
 
@@ -543,6 +544,17 @@ const {
       :style="settingsGroupStyle"
       aria-label="Данные и синхронизация"
     >
+      <article id="install-settings" class="settings-card settings-card--backup">
+        <div class="form-card__heading">
+          <span class="section-icon section-icon--blue">⌂</span>
+          <div>
+            <h2>Установка на телефон</h2>
+            <p>Добавьте «Траекторию» на домашний экран и открывайте её как отдельное приложение.</p>
+          </div>
+        </div>
+        <PwaInstallGuide open />
+      </article>
+
       <article id="backup-settings" class="settings-card settings-card--backup">
         <div class="form-card__heading">
           <span class="section-icon section-icon--blue">↓</span>

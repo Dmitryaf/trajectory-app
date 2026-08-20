@@ -28,7 +28,7 @@ export default defineConfig({
     },
     {
       name: 'mobile-webkit',
-      testMatch: ['**/daily-entry.e2e.ts', '**/first-use-recovery.e2e.ts', '**/storage-protection.e2e.ts'],
+      testMatch: ['**/daily-entry.e2e.ts', '**/first-use-recovery.e2e.ts', '**/pwa-installation.e2e.ts', '**/storage-protection.e2e.ts'],
       use: { ...devices['iPhone 13'] },
     },
   ],
