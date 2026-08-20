@@ -14,7 +14,8 @@ test.beforeEach(async ({ page }) => {
 });
 
 async function expectTodayScreenshot(page: Page, name: string) {
-  await expect(page).toHaveScreenshot(name, {
+  const platformSnapshotName = name.replace(/\.png$/, `-${process.platform}.png`);
+  await expect.soft(page).toHaveScreenshot(platformSnapshotName, {
     animations: 'disabled',
     caret: 'hide',
     maxDiffPixelRatio: 0.03,
