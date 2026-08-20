@@ -4,9 +4,10 @@ import { RouterLink } from 'vue-router';
 
 <template>
   <section class="page" aria-labelledby="not-found-title">
-    <article class="form-card">
+    <article class="form-card not-found-card">
       <p class="eyebrow">Страница не найдена</p>
       <h1 id="not-found-title">Такой страницы нет</h1>
+      <p>Возможно, адрес устарел или был скопирован не полностью.</p>
       <RouterLink class="primary-button" to="/">Перейти к «Сегодня»</RouterLink>
     </article>
   </section>

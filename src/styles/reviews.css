@@ -228,6 +228,9 @@
   background: #e4f5ee;
   color: #26654f;
 }
+.review-plan-field {
+  min-height: 88px;
+}
 
 .period-details {
   margin-bottom: 16px;

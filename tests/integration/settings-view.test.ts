@@ -31,7 +31,7 @@ describe('settings scenarios', () => {
     const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
     const tabs = wrapper.findAll('[aria-label="Разделы настроек"] button');
 
-    expect(tabs.map((tab) => tab.text())).toEqual(['Ежедневная запись', 'Эксперимент', 'Данные и синхронизация', 'Аккаунт и безопасность']);
+    expect(tabs.map((tab) => tab.text())).toEqual(['Ежедневная запись', 'Эксперимент', 'Установка и данные', 'Аккаунт и безопасность']);
     expect(wrapper.findAll('.settings-group')).toHaveLength(4);
     expect(wrapper.get('#daily-settings').attributes('style')).toContain('animation: page-in 0.25s ease-out');
     expect(wrapper.get('#daily-settings').attributes('style')).not.toContain('display: none');

@@ -5,6 +5,7 @@ import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
 import PeriodRecordCard from '../features/reviews/ui/PeriodRecordCard.vue';
 import WeeklyReviewJournalLinks from '../features/reviews/ui/WeeklyReviewJournalLinks.vue';
 import WeeklyReviewOverview from '../features/reviews/ui/WeeklyReviewOverview.vue';
+import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
 import PeriodNavigator from '../shared/ui/navigation/PeriodNavigator.vue';
 import {
   actionDirectionLabel,
@@ -520,11 +521,11 @@ function downloadJson() {
             <p v-if="previousReview.ifThenPlan"><strong>План:</strong> {{ previousReview.ifThenPlan }}</p>
           </div>
           <label class="field-label">Что получилось с этим решением?</label
-          ><textarea
+          ><AutoGrowTextarea
             v-model="review.previousPlanOutcome"
-            rows="2"
+            :rows="2"
             placeholder="Сработало, не сработало или данных пока недостаточно — и почему"
-          ></textarea>
+          />
         </template>
         <details class="period-details review-context-details" :open="reviewContextOpen" @toggle="updateReviewContextOpen">
           <summary>{{ reviewHasContext ? 'Итоги и контекст' : 'Добавить итоги и контекст' }}</summary>
@@ -546,21 +547,22 @@ function downloadJson() {
               :placeholder="`${index + 1}. Что важно запомнить`"
             />
             <label class="field-label">Как вы себя чувствовали и что влияло на неделю?</label>
-            <textarea v-model="review.stateContext" rows="2" placeholder="Силы, настроение и важные обстоятельства"></textarea>
+            <AutoGrowTextarea v-model="review.stateContext" :rows="2" placeholder="Силы, настроение и важные обстоятельства" />
             <label class="field-label">Что помогало?</label
-            ><textarea v-model="review.support" rows="2" placeholder="Люди, режим, место, привычка или решение"></textarea>
+            ><AutoGrowTextarea v-model="review.support" :rows="2" placeholder="Люди, режим, место, привычка или решение" />
             <label class="field-label">Что мешало сильнее всего?</label
-            ><textarea v-model="review.obstacle" rows="2" placeholder="Один главный фактор"></textarea>
+            ><AutoGrowTextarea v-model="review.obstacle" :rows="2" placeholder="Один главный фактор" />
           </div>
         </details>
         <label class="field-label">Что продолжить или изменить на следующей неделе?</label
-        ><textarea v-model="review.nextLever" rows="2" placeholder="Можно продолжить как есть или пока ничего не решать"></textarea>
+        ><AutoGrowTextarea v-model="review.nextLever" :rows="2" placeholder="Можно продолжить как есть или пока ничего не решать" />
         <label class="field-label">План если-то</label
-        ><textarea
+        ><AutoGrowTextarea
           v-model="review.ifThenPlan"
-          rows="2"
+          class="review-plan-field"
+          :rows="2"
           placeholder="Если снова появится главное препятствие, то я сделаю конкретное действие"
-        ></textarea>
+        />
         <button class="primary-button" type="button" :disabled="reviewSaving" @click="saveReview">
           {{ reviewSaving ? 'Сохраняю…' : 'Сохранить обзор' }}
         </button>

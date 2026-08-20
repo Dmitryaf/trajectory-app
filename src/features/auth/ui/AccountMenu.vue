@@ -33,6 +33,9 @@ function signOut() {
       <RouterLink to="/settings" class="account-menu__action" @click="close">
         <span aria-hidden="true">⚙</span><strong>Настройки</strong>
       </RouterLink>
+      <RouterLink to="/settings#install-settings" class="account-menu__action" @click="close">
+        <span aria-hidden="true">⌂</span><strong>Установить приложение</strong>
+      </RouterLink>
       <button class="account-menu__action account-menu__logout" type="button" :disabled="loading" @click="signOut">
         <span aria-hidden="true">↪</span><strong>Выйти</strong>
       </button>

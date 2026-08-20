@@ -5,6 +5,7 @@ import type { EChartsCoreOption } from 'echarts/core';
 import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
 import PeriodRecordCard from '../features/reviews/ui/PeriodRecordCard.vue';
 import EChartPanel from '../shared/ui/charts/EChartPanel.vue';
+import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
 import PeriodNavigator from '../shared/ui/navigation/PeriodNavigator.vue';
 import {
   actionDirectionLabel,
@@ -456,21 +457,21 @@ function shiftMonth(offset: number) {
           <summary>{{ reviewHasContext ? 'Разбор месяца' : 'Добавить разбор месяца' }}</summary>
           <div class="period-details__content">
             <label class="field-label">Что чаще всего повторялось?</label
-            ><textarea v-model="review.mainPattern" rows="2" placeholder="Повторяющееся действие, состояние или условие"></textarea>
+            ><AutoGrowTextarea v-model="review.mainPattern" :rows="2" placeholder="Повторяющееся действие, состояние или условие" />
             <label class="field-label">Что поддерживало?</label
-            ><textarea v-model="review.support" rows="2" placeholder="Условия, решения или люди, которые помогали"></textarea>
+            ><AutoGrowTextarea v-model="review.support" :rows="2" placeholder="Условия, решения или люди, которые помогали" />
             <label class="field-label">Что мешало сильнее всего?</label
-            ><textarea v-model="review.obstacle" rows="2" placeholder="Один главный повторяющийся фактор"></textarea>
+            ><AutoGrowTextarea v-model="review.obstacle" :rows="2" placeholder="Один главный повторяющийся фактор" />
             <label class="field-label">Что изменило месяц?</label
-            ><textarea
+            ><AutoGrowTextarea
               v-model="review.courseChange"
-              rows="2"
+              :rows="2"
               placeholder="Событие, решение или итог, после которого данные стали выглядеть иначе"
-            ></textarea>
+            />
           </div>
         </details>
         <label class="field-label">Главное направление следующего месяца</label
-        ><textarea v-model="review.nextFocus" rows="2" placeholder="Что стоит продолжить, изменить или проверить"></textarea>
+        ><AutoGrowTextarea v-model="review.nextFocus" :rows="2" placeholder="Что стоит продолжить, изменить или проверить" />
         <button class="primary-button" type="button" :disabled="reviewSaving" @click="saveReview">
           {{ reviewSaving ? 'Сохраняю…' : 'Сохранить итог месяца' }}
         </button>
@@ -582,7 +583,7 @@ function shiftMonth(offset: number) {
         </div>
       </details>
 
-      <details v-if="hasDailyData" class="period-details period-records">
+      <details v-if="actionNotes.length || contextEntries.length" class="period-details period-records">
         <summary>Показать действия и дополнительный контекст</summary>
         <div class="period-details__content period-records__content">
           <details v-if="actionNotes.length" class="period-record-card period-record-card--disclosure">

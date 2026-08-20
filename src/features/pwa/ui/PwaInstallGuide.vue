@@ -42,19 +42,25 @@ async function install() {
         </button>
         <p v-if="installStatus" class="settings-status" role="status">{{ installStatus }}</p>
 
-        <h3 :class="{ eyebrow: pwaPlatform === 'android' }">Android</h3>
-        <ol>
-          <li>Откройте сайт в Chrome.</li>
-          <li>Откройте меню браузера и выберите «Установить приложение» или «Добавить на главный экран».</li>
-          <li>Подтвердите установку и запускайте «Траекторию» по новому значку.</li>
-        </ol>
+        <div class="install-platforms">
+          <section class="install-platform" :class="{ 'install-platform--current': pwaPlatform === 'android' }">
+            <h3>Android</h3>
+            <ol>
+              <li>Откройте сайт в Chrome.</li>
+              <li>В меню браузера выберите «Установить приложение» или «Добавить на главный экран».</li>
+              <li>Подтвердите установку.</li>
+            </ol>
+          </section>
 
-        <h3 :class="{ eyebrow: pwaPlatform === 'ios' }">iPhone и iPad</h3>
-        <ol>
-          <li>Откройте сайт именно в Safari.</li>
-          <li>Нажмите «Поделиться» — иногда сначала нужно нажать «Ещё», затем «Поделиться».</li>
-          <li>Выберите «На экран Домой», включите «Открыть как веб-приложение» и нажмите «Добавить».</li>
-        </ol>
+          <section class="install-platform" :class="{ 'install-platform--current': pwaPlatform === 'ios' }">
+            <h3>iPhone и iPad</h3>
+            <ol>
+              <li>Откройте сайт в Safari.</li>
+              <li>Нажмите «Поделиться».</li>
+              <li>Выберите «На экран Домой» → «Открыть как веб-приложение» → «Добавить».</li>
+            </ol>
+          </section>
+        </div>
       </template>
 
       <p class="data-note">
@@ -62,8 +68,8 @@ async function install() {
         снова открыть приложение; фоновая синхронизация не гарантируется.
       </p>
       <p class="data-note">
-        Чтобы удалить приложение, удерживайте его значок и выберите удаление. Само удаление значка не гарантирует удаление аккаунта,
-        облачной копии или данных сайта — при необходимости сначала удалите их в разделе «Аккаунт и безопасность».
+        Удаление значка не удаляет аккаунт, облачную копию и данные сайта. При необходимости сначала удалите их в разделе «Аккаунт и
+        безопасность».
       </p>
     </div>
   </details>

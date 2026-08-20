@@ -3,6 +3,7 @@ import { nextTick, ref } from 'vue';
 import { sendFeedback } from '../../../services/feedback';
 import { notifyError, notifySaved } from '../../../services/notifications';
 import DialogCloseButton from '../../../shared/ui/overlays/DialogCloseButton.vue';
+import { useBodyScrollLock } from '../../../shared/ui/overlays/useBodyScrollLock';
 import { useDialogBackdropClose } from '../../../shared/ui/overlays/useDialogBackdropClose';
 
 const props = defineProps<{
@@ -13,6 +14,8 @@ const isOpen = ref(false);
 const isSending = ref(false);
 const message = ref('');
 const messageInput = ref<HTMLTextAreaElement>();
+
+useBodyScrollLock(isOpen);
 
 async function open() {
   isOpen.value = true;

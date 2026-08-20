@@ -17,6 +17,7 @@ describe('AccountMenu', () => {
 
     expect(wrapper.text()).toContain('friend@example.com');
     expect(wrapper.text()).toContain('Настройки');
+    expect(wrapper.get('a[href="/settings#install-settings"]').text()).toContain('Установить приложение');
     await wrapper.get('button').trigger('click');
     expect(wrapper.emitted('signOut')).toHaveLength(1);
   });

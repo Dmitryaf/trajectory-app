@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import CurrentGoalDialog from '../features/daily-entry/ui/CurrentGoalDialog.vue';
 import FirstUseRecovery from '../features/first-use/ui/FirstUseRecovery.vue';
 import HowItWorksDialog from '../features/first-use/ui/HowItWorksDialog.vue';
+import PwaInstallNudge from '../features/pwa/ui/PwaInstallNudge.vue';
 import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
 import ChipGroup from '../shared/ui/forms/ChipGroup.vue';
 import DurationInput from '../shared/ui/forms/DurationInput.vue';
@@ -341,6 +342,8 @@ async function removeCurrentGoal() {
       <span>Хотите добавить или убрать разделы?</span>
       <RouterLink to="/settings#daily-blocks">Настроить главную →</RouterLink>
     </div>
+
+    <PwaInstallNudge v-if="!firstUseTakesPriority && isToday" :saved-entry-count="store.dailyEntries.length" />
 
     <section v-if="!firstUseTakesPriority && draftConflict" class="entry-change-notice draft-conflict-notice" role="alert">
       <div>

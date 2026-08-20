@@ -56,12 +56,16 @@ describe('HowItWorksDialog', () => {
 
     await wrapper.get('button').trigger('click');
     const closeButton = document.querySelector('[aria-label="Закрыть объяснение"]') as HTMLButtonElement;
+    expect(document.body.style.position).toBe('fixed');
+    expect(document.documentElement.style.overflow).toBe('hidden');
     expect(closeButton.querySelector('svg')).not.toBeNull();
     expect(closeButton.textContent).toBe('');
     expect(closeButton).toBe(document.activeElement);
     closeButton.click();
     await flushPromises();
     expect(wrapper.get('button').element).toBe(document.activeElement);
+    expect(document.body.style.position).toBe('');
+    expect(document.documentElement.style.overflow).toBe('');
     wrapper.unmount();
   });
 });

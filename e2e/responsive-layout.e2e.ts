@@ -233,7 +233,10 @@ test('keeps result details editable when Backspace clears the field', async ({ p
 });
 
 test('explains the app from the permanent help button', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
+  await page.evaluate(() => window.scrollTo(0, 320));
+  const scrollBeforeOpen = await page.evaluate(() => window.scrollY);
   await page.getByRole('button', { name: 'Как работает приложение' }).click();
   const dialog = page.getByRole('dialog', { name: 'Зачем нужна «Траектория»' });
 
@@ -241,8 +244,15 @@ test('explains the app from the permanent help button', async ({ page }) => {
   await expect(dialog).toContainText('Записать важное');
   await expect(dialog).toContainText('Увидеть период целиком');
   await expect(dialog).toContainText('Сохранить следующее решение');
+  await expect(page.locator('body')).toHaveCSS('position', 'fixed');
+  const dialogActions = dialog.locator('.help-dialog__actions a');
+  await expect(dialogActions).toHaveCount(2);
+  await expect(dialogActions.nth(0)).toHaveCSS('text-align', 'center');
+  await expect(dialogActions.nth(1)).toHaveCSS('text-align', 'center');
   await page.getByRole('button', { name: 'Закрыть объяснение' }).click();
   await expect(page.getByRole('button', { name: 'Как работает приложение' })).toBeFocused();
+  await expect(page.locator('body')).not.toHaveCSS('position', 'fixed');
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrollBeforeOpen);
 });
 
 test('opens the exact settings section from a daily card', async ({ page }) => {
@@ -257,7 +267,7 @@ test('switches settings scenarios with the keyboard on a mobile screen', async (
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/settings');
 
-  const dataTab = page.getByRole('button', { name: 'Данные и синхронизация' });
+  const dataTab = page.getByRole('button', { name: 'Установка и данные' });
   await dataTab.focus();
   await dataTab.press('Enter');
   await expect(page.locator('#data-settings')).toBeVisible();
