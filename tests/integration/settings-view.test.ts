@@ -301,6 +301,35 @@ describe('settings scenarios', () => {
     prompt.mockRestore();
   });
 
+  it('reports partial success and hides in-memory data when local cleanup fails after account deletion', async () => {
+    const { pinia, store } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    auth.deleteAccount = vi.fn().mockResolvedValue(undefined);
+    store.results = [{ id: 1, date: '2026-07-21', area: 'career', title: 'Личный итог', note: '', createdAt: '' }];
+    const clearAll = vi.spyOn(store, 'clearAll').mockRejectedValue(new Error('IndexedDB unavailable'));
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const prompt = vi.spyOn(window, 'prompt').mockReturnValue('friend@example.com');
+    const wrapper = mount(SettingsView, {
+      global: { plugins: [pinia], mocks: { $route: { query: {} } } },
+    });
+
+    const deleteButton = wrapper.findAll('.settings-card--account button').find((button) => button.text() === 'Удалить аккаунт');
+    await deleteButton!.trigger('click');
+    await flushPromises();
+
+    expect(auth.deleteAccount).toHaveBeenCalledOnce();
+    expect(clearAll).toHaveBeenCalledWith({ syncCloud: false });
+    expect(store.results).toEqual([]);
+    expect(notifyError).toHaveBeenCalledWith(
+      'Аккаунт и облачная копия удалены, но данные на этом устройстве очистить не удалось. Очистите данные сайта в настройках браузера.',
+    );
+    expect(notifyError).not.toHaveBeenCalledWith('Не удалось удалить аккаунт');
+    confirm.mockRestore();
+    prompt.mockRestore();
+  });
+
   it('saves the selected daily entry blocks', async () => {
     const { pinia, store } = createStore();
     const saveSettings = vi.spyOn(store, 'saveSettings').mockResolvedValue(undefined);

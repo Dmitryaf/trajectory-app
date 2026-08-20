@@ -1,5 +1,6 @@
 import { buildObservations, entriesForPeriod, factorSummaries, resultsForPeriod, summarize } from '../../services/analytics';
 import { buildExperimentSummary, type ExperimentSummary } from '../analytics/experimentComparison';
+import { experimentOverlapsRange } from '../experiments/model';
 import { addDays, addMonths, endOfMonth, endOfWeek, startOfMonth, startOfWeek, todayKey } from '../../services/dates';
 import {
   actionDirectionOptions,
@@ -59,7 +60,7 @@ export type AiReportPayload = {
     focusReviewDate: string;
     externalEvidenceCriterion: string;
     nutritionGoalCriterion: string;
-    experiment: AppSettings['experiment'];
+    experiment: AppSettings['experiment'] | null;
   };
 };
 
@@ -123,6 +124,8 @@ function buildPayload(
   const entries = dataThrough >= start ? entriesForPeriod(source.entries, start, dataThrough) : [];
   const factorItems = [...contextFactorOptions, ...source.settings.customContextFactorOptions];
   const externalCareerIds = externalCareerIdsForOptions(source.settings.customCareerOptions);
+  const activeExperimentOverlaps =
+    source.settings.experiment.active && experimentOverlapsRange(source.settings.experiment, start, dataThrough);
 
   return {
     app: 'trajectory',
@@ -135,9 +138,9 @@ function buildPayload(
     summary: summarize(entries, externalCareerIds),
     observations: buildObservations(entries, factorItems),
     factorSummaries: factorSummaries(entries, factorItems),
-    experimentSummary: buildExperimentSummary(source.entries, source.settings.experiment),
+    experimentSummary: activeExperimentOverlaps ? buildExperimentSummary(source.entries, source.settings.experiment) : null,
     experimentHistory: source.settings.experimentHistory
-      .filter((record) => record.endDate >= start && record.endDate <= dataThrough)
+      .filter((record) => experimentOverlapsRange(record, start, dataThrough))
       .map((record) => ({ record: { ...record }, summary: buildExperimentSummary(source.entries, record) })),
     entries,
     results: dataThrough >= start ? resultsForPeriod(source.results, start, dataThrough) : [],
@@ -153,7 +156,7 @@ function buildPayload(
       focusReviewDate: source.settings.focusReviewDate,
       externalEvidenceCriterion: source.settings.externalEvidenceCriterion,
       nutritionGoalCriterion: source.settings.nutritionGoalCriterion,
-      experiment: { ...source.settings.experiment },
+      experiment: activeExperimentOverlaps ? { ...source.settings.experiment } : null,
     },
     ...extra,
   };

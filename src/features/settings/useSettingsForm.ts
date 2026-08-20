@@ -568,11 +568,21 @@ export function useSettingsForm() {
 
     try {
       await auth.deleteAccount();
+    } catch {
+      notifyError(auth.error || 'Не удалось удалить аккаунт');
+      return;
+    }
+
+    try {
       await store.clearAll({ syncCloud: false });
       Object.assign(settings, plainCopy(store.settings));
       notifyInfo(auth.error || 'Аккаунт и его данные удалены');
     } catch {
-      notifyError(auth.error || 'Не удалось удалить аккаунт');
+      store.unload();
+      Object.assign(settings, plainCopy(store.settings));
+      notifyError(
+        'Аккаунт и облачная копия удалены, но данные на этом устройстве очистить не удалось. Очистите данные сайта в настройках браузера.',
+      );
     }
   }
 

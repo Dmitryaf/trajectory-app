@@ -321,7 +321,8 @@ function formatFactorSummary(factor: AiReportPayload['factorSummaries'][number])
   return values.join('; ');
 }
 
-function formatExperiment(experiment: AppSettings['experiment']): string {
+function formatExperiment(experiment: AppSettings['experiment'] | null): string {
+  if (!experiment) return '';
   if (!experiment.active && !cleanText(experiment.title)) return '';
   const values = [cleanText(experiment.title) || 'без названия'];
   if (cleanText(experiment.hypothesis)) values.push(`что пользователь хочет проверить: ${cleanText(experiment.hypothesis)}`);

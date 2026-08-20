@@ -64,13 +64,22 @@ export function experimentPeriodsOverlap(
   first: Pick<Experiment, 'startDate' | 'endDate'>,
   second: Pick<Experiment, 'startDate' | 'endDate'>,
 ): boolean {
+  return experimentOverlapsRange(first, second.startDate, second.endDate);
+}
+
+export function experimentOverlapsRange(
+  experiment: Pick<Experiment, 'startDate' | 'endDate'>,
+  rangeStart: string,
+  rangeEnd: string,
+): boolean {
   return Boolean(
-    first.startDate &&
-    first.endDate &&
-    second.startDate &&
-    second.endDate &&
-    first.startDate <= second.endDate &&
-    second.startDate <= first.endDate,
+    experiment.startDate &&
+    experiment.endDate &&
+    rangeStart &&
+    rangeEnd &&
+    rangeStart <= rangeEnd &&
+    experiment.startDate <= rangeEnd &&
+    rangeStart <= experiment.endDate,
   );
 }
 

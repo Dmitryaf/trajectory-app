@@ -14,7 +14,8 @@ import {
   type WeeklyReview,
 } from '../../types';
 import { BACKUP_VERSION } from './version';
-import { linkLegacyExperimentEntries } from '../experiments/model';
+import { experimentPeriodsOverlap, linkLegacyExperimentEntries } from '../experiments/model';
+import { startOfMonth, startOfWeek } from '../../services/dates';
 
 export type ExportPayload = {
   version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | typeof BACKUP_VERSION;
@@ -48,13 +49,14 @@ export function normalizeSnapshot(input: unknown): ExportPayload {
     throw new Error('Неподдерживаемый формат резервной копии');
   }
 
-  const settings =
-    source.settings === undefined
-      ? normalizeSettings({
-          ...structuredClone(defaultSettings),
-          firstUse: { ...structuredClone(defaultSettings.firstUse), status: 'available' },
-        })
-      : normalizeSettings(requireRecord(source.settings, 'settings') as Partial<AppSettings>);
+  const settingsSource = source.settings === undefined ? undefined : requireRecord(source.settings, 'settings');
+  const settings = settingsSource
+    ? normalizeSettings(settingsSource as Partial<AppSettings>)
+    : normalizeSettings({
+        ...structuredClone(defaultSettings),
+        firstUse: { ...structuredClone(defaultSettings.firstUse), status: 'available' },
+      });
+  requireExperimentInvariants(settings, settingsSource);
   const dailyEntries = linkLegacyExperimentEntries(
     requireArray(source.dailyEntries, 'dailyEntries').map((value, index) => {
       const entry = requireRecord(value, `dailyEntries[${index}]`);
@@ -63,14 +65,7 @@ export function normalizeSnapshot(input: unknown): ExportPayload {
     settings,
   );
   const results = requireArray(source.results, 'results').map((value, index) => normalizeSnapshotResult(value, index));
-  const lifeEvents = optionalArray(source.lifeEvents, 'lifeEvents').map((value, index) => {
-    const event = requireRecord(value, `lifeEvents[${index}]`);
-    return normalizeLifeEvent({
-      ...event,
-      date: requireDate(event.date, `lifeEvents[${index}].date`),
-      title: requireString(event.title, `lifeEvents[${index}].title`),
-    });
-  });
+  const lifeEvents = optionalArray(source.lifeEvents, 'lifeEvents').map((value, index) => normalizeSnapshotLifeEvent(value, index));
   const weeklyReviews = optionalArray(source.weeklyReviews, 'weeklyReviews').map((value, index) => {
     const review = requireRecord(value, `weeklyReviews[${index}]`);
     return normalizeWeeklyReview({ ...review, weekStart: requireDate(review.weekStart, `weeklyReviews[${index}].weekStart`) });
@@ -79,6 +74,30 @@ export function normalizeSnapshot(input: unknown): ExportPayload {
     const review = requireRecord(value, `monthlyReviews[${index}]`);
     return normalizeMonthlyReview({ ...review, monthStart: requireDate(review.monthStart, `monthlyReviews[${index}].monthStart`) });
   });
+  requireUniqueKeys(dailyEntries, (entry) => entry.date, 'dailyEntries.date');
+  requireUniqueKeys(
+    results.filter((result): result is ResultRecord & { id: number } => result.id !== undefined),
+    (result) => result.id,
+    'results.id',
+  );
+  requireUniqueKeys(
+    lifeEvents.filter((event): event is LifeEventRecord & { id: number } => event.id !== undefined),
+    (event) => event.id,
+    'lifeEvents.id',
+  );
+  requireUniqueKeys(weeklyReviews, (review) => review.weekStart, 'weeklyReviews.weekStart');
+  requireUniqueKeys(monthlyReviews, (review) => review.monthStart, 'monthlyReviews.monthStart');
+  weeklyReviews.forEach((review, index) => {
+    if (startOfWeek(review.weekStart) !== review.weekStart) {
+      throw new Error(`weeklyReviews[${index}].weekStart должен быть понедельником`);
+    }
+  });
+  monthlyReviews.forEach((review, index) => {
+    if (startOfMonth(review.monthStart) !== review.monthStart) {
+      throw new Error(`monthlyReviews[${index}].monthStart должен быть первым днём месяца`);
+    }
+  });
+  requireExperimentEntryReferences(dailyEntries, settings);
   return {
     version,
     exportedAt: typeof source.exportedAt === 'string' ? source.exportedAt : '',
@@ -89,6 +108,21 @@ export function normalizeSnapshot(input: unknown): ExportPayload {
     monthlyReviews,
     settings,
   };
+}
+
+function normalizeSnapshotLifeEvent(value: unknown, index: number): LifeEventRecord {
+  const event = requireRecord(value, `lifeEvents[${index}]`);
+  const id = event.id;
+  if (id !== undefined && (!Number.isInteger(id) || (id as number) <= 0)) {
+    throw new Error(`Некорректное поле lifeEvents[${index}].id`);
+  }
+
+  return normalizeLifeEvent({
+    ...event,
+    ...(typeof id === 'number' ? { id } : {}),
+    date: requireDate(event.date, `lifeEvents[${index}].date`),
+    title: requireString(event.title, `lifeEvents[${index}].title`),
+  });
 }
 
 function normalizeSnapshotResult(value: unknown, index: number): ResultRecord {
@@ -139,4 +173,51 @@ function requireDate(value: unknown, field: string): string {
     throw new Error(`Некорректная дата в ${field}`);
   }
   return date;
+}
+
+function requireUniqueKeys<T, K extends string | number>(items: T[], keyOf: (item: T) => K, field: string) {
+  const seen = new Set<K>();
+  for (const item of items) {
+    const key = keyOf(item);
+    if (seen.has(key)) throw new Error(`Повторяющееся поле ${field}: ${key}`);
+    seen.add(key);
+  }
+}
+
+function requireExperimentInvariants(settings: AppSettings, source: UnknownRecord | undefined) {
+  const rawHistory = Array.isArray(source?.experimentHistory) ? source.experimentHistory : [];
+  const rawIds = rawHistory.flatMap((item) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
+    const id = (item as UnknownRecord).id;
+    return typeof id === 'string' && id.trim() ? [id.trim()] : [];
+  });
+  requireUniqueKeys(rawIds, (id) => id, 'settings.experimentHistory.id');
+
+  const active = settings.experiment;
+  if (active.active && active.startDate && active.endDate && active.startDate > active.endDate) {
+    throw new Error('Дата окончания активного эксперимента должна быть не раньше даты начала');
+  }
+  if (active.active && active.id && settings.experimentHistory.some((record) => record.id === active.id)) {
+    throw new Error(`Активный и завершённый эксперимент используют один id: ${active.id}`);
+  }
+  if (active.active && settings.experimentHistory.some((record) => experimentPeriodsOverlap(active, record))) {
+    throw new Error('Период активного эксперимента пересекается с завершённым экспериментом');
+  }
+  for (let index = 0; index < settings.experimentHistory.length; index += 1) {
+    const current = settings.experimentHistory[index]!;
+    if (settings.experimentHistory.slice(index + 1).some((record) => experimentPeriodsOverlap(current, record))) {
+      throw new Error('Периоды завершённых экспериментов пересекаются');
+    }
+  }
+}
+
+function requireExperimentEntryReferences(entries: DailyEntry[], settings: AppSettings) {
+  const knownIds = new Set([
+    ...(settings.experiment.active && settings.experiment.id ? [settings.experiment.id] : []),
+    ...settings.experimentHistory.map((record) => record.id),
+  ]);
+  const orphan = entries.find((entry) => entry.experimentId && !knownIds.has(entry.experimentId));
+  if (orphan?.experimentId) {
+    throw new Error(`Запись ${orphan.date} ссылается на неизвестный эксперимент: ${orphan.experimentId}`);
+  }
 }

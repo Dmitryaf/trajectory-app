@@ -2,6 +2,7 @@ import 'fake-indexeddb/auto';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../../src/db';
+import { normalizeSnapshot } from '../../src/features/backup/snapshot';
 import { useAppStore, type ExportPayload } from '../../src/stores/app';
 import { defaultSettings, emptyDailyEntry, emptyWeeklyReview } from '../../src/types';
 
@@ -285,6 +286,26 @@ describe('backup import', () => {
     expect(await db.dailyEntries.get('2026-07-21')).toMatchObject({ importantFact: 'Сохранить при ошибке' });
   });
 
+  it('rejects duplicate entity keys before replacing current data', async () => {
+    const store = useAppStore();
+    await store.saveEntry({
+      ...emptyDailyEntry('2026-07-21'),
+      importantFact: 'Сохранить при конфликте ключей',
+      updatedAt: '',
+    });
+
+    await expect(
+      store.importData(
+        validBackup({
+          dailyEntries: [emptyDailyEntry('2026-07-20'), emptyDailyEntry('2026-07-20')],
+        }),
+        { syncCloud: false },
+      ),
+    ).rejects.toThrow('Повторяющееся поле dailyEntries.date: 2026-07-20');
+
+    expect(await db.dailyEntries.get('2026-07-21')).toMatchObject({ importantFact: 'Сохранить при конфликте ключей' });
+  });
+
   it('normalizes unsafe scalar and enum values without inventing zeroes', async () => {
     const store = useAppStore();
     await store.importData({
@@ -326,4 +347,138 @@ describe('backup import', () => {
     });
     expect(store.lifeEvents[0].type).toBe('other');
   });
+
+  it.each([
+    {
+      label: 'daily entry dates',
+      patch: { dailyEntries: [emptyDailyEntry('2026-07-20'), emptyDailyEntry('2026-07-20')] },
+      error: 'Повторяющееся поле dailyEntries.date: 2026-07-20',
+    },
+    {
+      label: 'result ids',
+      patch: {
+        results: [
+          { id: 1, date: '2026-07-20', area: 'career', title: 'Первый' },
+          { id: 1, date: '2026-07-21', area: 'career', title: 'Второй' },
+        ],
+      },
+      error: 'Повторяющееся поле results.id: 1',
+    },
+    {
+      label: 'life event ids',
+      patch: {
+        lifeEvents: [
+          { id: 1, date: '2026-07-20', type: 'event', title: 'Первое' },
+          { id: 1, date: '2026-07-21', type: 'event', title: 'Второе' },
+        ],
+      },
+      error: 'Повторяющееся поле lifeEvents.id: 1',
+    },
+    {
+      label: 'weekly review keys',
+      patch: { weeklyReviews: [emptyWeeklyReview('2026-07-20'), emptyWeeklyReview('2026-07-20')] },
+      error: 'Повторяющееся поле weeklyReviews.weekStart: 2026-07-20',
+    },
+    {
+      label: 'monthly review keys',
+      patch: { monthlyReviews: [{ monthStart: '2026-07-01' }, { monthStart: '2026-07-01' }] },
+      error: 'Повторяющееся поле monthlyReviews.monthStart: 2026-07-01',
+    },
+  ])('rejects duplicate $label instead of silently keeping the last record', ({ patch, error }) => {
+    expect(() => normalizeSnapshot(validBackup(patch))).toThrow(error);
+  });
+
+  it.each([
+    {
+      patch: { weeklyReviews: [emptyWeeklyReview('2026-07-21')] },
+      error: 'weeklyReviews[0].weekStart должен быть понедельником',
+    },
+    {
+      patch: { monthlyReviews: [{ monthStart: '2026-07-02' }] },
+      error: 'monthlyReviews[0].monthStart должен быть первым днём месяца',
+    },
+  ])('rejects non-canonical review period keys', ({ patch, error }) => {
+    expect(() => normalizeSnapshot(validBackup(patch))).toThrow(error);
+  });
+
+  it.each([
+    {
+      label: 'a reversed active period',
+      settings: experimentSettings({ active: true, id: 'active', startDate: '2026-07-22', endDate: '2026-07-20' }),
+      error: 'Дата окончания активного эксперимента должна быть не раньше даты начала',
+    },
+    {
+      label: 'the same active and history id',
+      settings: experimentSettings({ active: true, id: 'same-id', startDate: '2026-07-20', endDate: '2026-07-21' }, [
+        { id: 'same-id', startDate: '2026-07-10', endDate: '2026-07-12' },
+      ]),
+      error: 'Активный и завершённый эксперимент используют один id: same-id',
+    },
+    {
+      label: 'overlapping active and completed periods',
+      settings: experimentSettings({ active: true, id: 'active', startDate: '2026-07-20', endDate: '2026-07-24' }, [
+        { id: 'completed', startDate: '2026-07-18', endDate: '2026-07-21' },
+      ]),
+      error: 'Период активного эксперимента пересекается с завершённым экспериментом',
+    },
+    {
+      label: 'overlapping completed periods',
+      settings: experimentSettings(undefined, [
+        { id: 'first', startDate: '2026-07-10', endDate: '2026-07-15' },
+        { id: 'second', startDate: '2026-07-15', endDate: '2026-07-18' },
+      ]),
+      error: 'Периоды завершённых экспериментов пересекаются',
+    },
+    {
+      label: 'duplicate raw history ids',
+      settings: experimentSettings(undefined, [
+        { id: 'duplicate', startDate: '2026-07-10', endDate: '2026-07-12' },
+        { id: 'duplicate', startDate: '2026-07-14', endDate: '2026-07-16' },
+      ]),
+      error: 'Повторяющееся поле settings.experimentHistory.id: duplicate',
+    },
+  ])('rejects experiment settings with $label', ({ settings, error }) => {
+    expect(() => normalizeSnapshot(validBackup({ settings }))).toThrow(error);
+  });
+
+  it('rejects a daily entry linked to an unknown experiment', () => {
+    expect(() =>
+      normalizeSnapshot(
+        validBackup({
+          dailyEntries: [{ ...emptyDailyEntry('2026-07-20'), experimentId: 'missing-experiment', experimentCompleted: true }],
+        }),
+      ),
+    ).toThrow('Запись 2026-07-20 ссылается на неизвестный эксперимент: missing-experiment');
+  });
 });
+
+function validBackup(patch: Record<string, unknown> = {}) {
+  return {
+    version: 11,
+    exportedAt: '2026-07-22T10:00:00.000Z',
+    dailyEntries: [],
+    results: [],
+    lifeEvents: [],
+    weeklyReviews: [],
+    monthlyReviews: [],
+    settings: structuredClone(defaultSettings),
+    ...patch,
+  };
+}
+
+function experimentSettings(
+  activePatch: Partial<(typeof defaultSettings)['experiment']> = {},
+  history: Array<Partial<(typeof defaultSettings)['experiment']> & { id: string; startDate: string; endDate: string }> = [],
+) {
+  return {
+    ...structuredClone(defaultSettings),
+    experiment: { ...structuredClone(defaultSettings.experiment), ...activePatch },
+    experimentHistory: history.map((record) => ({
+      ...structuredClone(defaultSettings.experiment),
+      ...record,
+      active: undefined,
+      title: `Эксперимент ${record.id}`,
+      completedAt: `${record.endDate}T20:00:00.000Z`,
+    })),
+  };
+}

@@ -20,7 +20,7 @@ import {
 } from '../services/analytics';
 import { addDays, dateRange, endOfWeek, formatDate, formatMinutes, fromDateKey, startOfWeek, todayKey, toDateKey } from '../services/dates';
 import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../features/export/browser';
-import { experimentDecisionLabel } from '../features/experiments/model';
+import { experimentDecisionLabel, experimentOverlapsRange } from '../features/experiments/model';
 import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { plainCopy } from '../services/plain';
 import { useAppStore } from '../stores/app';
@@ -119,18 +119,11 @@ type WeekExperimentCard = {
 
 const activeExperiment = computed(() => {
   const experiment = store.settings.experiment;
-  if (
-    !experiment.active ||
-    !experiment.startDate ||
-    !experiment.endDate ||
-    experiment.startDate > end.value ||
-    experiment.endDate < start.value
-  )
-    return null;
+  if (!experiment.active || !experimentOverlapsRange(experiment, start.value, end.value)) return null;
   return experiment;
 });
 const completedExperiments = computed(() =>
-  store.settings.experimentHistory.filter((experiment) => experiment.startDate <= end.value && experiment.endDate >= start.value),
+  store.settings.experimentHistory.filter((experiment) => experimentOverlapsRange(experiment, start.value, end.value)),
 );
 const experimentCards = computed<WeekExperimentCard[]>(() => [
   ...(activeExperiment.value ? [buildExperimentCard('active-experiment', activeExperiment.value, true)] : []),

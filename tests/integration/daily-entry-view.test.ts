@@ -287,6 +287,33 @@ describe('daily entry scenario', () => {
     expect(labels).toContain('▤ Рабочий день');
   });
 
+  it('keeps archived custom values visible while editing a historical day', () => {
+    const { pinia, store } = createStore();
+    store.settings.activeDailyBlocks.push('career');
+    store.settings.customCareerOptions = [{ id: 'custom:career:archived', label: 'Старый рабочий вариант', archived: true }];
+    store.settings.customContextFactorOptions = [{ id: 'custom:context:archived', label: 'Старый фактор', archived: true }];
+    store.settings.customLifeAreaOptions = [{ id: 'custom:life:archived', label: 'Старая область', archived: true }];
+    store.dailyEntries = [
+      {
+        ...emptyDailyEntry('2026-07-21'),
+        careerStates: ['custom:career:archived'],
+        contextFactors: ['custom:context:archived'],
+        lifeAreas: ['custom:life:archived'],
+        recordedFields: ['careerStates', 'contextFactors', 'lifeAreas'],
+        contextFactorsRecorded: true,
+        lifeAreasRecorded: true,
+      },
+    ];
+
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+
+    expect(wrapper.get('#career').text()).toContain('Старый рабочий вариант');
+    expect(wrapper.get('#day-conditions').text()).toContain('Старый фактор');
+    expect(wrapper.get('#life-areas').text()).toContain('Старая область');
+  });
+
   it('hides inactive blocks while preserving values in an existing entry', async () => {
     const { pinia, store } = createStore();
     store.settings.activeDailyBlocks = [];

@@ -152,6 +152,28 @@ describe('journal scenarios', () => {
     expect(events.get('.result-composer .primary-button').attributes('disabled')).toBeDefined();
   });
 
+  it('shows an archived custom result area while editing the record that uses it', async () => {
+    const { pinia, store } = createStore();
+    store.settings.customLifeAreaOptions = [{ id: 'custom:life:archived', label: 'Старая область', archived: true }];
+    store.results = [
+      {
+        id: 1,
+        date: '2026-07-21',
+        area: 'custom:life:archived',
+        title: 'Исторический итог',
+        note: '',
+        createdAt: '2026-07-21T10:00:00.000Z',
+      },
+    ];
+    const wrapper = mount(ResultsView, { global: { plugins: [pinia] } });
+
+    await wrapper.get('[aria-label="Редактировать итог"]').trigger('click');
+
+    const archivedArea = wrapper.findAll('.result-composer .chip').find((chip) => chip.text().includes('Старая область'));
+    expect(archivedArea).toBeDefined();
+    expect(archivedArea!.attributes('aria-pressed')).toBe('true');
+  });
+
   it('adds an insight and finds an event by its note', async () => {
     const { pinia, store } = createStore();
     const longNote = 'Длинная мысль может объединять несколько связанных тем без обязательного разбиения. '.repeat(8).trim();

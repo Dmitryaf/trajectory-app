@@ -255,7 +255,7 @@ describe('analytics', () => {
     expect(payload.labels.contextFactors).toContainEqual(expect.objectContaining({ id: 'custom:context:rain', label: 'Шум за окном' }));
     expect(payload.labels.activities).toContainEqual(expect.objectContaining({ id: 'custom:activity:swimming', label: 'Плавание' }));
     expect(payload.factorSummaries[0].label).toBe('Шум за окном');
-    expect(payload.settingsSnapshot.experiment.conclusion).toBe('unclear');
+    expect(payload.settingsSnapshot.experiment?.conclusion).toBe('unclear');
     expect(payload.previousWeeklyReview?.nextLever).toBe('Ложиться раньше');
 
     const prompt = buildAiReportPrompt(payload, settings);
@@ -285,7 +285,13 @@ describe('analytics', () => {
 
   it('builds an analysis package from reactive application settings', () => {
     const settings = reactive(structuredClone(defaultSettings));
-    settings.experiment = { ...settings.experiment, active: true, title: 'Спокойный вечер' };
+    settings.experiment = {
+      ...settings.experiment,
+      active: true,
+      title: 'Спокойный вечер',
+      startDate: '2026-07-13',
+      endDate: '2026-07-19',
+    };
 
     const payload = buildAiReportPayload('week', '2026-07-16', {
       entries: [],
@@ -296,7 +302,7 @@ describe('analytics', () => {
       settings,
     });
 
-    expect(payload.settingsSnapshot.experiment.title).toBe('Спокойный вечер');
+    expect(payload.settingsSnapshot.experiment?.title).toBe('Спокойный вечер');
     expect(() => JSON.stringify(payload)).not.toThrow();
   });
 

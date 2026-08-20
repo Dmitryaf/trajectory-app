@@ -68,7 +68,7 @@ const careerItems = computed(() => {
     new Map(
       [
         ...careerOptions,
-        ...store.settings.customCareerOptions.filter((option) => !option.archived),
+        ...store.settings.customCareerOptions.filter((option) => !option.archived || form.careerStates.includes(option.id)),
         ...legacyCareerOptions.filter((option) => usedIds.has(option.id)),
       ].map((option) => [option.id, option]),
     ).values(),
@@ -87,11 +87,22 @@ const activityItems = computed(() => {
   ).filter((option) => form.activities.includes(option.id) && !configuredIds.has(option.id));
   return [...configured, ...historical];
 });
-const contextFactorItems = computed(() => [
-  ...contextFactorOptions.filter((option) => !store.settings.hiddenContextFactorIds.includes(option.id)),
-  ...store.settings.customContextFactorOptions.filter((option) => !option.archived),
-  ...legacyContextFactorOptions.filter((option) => form.contextFactors.includes(option.id)),
-]);
+const contextFactorItems = computed(() => {
+  const configured = [
+    ...contextFactorOptions.filter((option) => !store.settings.hiddenContextFactorIds.includes(option.id)),
+    ...store.settings.customContextFactorOptions.filter((option) => !option.archived),
+  ];
+  const configuredIds = new Set(configured.map((option) => option.id));
+  const historical = Array.from(
+    new Map(
+      [...contextFactorOptions, ...legacyContextFactorOptions, ...store.settings.customContextFactorOptions].map((option) => [
+        option.id,
+        option,
+      ]),
+    ).values(),
+  ).filter((option) => form.contextFactors.includes(option.id) && !configuredIds.has(option.id));
+  return [...configured, ...historical];
+});
 const actionDirectionItems = computed(() =>
   form.actionDirection === 'recovery'
     ? [...actionDirectionEntryOptions, { id: 'recovery' as const, label: 'Восстановление (старая отметка)', icon: '◌' }]
@@ -99,6 +110,12 @@ const actionDirectionItems = computed(() =>
 );
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
 const activeLifeOptions = computed(() => lifeAreaItems.value.filter((option) => store.settings.activeLifeAreas.includes(option.id)));
+const dailyLifeAreaItems = computed(() => [
+  ...activeLifeOptions.value,
+  ...lifeAreaItems.value.filter(
+    (option) => form.lifeAreas.includes(option.id) && !activeLifeOptions.value.some((active) => active.id === option.id),
+  ),
+]);
 const isToday = computed(() => selectedDate.value === todayKey());
 const isFirstEntry = computed(() => store.loaded && store.dailyEntries.length === 0);
 const firstUseEditRequested = new URL(window.location.href).searchParams.get('first-use') === 'edit';
@@ -652,7 +669,12 @@ async function removeCurrentGoal() {
           </div>
           <RouterLink class="card-settings-link" to="/settings#life-areas">Настроить</RouterLink>
         </div>
-        <ChipGroup :model-value="form.lifeAreas as LifeAreaId[]" :options="activeLifeOptions" multiple @update:model-value="setLifeAreas" />
+        <ChipGroup
+          :model-value="form.lifeAreas as LifeAreaId[]"
+          :options="dailyLifeAreaItems"
+          multiple
+          @update:model-value="setLifeAreas"
+        />
         <button
           class="none-option"
           :class="{ selected: form.lifeAreasRecorded && !form.lifeAreas.length }"

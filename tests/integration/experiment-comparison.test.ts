@@ -3,6 +3,7 @@ import { buildExperimentSummary } from '../../src/features/analytics/experimentC
 import {
   createExperimentRecord,
   emptyExperiment,
+  experimentOverlapsRange,
   experimentPeriodsOverlap,
   linkLegacyExperimentEntries,
 } from '../../src/features/experiments/model';
@@ -67,6 +68,8 @@ describe('experiment summary', () => {
     expect(record).not.toHaveProperty('active');
     expect(experimentPeriodsOverlap(record, { startDate: '2026-07-08', endDate: '2026-07-10' })).toBe(true);
     expect(experimentPeriodsOverlap(record, { startDate: '2026-07-09', endDate: '2026-07-10' })).toBe(false);
+    expect(experimentOverlapsRange(record, '2026-07-06', '2026-07-07')).toBe(true);
+    expect(experimentOverlapsRange(record, '2026-07-09', '2026-07-10')).toBe(false);
   });
 
   it('does not guess which experiment owns an ambiguous legacy mark', () => {
@@ -106,5 +109,42 @@ describe('experiment summary', () => {
     expect(prompt).toContain('вывод пользователя: Утром было немного легче');
     expect(prompt).toContain('Это фактическая сводка, а не автоматический вывод');
     expect(prompt).not.toContain('порог');
+  });
+
+  it('exports only experiments that overlap the requested period', () => {
+    const settings = structuredClone(defaultSettings);
+    settings.experiment = experiment({
+      id: 'future-active',
+      title: 'Будущий эксперимент',
+      startDate: '2026-08-01',
+      endDate: '2026-08-04',
+    });
+    settings.experimentHistory = [
+      createExperimentRecord(
+        experiment({ id: 'cross-week', active: false, startDate: '2026-07-05', endDate: '2026-07-14' }),
+        '2026-07-14T20:00:00.000Z',
+      ),
+      createExperimentRecord(
+        experiment({ id: 'past', active: false, startDate: '2026-06-20', endDate: '2026-06-23' }),
+        '2026-06-23T20:00:00.000Z',
+      ),
+    ];
+
+    const payload = buildAiReportPayload('week', '2026-07-08', {
+      entries: [],
+      results: [],
+      lifeEvents: [],
+      reviews: [],
+      monthlyReviews: [],
+      settings,
+    });
+
+    expect(payload.experimentSummary).toBeNull();
+    expect(payload.settingsSnapshot.experiment).toBeNull();
+    expect(payload.experimentHistory.map(({ record }) => record.id)).toEqual(['cross-week']);
+
+    const prompt = buildAiReportPrompt(payload, settings);
+    expect(prompt).not.toContain('Будущий эксперимент');
+    expect(prompt).toContain('Спокойный вечер');
   });
 });

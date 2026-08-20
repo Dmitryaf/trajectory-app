@@ -26,7 +26,7 @@ const recentResults = computed(() => [...store.results].sort((a, b) => b.date.lo
 const resultOptions = computed(() => [...resultAreaOptions, ...store.settings.customLifeAreaOptions]);
 const resultEntryOptions = computed(() => [
   ...resultAreaOptions,
-  ...store.settings.customLifeAreaOptions.filter((option) => !option.archived),
+  ...store.settings.customLifeAreaOptions.filter((option) => !option.archived || option.id === area.value),
 ]);
 const {
   filterText,
