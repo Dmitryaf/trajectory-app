@@ -1,6 +1,6 @@
 .auth-shell {
   display: grid;
-  min-height: calc(100vh - 210px);
+  min-height: calc(var(--viewport-height) - 210px);
   place-items: start center;
   padding: 22px 0 48px;
 }
@@ -399,10 +399,10 @@
   line-height: 1.6;
 }
 .password-reset-shell {
-  min-height: 100vh;
+  min-height: var(--viewport-height);
   display: grid;
   place-items: center;
-  padding: 28px 14px;
+  padding: calc(28px + var(--safe-top)) calc(14px + var(--safe-right)) calc(28px + var(--safe-bottom)) calc(14px + var(--safe-left));
   background: radial-gradient(circle at 20% 15%, rgba(73, 201, 155, 0.13), transparent 32%), var(--surface);
 }
 .password-reset-card {

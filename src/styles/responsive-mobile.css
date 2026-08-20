@@ -2,9 +2,15 @@
   [data-sonner-toaster] {
     width: auto;
   }
+  [data-sonner-toaster][data-y-position='top'] {
+    top: calc(var(--mobile-offset-top) + var(--safe-top)) !important;
+  }
+  [data-sonner-toaster][data-x-position='right'] {
+    right: calc(var(--mobile-offset-right) + var(--safe-right)) !important;
+  }
   .app-header {
-    height: 66px;
-    padding: 0 16px;
+    height: calc(66px + var(--safe-top));
+    padding: var(--safe-top) calc(16px + var(--safe-right)) 0 calc(16px + var(--safe-left));
   }
   .header-actions {
     flex-direction: row;
@@ -47,12 +53,13 @@
   .help-link strong {
     display: none;
   }
-  .feedback-backdrop {
+  .feedback-backdrop,
+  .help-backdrop {
     align-items: end;
-    padding: 10px;
+    padding: calc(10px + var(--safe-top)) calc(10px + var(--safe-right)) calc(10px + var(--safe-bottom)) calc(10px + var(--safe-left));
   }
-  .feedback-dialog {
-    max-height: calc(100vh - 20px);
+  .feedback-dialog,
+  .help-dialog {
     padding: 20px;
     border-radius: 22px;
   }
@@ -62,15 +69,6 @@
   }
   .feedback-dialog__actions button {
     min-width: 0;
-  }
-  .help-backdrop {
-    align-items: end;
-    padding: 10px;
-  }
-  .help-dialog {
-    max-height: calc(100vh - 20px);
-    padding: 20px;
-    border-radius: 22px;
   }
   .help-dialog__actions {
     display: grid;
@@ -101,7 +99,7 @@
     padding: 5px 4px;
   }
   .app-main {
-    padding: 10px 14px 105px;
+    padding: 10px calc(14px + var(--safe-right)) calc(105px + var(--safe-bottom)) calc(14px + var(--safe-left));
   }
   .page-heading {
     align-items: flex-start;
@@ -176,7 +174,7 @@
     display: block;
     width: 100%;
     min-width: 0;
-    min-height: calc(100vh - 170px);
+    min-height: calc(var(--viewport-height) - 170px);
     padding-top: 8px;
   }
   .auth-layout {
@@ -238,12 +236,12 @@
   }
   .goal-dialog-backdrop {
     align-items: end;
-    padding: 0;
+    padding: var(--safe-top) var(--safe-right) 0 var(--safe-left);
   }
   .goal-dialog {
     width: 100%;
-    max-height: calc(100vh - 24px);
-    padding: 22px 18px calc(22px + env(safe-area-inset-bottom, 0px));
+    max-height: calc(100% - 24px);
+    padding: 22px 18px calc(22px + var(--safe-bottom));
     border-radius: 24px 24px 0 0;
   }
   .goal-dialog__actions {
@@ -290,14 +288,14 @@
     padding-bottom: 64px;
   }
   .floating-save-button {
-    right: auto;
-    left: 50%;
-    bottom: 76px;
-    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    right: calc(14px + var(--safe-right));
+    left: calc(14px + var(--safe-left));
+    bottom: calc(76px + var(--safe-bottom));
     z-index: 19;
-    transform: translateX(-50%);
-    width: calc(100% - 28px);
+    transform: none;
+    width: auto;
     max-width: 680px;
+    margin-inline: auto;
     min-height: 50px;
     display: flex;
     justify-content: space-between;
@@ -308,7 +306,7 @@
   .floating-save-enter-from,
   .floating-save-leave-to {
     opacity: 0;
-    transform: translate(-50%, 6px);
+    transform: translateY(6px);
   }
   .form-card,
   .result-composer,
@@ -598,9 +596,9 @@
     grid-column: 2;
   }
   .bottom-nav {
-    left: 8px;
-    right: 8px;
-    bottom: max(8px, env(safe-area-inset-bottom));
+    left: calc(8px + var(--safe-left));
+    right: calc(8px + var(--safe-right));
+    bottom: max(8px, var(--safe-bottom));
     transform: none;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -623,7 +621,7 @@
 
 @media (min-width: 721px) and (max-width: 979px) {
   .floating-save-button {
-    bottom: 112px;
+    bottom: calc(112px + var(--safe-bottom));
   }
 
   .checkin-grid--dirty {

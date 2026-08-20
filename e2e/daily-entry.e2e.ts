@@ -33,6 +33,24 @@ function startOfWeek(dateKey: string): string {
   return addDays(dateKey, 1 - weekday);
 }
 
+async function emulateSafeViewport(
+  page: Page,
+  insets: { top: number; right: number; bottom: number; left: number },
+  viewportHeight: number,
+) {
+  await page.evaluate(
+    ({ top, right, bottom, left, height }) => {
+      const root = document.documentElement.style;
+      root.setProperty('--safe-top', `${top}px`);
+      root.setProperty('--safe-right', `${right}px`);
+      root.setProperty('--safe-bottom', `${bottom}px`);
+      root.setProperty('--safe-left', `${left}px`);
+      root.setProperty('--viewport-height', `${height}px`);
+    },
+    { ...insets, height: viewportHeight },
+  );
+}
+
 test('saves a dirty daily entry from the mobile action', async ({ page }) => {
   await openDailyEntry(page);
   const floatingSave = page.locator('.floating-save-button');
@@ -104,7 +122,7 @@ test('keeps a long current goal contained and does not dismiss an edited dialog 
   const summary = page.getByLabel('Текущая цель');
   await expect(summary).toContainText(longGoal);
   await summary.getByRole('button', { name: 'Изменить' }).click();
-  await page.mouse.click(5, 5);
+  await page.locator('.goal-dialog-backdrop').click({ position: { x: 5, y: 5 } });
   await expect(dialog).toBeHidden();
 
   const assertContained = async () => {
@@ -150,6 +168,76 @@ test('keeps a long current goal contained and does not dismiss an edited dialog 
     document.documentElement.style.zoom = '2';
   });
   await assertContained();
+});
+
+test('keeps navigation, fixed actions and dialogs inside safe areas and a reduced visual viewport', async ({ page }) => {
+  await openDailyEntry(page);
+  for (const viewport of [
+    { width: 320, height: 720 },
+    { width: 390, height: 844 },
+    { width: 768, height: 1024 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await emulateSafeViewport(page, { top: 24, right: 18, bottom: 34, left: 18 }, viewport.height);
+    await page.evaluate(() => window.scrollTo(0, 0));
+
+    const brandBox = await page.locator('.brand').boundingBox();
+    const navigationBox = await page.locator('.bottom-nav').boundingBox();
+    expect(brandBox).not.toBeNull();
+    expect(navigationBox).not.toBeNull();
+    expect(brandBox!.y).toBeGreaterThanOrEqual(24);
+    expect(navigationBox!.x).toBeGreaterThanOrEqual(18);
+    expect(navigationBox!.x + navigationBox!.width).toBeLessThanOrEqual(viewport.width - 18);
+    expect(navigationBox!.y + navigationBox!.height).toBeLessThanOrEqual(viewport.height - 34);
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await emulateSafeViewport(page, { top: 24, right: 18, bottom: 34, left: 18 }, 844);
+  const navigationBox = await page.locator('.bottom-nav').boundingBox();
+  expect(navigationBox).not.toBeNull();
+
+  await page.getByPlaceholder('Например: после прогулки стало легче собраться с мыслями').fill('Проверка safe area');
+  const saveBox = await page.locator('.floating-save-button').boundingBox();
+  expect(saveBox).not.toBeNull();
+  expect(saveBox!.x).toBeGreaterThanOrEqual(18);
+  expect(saveBox!.x + saveBox!.width).toBeLessThanOrEqual(390 - 18);
+  expect(saveBox!.y + saveBox!.height).toBeLessThan(navigationBox!.y);
+
+  await page.locator('.current-goal-summary button').click();
+  await emulateSafeViewport(page, { top: 24, right: 18, bottom: 34, left: 18 }, 520);
+  const goalBackdrop = page.locator('.goal-dialog-backdrop');
+  const goalDialog = page.getByRole('dialog', { name: 'Над чем вы сейчас работаете' });
+  const backdropBox = await goalBackdrop.boundingBox();
+  const goalDialogBox = await goalDialog.boundingBox();
+  expect(backdropBox).not.toBeNull();
+  expect(goalDialogBox).not.toBeNull();
+  expect(backdropBox!.height).toBeCloseTo(520, 0);
+  expect(goalDialogBox!.y).toBeGreaterThanOrEqual(24);
+  expect(goalDialogBox!.y + goalDialogBox!.height).toBeLessThanOrEqual(520);
+  expect(await goalDialog.evaluate((dialog) => parseFloat(getComputedStyle(dialog).paddingBottom))).toBeGreaterThanOrEqual(56);
+  await expect(page.getByRole('button', { name: 'Закрыть выбор цели' })).toBeVisible();
+  await goalDialog.evaluate((dialog) => dialog.scrollTo({ top: dialog.scrollHeight }));
+  const goalSaveBox = await page.getByRole('button', { name: 'Сохранить цель' }).boundingBox();
+  expect(goalSaveBox).not.toBeNull();
+  expect(goalSaveBox!.y + goalSaveBox!.height).toBeLessThanOrEqual(520 - 34);
+  await page.getByRole('button', { name: 'Закрыть выбор цели' }).click();
+
+  await page.setViewportSize({ width: 844, height: 390 });
+  await emulateSafeViewport(page, { top: 0, right: 44, bottom: 21, left: 44 }, 390);
+  await page.locator('.app-header').getByRole('button', { name: 'Как работает приложение' }).click();
+  const helpDialog = page.getByRole('dialog', { name: 'Зачем нужна «Траектория»' });
+  const helpBox = await helpDialog.boundingBox();
+  expect(helpBox).not.toBeNull();
+  expect(helpBox!.x).toBeGreaterThanOrEqual(44);
+  expect(helpBox!.x + helpBox!.width).toBeLessThanOrEqual(844 - 44);
+  expect(helpBox!.y + helpBox!.height).toBeLessThanOrEqual(390 - 21);
+  await expect(page.getByRole('button', { name: 'Закрыть объяснение' })).toBeVisible();
+
+  const widths = await page.evaluate(() => ({
+    content: document.documentElement.scrollWidth,
+    viewport: document.documentElement.clientWidth,
+  }));
+  expect(widths.content).toBeLessThanOrEqual(widths.viewport);
 });
 
 test('selects and preserves a past daily entry on mobile', async ({ page }) => {

@@ -7,7 +7,7 @@ const projectRoot = fileURLToPath(new URL('..', import.meta.url));
 const distRoot = path.join(projectRoot, 'dist');
 const budgets = {
   entryJavaScriptGzip: 170 * 1024,
-  entryCssGzip: 20 * 1024,
+  entryCssGzip: 21 * 1024,
   anyJavaScriptGzip: 230 * 1024,
 };
 

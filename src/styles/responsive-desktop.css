@@ -21,7 +21,7 @@
   }
   .bottom-nav {
     position: fixed;
-    top: 8px;
+    top: calc(8px + var(--safe-top));
     bottom: auto;
     gap: 2px;
   }
@@ -33,7 +33,7 @@
     font-size: 9px;
   }
   .app-main {
-    padding-bottom: 54px;
+    padding-bottom: calc(54px + var(--safe-bottom));
   }
   .checkin-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
