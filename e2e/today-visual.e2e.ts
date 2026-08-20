@@ -22,10 +22,18 @@ async function expectTodayScreenshot(page: Page, name: string) {
   });
 }
 
+async function stabilizeTodayScreenshot(page: Page) {
+  await page.locator('.entry-date-control > span').evaluate((date) => date.classList.add('visual-dynamic-text'));
+  await page
+    .locator('.review-nudge, .recovery-nudge, .today-pulse')
+    .evaluateAll((sections) => sections.forEach((section) => section.classList.add('visual-calendar-dependent')));
+}
+
 test('keeps Today visually stable across its critical states', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await page.locator('.page--today').waitFor();
+  await stabilizeTodayScreenshot(page);
   await expectTodayScreenshot(page, 'today-mobile-with-goal.png');
 
   await page.getByRole('button', { name: 'Изменить' }).click();
