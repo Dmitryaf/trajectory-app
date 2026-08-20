@@ -83,6 +83,54 @@ export function experimentOverlapsRange(
   );
 }
 
+export function experimentIntegrityError(settings: AppSettings): string {
+  const active = settings.experiment;
+  const historyIds = new Set<string>();
+
+  for (const record of settings.experimentHistory) {
+    if (historyIds.has(record.id)) return `Повторяющийся id завершённого эксперимента: ${record.id}`;
+    historyIds.add(record.id);
+    if (record.startDate && record.endDate && record.startDate > record.endDate) {
+      return `Дата окончания завершённого эксперимента должна быть не раньше даты начала: ${record.id}`;
+    }
+  }
+
+  if (active.active && active.startDate && active.endDate && active.startDate > active.endDate) {
+    return 'Дата окончания активного эксперимента должна быть не раньше даты начала';
+  }
+  if (active.active && active.id && historyIds.has(active.id)) {
+    return `Активный и завершённый эксперимент используют один id: ${active.id}`;
+  }
+  if (active.active && settings.experimentHistory.some((record) => experimentPeriodsOverlap(active, record))) {
+    return 'Период активного эксперимента пересекается с завершённым экспериментом';
+  }
+  for (let index = 0; index < settings.experimentHistory.length; index += 1) {
+    const current = settings.experimentHistory[index]!;
+    if (settings.experimentHistory.slice(index + 1).some((record) => experimentPeriodsOverlap(current, record))) {
+      return 'Периоды завершённых экспериментов пересекаются';
+    }
+  }
+  return '';
+}
+
+export function experimentEntryLinkError(entries: DailyEntry[], settings: AppSettings): string {
+  const experiments = [
+    ...(settings.experiment.active && settings.experiment.id ? [settings.experiment] : []),
+    ...settings.experimentHistory,
+  ];
+  const byId = new Map(experiments.map((experiment) => [experiment.id, experiment]));
+
+  for (const entry of entries) {
+    if (!entry.experimentId) continue;
+    const experiment = byId.get(entry.experimentId);
+    if (!experiment) return `Запись ${entry.date} ссылается на неизвестный эксперимент: ${entry.experimentId}`;
+    if (entry.date < experiment.startDate || entry.date > experiment.endDate) {
+      return `Запись ${entry.date} находится вне периода эксперимента: ${entry.experimentId}`;
+    }
+  }
+  return '';
+}
+
 export function validateExperimentTextLengths(experiment: Experiment): string {
   if (experiment.title.length > experimentTextLimits.title)
     return `Условие эксперимента длиннее ${experimentTextLimits.title} символов. Сократите текст, чтобы сохранить его.`;

@@ -14,7 +14,7 @@ import {
   type WeeklyReview,
 } from '../../types';
 import { BACKUP_VERSION } from './version';
-import { experimentPeriodsOverlap, linkLegacyExperimentEntries } from '../experiments/model';
+import { experimentEntryLinkError, experimentIntegrityError, linkLegacyExperimentEntries } from '../experiments/model';
 import { startOfMonth, startOfWeek } from '../../services/dates';
 
 export type ExportPayload = {
@@ -97,7 +97,8 @@ export function normalizeSnapshot(input: unknown): ExportPayload {
       throw new Error(`monthlyReviews[${index}].monthStart должен быть первым днём месяца`);
     }
   });
-  requireExperimentEntryReferences(dailyEntries, settings);
+  const entryLinkError = experimentEntryLinkError(dailyEntries, settings);
+  if (entryLinkError) throw new Error(entryLinkError);
   return {
     version,
     exportedAt: typeof source.exportedAt === 'string' ? source.exportedAt : '',
@@ -192,32 +193,20 @@ function requireExperimentInvariants(settings: AppSettings, source: UnknownRecor
     return typeof id === 'string' && id.trim() ? [id.trim()] : [];
   });
   requireUniqueKeys(rawIds, (id) => id, 'settings.experimentHistory.id');
-
-  const active = settings.experiment;
-  if (active.active && active.startDate && active.endDate && active.startDate > active.endDate) {
-    throw new Error('Дата окончания активного эксперимента должна быть не раньше даты начала');
-  }
-  if (active.active && active.id && settings.experimentHistory.some((record) => record.id === active.id)) {
-    throw new Error(`Активный и завершённый эксперимент используют один id: ${active.id}`);
-  }
-  if (active.active && settings.experimentHistory.some((record) => experimentPeriodsOverlap(active, record))) {
-    throw new Error('Период активного эксперимента пересекается с завершённым экспериментом');
-  }
-  for (let index = 0; index < settings.experimentHistory.length; index += 1) {
-    const current = settings.experimentHistory[index]!;
-    if (settings.experimentHistory.slice(index + 1).some((record) => experimentPeriodsOverlap(current, record))) {
-      throw new Error('Периоды завершённых экспериментов пересекаются');
+  rawHistory.forEach((item, index) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return;
+    const record = item as UnknownRecord;
+    if (
+      typeof record.startDate === 'string' &&
+      typeof record.endDate === 'string' &&
+      /^\d{4}-\d{2}-\d{2}$/.test(record.startDate) &&
+      /^\d{4}-\d{2}-\d{2}$/.test(record.endDate) &&
+      record.startDate > record.endDate
+    ) {
+      throw new Error(`Дата окончания завершённого эксперимента должна быть не раньше даты начала: settings.experimentHistory[${index}]`);
     }
-  }
-}
+  });
 
-function requireExperimentEntryReferences(entries: DailyEntry[], settings: AppSettings) {
-  const knownIds = new Set([
-    ...(settings.experiment.active && settings.experiment.id ? [settings.experiment.id] : []),
-    ...settings.experimentHistory.map((record) => record.id),
-  ]);
-  const orphan = entries.find((entry) => entry.experimentId && !knownIds.has(entry.experimentId));
-  if (orphan?.experimentId) {
-    throw new Error(`Запись ${orphan.date} ссылается на неизвестный эксперимент: ${orphan.experimentId}`);
-  }
+  const integrityError = experimentIntegrityError(settings);
+  if (integrityError) throw new Error(integrityError);
 }

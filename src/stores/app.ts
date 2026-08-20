@@ -22,8 +22,9 @@ import {
 import { normalizeSnapshot, type ExportPayload } from '../features/backup/snapshot';
 import { BACKUP_VERSION } from '../features/backup/version';
 import { clearFirstUseFunnel } from '../features/first-use/funnel';
-import { linkLegacyExperimentEntries } from '../features/experiments/model';
+import { experimentEntryLinkError, experimentIntegrityError, linkLegacyExperimentEntries } from '../features/experiments/model';
 import { validDate } from '../model/normalization';
+import { startOfMonth, startOfWeek } from '../services/dates';
 
 export type { ExportPayload } from '../features/backup/snapshot';
 
@@ -75,10 +76,13 @@ export const useAppStore = defineStore('app', {
           ...draft,
           entry: normalizeDailyEntry(draft.entry),
         }));
-        const linkedDrafts = normalizedDrafts.map((draft) => ({
-          ...draft,
-          entry: linkLegacyExperimentEntries([draft.entry], activeSettings)[0]!,
-        }));
+        const linkedDrafts = normalizedDrafts.map((draft) => {
+          const linkedEntry = linkLegacyExperimentEntries([draft.entry], activeSettings)[0]!;
+          return {
+            ...draft,
+            entry: experimentEntryLinkError([linkedEntry], activeSettings) ? { ...linkedEntry, experimentId: null } : linkedEntry,
+          };
+        });
         this.dailyEntries = linkedEntries;
         this.dailyEntryDrafts = linkedDrafts;
         this.results = results.map((result) => normalizeResult(result)).sort((a, b) => b.date.localeCompare(a.date));
@@ -101,7 +105,10 @@ export const useAppStore = defineStore('app', {
       }
     },
     async saveEntry(entry: DailyEntry) {
+      if (!validDate(entry.date)) throw new Error('Укажите корректную дату записи');
       const saved = plainCopy(normalizeDailyEntry({ ...entry, updatedAt: new Date().toISOString() }));
+      const entryLinkError = experimentEntryLinkError([saved], this.settings);
+      if (entryLinkError) throw new Error(entryLinkError);
       await db.transaction('rw', [db.dailyEntries, db.dailyEntryDrafts], async () => {
         await db.dailyEntries.put(saved);
         await db.dailyEntryDrafts.delete(saved.date);
@@ -114,9 +121,13 @@ export const useAppStore = defineStore('app', {
       return saved;
     },
     async saveDailyEntryDraft(entry: DailyEntry) {
+      if (!validDate(entry.date)) throw new Error('Укажите корректную дату черновика');
+      const normalizedEntry = plainCopy(normalizeDailyEntry(entry));
+      const entryLinkError = experimentEntryLinkError([normalizedEntry], this.settings);
+      if (entryLinkError) throw new Error(entryLinkError);
       const draft: DailyEntryDraft = {
-        date: entry.date,
-        entry: plainCopy(entry),
+        date: normalizedEntry.date,
+        entry: normalizedEntry,
         updatedAt: new Date().toISOString(),
       };
       await db.dailyEntryDrafts.put(draft);
@@ -158,10 +169,12 @@ export const useAppStore = defineStore('app', {
     },
     async addLifeEvent(event: Omit<LifeEventRecord, 'id' | 'createdAt'>) {
       if (!validDate(event.date)) throw new Error('Укажите корректную дату события');
-      const record: LifeEventRecord = plainCopy({
-        ...event,
-        createdAt: new Date().toISOString(),
-      });
+      const record: LifeEventRecord = plainCopy(
+        normalizeLifeEvent({
+          ...event,
+          createdAt: new Date().toISOString(),
+        }),
+      );
       const id = await db.lifeEvents.add(record);
       this.lifeEvents.unshift({ ...record, id });
       this.lifeEvents.sort((a, b) => b.date.localeCompare(a.date));
@@ -170,7 +183,7 @@ export const useAppStore = defineStore('app', {
     async updateLifeEvent(event: LifeEventRecord) {
       if (event.id === undefined) return;
       if (!validDate(event.date)) throw new Error('Укажите корректную дату события');
-      const record = plainCopy(event);
+      const record = plainCopy(normalizeLifeEvent(event));
       await db.lifeEvents.put(record);
       const index = this.lifeEvents.findIndex((item) => item.id === record.id);
       if (index >= 0) this.lifeEvents[index] = record;
@@ -183,6 +196,9 @@ export const useAppStore = defineStore('app', {
       void this.syncCloudSnapshot();
     },
     async saveReview(review: WeeklyReview) {
+      if (!validDate(review.weekStart) || startOfWeek(review.weekStart) !== review.weekStart) {
+        throw new Error('Начало недельного обзора должно быть понедельником');
+      }
       const plainReview = plainCopy(
         normalizeWeeklyReview({
           ...review,
@@ -196,6 +212,9 @@ export const useAppStore = defineStore('app', {
       void this.syncCloudSnapshot();
     },
     async saveMonthlyReview(review: MonthlyReview) {
+      if (!validDate(review.monthStart) || startOfMonth(review.monthStart) !== review.monthStart) {
+        throw new Error('Начало месячного обзора должно быть первым днём месяца');
+      }
       const plainReview = plainCopy(
         normalizeMonthlyReview({
           ...review,
@@ -209,7 +228,11 @@ export const useAppStore = defineStore('app', {
       void this.syncCloudSnapshot();
     },
     async saveSettings(settings: AppSettings) {
+      const integrityError = experimentIntegrityError(settings);
+      if (integrityError) throw new Error(integrityError);
       const normalized = plainCopy(normalizeSettings(settings));
+      const entryLinkError = experimentEntryLinkError(this.dailyEntries, normalized);
+      if (entryLinkError) throw new Error(entryLinkError);
       await db.settings.put(normalized);
       this.settings = normalized;
       void this.syncCloudSnapshot();

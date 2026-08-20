@@ -37,6 +37,7 @@ describe('experiment summary', () => {
       entry('2026-07-05', { energy: 3, sleepMinutes: 430, experimentId: 'experiment-evening', experimentCompleted: true }),
       entry('2026-07-06', { energy: 3, sleepMinutes: 440, experimentId: 'experiment-evening', experimentCompleted: true }),
       entry('2026-07-07', { energy: 3, sleepMinutes: 450, experimentId: 'experiment-evening', experimentCompleted: false }),
+      entry('2026-07-09', { energy: 5, experimentId: 'experiment-evening', experimentCompleted: true }),
     ];
 
     const summary = buildExperimentSummary(entries, experiment());

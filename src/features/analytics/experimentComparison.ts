@@ -40,7 +40,9 @@ export function buildExperimentSummary(entries: DailyEntry[], experiment: Experi
   const baselineEntries = ordinaryEntriesInRange(entries, baselineStart, baselineEnd);
   const experimentEntries = ordinaryEntriesInRange(entries, experiment.startDate, experiment.endDate);
   const plannedExperimentEntries = experiment.id
-    ? entries.filter((entry) => entry.experimentId === experiment.id)
+    ? entries.filter(
+        (entry) => entry.experimentId === experiment.id && entry.date >= experiment.startDate && entry.date <= experiment.endDate,
+      )
     : entries.filter((entry) => entry.date >= experiment.startDate && entry.date <= experiment.endDate);
   const markedDays = plannedExperimentEntries.filter((entry) => entry.experimentCompleted !== null);
 

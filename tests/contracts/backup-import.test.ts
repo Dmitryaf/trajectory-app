@@ -47,6 +47,37 @@ describe('backup import', () => {
     expect(await db.dailyEntryDrafts.count()).toBe(0);
   });
 
+  it('keeps a local draft usable when an imported cloud copy no longer contains its experiment', async () => {
+    const store = useAppStore();
+    const localSettings = experimentSettings({
+      active: true,
+      id: 'local-experiment',
+      startDate: '2026-07-20',
+      endDate: '2026-07-24',
+    });
+    await store.saveSettings(localSettings);
+    await store.saveDailyEntryDraft({
+      ...emptyDailyEntry('2026-07-21'),
+      importantFact: 'Не потерять основной текст черновика',
+      experimentId: 'local-experiment',
+      experimentCompleted: false,
+      experimentNote: 'Условие выполнить не получилось',
+    });
+
+    await store.importData(validBackup(), { syncCloud: false, preserveDailyDrafts: true });
+
+    expect(store.draftByDate('2026-07-21')?.entry).toMatchObject({
+      importantFact: 'Не потерять основной текст черновика',
+      experimentId: null,
+      experimentCompleted: false,
+      experimentNote: 'Условие выполнить не получилось',
+    });
+    await expect(store.saveEntry(store.draftByDate('2026-07-21')!.entry)).resolves.toMatchObject({
+      importantFact: 'Не потерять основной текст черновика',
+      experimentId: null,
+    });
+  });
+
   it('returns the normalized daily entry that was actually stored', async () => {
     const store = useAppStore();
     const saved = await store.saveEntry({
@@ -437,6 +468,11 @@ describe('backup import', () => {
       ]),
       error: 'Повторяющееся поле settings.experimentHistory.id: duplicate',
     },
+    {
+      label: 'a reversed completed period',
+      settings: experimentSettings(undefined, [{ id: 'reversed', startDate: '2026-07-18', endDate: '2026-07-15' }]),
+      error: 'Дата окончания завершённого эксперимента должна быть не раньше даты начала: settings.experimentHistory[0]',
+    },
   ])('rejects experiment settings with $label', ({ settings, error }) => {
     expect(() => normalizeSnapshot(validBackup({ settings }))).toThrow(error);
   });
@@ -449,6 +485,17 @@ describe('backup import', () => {
         }),
       ),
     ).toThrow('Запись 2026-07-20 ссылается на неизвестный эксперимент: missing-experiment');
+  });
+
+  it('rejects a linked daily entry outside its experiment period', () => {
+    expect(() =>
+      normalizeSnapshot(
+        validBackup({
+          settings: experimentSettings({ active: true, id: 'active', startDate: '2026-07-20', endDate: '2026-07-24' }),
+          dailyEntries: [{ ...emptyDailyEntry('2026-07-25'), experimentId: 'active', experimentCompleted: true }],
+        }),
+      ),
+    ).toThrow('Запись 2026-07-25 находится вне периода эксперимента: active');
   });
 });
 

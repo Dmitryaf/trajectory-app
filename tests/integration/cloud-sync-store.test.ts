@@ -6,7 +6,7 @@ import { BACKUP_VERSION } from '../../src/features/backup/version';
 import { markCloudSyncPending, saveCloudSnapshot } from '../../src/services/cloudSync';
 import { useAppStore } from '../../src/stores/app';
 import { useAuthStore } from '../../src/stores/auth';
-import { emptyWeeklyReview } from '../../src/types';
+import { defaultSettings, emptyDailyEntry, emptyMonthlyReview, emptyWeeklyReview } from '../../src/types';
 
 vi.mock('../../src/services/cloudSync', () => ({
   clearCloudSyncMeta: vi.fn(),
@@ -129,5 +129,56 @@ describe('cloud synchronization state', () => {
 
     expect(await db.results.count()).toBe(0);
     expect(await db.lifeEvents.count()).toBe(0);
+  });
+
+  it('rejects non-canonical entry and review keys before writing to IndexedDB', async () => {
+    const store = useAppStore();
+
+    await expect(store.saveEntry(emptyDailyEntry('2026-02-30'))).rejects.toThrow('Укажите корректную дату записи');
+    await expect(store.saveReview(emptyWeeklyReview('2026-07-21'))).rejects.toThrow('Начало недельного обзора должно быть понедельником');
+    await expect(store.saveMonthlyReview(emptyMonthlyReview('2026-07-02'))).rejects.toThrow(
+      'Начало месячного обзора должно быть первым днём месяца',
+    );
+
+    expect(await db.dailyEntries.count()).toBe(0);
+    expect(await db.weeklyReviews.count()).toBe(0);
+    expect(await db.monthlyReviews.count()).toBe(0);
+  });
+
+  it('does not save a daily experiment link outside its period or shrink a period past linked entries', async () => {
+    const store = useAppStore();
+    const settings = structuredClone(defaultSettings);
+    settings.experiment = {
+      ...settings.experiment,
+      id: 'active-experiment',
+      active: true,
+      title: 'Ложиться раньше',
+      startDate: '2026-07-20',
+      endDate: '2026-07-24',
+    };
+    await store.saveSettings(settings);
+
+    await expect(
+      store.saveEntry({
+        ...emptyDailyEntry('2026-07-25'),
+        experimentId: 'active-experiment',
+        experimentCompleted: true,
+      }),
+    ).rejects.toThrow('Запись 2026-07-25 находится вне периода эксперимента: active-experiment');
+
+    await store.saveEntry({
+      ...emptyDailyEntry('2026-07-24'),
+      experimentId: 'active-experiment',
+      experimentCompleted: true,
+    });
+    await expect(
+      store.saveSettings({
+        ...settings,
+        experiment: { ...settings.experiment, endDate: '2026-07-23' },
+      }),
+    ).rejects.toThrow('Запись 2026-07-24 находится вне периода эксперимента: active-experiment');
+
+    expect(store.settings.experiment.endDate).toBe('2026-07-24');
+    expect((await db.settings.get('main'))?.experiment.endDate).toBe('2026-07-24');
   });
 });
