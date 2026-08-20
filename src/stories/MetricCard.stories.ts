@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite';
-import MetricCard from '../components/MetricCard.vue';
+import MetricCard from '../shared/ui/data-display/MetricCard.vue';
 
 const meta = {
   title: 'Карточки/Показатель',

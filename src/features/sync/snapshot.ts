@@ -18,7 +18,7 @@ export async function applyCloudSnapshot(
   message: string,
   services: ApplyCloudSnapshotServices = defaultServices,
 ) {
-  await store.importData(snapshot.payload, { syncCloud: false });
+  await store.importData(snapshot.payload, { syncCloud: false, preserveDailyDrafts: true });
   services.markSynced(userId, snapshot.updatedAt);
   store.setCloudSyncState('synced', `${message}: ${formatCloudUpdatedAt(snapshot.updatedAt)}`, {
     updatedAt: snapshot.updatedAt,

@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import ChipGroup from '../components/ChipGroup.vue';
-import DurationInput from '../components/DurationInput.vue';
-import FirstUseRecovery from '../components/FirstUseRecovery.vue';
-import HowItWorksDialog from '../components/HowItWorksDialog.vue';
-import ScalePicker from '../components/ScalePicker.vue';
-import AutoGrowTextarea from '../components/AutoGrowTextarea.vue';
+import { computed, ref } from 'vue';
+import CurrentGoalDialog from '../features/daily-entry/ui/CurrentGoalDialog.vue';
+import FirstUseRecovery from '../features/first-use/ui/FirstUseRecovery.vue';
+import HowItWorksDialog from '../features/first-use/ui/HowItWorksDialog.vue';
+import PwaInstallNudge from '../features/pwa/ui/PwaInstallNudge.vue';
+import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
+import ChipGroup from '../shared/ui/forms/ChipGroup.vue';
+import DurationInput from '../shared/ui/forms/DurationInput.vue';
+import ScalePicker from '../shared/ui/forms/ScalePicker.vue';
 import { experimentTextLimits } from '../features/experiments/model';
 import { useDailyEntryForm } from '../features/daily-entry/useDailyEntryForm';
 import { useAppStore } from '../stores/app';
+import { notifySaved, notifyUnknownError } from '../services/notifications';
 import { addDays, endOfMonth, endOfWeek, formatDate, formatMinutes, startOfMonth, startOfWeek, todayKey } from '../services/dates';
 import { buildObservations, entriesForPeriod, entriesForWeek, summarize } from '../services/analytics';
 import {
@@ -34,24 +37,29 @@ import {
 } from '../types';
 
 const store = useAppStore();
+const goalDialogOpen = ref(false);
+const goalSaving = ref(false);
 const {
   selectedDate,
   sleepDurationMinutes,
   timeInBedDurationMinutes,
   weightKg,
-  saved,
   validationMessage,
   form,
   hasSavedEntry,
   isDirty,
   entryChangeNotice,
+  draftConflict,
   saveButtonText,
   saveButtonDisabled,
   blockIsActive,
   changeSelectedDate,
   selectDate,
+  resolveDraftConflict,
   save,
 } = useDailyEntryForm(store);
+
+const selectedDateLabel = computed(() => selectedDate.value.split('-').reverse().join('.'));
 
 const careerItems = computed(() => {
   const usedIds = new Set([
@@ -63,7 +71,7 @@ const careerItems = computed(() => {
     new Map(
       [
         ...careerOptions,
-        ...store.settings.customCareerOptions.filter((option) => !option.archived),
+        ...store.settings.customCareerOptions.filter((option) => !option.archived || form.careerStates.includes(option.id)),
         ...legacyCareerOptions.filter((option) => usedIds.has(option.id)),
       ].map((option) => [option.id, option]),
     ).values(),
@@ -82,11 +90,22 @@ const activityItems = computed(() => {
   ).filter((option) => form.activities.includes(option.id) && !configuredIds.has(option.id));
   return [...configured, ...historical];
 });
-const contextFactorItems = computed(() => [
-  ...contextFactorOptions.filter((option) => !store.settings.hiddenContextFactorIds.includes(option.id)),
-  ...store.settings.customContextFactorOptions.filter((option) => !option.archived),
-  ...legacyContextFactorOptions.filter((option) => form.contextFactors.includes(option.id)),
-]);
+const contextFactorItems = computed(() => {
+  const configured = [
+    ...contextFactorOptions.filter((option) => !store.settings.hiddenContextFactorIds.includes(option.id)),
+    ...store.settings.customContextFactorOptions.filter((option) => !option.archived),
+  ];
+  const configuredIds = new Set(configured.map((option) => option.id));
+  const historical = Array.from(
+    new Map(
+      [...contextFactorOptions, ...legacyContextFactorOptions, ...store.settings.customContextFactorOptions].map((option) => [
+        option.id,
+        option,
+      ]),
+    ).values(),
+  ).filter((option) => form.contextFactors.includes(option.id) && !configuredIds.has(option.id));
+  return [...configured, ...historical];
+});
 const actionDirectionItems = computed(() =>
   form.actionDirection === 'recovery'
     ? [...actionDirectionEntryOptions, { id: 'recovery' as const, label: 'Восстановление (старая отметка)', icon: '◌' }]
@@ -94,6 +113,12 @@ const actionDirectionItems = computed(() =>
 );
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
 const activeLifeOptions = computed(() => lifeAreaItems.value.filter((option) => store.settings.activeLifeAreas.includes(option.id)));
+const dailyLifeAreaItems = computed(() => [
+  ...activeLifeOptions.value,
+  ...lifeAreaItems.value.filter(
+    (option) => form.lifeAreas.includes(option.id) && !activeLifeOptions.value.some((active) => active.id === option.id),
+  ),
+]);
 const isToday = computed(() => selectedDate.value === todayKey());
 const isFirstEntry = computed(() => store.loaded && store.dailyEntries.length === 0);
 const firstUseEditRequested = new URL(window.location.href).searchParams.get('first-use') === 'edit';
@@ -104,7 +129,21 @@ const firstUseTakesPriority = computed(
       store.settings.firstUse.status === 'in_progress' ||
       (firstUseEditRequested && store.settings.firstUse.status === 'completed')),
 );
-const hasSelectedFocus = computed(() => Boolean((form.focusTitle || store.settings.activeFocusTitle).trim()));
+const displayedFocusTitle = computed(() => (hasSavedEntry.value ? form.focusTitle : form.focusTitle || store.settings.activeFocusTitle));
+const displayedFocusOutcomeCriterion = computed(() =>
+  hasSavedEntry.value ? form.focusOutcomeCriterion : form.focusOutcomeCriterion || store.settings.focusOutcomeCriterion,
+);
+const displayedFocusReviewDate = computed(() =>
+  hasSavedEntry.value ? form.focusReviewDate : form.focusReviewDate || store.settings.focusReviewDate,
+);
+const displayedExternalEvidenceCriterion = computed(() =>
+  hasSavedEntry.value ? form.externalEvidenceCriterion : form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion,
+);
+const displayedNutritionCriterion = computed(() =>
+  hasSavedEntry.value ? form.nutritionCriterion : form.nutritionCriterion || store.settings.nutritionGoalCriterion,
+);
+const hasSelectedFocus = computed(() => Boolean(displayedFocusTitle.value.trim()));
+const currentGoalTitle = computed(() => store.settings.activeFocusTitle.trim());
 const hasRecordedGoalAction = computed(() => form.recordedFields.includes('actionDirection'));
 const showGoalActionChoices = computed(() => hasSelectedFocus.value || hasRecordedGoalAction.value);
 const showLifeAreas = computed(() => activeLifeOptions.value.length > 0 || form.lifeAreas.length > 0 || form.lifeAreasRecorded);
@@ -215,6 +254,38 @@ function markRecorded(field: DailyRecordedFieldId) {
 function unmarkRecorded(field: DailyRecordedFieldId) {
   form.recordedFields = form.recordedFields.filter((item) => item !== field);
 }
+
+async function saveCurrentGoal(
+  goal: {
+    title: string;
+    outcomeCriterion: string;
+    reviewDate: string;
+    externalEvidenceCriterion: string;
+  },
+  successMessage = 'Текущая цель сохранена',
+) {
+  if (goalSaving.value) return;
+  goalSaving.value = true;
+  try {
+    await store.saveSettings({
+      ...store.settings,
+      activeFocusTitle: goal.title,
+      focusOutcomeCriterion: goal.outcomeCriterion,
+      focusReviewDate: goal.reviewDate,
+      externalEvidenceCriterion: goal.externalEvidenceCriterion,
+    });
+    goalDialogOpen.value = false;
+    notifySaved(successMessage);
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось сохранить цель');
+  } finally {
+    goalSaving.value = false;
+  }
+}
+
+async function removeCurrentGoal() {
+  await saveCurrentGoal({ title: '', outcomeCriterion: '', reviewDate: '', externalEvidenceCriterion: '' }, 'Текущая цель убрана');
+}
 </script>
 
 <template>
@@ -225,8 +296,14 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
         <h1>{{ isToday ? 'Сегодня' : formatDate(selectedDate, { day: 'numeric', month: 'long', weekday: 'long' }) }}</h1>
       </div>
       <label class="entry-date-picker">
-        <span>Запись за дату</span>
-        <input :value="selectedDate" class="date-input" type="date" :max="todayKey()" aria-label="Дата записи" @change="selectDate" />
+        <span class="entry-date-picker__label">Запись за дату</span>
+        <span class="entry-date-control">
+          <span aria-hidden="true">{{ selectedDateLabel }}</span>
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
+          </svg>
+          <input :value="selectedDate" class="date-input" type="date" :max="todayKey()" aria-label="Дата записи" @change="selectDate" />
+        </span>
         <small>Можно выбрать любой прошедший день</small>
       </label>
     </div>
@@ -237,6 +314,17 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
       <RouterLink to="/results"><span>✓</span><strong>Сохранить завершённый результат</strong></RouterLink>
       <RouterLink to="/events"><span>✦</span><strong>Записать мысль или событие</strong></RouterLink>
     </nav>
+
+    <section v-if="!firstUseTakesPriority && isToday" class="current-goal-summary" aria-label="Текущая цель">
+      <div>
+        <span class="eyebrow">Текущая цель</span>
+        <strong>{{ currentGoalTitle || 'Пока не выбрана' }}</strong>
+        <p v-if="!currentGoalTitle">Можно продолжать заполнять день без цели.</p>
+      </div>
+      <button class="secondary-button context-action" type="button" aria-haspopup="dialog" @click="goalDialogOpen = true">
+        {{ currentGoalTitle ? 'Изменить' : 'Выбрать цель' }}
+      </button>
+    </section>
 
     <section v-if="isFirstEntry && !firstUseTakesPriority" class="first-entry-guide" aria-label="Первая запись">
       <div>
@@ -255,9 +343,24 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
       <RouterLink to="/settings#daily-blocks">Настроить главную →</RouterLink>
     </div>
 
-    <section v-if="!firstUseTakesPriority && !isFirstEntry && entryChangeNotice" class="entry-change-notice" aria-live="polite">
-      <strong>{{ hasSavedEntry ? 'Изменения не сохранены' : 'Новая запись не сохранена' }}</strong>
-      <p>{{ entryChangeNotice }}</p>
+    <PwaInstallNudge v-if="!firstUseTakesPriority && isToday" :saved-entry-count="store.dailyEntries.length" />
+
+    <section v-if="!firstUseTakesPriority && draftConflict" class="entry-change-notice draft-conflict-notice" role="alert">
+      <div>
+        <strong>Черновик и сохранённая запись отличаются</strong>
+        <p>Выберите локальный черновик или другую сохранённую версию. До выбора запись нельзя сохранить.</p>
+      </div>
+      <div class="goal-dialog__actions">
+        <button class="secondary-button" type="button" @click="resolveDraftConflict(false)">Оставить сохранённую</button>
+        <button class="primary-button" type="button" @click="resolveDraftConflict(true)">Продолжить с черновиком</button>
+      </div>
+    </section>
+
+    <section v-else-if="!firstUseTakesPriority && entryChangeNotice" class="entry-change-notice" aria-live="polite">
+      <div>
+        <strong>{{ hasSavedEntry ? 'Изменения не сохранены' : 'Новая запись не сохранена' }}</strong>
+        <p>{{ entryChangeNotice }}</p>
+      </div>
     </section>
 
     <section v-else-if="!firstUseTakesPriority && activeReviewReminder" class="review-nudge" aria-label="Период готов к обзору">
@@ -401,14 +504,22 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
             <p>
               {{
                 hasSelectedFocus
-                  ? `Текущая цель: ${form.focusTitle || store.settings.activeFocusTitle}`
+                  ? `${hasSavedEntry ? 'Цель на эту дату' : 'Текущая цель'}: ${displayedFocusTitle}`
                   : hasRecordedGoalAction
                     ? 'Для этой записи цель не была сохранена.'
                     : 'Сначала выберите, над чем сейчас хотите работать.'
               }}
             </p>
           </div>
-          <RouterLink v-if="hasSelectedFocus" class="card-settings-link" to="/settings#goal-settings">Настроить</RouterLink>
+          <button
+            v-if="hasSelectedFocus && !hasSavedEntry"
+            class="card-settings-link"
+            type="button"
+            aria-haspopup="dialog"
+            @click="goalDialogOpen = true"
+          >
+            Настроить
+          </button>
         </div>
         <template v-if="showGoalActionChoices">
           <p class="field-hint">Что лучше всего описывает этот день относительно выбранной цели?</p>
@@ -440,34 +551,36 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
             ></textarea>
           </template>
           <details
-            v-if="
-              form.focusOutcomeCriterion ||
-              store.settings.focusOutcomeCriterion ||
-              form.focusReviewDate ||
-              store.settings.focusReviewDate ||
-              form.externalEvidenceCriterion ||
-              store.settings.externalEvidenceCriterion
-            "
+            v-if="displayedFocusOutcomeCriterion || displayedFocusReviewDate || displayedExternalEvidenceCriterion"
             class="analysis-range goal-context-details"
           >
             <summary>Показать критерии цели</summary>
             <div class="analysis-range__content">
-              <p v-if="form.focusOutcomeCriterion || store.settings.focusOutcomeCriterion" class="form-context">
-                Как понять, что получилось: {{ form.focusOutcomeCriterion || store.settings.focusOutcomeCriterion }}
+              <p v-if="displayedFocusOutcomeCriterion" class="form-context">
+                Как понять, что получилось: {{ displayedFocusOutcomeCriterion }}
               </p>
-              <p v-if="form.focusReviewDate || store.settings.focusReviewDate" class="form-context">
+              <p v-if="displayedFocusReviewDate" class="form-context">
                 Проверить цель:
-                {{ formatDate(form.focusReviewDate || store.settings.focusReviewDate, { day: 'numeric', month: 'long', year: 'numeric' }) }}
+                {{ formatDate(displayedFocusReviewDate, { day: 'numeric', month: 'long', year: 'numeric' }) }}
               </p>
-              <p v-if="form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion" class="form-context">
-                Что считать шагом: {{ form.externalEvidenceCriterion || store.settings.externalEvidenceCriterion }}
+              <p v-if="displayedExternalEvidenceCriterion" class="form-context">
+                Что считать шагом: {{ displayedExternalEvidenceCriterion }}
               </p>
             </div>
           </details>
         </template>
         <div v-else class="empty-block-note">
-          <p>После выбора цели здесь можно будет отмечать конкретные шаги, подготовку или дни, занятые другими делами.</p>
-          <RouterLink class="secondary-button context-action" to="/settings#goal-settings">Выбрать цель</RouterLink>
+          <p v-if="hasSavedEntry">Для этой даты цель не была сохранена. Текущие настройки не изменяют историю.</p>
+          <p v-else>После выбора цели здесь можно будет отмечать конкретные шаги, подготовку или дни, занятые другими делами.</p>
+          <button
+            v-if="!hasSavedEntry"
+            class="secondary-button context-action"
+            type="button"
+            aria-haspopup="dialog"
+            @click="goalDialogOpen = true"
+          >
+            Выбрать цель
+          </button>
         </div>
       </article>
 
@@ -526,11 +639,7 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
           <div>
             <h2>Питание</h2>
             <p>
-              {{
-                form.nutritionCriterion ||
-                store.settings.nutritionGoalCriterion ||
-                'Отметьте, как прошёл день относительно вашего ориентира в питании.'
-              }}
+              {{ displayedNutritionCriterion || 'Отметьте, как прошёл день относительно вашего ориентира в питании.' }}
             </p>
           </div>
           <RouterLink class="card-settings-link" to="/settings#nutrition-settings">Настроить</RouterLink>
@@ -571,7 +680,12 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
           </div>
           <RouterLink class="card-settings-link" to="/settings#life-areas">Настроить</RouterLink>
         </div>
-        <ChipGroup :model-value="form.lifeAreas as LifeAreaId[]" :options="activeLifeOptions" multiple @update:model-value="setLifeAreas" />
+        <ChipGroup
+          :model-value="form.lifeAreas as LifeAreaId[]"
+          :options="dailyLifeAreaItems"
+          multiple
+          @update:model-value="setLifeAreas"
+        />
         <button
           class="none-option"
           :class="{ selected: form.lifeAreasRecorded && !form.lifeAreas.length }"
@@ -619,7 +733,7 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
       <div class="checkin-group-heading">
         <span>Короткий итог дня</span>
       </div>
-      <article class="form-card">
+      <article class="form-card form-card--daily-summary form-card--wide">
         <div class="form-card__heading">
           <span class="section-icon">·</span>
           <div>
@@ -634,17 +748,27 @@ function unmarkRecorded(field: DailyRecordedFieldId) {
           placeholder="Например: после прогулки стало легче собраться с мыслями"
         ></textarea>
       </article>
+    </form>
 
-      <button class="primary-button primary-button--save" type="submit" :disabled="saveButtonDisabled">
-        <span>{{ saveButtonText }}</span
-        ><span>{{ saved ? '✓' : '→' }}</span>
-      </button>
-      <Transition name="mobile-save">
-        <button v-if="isDirty" class="primary-button mobile-save-button" type="submit" :disabled="saveButtonDisabled">
+    <Teleport to="body">
+      <Transition name="floating-save">
+        <button v-if="isDirty" class="primary-button floating-save-button" type="button" :disabled="saveButtonDisabled" @click="save">
           <span>{{ saveButtonText }}</span
           ><span aria-hidden="true">→</span>
         </button>
       </Transition>
-    </form>
+    </Teleport>
+
+    <CurrentGoalDialog
+      :open="goalDialogOpen"
+      :title="store.settings.activeFocusTitle"
+      :outcome-criterion="store.settings.focusOutcomeCriterion"
+      :review-date="store.settings.focusReviewDate"
+      :external-evidence-criterion="store.settings.externalEvidenceCriterion"
+      :saving="goalSaving"
+      @close="goalDialogOpen = false"
+      @remove="removeCurrentGoal"
+      @save="saveCurrentGoal"
+    />
   </section>
 </template>

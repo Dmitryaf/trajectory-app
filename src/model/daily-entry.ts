@@ -90,6 +90,7 @@ export function emptyDailyEntry(date: string): DailyEntry {
     lifeAreas: [],
     lifeAreasRecorded: false,
     importantFact: '',
+    experimentId: null,
     experimentCompleted: null,
     experimentNote: '',
     updatedAt: new Date().toISOString(),
@@ -152,6 +153,7 @@ export function normalizeDailyEntry(entry: LegacyDailyEntry & { date: string }):
   const actionNote = typeof entry.actionNote === 'string' ? entry.actionNote : '';
   const lifeAreas = Array.isArray(entry.lifeAreas) ? entry.lifeAreas.filter((area): area is LifeAreaId => typeof area === 'string') : [];
   const importantFact = typeof entry.importantFact === 'string' ? entry.importantFact : '';
+  const experimentId = typeof entry.experimentId === 'string' && entry.experimentId.trim() ? entry.experimentId.trim() : null;
   const experimentCompleted = typeof entry.experimentCompleted === 'boolean' ? entry.experimentCompleted : null;
   const experimentNote = typeof entry.experimentNote === 'string' ? entry.experimentNote : '';
   const activitiesRecorded = typeof entry.activitiesRecorded === 'boolean' ? entry.activitiesRecorded : activities.length > 0;
@@ -231,6 +233,7 @@ export function normalizeDailyEntry(entry: LegacyDailyEntry & { date: string }):
     specialDay,
     specialDayNote: typeof entry.specialDayNote === 'string' ? entry.specialDayNote : '',
     importantFact,
+    experimentId,
     experimentCompleted,
     experimentNote,
     updatedAt: typeof entry.updatedAt === 'string' ? entry.updatedAt : '',

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import AutoGrowTextarea from '../components/AutoGrowTextarea.vue';
-import ChipGroup from '../components/ChipGroup.vue';
-import ArchiveDateRange from '../features/journal/ArchiveDateRange.vue';
-import ArchivePagination from '../features/journal/ArchivePagination.vue';
+import ArchiveDateRange from '../features/journal/ui/ArchiveDateRange.vue';
+import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
+import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
+import ChipGroup from '../shared/ui/forms/ChipGroup.vue';
 import { archiveRangeFromQuery } from '../features/journal/archiveQuery';
 import { useArchiveList } from '../features/journal/useArchiveList';
 import { formatDate, todayKey } from '../services/dates';
-import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
+import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { useAppStore } from '../stores/app';
 import { lifeEventTypeOptions, type LifeEventRecord, type LifeEventType } from '../types';
 
@@ -44,6 +44,10 @@ const {
 async function saveEvent() {
   const cleanTitle = title.value.trim();
   if (!cleanTitle) return;
+  if (!date.value) {
+    notifyError('Укажите дату события');
+    return;
+  }
   saving.value = true;
   const wasEditing = editingId.value !== null;
   try {
@@ -144,10 +148,10 @@ function toggleNote(event: LifeEventRecord) {
       <ChipGroup v-model="type" :options="lifeEventTypeOptions" />
       <div class="event-composer__fields">
         <input v-model="title" type="text" maxlength="140" placeholder="Короткое название" @keyup.enter="saveEvent" />
-        <input v-model="date" class="date-input" type="date" aria-label="Дата события" />
+        <input v-model="date" class="date-input" type="date" required aria-label="Дата события" />
       </div>
       <AutoGrowTextarea v-model="note" :rows="4" :max-length="2000" placeholder="Что произошло или что вы поняли и почему это важно" />
-      <button class="primary-button" type="button" :disabled="!title.trim() || saving" @click="saveEvent">
+      <button class="primary-button" type="button" :disabled="!title.trim() || !date || saving" @click="saveEvent">
         {{ editingId === null ? 'Добавить запись' : 'Сохранить запись' }}
       </button>
       <button v-if="editingId !== null" class="secondary-button composer-cancel" type="button" @click="resetForm">

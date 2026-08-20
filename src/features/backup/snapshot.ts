@@ -14,9 +14,11 @@ import {
   type WeeklyReview,
 } from '../../types';
 import { BACKUP_VERSION } from './version';
+import { experimentEntryLinkError, experimentIntegrityError, linkLegacyExperimentEntries } from '../experiments/model';
+import { startOfMonth, startOfWeek } from '../../services/dates';
 
 export type ExportPayload = {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | typeof BACKUP_VERSION;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | typeof BACKUP_VERSION;
   exportedAt: string;
   dailyEntries: DailyEntry[];
   results: ResultRecord[];
@@ -41,24 +43,29 @@ export function normalizeSnapshot(input: unknown): ExportPayload {
     version !== 7 &&
     version !== 8 &&
     version !== 9 &&
-    version !== 10
+    version !== 10 &&
+    version !== 11
   ) {
     throw new Error('Неподдерживаемый формат резервной копии');
   }
 
-  const dailyEntries = requireArray(source.dailyEntries, 'dailyEntries').map((value, index) => {
-    const entry = requireRecord(value, `dailyEntries[${index}]`);
-    return normalizeDailyEntry({ ...entry, date: requireDate(entry.date, `dailyEntries[${index}].date`) });
-  });
+  const settingsSource = source.settings === undefined ? undefined : requireRecord(source.settings, 'settings');
+  const settings = settingsSource
+    ? normalizeSettings(settingsSource as Partial<AppSettings>)
+    : normalizeSettings({
+        ...structuredClone(defaultSettings),
+        firstUse: { ...structuredClone(defaultSettings.firstUse), status: 'available' },
+      });
+  requireExperimentInvariants(settings, settingsSource);
+  const dailyEntries = linkLegacyExperimentEntries(
+    requireArray(source.dailyEntries, 'dailyEntries').map((value, index) => {
+      const entry = requireRecord(value, `dailyEntries[${index}]`);
+      return normalizeDailyEntry({ ...entry, date: requireDate(entry.date, `dailyEntries[${index}].date`) });
+    }),
+    settings,
+  );
   const results = requireArray(source.results, 'results').map((value, index) => normalizeSnapshotResult(value, index));
-  const lifeEvents = optionalArray(source.lifeEvents, 'lifeEvents').map((value, index) => {
-    const event = requireRecord(value, `lifeEvents[${index}]`);
-    return normalizeLifeEvent({
-      ...event,
-      date: requireDate(event.date, `lifeEvents[${index}].date`),
-      title: requireString(event.title, `lifeEvents[${index}].title`),
-    });
-  });
+  const lifeEvents = optionalArray(source.lifeEvents, 'lifeEvents').map((value, index) => normalizeSnapshotLifeEvent(value, index));
   const weeklyReviews = optionalArray(source.weeklyReviews, 'weeklyReviews').map((value, index) => {
     const review = requireRecord(value, `weeklyReviews[${index}]`);
     return normalizeWeeklyReview({ ...review, weekStart: requireDate(review.weekStart, `weeklyReviews[${index}].weekStart`) });
@@ -67,14 +74,31 @@ export function normalizeSnapshot(input: unknown): ExportPayload {
     const review = requireRecord(value, `monthlyReviews[${index}]`);
     return normalizeMonthlyReview({ ...review, monthStart: requireDate(review.monthStart, `monthlyReviews[${index}].monthStart`) });
   });
-  const settings =
-    source.settings === undefined
-      ? normalizeSettings({
-          ...structuredClone(defaultSettings),
-          firstUse: { ...structuredClone(defaultSettings.firstUse), status: 'available' },
-        })
-      : normalizeSettings(requireRecord(source.settings, 'settings') as Partial<AppSettings>);
-
+  requireUniqueKeys(dailyEntries, (entry) => entry.date, 'dailyEntries.date');
+  requireUniqueKeys(
+    results.filter((result): result is ResultRecord & { id: number } => result.id !== undefined),
+    (result) => result.id,
+    'results.id',
+  );
+  requireUniqueKeys(
+    lifeEvents.filter((event): event is LifeEventRecord & { id: number } => event.id !== undefined),
+    (event) => event.id,
+    'lifeEvents.id',
+  );
+  requireUniqueKeys(weeklyReviews, (review) => review.weekStart, 'weeklyReviews.weekStart');
+  requireUniqueKeys(monthlyReviews, (review) => review.monthStart, 'monthlyReviews.monthStart');
+  weeklyReviews.forEach((review, index) => {
+    if (startOfWeek(review.weekStart) !== review.weekStart) {
+      throw new Error(`weeklyReviews[${index}].weekStart должен быть понедельником`);
+    }
+  });
+  monthlyReviews.forEach((review, index) => {
+    if (startOfMonth(review.monthStart) !== review.monthStart) {
+      throw new Error(`monthlyReviews[${index}].monthStart должен быть первым днём месяца`);
+    }
+  });
+  const entryLinkError = experimentEntryLinkError(dailyEntries, settings);
+  if (entryLinkError) throw new Error(entryLinkError);
   return {
     version,
     exportedAt: typeof source.exportedAt === 'string' ? source.exportedAt : '',
@@ -85,6 +109,21 @@ export function normalizeSnapshot(input: unknown): ExportPayload {
     monthlyReviews,
     settings,
   };
+}
+
+function normalizeSnapshotLifeEvent(value: unknown, index: number): LifeEventRecord {
+  const event = requireRecord(value, `lifeEvents[${index}]`);
+  const id = event.id;
+  if (id !== undefined && (!Number.isInteger(id) || (id as number) <= 0)) {
+    throw new Error(`Некорректное поле lifeEvents[${index}].id`);
+  }
+
+  return normalizeLifeEvent({
+    ...event,
+    ...(typeof id === 'number' ? { id } : {}),
+    date: requireDate(event.date, `lifeEvents[${index}].date`),
+    title: requireString(event.title, `lifeEvents[${index}].title`),
+  });
 }
 
 function normalizeSnapshotResult(value: unknown, index: number): ResultRecord {
@@ -135,4 +174,39 @@ function requireDate(value: unknown, field: string): string {
     throw new Error(`Некорректная дата в ${field}`);
   }
   return date;
+}
+
+function requireUniqueKeys<T, K extends string | number>(items: T[], keyOf: (item: T) => K, field: string) {
+  const seen = new Set<K>();
+  for (const item of items) {
+    const key = keyOf(item);
+    if (seen.has(key)) throw new Error(`Повторяющееся поле ${field}: ${key}`);
+    seen.add(key);
+  }
+}
+
+function requireExperimentInvariants(settings: AppSettings, source: UnknownRecord | undefined) {
+  const rawHistory = Array.isArray(source?.experimentHistory) ? source.experimentHistory : [];
+  const rawIds = rawHistory.flatMap((item) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
+    const id = (item as UnknownRecord).id;
+    return typeof id === 'string' && id.trim() ? [id.trim()] : [];
+  });
+  requireUniqueKeys(rawIds, (id) => id, 'settings.experimentHistory.id');
+  rawHistory.forEach((item, index) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return;
+    const record = item as UnknownRecord;
+    if (
+      typeof record.startDate === 'string' &&
+      typeof record.endDate === 'string' &&
+      /^\d{4}-\d{2}-\d{2}$/.test(record.startDate) &&
+      /^\d{4}-\d{2}-\d{2}$/.test(record.endDate) &&
+      record.startDate > record.endDate
+    ) {
+      throw new Error(`Дата окончания завершённого эксперимента должна быть не раньше даты начала: settings.experimentHistory[${index}]`);
+    }
+  });
+
+  const integrityError = experimentIntegrityError(settings);
+  if (integrityError) throw new Error(integrityError);
 }

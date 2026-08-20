@@ -1,15 +1,15 @@
 .app-shell {
-  min-height: 100vh;
+  min-height: var(--viewport-height);
 }
 .app-header {
-  height: 82px;
+  height: calc(82px + var(--safe-top));
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 14px;
   max-width: 980px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: var(--safe-top) calc(24px + var(--safe-right)) 0 calc(24px + var(--safe-left));
 }
 .brand {
   display: inline-flex;
@@ -147,51 +147,70 @@
   border-color: #8fcdb5;
   box-shadow: 0 15px 34px rgba(16, 45, 44, 0.18);
 }
-.feedback-backdrop {
+.feedback-backdrop,
+.help-backdrop,
+.goal-dialog-backdrop {
   position: fixed;
   inset: 0;
+  height: var(--viewport-height);
   z-index: 80;
   display: grid;
   place-items: center;
-  padding: 20px;
+  padding: calc(20px + var(--safe-top)) calc(20px + var(--safe-right)) calc(20px + var(--safe-bottom)) calc(20px + var(--safe-left));
   background: rgba(11, 28, 27, 0.52);
   backdrop-filter: blur(5px);
 }
-.feedback-dialog {
-  width: min(540px, 100%);
-  max-height: calc(100vh - 40px);
+.feedback-dialog,
+.help-dialog,
+.goal-dialog {
+  max-height: 100%;
   overflow-y: auto;
-  padding: 26px;
+  overscroll-behavior: contain;
   border: 1px solid rgba(213, 224, 217, 0.95);
   border-radius: 26px;
   background: #fff;
   box-shadow: 0 30px 80px rgba(8, 28, 25, 0.24);
 }
-.feedback-dialog__heading {
+.feedback-dialog {
+  width: min(540px, 100%);
+  padding: 26px;
+}
+.feedback-dialog__heading,
+.help-dialog__heading,
+.goal-dialog__heading {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 18px;
+}
+.feedback-dialog__heading,
+.goal-dialog__heading {
   margin-bottom: 18px;
 }
-.feedback-dialog__heading h2 {
+.feedback-dialog__heading h2,
+.help-dialog__heading h2,
+.goal-dialog__heading h2 {
   margin: 0;
   color: var(--navy);
+}
+.feedback-dialog__heading h2,
+.goal-dialog__heading h2 {
   font-size: 25px;
 }
-.feedback-dialog__close {
-  width: 38px;
-  height: 38px;
+.dialog-close-button {
+  display: grid;
+  width: 44px;
+  height: 44px;
   flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface-soft);
   color: #5f6d68;
   cursor: pointer;
-  font-size: 24px;
-  line-height: 1;
 }
-.feedback-dialog__close:disabled {
+.dialog-close-button:disabled {
   opacity: 0.58;
   cursor: not-allowed;
 }
@@ -204,57 +223,37 @@
   font-size: 12px;
   line-height: 1.5;
 }
-.feedback-dialog__actions {
+.feedback-dialog__actions,
+.help-dialog__actions,
+.goal-dialog__actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+.feedback-dialog__actions,
+.help-dialog__actions {
   margin-top: 20px;
+}
+.help-dialog__actions a {
+  min-width: 0;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-right: 14px;
+  padding-left: 14px;
+  line-height: 1.25;
+  text-align: center;
 }
 .feedback-dialog__actions button {
   min-width: 120px;
 }
-.help-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 80;
-  display: grid;
-  place-items: center;
-  padding: 20px;
-  background: rgba(11, 28, 27, 0.52);
-  backdrop-filter: blur(5px);
-}
 .help-dialog {
   width: min(620px, 100%);
-  max-height: calc(100vh - 40px);
-  overflow-y: auto;
   padding: 28px;
-  border: 1px solid rgba(213, 224, 217, 0.95);
-  border-radius: 26px;
-  background: #fff;
-  box-shadow: 0 30px 80px rgba(8, 28, 25, 0.24);
-}
-.help-dialog__heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 18px;
 }
 .help-dialog__heading h2 {
-  margin: 0;
-  color: var(--navy);
   font-size: 26px;
-}
-.help-dialog__close {
-  width: 38px;
-  height: 38px;
-  flex: 0 0 auto;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface-soft);
-  color: #5f6d68;
-  cursor: pointer;
-  font-size: 24px;
-  line-height: 1;
 }
 .help-dialog__lead {
   margin: 14px 0 20px;
@@ -305,12 +304,6 @@
   color: #315b4e;
   font-size: 13px;
   line-height: 1.5;
-}
-.help-dialog__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
 }
 .account-menu {
   position: relative;
@@ -374,7 +367,7 @@
   position: absolute;
   right: 0;
   top: calc(100% + 8px);
-  width: 190px;
+  width: 220px;
   display: grid;
   gap: 4px;
   padding: 7px;
@@ -421,10 +414,37 @@
 .app-main {
   max-width: 980px;
   margin: 0 auto;
-  padding: 22px 24px 120px;
+  padding: 22px calc(24px + var(--safe-right)) calc(120px + var(--safe-bottom)) calc(24px + var(--safe-left));
+}
+
+[data-sonner-toaster][data-y-position='top'] {
+  top: calc(var(--offset-top) + var(--safe-top)) !important;
+}
+[data-sonner-toaster][data-x-position='right'] {
+  right: calc(var(--offset-right) + var(--safe-right)) !important;
 }
 .app-main--auth {
   max-width: 1168px;
+}
+.not-found-card {
+  display: grid;
+  gap: 14px;
+  max-width: 620px;
+  margin: 48px auto 0;
+}
+.not-found-card .eyebrow,
+.not-found-card h1,
+.not-found-card p {
+  margin-bottom: 0;
+}
+.not-found-card .primary-button {
+  width: fit-content;
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+  text-align: center;
 }
 .page {
   min-width: 0;

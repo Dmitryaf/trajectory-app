@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
-import PasswordField from '../components/PasswordField.vue';
-import AutoGrowTextarea from '../components/AutoGrowTextarea.vue';
+import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
+import PasswordField from '../shared/ui/forms/PasswordField.vue';
+import PwaInstallGuide from '../features/pwa/ui/PwaInstallGuide.vue';
 import { useSettingsForm } from '../features/settings/useSettingsForm';
 import type { DailyBlockId, LifeAreaId } from '../types';
 
@@ -10,7 +11,7 @@ type SettingsGroup = 'daily' | 'experiment' | 'data' | 'account';
 const settingsGroups: Array<{ id: SettingsGroup; label: string; hash: string }> = [
   { id: 'daily', label: 'Ежедневная запись', hash: 'daily-settings' },
   { id: 'experiment', label: 'Эксперимент', hash: 'experiment-settings' },
-  { id: 'data', label: 'Данные и синхронизация', hash: 'data-settings' },
+  { id: 'data', label: 'Установка и данные', hash: 'data-settings' },
   { id: 'account', label: 'Аккаунт и безопасность', hash: 'account-settings' },
 ];
 const settingsGroupStyle = { animation: 'page-in 0.25s ease-out' };
@@ -20,11 +21,10 @@ const dailySectionHashes = new Set([
   'movement-options',
   'life-areas',
   'context-options',
-  'goal-settings',
   'work-settings',
   'nutrition-settings',
 ]);
-const dataSectionHashes = new Set(['data-settings', 'backup-settings', 'cloud-settings', 'analysis-settings']);
+const dataSectionHashes = new Set(['data-settings', 'install-settings', 'backup-settings', 'cloud-settings', 'analysis-settings']);
 const activeSettingsGroup = ref<SettingsGroup>('daily');
 const passwordRecoveryRequested = new URLSearchParams(window.location.search).get('password-recovery') === '1';
 
@@ -91,7 +91,11 @@ const {
   cloudUserEmail,
   cloudStatusTitle,
   cloudStatusText,
+  storageProtectionTitle,
+  storageProtectionText,
   experimentCanConclude,
+  experimentIdentityLocked,
+  experimentSaveLabel,
   isSaving,
   save,
   saveExperiment,
@@ -361,47 +365,6 @@ const {
         </div>
       </article>
 
-      <article id="goal-settings" class="settings-card settings-card--career">
-        <div class="form-card__heading">
-          <span class="section-icon section-icon--blue">⌁</span>
-          <div>
-            <h2>Текущая цель</h2>
-            <p>Запишите, что хотите изменить или закончить. Цель может относиться к любой части жизни.</p>
-          </div>
-        </div>
-        <div class="settings-field-stack">
-          <label class="field-label" for="active-focus">Над чем ты сейчас работаешь</label>
-          <input
-            id="active-focus"
-            v-model="settings.activeFocusTitle"
-            type="text"
-            maxlength="100"
-            placeholder="Например: восстановить режим сна или закончить обучение"
-          />
-          <label class="field-label" for="focus-outcome">Как понять, что получилось</label>
-          <textarea
-            id="focus-outcome"
-            v-model="settings.focusOutcomeCriterion"
-            rows="2"
-            maxlength="220"
-            placeholder="Например: пять дней подряд вставать до 08:00 или закончить выбранный курс"
-          ></textarea>
-          <label class="field-label" for="focus-review-date">Когда проверить цель</label>
-          <input id="focus-review-date" v-model="settings.focusReviewDate" type="date" />
-          <label class="field-label" for="external-evidence">Что считать шагом к цели</label>
-          <textarea
-            id="external-evidence"
-            v-model="settings.externalEvidenceCriterion"
-            rows="2"
-            maxlength="220"
-            placeholder="Например: выполненное задание, тренировка, разговор или принятое решение"
-          ></textarea>
-        </div>
-        <button class="primary-button" type="button" :disabled="isSaving('goal')" @click="save('Настройки цели сохранены', 'goal')">
-          {{ isSaving('goal') ? 'Сохраняю…' : 'Сохранить цель' }}
-        </button>
-      </article>
-
       <article id="work-settings" class="settings-card settings-card--career">
         <div class="form-card__heading">
           <span class="section-icon section-icon--blue">↗</span>
@@ -509,8 +472,12 @@ const {
           v-model="settings.experiment.title"
           :rows="5"
           :max-length="experimentTextLimits.title"
+          :read-only="experimentIdentityLocked"
           placeholder="Не читать новости после 22:00"
         />
+        <p v-if="experimentIdentityLocked" class="field-hint">
+          Условие и дата начала зафиксированы после первой дневной записи. Дату окончания можно продлить.
+        </p>
         <label class="field-label" for="experiment-hypothesis">Что хотите узнать <span class="field-optional">необязательно</span></label>
         <AutoGrowTextarea
           id="experiment-hypothesis"
@@ -521,14 +488,21 @@ const {
         />
         <div class="form-row">
           <label class="form-control"
-            ><span class="field-label">С какого дня</span><input v-model="settings.experiment.startDate" type="date"
+            ><span class="field-label">С какого дня</span
+            ><input v-model="settings.experiment.startDate" type="date" :disabled="experimentIdentityLocked"
           /></label>
           <label class="form-control"
-            ><span class="field-label">До какого дня</span><input v-model="settings.experiment.endDate" type="date"
+            ><span class="field-label">До какого дня</span
+            ><input
+              v-model="settings.experiment.endDate"
+              type="date"
+              :min="experimentIdentityLocked ? store.settings.experiment.endDate : undefined"
           /></label>
         </div>
-        <template v-if="experimentCanConclude">
-          <label class="field-label" for="experiment-conclusion">Что вы заметили?</label>
+        <template v-if="experimentCanConclude || settings.experiment.conclusion.trim()">
+          <label class="field-label" for="experiment-conclusion">
+            {{ experimentCanConclude ? 'Что вы заметили?' : 'Промежуточное наблюдение' }}
+          </label>
           <AutoGrowTextarea
             id="experiment-conclusion"
             v-model="settings.experiment.conclusion"
@@ -536,14 +510,17 @@ const {
             :max-length="experimentTextLimits.conclusion"
             placeholder="Опиши наблюдения своими словами. Совпадение показателей не обязательно означает влияние эксперимента."
           />
-          <label class="field-label">Что хотите делать дальше? <span class="field-optional">необязательно</span></label>
+          <label class="field-label">
+            {{ experimentCanConclude ? 'Что хотите делать дальше?' : 'Ранее выбранное решение' }}
+            <span class="field-optional">необязательно</span>
+          </label>
           <ChipGroup v-model="settings.experiment.decision" :options="experimentDecisionOptions" allow-clear />
         </template>
         <p v-else-if="settings.experiment.endDate" class="field-hint">
           После последнего дня здесь можно записать, что вы заметили. Завершённый эксперимент появится в разделе «История».
         </p>
         <button class="primary-button" type="button" :disabled="isSaving('experiment')" @click="saveExperiment">
-          {{ isSaving('experiment') ? 'Сохраняю…' : 'Сохранить настройки' }}
+          {{ experimentSaveLabel }}
         </button>
         <button
           v-if="experimentCanConclude"
@@ -567,6 +544,17 @@ const {
       :style="settingsGroupStyle"
       aria-label="Данные и синхронизация"
     >
+      <article id="install-settings" class="settings-card settings-card--backup">
+        <div class="form-card__heading">
+          <span class="section-icon section-icon--blue">⌂</span>
+          <div>
+            <h2>Установка на телефон</h2>
+            <p>Добавьте «Траекторию» на домашний экран и открывайте её как отдельное приложение.</p>
+          </div>
+        </div>
+        <PwaInstallGuide open />
+      </article>
+
       <article id="backup-settings" class="settings-card settings-card--backup">
         <div class="form-card__heading">
           <span class="section-icon section-icon--blue">↓</span>
@@ -574,6 +562,10 @@ const {
             <h2>Копия отдельным файлом</h2>
             <p>Для обычной работы скачивать файл не требуется. Он нужен только как дополнительная личная копия или для переноса данных.</p>
           </div>
+        </div>
+        <div class="cloud-sync-note" role="status">
+          <strong>{{ storageProtectionTitle }}</strong>
+          <p>{{ storageProtectionText }}</p>
         </div>
         <div class="data-actions">
           <button class="secondary-button" type="button" @click="exportData">Скачать копию</button>
@@ -648,11 +640,23 @@ const {
           </div>
         </div>
         <div class="ai-actions">
-          <button class="secondary-button" type="button" :disabled="isSaving('analysis-week')" @click="copyAnalysisPrompt('week')">
-            {{ isSaving('analysis-week') ? 'Копирую…' : 'Промпт недели' }}
+          <button
+            class="secondary-button"
+            type="button"
+            :disabled="isSaving('analysis-week')"
+            :aria-busy="isSaving('analysis-week')"
+            @click="copyAnalysisPrompt('week')"
+          >
+            Промпт недели
           </button>
-          <button class="secondary-button" type="button" :disabled="isSaving('analysis-month')" @click="copyAnalysisPrompt('month')">
-            {{ isSaving('analysis-month') ? 'Копирую…' : 'Промпт месяца' }}
+          <button
+            class="secondary-button"
+            type="button"
+            :disabled="isSaving('analysis-month')"
+            :aria-busy="isSaving('analysis-month')"
+            @click="copyAnalysisPrompt('month')"
+          >
+            Промпт месяца
           </button>
           <button class="secondary-button" type="button" @click="downloadAnalysisData('week')">Данные недели</button>
           <button class="secondary-button" type="button" @click="downloadAnalysisData('month')">Данные месяца</button>
@@ -679,8 +683,14 @@ const {
               </div>
             </div>
             <div class="ai-actions">
-              <button class="secondary-button" type="button" :disabled="isSaving('analysis-range')" @click="copyCustomAnalysisPrompt">
-                {{ isSaving('analysis-range') ? 'Копирую…' : 'Скопировать промпт периода' }}
+              <button
+                class="secondary-button"
+                type="button"
+                :disabled="isSaving('analysis-range')"
+                :aria-busy="isSaving('analysis-range')"
+                @click="copyCustomAnalysisPrompt"
+              >
+                Скопировать промпт периода
               </button>
               <button class="secondary-button" type="button" @click="downloadCustomAnalysisData">Скачать данные периода</button>
             </div>

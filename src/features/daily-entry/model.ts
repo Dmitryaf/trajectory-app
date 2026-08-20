@@ -14,6 +14,7 @@ export type DailyEntryDefaults = {
   focusReviewDate: string;
   externalEvidenceCriterion: string;
   nutritionCriterion: string;
+  experimentId: string | null;
   activeDailyBlocks: DailyBlockId[];
 };
 
@@ -59,6 +60,7 @@ export function prepareDailyEntryForSave(
     if (!prepared.externalEvidenceCriterion.trim()) prepared.externalEvidenceCriterion = defaults.externalEvidenceCriterion.trim();
     if (!prepared.nutritionCriterion.trim()) prepared.nutritionCriterion = defaults.nutritionCriterion.trim();
   }
+  if (!prepared.experimentId && defaults.experimentId) prepared.experimentId = defaults.experimentId;
   return prepared;
 }
 

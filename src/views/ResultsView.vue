@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import AutoGrowTextarea from '../components/AutoGrowTextarea.vue';
-import ChipGroup from '../components/ChipGroup.vue';
-import ArchiveDateRange from '../features/journal/ArchiveDateRange.vue';
-import ArchivePagination from '../features/journal/ArchivePagination.vue';
+import ArchiveDateRange from '../features/journal/ui/ArchiveDateRange.vue';
+import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
+import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
+import ChipGroup from '../shared/ui/forms/ChipGroup.vue';
 import { archiveRangeFromQuery } from '../features/journal/archiveQuery';
 import { useArchiveList } from '../features/journal/useArchiveList';
 import { formatDate, todayKey } from '../services/dates';
-import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
+import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
 import { useAppStore } from '../stores/app';
 import { resultAreaOptions, type ResultRecord } from '../types';
 
@@ -26,7 +26,7 @@ const recentResults = computed(() => [...store.results].sort((a, b) => b.date.lo
 const resultOptions = computed(() => [...resultAreaOptions, ...store.settings.customLifeAreaOptions]);
 const resultEntryOptions = computed(() => [
   ...resultAreaOptions,
-  ...store.settings.customLifeAreaOptions.filter((option) => !option.archived),
+  ...store.settings.customLifeAreaOptions.filter((option) => !option.archived || option.id === area.value),
 ]);
 const {
   filterText,
@@ -46,6 +46,10 @@ const {
 async function saveResult() {
   const clean = title.value.trim();
   if (!clean) return;
+  if (!date.value) {
+    notifyError('Укажите дату итога');
+    return;
+  }
   saving.value = true;
   const wasEditing = editingId.value !== null;
   try {
@@ -150,8 +154,8 @@ function toggleNote(result: ResultRecord) {
           placeholder="Что вы сделали или какой результат получили"
           @keyup.enter="saveResult"
         />
-        <input v-model="date" class="date-input" type="date" aria-label="Дата итога" />
-        <button class="primary-button" type="button" :disabled="!title.trim() || saving" @click="saveResult">
+        <input v-model="date" class="date-input" type="date" required aria-label="Дата итога" />
+        <button class="primary-button" type="button" :disabled="!title.trim() || !date || saving" @click="saveResult">
           {{ editingId === null ? 'Добавить итог' : 'Сохранить итог' }}
         </button>
       </div>

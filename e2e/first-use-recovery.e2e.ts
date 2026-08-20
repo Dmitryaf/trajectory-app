@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 test('saves and resumes the first week recovery on a small screen', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });

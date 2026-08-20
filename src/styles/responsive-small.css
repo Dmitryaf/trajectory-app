@@ -54,8 +54,8 @@
     padding: 0;
   }
   .bottom-nav {
-    left: 6px;
-    right: 6px;
+    left: calc(6px + var(--safe-left));
+    right: calc(6px + var(--safe-right));
   }
   .bottom-nav__item > span {
     font-size: 14px;

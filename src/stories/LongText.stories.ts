@@ -1,6 +1,6 @@
 import { ref } from 'vue';
 import type { Meta, StoryObj } from '@storybook/vue3-vite';
-import AutoGrowTextarea from '../components/AutoGrowTextarea.vue';
+import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
 
 const meta = {
   title: 'Формы/Длинный текст',

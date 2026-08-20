@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import PasswordField from '../components/PasswordField.vue';
+import PasswordField from '../shared/ui/forms/PasswordField.vue';
 import { useAuthStore } from '../stores/auth';
 
 const auth = useAuthStore();

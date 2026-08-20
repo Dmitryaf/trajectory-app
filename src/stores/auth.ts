@@ -19,6 +19,7 @@ import {
 
 let unsubscribeAuth: (() => void) | null = null;
 const passwordRecoveryKey = 'trajectory:password-recovery-required';
+const authRequestTimeoutMs = 20_000;
 
 export type AuthOperation =
   | 'initializing'
@@ -34,6 +35,25 @@ export type AuthOperation =
 
 type AuthErrorDetails = { code: string; message: string; status: number | null };
 
+function withAuthRequestTimeout<T>(request: Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      reject(Object.assign(new Error('Registration request timed out'), { code: 'request_timeout' }));
+    }, authRequestTimeoutMs);
+
+    request.then(
+      (value) => {
+        window.clearTimeout(timeoutId);
+        resolve(value);
+      },
+      (error: unknown) => {
+        window.clearTimeout(timeoutId);
+        reject(error);
+      },
+    );
+  });
+}
+
 function authErrorDetails(error: unknown): AuthErrorDetails {
   if (!error || typeof error !== 'object') return { code: '', message: '', status: null };
   const source = error as { code?: unknown; message?: unknown; status?: unknown };
@@ -46,6 +66,9 @@ function authErrorDetails(error: unknown): AuthErrorDetails {
 
 function signupErrorMessage(error: unknown): string {
   const details = authErrorDetails(error);
+  if (details.code === 'request_timeout') {
+    return 'Сервис долго не отвечает. Проверь интернет и почту: аккаунт мог быть создан. Затем попробуй войти или повтори позже.';
+  }
   if (details.status === 429 || details.code.includes('rate_limit') || details.message.includes('rate limit')) {
     return 'Слишком много попыток. Подожди несколько минут и попробуй ещё раз.';
   }
@@ -147,7 +170,7 @@ export const useAuthStore = defineStore('auth', {
       this.operation = 'signing-up';
       this.error = '';
       try {
-        const result = await signUpToCloud(email, password, inviteCode);
+        const result = await withAuthRequestTimeout(signUpToCloud(email, password, inviteCode));
         this.session = result.session;
         return result;
       } catch (error) {

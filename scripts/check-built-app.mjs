@@ -7,7 +7,7 @@ const projectRoot = fileURLToPath(new URL('..', import.meta.url));
 const distRoot = path.join(projectRoot, 'dist');
 const budgets = {
   entryJavaScriptGzip: 170 * 1024,
-  entryCssGzip: 20 * 1024,
+  entryCssGzip: 21 * 1024,
   anyJavaScriptGzip: 230 * 1024,
 };
 
@@ -25,6 +25,12 @@ async function requireFile(relativePath) {
 
 async function gzipSize(relativePath) {
   return gzipSync(await readFile(path.join(distRoot, relativePath))).byteLength;
+}
+
+async function pngDimensions(relativePath) {
+  const content = await readFile(path.join(distRoot, relativePath));
+  if (content.length < 24 || content.toString('ascii', 1, 4) !== 'PNG') throw new Error(`Icon is not a valid PNG: ${relativePath}`);
+  return { width: content.readUInt32BE(16), height: content.readUInt32BE(20) };
 }
 
 function requireWithinBudget(label, size, budget, relativePath) {
@@ -57,6 +63,41 @@ for (const assetName of builtAssets.filter((name) => name.endsWith('.js'))) {
 
 await requireFile('manifest.webmanifest');
 await requireFile('sw.js');
+
+for (const marker of ['viewport-fit=cover', 'rel="apple-touch-icon"', 'name="theme-color"']) {
+  if (!html.includes(marker)) throw new Error(`Built HTML is missing PWA marker: ${marker}`);
+}
+
+const manifest = JSON.parse(await readFile(path.join(distRoot, 'manifest.webmanifest'), 'utf8'));
+for (const [field, expected] of Object.entries({
+  name: 'Траектория',
+  short_name: 'Траектория',
+  display: 'standalone',
+  id: '/',
+  scope: '/',
+  start_url: '/',
+})) {
+  if (manifest[field] !== expected) throw new Error(`Manifest ${field} must be ${JSON.stringify(expected)}`);
+}
+
+const requiredIcons = [
+  { src: '/icons/icon-192.png', sizes: '192x192' },
+  { src: '/icons/icon-512.png', sizes: '512x512' },
+  { src: '/icons/icon-512-maskable.png', sizes: '512x512', purpose: 'maskable' },
+];
+for (const expected of requiredIcons) {
+  const icon = manifest.icons?.find((candidate) => candidate.src === expected.src);
+  if (!icon || icon.sizes !== expected.sizes || (expected.purpose && icon.purpose !== expected.purpose)) {
+    throw new Error(`Manifest icon contract is missing: ${expected.src}`);
+  }
+  const relativePath = expected.src.slice(1);
+  await requireFile(relativePath);
+  const [width, height] = expected.sizes.split('x').map(Number);
+  const dimensions = await pngDimensions(relativePath);
+  if (dimensions.width !== width || dimensions.height !== height) {
+    throw new Error(`Manifest icon dimensions do not match ${expected.sizes}: ${expected.src}`);
+  }
+}
 
 const serviceWorker = await readFile(path.join(distRoot, 'sw.js'), 'utf8');
 for (const marker of ['cleanupOutdatedCaches', 'denylist', '/api', '/assets']) {

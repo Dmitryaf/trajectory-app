@@ -1,8 +1,32 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 import { readFile } from 'node:fs/promises';
 import { completedCrossMonthRange, demoFilePath } from './demo-data';
 
-test('copies a readable prompt and downloads the lossless weekly package', async ({ page }) => {
+async function prepareClipboard(page: Page, browserName: string) {
+  if (browserName !== 'webkit') return;
+
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText(value: string) {
+          (window as Window & { __copiedPrompt?: string }).__copiedPrompt = value;
+          return Promise.resolve();
+        },
+      },
+    });
+  });
+}
+
+async function readCopiedPrompt(page: Page, browserName: string) {
+  if (browserName === 'webkit') {
+    return page.evaluate(() => (window as Window & { __copiedPrompt?: string }).__copiedPrompt ?? '');
+  }
+  return page.evaluate(() => navigator.clipboard.readText());
+}
+
+test('copies a readable prompt and downloads the lossless weekly package', async ({ page, browserName }) => {
+  await prepareClipboard(page, browserName);
   await page.goto('/settings');
   await page.locator('input[type="file"]').setInputFiles(demoFilePath);
   await page.getByText('Резервная копия восстановлена', { exact: true }).waitFor();
@@ -15,7 +39,7 @@ test('copies a readable prompt and downloads the lossless weekly package', async
   }
 
   await copyButton.click();
-  const prompt = await page.evaluate(() => navigator.clipboard.readText());
+  const prompt = await readCopiedPrompt(page, browserName);
 
   expect(prompt).toContain('ДАННЫЕ ДЛЯ АНАЛИЗА');
   expect(prompt).toContain('за неделю');
@@ -36,19 +60,20 @@ test('copies a readable prompt and downloads the lossless weekly package', async
   expect(payload).toHaveProperty('settingsSnapshot');
 });
 
-test('includes daily reflections from an exact cross-month period', async ({ page }) => {
+test('includes daily reflections from an exact cross-month period', async ({ page, browserName }) => {
+  await prepareClipboard(page, browserName);
   await page.goto('/settings');
   await page.locator('input[type="file"]').setInputFiles(demoFilePath);
   await page.getByText('Резервная копия восстановлена', { exact: true }).waitFor();
 
-  await page.getByRole('button', { name: 'Данные и синхронизация' }).click();
+  await page.getByRole('button', { name: 'Установка и данные' }).click();
   await page.getByText('Выбрать другой период', { exact: true }).click();
   const range = completedCrossMonthRange();
   await page.getByLabel('Начало периода анализа').fill(range.start);
   await page.getByLabel('Конец периода анализа').fill(range.end);
   await page.getByRole('button', { name: 'Скопировать промпт периода' }).click();
 
-  const prompt = await page.evaluate(() => navigator.clipboard.readText());
+  const prompt = await readCopiedPrompt(page, browserName);
   expect(prompt).toContain('Записи по дням');
   expect(prompt).not.toContain('Покрытие по месяцам');
   expect(prompt).toContain(range.start.slice(0, 7));

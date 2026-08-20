@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { demoAnchor, demoFilePath, emptyPeriodDate } from './demo-data';
 
 const routes = ['/', '/week', '/month', '/trends', '/more', '/results', '/events', '/settings'];
@@ -72,6 +72,14 @@ test('keeps mobile form controls inside their cards', async ({ page }) => {
       }),
     );
     expect(overflow, `form controls should stay inside cards at ${width}px`).toEqual([]);
+
+    const quickCaptureBox = await page.locator('.quick-capture').boundingBox();
+    const goalSummaryBox = await page.locator('.current-goal-summary').boundingBox();
+    expect(quickCaptureBox).not.toBeNull();
+    expect(goalSummaryBox).not.toBeNull();
+    expect(goalSummaryBox!.y, `goal should stay below quick actions at ${width}px`).toBeGreaterThanOrEqual(
+      quickCaptureBox!.y + quickCaptureBox!.height + 12,
+    );
   }
 });
 
@@ -148,7 +156,7 @@ test('keeps the returning daily form compact and visibly grouped', async ({ page
   expect(headingBox!.height).toBeLessThanOrEqual(150);
   await expect(page.getByText('Запись за дату', { exact: true })).toBeVisible();
   await expect(page.getByText('Состояние и условия', { exact: true })).toBeVisible();
-  await expect(page.getByText('Текущая цель', { exact: true })).toBeVisible();
+  await expect(page.locator('form').getByText('Текущая цель', { exact: true })).toBeVisible();
   await expect(page.getByText('Остальные части дня', { exact: true })).toBeVisible();
   await expect(page.getByText('Короткий итог дня', { exact: true })).toBeVisible();
   await expect(page.getByText('Сон перед этой датой и сколько сил было в этот день.', { exact: true })).toBeHidden();
@@ -162,11 +170,47 @@ test('keeps the returning daily form compact and visibly grouped', async ({ page
   expect(goalBox!.y).toBeLessThan(workBox!.y);
   await expect(workCard.locator('textarea')).toHaveCount(0);
 
+  const goalSummaryBox = await page.locator('.current-goal-summary').boundingBox();
+  const quickCaptureBox = await page.locator('.quick-capture').boundingBox();
+  expect(goalSummaryBox).not.toBeNull();
+  expect(quickCaptureBox).not.toBeNull();
+  expect(goalSummaryBox!.y).toBeGreaterThanOrEqual(quickCaptureBox!.y + quickCaptureBox!.height + 12);
+
+  const dailySummaryHeadingBox = await page.getByText('Короткий итог дня', { exact: true }).boundingBox();
+  const dailySummaryCardBox = await page.locator('.form-card--daily-summary').boundingBox();
+  expect(dailySummaryHeadingBox).not.toBeNull();
+  expect(dailySummaryCardBox).not.toBeNull();
+  expect(dailySummaryCardBox!.y).toBeGreaterThan(dailySummaryHeadingBox!.y + dailySummaryHeadingBox!.height);
+
   const goalCriteria = goalCard.locator('.goal-context-details');
   await expect(goalCriteria).not.toHaveAttribute('open', '');
   await goalCriteria.locator('summary').focus();
   await goalCriteria.locator('summary').press('Enter');
   await expect(goalCriteria).toHaveAttribute('open', '');
+
+  await page.getByPlaceholder('Например: после прогулки стало легче собраться с мыслями').fill('Проверка fixed-сохранения');
+  const floatingSave = page.locator('.floating-save-button');
+  await expect(floatingSave).toBeVisible();
+  await expect(floatingSave).toHaveCSS('position', 'fixed');
+  const floatingSaveBox = await floatingSave.boundingBox();
+  expect(floatingSaveBox).not.toBeNull();
+  expect(floatingSaveBox!.x + floatingSaveBox!.width).toBeLessThanOrEqual(1280);
+  expect(floatingSaveBox!.y + floatingSaveBox!.height).toBeLessThanOrEqual(720);
+});
+
+test('keeps the save action above tablet bottom navigation', async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.goto('/');
+  await page.getByPlaceholder('Например: после прогулки стало легче собраться с мыслями').fill('Проверка сохранения на планшете');
+
+  const floatingSave = page.locator('.floating-save-button');
+  const bottomNavigation = page.locator('.bottom-nav');
+  await expect(floatingSave).toBeVisible();
+  const floatingSaveBox = await floatingSave.boundingBox();
+  const bottomNavigationBox = await bottomNavigation.boundingBox();
+  expect(floatingSaveBox).not.toBeNull();
+  expect(bottomNavigationBox).not.toBeNull();
+  expect(floatingSaveBox!.y + floatingSaveBox!.height).toBeLessThanOrEqual(bottomNavigationBox!.y - 10);
 });
 
 test('keeps result details editable when Backspace clears the field', async ({ page }) => {
@@ -189,7 +233,10 @@ test('keeps result details editable when Backspace clears the field', async ({ p
 });
 
 test('explains the app from the permanent help button', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
+  await page.evaluate(() => window.scrollTo(0, 320));
+  const scrollBeforeOpen = await page.evaluate(() => window.scrollY);
   await page.getByRole('button', { name: 'Как работает приложение' }).click();
   const dialog = page.getByRole('dialog', { name: 'Зачем нужна «Траектория»' });
 
@@ -197,8 +244,15 @@ test('explains the app from the permanent help button', async ({ page }) => {
   await expect(dialog).toContainText('Записать важное');
   await expect(dialog).toContainText('Увидеть период целиком');
   await expect(dialog).toContainText('Сохранить следующее решение');
+  await expect(page.locator('body')).toHaveCSS('position', 'fixed');
+  const dialogActions = dialog.locator('.help-dialog__actions a');
+  await expect(dialogActions).toHaveCount(2);
+  await expect(dialogActions.nth(0)).toHaveCSS('text-align', 'center');
+  await expect(dialogActions.nth(1)).toHaveCSS('text-align', 'center');
   await page.getByRole('button', { name: 'Закрыть объяснение' }).click();
   await expect(page.getByRole('button', { name: 'Как работает приложение' })).toBeFocused();
+  await expect(page.locator('body')).not.toHaveCSS('position', 'fixed');
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrollBeforeOpen);
 });
 
 test('opens the exact settings section from a daily card', async ({ page }) => {
@@ -213,7 +267,7 @@ test('switches settings scenarios with the keyboard on a mobile screen', async (
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/settings');
 
-  const dataTab = page.getByRole('button', { name: 'Данные и синхронизация' });
+  const dataTab = page.getByRole('button', { name: 'Установка и данные' });
   await dataTab.focus();
   await dataTab.press('Enter');
   await expect(page.locator('#data-settings')).toBeVisible();
@@ -231,9 +285,9 @@ test('switches settings scenarios with the keyboard on a mobile screen', async (
     expect(cloudActionsBox!.y - (cloudStatusBox!.y + cloudStatusBox!.height)).toBeGreaterThanOrEqual(10);
   }
 
-  await page.locator('.analysis-range > summary').click();
-  const rangeFieldsBox = await page.locator('.analysis-range .form-row').boundingBox();
-  const rangeActionsBox = await page.locator('.analysis-range .ai-actions').boundingBox();
+  await page.locator('#analysis-settings .analysis-range > summary').click();
+  const rangeFieldsBox = await page.locator('#analysis-settings .analysis-range .form-row').boundingBox();
+  const rangeActionsBox = await page.locator('#analysis-settings .analysis-range .ai-actions').boundingBox();
   expect(rangeFieldsBox).not.toBeNull();
   expect(rangeActionsBox).not.toBeNull();
   expect(rangeActionsBox!.y - (rangeFieldsBox!.y + rangeFieldsBox!.height)).toBeGreaterThanOrEqual(10);

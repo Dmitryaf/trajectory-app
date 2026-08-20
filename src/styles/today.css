@@ -58,18 +58,39 @@
   font-size: 11px;
   font-weight: 650;
 }
-.page--today > .page-heading .date-input {
-  border-color: rgba(255, 255, 255, 0.2);
+.entry-date-control {
+  position: relative;
+  min-width: 145px;
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 13px;
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
-  color-scheme: dark;
+  font-weight: 750;
   backdrop-filter: blur(12px);
+}
+.entry-date-control .date-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .today-pulse,
 .recovery-nudge,
 .review-nudge,
-.entry-change-notice {
+.entry-change-notice,
+.current-goal-summary {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -79,6 +100,26 @@
   border-radius: 18px;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.82);
+}
+.current-goal-summary {
+  background: linear-gradient(135deg, #f2faf7, #fbfdfc);
+  border-color: #cfe5dc;
+}
+.current-goal-summary > div {
+  min-width: 0;
+  flex: 1;
+}
+.current-goal-summary strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--navy);
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.current-goal-summary p {
+  margin: 3px 0 0;
+  color: #65736e;
+  font-size: 13px;
 }
 .first-entry-guide {
   display: flex;
@@ -120,20 +161,85 @@
 }
 .daily-layout-settings {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  margin: -4px 4px 14px;
+  gap: 12px;
+  margin: -4px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid #d9e6e0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.7);
   color: #718079;
   font-size: 12px;
 }
 .daily-layout-settings a {
+  flex: 0 0 auto;
+  padding: 7px 9px;
+  border-radius: 10px;
+  background: #e6f6ef;
   color: var(--accent-dark);
   font-weight: 850;
   text-decoration: none;
 }
 .daily-layout-settings a:hover {
-  text-decoration: underline;
+  background: #d8f1e6;
+}
+.pwa-install-nudge {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 13px 14px;
+  border: 1px solid #cfe5dc;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #effaf6, rgba(255, 255, 255, 0.9));
+}
+.pwa-install-nudge__mark {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #d9f3e8;
+  color: var(--accent-dark);
+  font-size: 18px;
+  font-weight: 900;
+}
+.pwa-install-nudge strong {
+  display: block;
+  color: var(--navy);
+  font-size: 14px;
+}
+.pwa-install-nudge p {
+  margin: 2px 0 0;
+  color: #66766f;
+  font-size: 12px;
+}
+.pwa-install-nudge__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pwa-install-nudge__actions .secondary-button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 11px;
+  text-align: center;
+  text-decoration: none;
+}
+.pwa-install-nudge__later {
+  min-height: 40px;
+  padding: 8px;
+  border: 0;
+  background: transparent;
+  color: #6d7d76;
+  font-weight: 750;
+}
+.pwa-install-nudge__later:hover {
+  color: var(--accent-dark);
 }
 .period-empty-guide,
 .journal-guide-card {
@@ -189,9 +295,28 @@
   border-color: #dbe8fb;
 }
 .entry-change-notice {
-  align-items: flex-start;
   background: #fff8ef;
   border-color: #f0dec4;
+}
+.goal-dialog {
+  width: min(560px, 100%);
+  padding: 26px;
+}
+.goal-dialog form {
+  display: grid;
+  gap: 10px;
+}
+.goal-dialog__hint {
+  margin: 0;
+  color: #77827e;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.goal-dialog__actions {
+  margin-top: 10px;
+}
+.goal-dialog__actions button {
+  min-width: 130px;
 }
 .sync-banner {
   display: grid;
@@ -273,6 +398,9 @@
 .checkin-grid {
   display: grid;
   gap: 20px;
+}
+.checkin-grid--dirty {
+  padding-bottom: 72px;
 }
 .checkin-group-heading {
   display: flex;

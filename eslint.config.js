@@ -126,15 +126,15 @@ export default tseslint.config(
     },
   },
   {
-    files: ['src/components/**/*.{ts,vue}'],
+    files: ['src/shared/**/*.{ts,vue}'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
           patterns: [
             {
-              group: ['../views/**', '../../views/**'],
-              message: 'Компонент не должен зависеть от страницы.',
+              group: ['**/features/**', '**/views/**', '**/stores/**'],
+              message: 'Общий модуль не должен зависеть от пользовательского сценария, страницы или store.',
             },
           ],
         },

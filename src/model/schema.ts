@@ -43,7 +43,7 @@ export type DailyRecordedFieldId =
   | 'experimentCompleted'
   | 'experimentNote';
 
-export const currentDailyEntrySchemaVersion = 3;
+export const currentDailyEntrySchemaVersion = 4;
 export type ExperimentMetricId = 'sleepMinutes' | 'timeInBedMinutes' | 'sleepQuality' | 'energy' | 'weightKg';
 export type ExperimentDirection = 'increase' | 'decrease';
 export type ExperimentDecision = 'continue' | 'adjust' | 'stop' | 'more_data';
@@ -81,8 +81,15 @@ export type DailyEntry = {
   lifeAreas: LifeAreaId[];
   lifeAreasRecorded: boolean;
   importantFact: string;
+  experimentId: string | null;
   experimentCompleted: boolean | null;
   experimentNote: string;
+  updatedAt: string;
+};
+
+export type DailyEntryDraft = {
+  date: string;
+  entry: DailyEntry;
   updatedAt: string;
 };
 
@@ -130,6 +137,7 @@ export type MonthlyReview = {
 };
 
 export type Experiment = {
+  id: string;
   active: boolean;
   title: string;
   hypothesis: string;
