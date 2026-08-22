@@ -15,11 +15,38 @@ test('keeps every primary screen inside the minimum viewport width', async ({ pa
   for (const route of routes) {
     await page.goto(route);
     await page.locator('.page').waitFor();
-    const widths = await page.evaluate(() => ({
-      viewport: document.documentElement.clientWidth,
-      content: document.documentElement.scrollWidth,
-    }));
-    expect(widths.content, `${route} should not scroll horizontally`).toBeLessThanOrEqual(widths.viewport);
+    const layout = await page.evaluate(() => {
+      const viewport = document.documentElement.clientWidth;
+      const offenders = [...document.querySelectorAll<HTMLElement>('body *')]
+        .map((element) => {
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          const selector = `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ''}${[...element.classList]
+            .slice(0, 3)
+            .map((name) => `.${name}`)
+            .join('')}`;
+          return {
+            selector,
+            left: Math.round(rect.left * 10) / 10,
+            right: Math.round(rect.right * 10) / 10,
+            width: Math.round(rect.width * 10) / 10,
+            clientWidth: element.clientWidth,
+            scrollWidth: element.scrollWidth,
+            display: style.display,
+            position: style.position,
+            overflowX: style.overflowX,
+          };
+        })
+        .filter(
+          (item) =>
+            item.left < -0.5 || item.right > viewport + 0.5 || (item.overflowX === 'visible' && item.scrollWidth > item.clientWidth + 1),
+        )
+        .slice(0, 12);
+      return { viewport, content: document.documentElement.scrollWidth, offenders };
+    });
+    expect(layout.content, `${route} should not scroll horizontally; offenders: ${JSON.stringify(layout.offenders)}`).toBeLessThanOrEqual(
+      layout.viewport,
+    );
     const feedback = page.getByRole('button', { name: 'Обратная связь' });
     await expect(feedback).toBeVisible();
   }
