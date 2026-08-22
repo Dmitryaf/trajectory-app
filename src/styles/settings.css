@@ -29,7 +29,7 @@
   letter-spacing: -0.045em;
 }
 .settings-card {
-  --settings-accent: #8ce1bf;
+  --settings-accent: var(--mint);
   position: relative;
   margin-bottom: 16px;
   overflow: hidden;
@@ -378,7 +378,7 @@
   width: 19px;
   height: 19px;
   border: 3px solid rgba(140, 225, 191, 0.28);
-  border-top-color: #8ce1bf;
+  border-top-color: var(--mint);
   border-radius: 50%;
   animation: loader-spin 0.85s linear infinite;
 }

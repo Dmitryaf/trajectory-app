@@ -20,7 +20,7 @@
 }
 .page--trends .range-tabs button.active {
   color: #102d2c;
-  background: #8ce1bf;
+  background: var(--mint);
   box-shadow: 0 5px 14px rgba(0, 0, 0, 0.15);
 }
 .page--trends .dashboard-card::before {
@@ -34,7 +34,7 @@
   background: var(--section-accent, #dce8e3);
 }
 .page--trends .dashboard-card--quality {
-  --section-accent: #8ce1bf;
+  --section-accent: var(--mint);
 }
 .page--trends .dashboard-card--trend {
   --section-accent: #7467e8;

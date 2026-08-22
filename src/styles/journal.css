@@ -27,7 +27,7 @@
   background: linear-gradient(135deg, #fafffd, #dff5ec);
 }
 .page--results > .page-heading::after {
-  background: #8ce1bf;
+  background: var(--mint);
 }
 .page--events > .page-heading {
   border: 1px solid #eee0c5;
@@ -74,24 +74,6 @@
 }
 .composer-cancel {
   margin-top: 10px;
-}
-.section-heading {
-  display: flex;
-  min-width: 0;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 16px;
-  margin: 0 0 17px;
-}
-.section-heading > * {
-  min-width: 0;
-}
-.section-heading h2,
-.section-heading .eyebrow {
-  margin-bottom: 0;
-}
-.section-heading .eyebrow {
-  margin-bottom: 4px;
 }
 .period-pill {
   display: inline-flex;

@@ -1,0 +1,227 @@
+import { readdir, readFile } from 'node:fs/promises';
+import path from 'node:path';
+import process from 'node:process';
+import ts from 'typescript';
+
+const root = process.cwd();
+const sourceRoot = path.join(root, 'src');
+const sourceExtensions = new Set(['.ts', '.vue']);
+const reportThresholds = new Map([
+  ['.vue', 600],
+  ['.ts', 500],
+  ['.css', 500],
+]);
+const allowedDbOwners = new Set(['src/stores/app.ts', 'src/features/sync/base.ts']);
+const allowedServiceFeatureEdges = new Set(['src/services/analytics.ts']);
+const styleOwnerRules = [
+  { selector: 'bottom-nav', owner: 'src/styles/shell.css', overrides: /^src\/styles\/responsive-/ },
+  { selector: 'primary-button', owner: 'src/styles/primitives.css' },
+  { selector: 'secondary-button', owner: 'src/styles/primitives.css' },
+  { selector: 'danger-button', owner: 'src/styles/primitives.css' },
+  { selector: 'range-tabs', owner: 'src/styles/primitives.css', overrides: /^src\/styles\/responsive-/ },
+  { selector: 'section-heading', owner: 'src/styles/primitives.css' },
+  { selector: 'form-card', owner: 'src/styles/primitives.css', overrides: /^src\/styles\/responsive-/ },
+  {
+    selector: 'result-composer',
+    owner: 'src/styles/primitives.css',
+    allowedFiles: new Set(['src/styles/journal.css']),
+    overrides: /^src\/styles\/responsive-/,
+  },
+  {
+    selector: 'dashboard-card',
+    owner: 'src/styles/primitives.css',
+    allowedFiles: new Set(['src/styles/reviews.css']),
+    overrides: /^src\/styles\/responsive-/,
+  },
+  {
+    selector: 'review-card',
+    owner: 'src/styles/primitives.css',
+    allowedFiles: new Set(['src/styles/reviews.css']),
+    overrides: /^src\/styles\/responsive-/,
+  },
+  {
+    selector: 'settings-card',
+    owner: 'src/styles/primitives.css',
+    allowedFiles: new Set(['src/styles/settings.css']),
+    overrides: /^src\/styles\/responsive-/,
+  },
+];
+
+async function collectFiles(directory) {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const nested = await Promise.all(
+    entries.map((entry) => {
+      const entryPath = path.join(directory, entry.name);
+      return entry.isDirectory() ? collectFiles(entryPath) : [entryPath];
+    }),
+  );
+  return nested.flat();
+}
+
+function projectPath(filePath) {
+  return path.relative(root, filePath).replaceAll(path.sep, '/');
+}
+
+function sourceLayer(filePath) {
+  const relative = projectPath(filePath);
+  if (relative === 'src/App.vue') return 'views';
+  const match = relative.match(/^src\/([^/]+)/);
+  return match?.[1] ?? 'other';
+}
+
+function scriptSource(filePath, source) {
+  if (path.extname(filePath) !== '.vue') return source;
+  return [...source.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map((match) => match[1]).join('\n');
+}
+
+function localSpecifiers(filePath, source) {
+  const specifiers = new Set();
+  const parsed = ts.createSourceFile(
+    projectPath(filePath),
+    scriptSource(filePath, source),
+    ts.ScriptTarget.Latest,
+    false,
+    ts.ScriptKind.TS,
+  );
+
+  function visit(node) {
+    if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier) {
+      const specifier = node.moduleSpecifier.text;
+      if (specifier.startsWith('.')) specifiers.add(specifier);
+    } else if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      node.arguments.length === 1 &&
+      ts.isStringLiteral(node.arguments[0])
+    ) {
+      const specifier = node.arguments[0].text;
+      if (specifier.startsWith('.')) specifiers.add(specifier);
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(parsed);
+  return [...specifiers];
+}
+
+function resolveLocalImport(importer, specifier, knownFiles) {
+  const base = path.resolve(path.dirname(importer), specifier);
+  const candidates = [
+    base,
+    ...[...sourceExtensions].map((extension) => `${base}${extension}`),
+    ...[...sourceExtensions].map((extension) => path.join(base, `index${extension}`)),
+  ];
+  return candidates.find((candidate) => knownFiles.has(path.normalize(candidate))) ?? null;
+}
+
+function findCycles(graph) {
+  const state = new Map();
+  const stack = [];
+  const cycles = new Set();
+
+  function visit(node) {
+    state.set(node, 'visiting');
+    stack.push(node);
+    for (const target of graph.get(node) ?? []) {
+      if (state.get(target) === 'visiting') {
+        const start = stack.indexOf(target);
+        const cycle = [...stack.slice(start), target].map(projectPath).join(' -> ');
+        cycles.add(cycle);
+      } else if (!state.has(target)) {
+        visit(target);
+      }
+    }
+    stack.pop();
+    state.set(node, 'visited');
+  }
+
+  for (const node of graph.keys()) {
+    if (!state.has(node)) visit(node);
+  }
+  return [...cycles].sort();
+}
+
+const allFiles = await collectFiles(sourceRoot);
+const sourceFiles = allFiles.filter((filePath) => sourceExtensions.has(path.extname(filePath)));
+const knownFiles = new Set(sourceFiles.map(path.normalize));
+const architectureFiles = sourceFiles.filter((filePath) => {
+  const relative = projectPath(filePath);
+  return !relative.includes('/__tests__/') && !relative.includes('.test.') && !relative.startsWith('src/stories/');
+});
+const graph = new Map();
+const violations = [];
+const layerEdges = new Map();
+const largeFiles = [];
+
+for (const filePath of allFiles) {
+  const extension = path.extname(filePath);
+  const threshold = reportThresholds.get(extension);
+  if (threshold) {
+    const source = await readFile(filePath, 'utf8');
+    const lines = source.split(/\r?\n/).length;
+    if (lines > threshold) largeFiles.push({ file: projectPath(filePath), lines, threshold });
+  }
+}
+
+const cssFiles = allFiles.filter((filePath) => path.extname(filePath) === '.css');
+const cssSources = new Map();
+for (const filePath of cssFiles) cssSources.set(projectPath(filePath), await readFile(filePath, 'utf8'));
+
+for (const rule of styleOwnerRules) {
+  const definition = new RegExp(`(?:^|\\n)\\.${rule.selector}(?:\\s*,|\\s*\\{)`);
+  if (!definition.test(cssSources.get(rule.owner) ?? '')) {
+    violations.push(`${rule.owner}: отсутствует базовый селектор .${rule.selector}.`);
+  }
+  for (const [filePath, source] of cssSources) {
+    if (!definition.test(source) || filePath === rule.owner) continue;
+    if (rule.allowedFiles?.has(filePath) || rule.overrides?.test(filePath)) continue;
+    violations.push(`${filePath}: базовый селектор .${rule.selector} принадлежит ${rule.owner}.`);
+  }
+}
+
+for (const importer of architectureFiles) {
+  const source = await readFile(importer, 'utf8');
+  const targets = localSpecifiers(importer, source)
+    .map((specifier) => resolveLocalImport(importer, specifier, knownFiles))
+    .filter(Boolean);
+  const productionTargets = targets.filter((target) => architectureFiles.includes(target));
+  graph.set(importer, productionTargets);
+
+  for (const target of productionTargets) {
+    const importerPath = projectPath(importer);
+    const targetPath = projectPath(target);
+    const fromLayer = sourceLayer(importer);
+    const toLayer = sourceLayer(target);
+    const edge = `${fromLayer} -> ${toLayer}`;
+    layerEdges.set(edge, (layerEdges.get(edge) ?? 0) + 1);
+
+    if (targetPath === 'src/db.ts' && !allowedDbOwners.has(importerPath)) {
+      violations.push(`${importerPath}: доступ к src/db.ts разрешён только store и владельцу cloudSyncBases.`);
+    }
+    if (fromLayer === 'services' && toLayer === 'features' && !allowedServiceFeatureEdges.has(importerPath)) {
+      violations.push(`${importerPath}: service не должен зависеть от feature.`);
+    }
+  }
+}
+
+const cycles = findCycles(graph);
+
+console.log('Архитектурные зависимости:');
+for (const [edge, count] of [...layerEdges.entries()].sort()) console.log(`- ${edge}: ${count}`);
+
+console.log('\nКрупные файлы — сигнал для ревью, не ошибка:');
+for (const item of largeFiles.sort((a, b) => b.lines - a.lines)) {
+  console.log(`- ${item.file}: ${item.lines} строк (порог ${item.threshold})`);
+}
+if (!largeFiles.length) console.log('- нет');
+
+if (cycles.length) {
+  console.error('\nОбнаружены циклические зависимости:');
+  for (const cycle of cycles) console.error(`- ${cycle}`);
+}
+if (violations.length) {
+  console.error('\nНарушены архитектурные границы:');
+  for (const violation of violations) console.error(`- ${violation}`);
+}
+
+if (cycles.length || violations.length) process.exitCode = 1;
+else console.log('\nАрхитектурные границы соблюдены.');

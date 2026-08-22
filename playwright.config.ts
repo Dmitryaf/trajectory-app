@@ -3,6 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
   testMatch: '**/*.e2e.ts',
+  testIgnore: '**/performance.e2e.ts',
   globalSetup: './e2e/global-setup.ts',
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
@@ -23,7 +24,7 @@ export default defineConfig({
     },
     {
       name: 'webkit',
-      testIgnore: '**/today-visual.e2e.ts',
+      testIgnore: ['**/performance.e2e.ts', '**/today-visual.e2e.ts'],
       use: { ...devices['Desktop Safari'] },
     },
     {

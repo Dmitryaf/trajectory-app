@@ -33,7 +33,7 @@ test('copies a readable prompt and downloads the lossless weekly package', async
   await page.goto('/week');
   await expect(page.getByRole('heading', { name: 'Неделя', exact: true })).toBeVisible();
 
-  const copyButton = page.getByRole('button', { name: 'Скопировать промпт' });
+  const copyButton = page.getByRole('button', { name: 'Подготовить текст для нейросети' });
   for (let index = 0; index < 8 && !(await copyButton.isVisible()); index += 1) {
     await page.getByRole('button', { name: 'Предыдущий период' }).click();
   }
@@ -71,7 +71,7 @@ test('includes daily reflections from an exact cross-month period', async ({ pag
   const range = completedCrossMonthRange();
   await page.getByLabel('Начало периода анализа').fill(range.start);
   await page.getByLabel('Конец периода анализа').fill(range.end);
-  await page.getByRole('button', { name: 'Скопировать промпт периода' }).click();
+  await page.getByRole('button', { name: 'Подготовить текст периода' }).click();
 
   const prompt = await readCopiedPrompt(page, browserName);
   expect(prompt).toContain('Записи по дням');
