@@ -17,7 +17,7 @@ const hotspotContentBudgets = new Map([
   ['src/views/WeekView.vue', 25425],
   ['src/views/MonthView.vue', 20421],
   ['src/features/settings/useSettingsForm.ts', 12379],
-  ['src/styles/reviews.css', 11693],
+  ['src/styles/reviews.css', 10877],
   ['src/styles/responsive-mobile.css', 10328],
   ['src/styles/shell.css', 8732],
 ]);
