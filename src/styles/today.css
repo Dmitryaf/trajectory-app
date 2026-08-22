@@ -404,6 +404,16 @@
   color: #61718a;
 }
 
+.ai-analysis-nudge__actions {
+  display: grid;
+  flex: 0 0 min(300px, 38%);
+  gap: 8px;
+}
+.ai-analysis-nudge__dismiss {
+  border: 0;
+  background: transparent;
+}
+
 .checkin-grid {
   display: grid;
   gap: 20px;

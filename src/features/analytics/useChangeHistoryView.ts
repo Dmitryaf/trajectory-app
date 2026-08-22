@@ -309,9 +309,9 @@ export function useChangeHistoryView() {
   async function copyPrompt() {
     try {
       await copyPackagePrompt(createPackage(), store.settings);
-      notifySaved(`Промпт за ${range.value} мес. скопирован`);
+      notifySaved(`Текст за ${range.value} мес. скопирован`);
     } catch (error) {
-      notifyUnknownError(error, 'Не удалось скопировать промпт');
+      notifyUnknownError(error, 'Не удалось подготовить текст для нейросети');
     }
   }
   function downloadJson() {

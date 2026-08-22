@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
+import AiAnalysisSteps from '../features/analysis/ui/AiAnalysisSteps.vue';
 import { RouterLink } from 'vue-router';
 import type { EChartsCoreOption } from 'echarts/core';
 import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
@@ -337,9 +338,9 @@ async function copyPrompt() {
   promptCopying.value = true;
   try {
     await copyPackagePrompt(createPackage(), store.settings);
-    notifySaved('Промпт для анализа скопирован');
+    notifySaved('Текст для нейросети скопирован');
   } catch (error) {
-    notifyUnknownError(error, 'Не удалось скопировать промпт');
+    notifyUnknownError(error, 'Не удалось подготовить текст для нейросети');
   } finally {
     promptCopying.value = false;
   }
@@ -489,15 +490,16 @@ function shiftMonth(offset: number) {
           </div>
           <div class="period-actions">
             <button class="secondary-button" type="button" :disabled="promptCopying" :aria-busy="promptCopying" @click="copyPrompt">
-              Скопировать промпт
+              Подготовить текст для нейросети
             </button>
             <button class="secondary-button" type="button" @click="downloadJson">Скачать данные</button>
           </div>
         </div>
+        <AiAnalysisSteps />
         <div class="review-nudge range-custom-action" style="margin-top: 16px">
           <div>
             <strong>Нужен другой период?</strong>
-            <p>Выберите точные даты и скопируйте промпт в настройках.</p>
+            <p>Выберите точные даты и подготовьте текст в настройках.</p>
           </div>
           <RouterLink class="secondary-button" to="/settings#analysis-settings">Выбрать даты</RouterLink>
         </div>

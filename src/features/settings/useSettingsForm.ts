@@ -445,10 +445,10 @@ export function useSettingsForm() {
   }
 
   async function copyAnalysisPrompt(period: Exclude<AiReportPeriod, 'range'>) {
-    await runAction(`analysis-${period}`, 'Не удалось скопировать промпт', async () => {
+    await runAction(`analysis-${period}`, 'Не удалось подготовить текст для нейросети', async () => {
       const payload = createAnalysisPayload(period);
       await copyText(buildAiReportPrompt(payload, store.settings));
-      notifySaved('Промпт для анализа скопирован');
+      notifySaved('Текст для нейросети скопирован');
     });
   }
 
@@ -464,10 +464,10 @@ export function useSettingsForm() {
 
   async function copyCustomAnalysisPrompt() {
     if (!analysisRangeIsValid()) return;
-    await runAction('analysis-range', 'Не удалось скопировать промпт', async () => {
+    await runAction('analysis-range', 'Не удалось подготовить текст для нейросети', async () => {
       const payload = createCustomAnalysisPayload();
       await copyText(buildAiReportPrompt(payload, store.settings));
-      notifySaved('Промпт выбранного периода скопирован');
+      notifySaved('Текст выбранного периода скопирован');
     });
   }
 

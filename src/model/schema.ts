@@ -173,6 +173,7 @@ export type AppSettings = {
   id: 'main';
   settingsVersion: number;
   introSeen: boolean;
+  aiAnalysisNudgeDismissed: boolean;
   firstUse: FirstUseState;
   activeDailyBlocks: DailyBlockId[];
   activeLifeAreas: LifeAreaId[];

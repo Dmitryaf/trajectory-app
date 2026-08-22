@@ -3,6 +3,7 @@ import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
 import PasswordField from '../shared/ui/forms/PasswordField.vue';
 import PwaInstallGuide from '../features/pwa/ui/PwaInstallGuide.vue';
+import AiAnalysisSteps from '../features/analysis/ui/AiAnalysisSteps.vue';
 import { pwaPlatform } from '../features/pwa/installation';
 import { useSettingsForm } from '../features/settings/useSettingsForm';
 import type { DailyBlockId, LifeAreaId } from '../types';
@@ -626,11 +627,12 @@ const {
           <div>
             <h2>Данные для внешнего анализа</h2>
             <p>
-              Промпт содержит читаемую сводку, а отдельный JSON — полную копию данных выбранного периода. Приложение само ничего не
-              отправляет.
+              Подготовленный текст содержит читаемую сводку, а отдельный JSON — полную копию данных выбранного периода. Приложение само
+              ничего не отправляет.
             </p>
           </div>
         </div>
+        <AiAnalysisSteps />
         <div class="ai-actions">
           <button
             class="secondary-button"
@@ -639,7 +641,7 @@ const {
             :aria-busy="isSaving('analysis-week')"
             @click="copyAnalysisPrompt('week')"
           >
-            Промпт недели
+            Подготовить текст недели
           </button>
           <button
             class="secondary-button"
@@ -648,7 +650,7 @@ const {
             :aria-busy="isSaving('analysis-month')"
             @click="copyAnalysisPrompt('month')"
           >
-            Промпт месяца
+            Подготовить текст месяца
           </button>
           <button class="secondary-button" type="button" @click="downloadAnalysisData('week')">Данные недели</button>
           <button class="secondary-button" type="button" @click="downloadAnalysisData('month')">Данные месяца</button>
@@ -682,12 +684,12 @@ const {
                 :aria-busy="isSaving('analysis-range')"
                 @click="copyCustomAnalysisPrompt"
               >
-                Скопировать промпт периода
+                Подготовить текст периода
               </button>
               <button class="secondary-button" type="button" @click="downloadCustomAnalysisData">Скачать данные периода</button>
             </div>
             <p class="data-note">
-              В промпт входят записи по каждому дню выбранного периода, включая личные заметки. JSON остаётся полной копией без сокращений.
+              В текст входят записи по каждому дню выбранного периода, включая личные заметки. JSON остаётся полной копией без сокращений.
             </p>
           </div>
         </details>

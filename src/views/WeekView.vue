@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
+import AiAnalysisSteps from '../features/analysis/ui/AiAnalysisSteps.vue';
 import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
 import PeriodRecordCard from '../features/reviews/ui/PeriodRecordCard.vue';
 import WeeklyReviewJournalLinks from '../features/reviews/ui/WeeklyReviewJournalLinks.vue';
 import WeeklyReviewOverview from '../features/reviews/ui/WeeklyReviewOverview.vue';
+import DecisionFollowUp from '../features/reviews/ui/DecisionFollowUp.vue';
+import { buildDecisionFollowUp } from '../features/reviews/decisionFollowUp';
 import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
 import PeriodNavigator from '../shared/ui/navigation/PeriodNavigator.vue';
 import {
@@ -223,6 +226,9 @@ const reviewCues = computed(() =>
 const primaryReviewCues = computed(() => reviewCues.value.slice(0, 3));
 const previousReview = computed(() => store.reviewByWeek(addDays(start.value, -7)));
 const savedReview = computed(() => store.reviewByWeek(start.value));
+const decisionFollowUp = computed(() =>
+  buildDecisionFollowUp(previousReview.value, savedReview.value, entries.value, results.value, lifeEvents.value),
+);
 const hasSavedReview = computed(() => Boolean(savedReview.value));
 const recoveredReview = computed(() => {
   const weekStart = store.settings.firstUse.weekStart;
@@ -360,9 +366,9 @@ async function copyPrompt() {
   promptCopying.value = true;
   try {
     await copyPackagePrompt(createPackage(), store.settings);
-    notifySaved('Промпт для анализа скопирован');
+    notifySaved('Текст для нейросети скопирован');
   } catch (error) {
-    notifyUnknownError(error, 'Не удалось скопировать промпт');
+    notifyUnknownError(error, 'Не удалось подготовить текст для нейросети');
   } finally {
     promptCopying.value = false;
   }
@@ -452,7 +458,7 @@ function downloadJson() {
         <p>{{ summaryText }}</p>
       </article>
 
-      <article v-if="hasDailyData || hasJournalData" class="dashboard-card">
+      <article v-if="hasDailyData || hasJournalData" id="ai-analysis" class="dashboard-card">
         <div class="section-heading">
           <div>
             <span class="eyebrow">Короткий разбор</span>
@@ -460,15 +466,16 @@ function downloadJson() {
           </div>
           <div class="period-actions">
             <button class="secondary-button" type="button" :disabled="promptCopying" :aria-busy="promptCopying" @click="copyPrompt">
-              Скопировать промпт
+              Подготовить текст для нейросети
             </button>
             <button class="secondary-button" type="button" @click="downloadJson">Скачать данные</button>
           </div>
         </div>
+        <AiAnalysisSteps />
         <div class="review-nudge range-custom-action" style="margin-top: 16px">
           <div>
             <strong>Нужен другой период?</strong>
-            <p>Выберите точные даты и скопируйте промпт в настройках.</p>
+            <p>Выберите точные даты и подготовьте текст в настройках.</p>
           </div>
           <RouterLink class="secondary-button" to="/settings#analysis-settings">Выбрать даты</RouterLink>
         </div>
@@ -505,6 +512,8 @@ function downloadJson() {
           pagination-label="событий недели"
         />
       </section>
+
+      <DecisionFollowUp v-if="decisionFollowUp" :follow-up="decisionFollowUp" />
 
       <article v-if="reviewAvailable" id="week-review" class="review-card">
         <div class="section-heading">

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
+import AiAnalysisSteps from '../features/analysis/ui/AiAnalysisSteps.vue';
 import EChartPanel from '../shared/ui/charts/EChartPanel.vue';
 import { useChangeHistoryView } from '../features/analytics/useChangeHistoryView';
 import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
@@ -58,7 +59,7 @@ const {
     <div class="review-nudge range-custom-action">
       <div>
         <strong>Нужен другой период?</strong>
-        <p>Выберите точные даты и скопируйте промпт в настройках.</p>
+        <p>Выберите точные даты и подготовьте текст в настройках.</p>
       </div>
       <RouterLink class="secondary-button" to="/settings#analysis-settings">Выбрать даты</RouterLink>
     </div>
@@ -77,10 +78,11 @@ const {
             <h2>Что стоит заметить</h2>
           </div>
           <div class="period-actions">
-            <button class="secondary-button" type="button" @click="copyPrompt">Скопировать промпт</button>
+            <button class="secondary-button" type="button" @click="copyPrompt">Подготовить текст для нейросети</button>
             <button class="secondary-button" type="button" @click="downloadJson">Скачать данные</button>
           </div>
         </div>
+        <AiAnalysisSteps />
         <div class="review-cue-grid review-cue-grid--primary">
           <article v-for="cue in primaryCues" :key="cue.id" class="review-cue" :class="'review-cue--' + cue.tone">
             <strong>{{ cue.title }}</strong>

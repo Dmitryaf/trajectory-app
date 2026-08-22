@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import AiAnalysisNudge from '../features/analysis/ui/AiAnalysisNudge.vue';
+import { shouldShowAiAnalysisNudge } from '../features/analysis/discovery';
 import CurrentGoalDialog from '../features/daily-entry/ui/CurrentGoalDialog.vue';
 import FirstUseRecovery from '../features/first-use/ui/FirstUseRecovery.vue';
 import HowItWorksDialog from '../features/first-use/ui/HowItWorksDialog.vue';
@@ -208,6 +210,17 @@ const yesterday = computed(() => addDays(todayKey(), -1));
 const yesterdayMissing = computed(
   () => isToday.value && store.loaded && store.dailyEntries.length > 0 && !store.entryByDate(yesterday.value),
 );
+const showAiAnalysisNudge = computed(
+  () => isToday.value && store.loaded && shouldShowAiAnalysisNudge(store.dailyEntries, store.settings.aiAnalysisNudgeDismissed),
+);
+
+async function dismissAiAnalysisNudge() {
+  try {
+    await store.saveSettings({ ...store.settings, aiAnalysisNudgeDismissed: true });
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось скрыть подсказку');
+  }
+}
 
 function fillYesterday() {
   changeSelectedDate(yesterday.value);
@@ -417,6 +430,12 @@ function openEntryDatePicker() {
         <p>{{ currentWeeklyPlan }}</p>
       </div>
     </section>
+
+    <AiAnalysisNudge
+      v-else-if="!firstUseTakesPriority && showAiAnalysisNudge"
+      @dismiss="dismissAiAnalysisNudge()"
+      @prepare="dismissAiAnalysisNudge()"
+    />
 
     <section
       v-else-if="!firstUseTakesPriority && isToday && currentWeekSummary.coveredEntriesCount"

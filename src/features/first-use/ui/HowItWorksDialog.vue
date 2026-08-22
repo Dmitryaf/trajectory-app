@@ -3,6 +3,7 @@ import { nextTick, ref, watch } from 'vue';
 import DialogCloseButton from '../../../shared/ui/overlays/DialogCloseButton.vue';
 import { useBodyScrollLock } from '../../../shared/ui/overlays/useBodyScrollLock';
 import { useDialogBackdropClose } from '../../../shared/ui/overlays/useDialogBackdropClose';
+import AiAnalysisSteps from '../../analysis/ui/AiAnalysisSteps.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -127,6 +128,13 @@ const { startBackdropClose, finishBackdropClose, cancelBackdropClose } = useDial
         <p class="help-dialog__note">
           Сами по себе записи не являются целью. Они нужны для одного решения: что оставить, что изменить или что проверить дальше.
         </p>
+
+        <section class="help-dialog__note help-dialog__analysis" aria-labelledby="external-analysis-title">
+          <strong id="external-analysis-title">Разобрать записи во внешней нейросети</strong>
+          <p>Когда накопятся записи, приложение может собрать их в понятный текст для дополнительного разбора.</p>
+          <AiAnalysisSteps />
+          <RouterLink to="/week#ai-analysis" @click="close">Подготовить текст для нейросети →</RouterLink>
+        </section>
 
         <div class="help-dialog__actions">
           <RouterLink class="secondary-button" to="/settings#daily-blocks" @click="close">Настроить записи</RouterLink>

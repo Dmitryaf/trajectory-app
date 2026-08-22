@@ -247,6 +247,15 @@
   .current-goal-summary .context-action {
     width: 100%;
   }
+  .ai-analysis-nudge {
+    gap: 16px;
+  }
+  .ai-analysis-nudge__copy ol {
+    display: grid;
+  }
+  .ai-analysis-nudge__actions {
+    flex-basis: auto;
+  }
   .pwa-install-nudge {
     grid-template-columns: 38px minmax(0, 1fr);
     align-items: start;

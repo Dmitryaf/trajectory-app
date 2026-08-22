@@ -21,6 +21,7 @@ export const defaultSettings: AppSettings = {
   id: 'main',
   settingsVersion: SETTINGS_VERSION,
   introSeen: false,
+  aiAnalysisNudgeDismissed: false,
   firstUse: {
     status: 'not_started',
     weekStart: '',
@@ -116,6 +117,7 @@ export function normalizeSettings(settings: LegacyAppSettings | null | undefined
     id: 'main',
     settingsVersion: defaultSettings.settingsVersion,
     introSeen: source.introSeen === true,
+    aiAnalysisNudgeDismissed: source.aiAnalysisNudgeDismissed === true,
     firstUse: normalizeFirstUseState(source.firstUse, settings == null),
     activeDailyBlocks,
     activeLifeAreas: (source.settingsVersion ?? 1) < 2 ? activeLifeAreas.filter((area) => area !== 'spiritual') : activeLifeAreas,

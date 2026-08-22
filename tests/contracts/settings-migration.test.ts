@@ -19,6 +19,7 @@ describe('settings migrations', () => {
     expect(settings.customCareerOptions).toEqual([]);
     expect(settings.settingsVersion).toBe(SETTINGS_VERSION);
     expect(settings.introSeen).toBe(false);
+    expect(settings.aiAnalysisNudgeDismissed).toBe(false);
     expect(settings.firstUse.status).toBe('available');
     expect(settings.activeDailyBlocks).toContain('context');
     expect(settings.activeDailyBlocks).toContain('career');
@@ -28,6 +29,10 @@ describe('settings migrations', () => {
     expect(normalized.careerStates).toEqual(['preparation', 'external']);
     expect(normalized.contextFactors).toEqual(['screen']);
     expect(normalized).not.toHaveProperty('eveningFactors');
+  });
+
+  it('preserves dismissal of the one-time external analysis hint', () => {
+    expect(normalizeSettings({ aiAnalysisNudgeDismissed: true }).aiAnalysisNudgeDismissed).toBe(true);
   });
 
   it('keeps work optional for a new account without changing old account settings', () => {

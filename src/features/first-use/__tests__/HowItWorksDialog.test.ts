@@ -10,6 +10,7 @@ function createTestRouter() {
     history: createMemoryHistory(),
     routes: [
       { path: '/', component: { template: '<div />' } },
+      { path: '/week', component: { template: '<div />' } },
       { path: '/settings', component: { template: '<div />' } },
     ],
   });
@@ -42,6 +43,8 @@ describe('HowItWorksDialog', () => {
     expect(document.body.textContent).toContain('Записать важное');
     expect(document.body.textContent).toContain('Увидеть период целиком');
     expect(document.body.textContent).toContain('Сохранить следующее решение');
+    expect(document.body.textContent).toContain('Разобрать записи во внешней нейросети');
+    expect(document.body.textContent).toContain('приложение ничего не отправляет');
 
     (document.querySelector('[aria-label="Закрыть объяснение"]') as HTMLButtonElement).click();
     await flushPromises();
