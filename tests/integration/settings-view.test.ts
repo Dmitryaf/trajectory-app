@@ -2,6 +2,7 @@
 
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
+import { copyText } from '../../src/features/export/browser';
 import { notifyError, notifySaved, notifyUnknownError } from '../../src/services/notifications';
 import { useAuthStore } from '../../src/stores/auth';
 import { emptyDailyEntry } from '../../src/types';
@@ -13,6 +14,11 @@ vi.mock('../../src/services/notifications', () => ({
   notifyInfo: vi.fn(),
   notifySaved: vi.fn(),
   notifyUnknownError: vi.fn(),
+}));
+
+vi.mock('../../src/features/export/browser', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/features/export/browser')>()),
+  copyText: vi.fn(),
 }));
 
 describe('settings scenarios', () => {
@@ -331,6 +337,34 @@ describe('settings scenarios', () => {
     await wrapper.get('#analysis-settings .analysis-range').findAll('button')[0]!.trigger('click');
 
     expect(notifyError).toHaveBeenCalledWith('Начало периода должно быть не позже окончания');
+  });
+
+  it('blocks repeated external analysis copy until the current copy finishes', async () => {
+    const { pinia } = createStore();
+    let finishCopy: () => void = () => undefined;
+    vi.mocked(copyText).mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finishCopy = resolve;
+        }),
+    );
+    const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
+    const copyButton = wrapper
+      .get('#analysis-settings')
+      .findAll('button')
+      .find((button) => button.text() === 'Подготовить текст недели')!;
+
+    await copyButton.trigger('click');
+    await copyButton.trigger('click');
+
+    expect(copyText).toHaveBeenCalledTimes(1);
+    expect(copyButton.attributes('disabled')).toBeDefined();
+
+    finishCopy();
+    await flushPromises();
+
+    expect(copyButton.attributes('disabled')).toBeUndefined();
+    expect(notifySaved).toHaveBeenCalledWith('Текст для нейросети скопирован');
   });
 
   it('saves a free-form experiment and completes it into history', async () => {
