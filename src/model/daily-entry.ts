@@ -46,12 +46,16 @@ function isActionDirection(value: unknown): value is ActionDirectionId {
 }
 
 function nullableNumber(value: unknown, min: number, max: number, integer = false): number | null {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max) return null;
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max) {
+    return null;
+  }
   return integer && !Number.isInteger(value) ? null : value;
 }
 
 function validTime(value: unknown): string {
-  if (typeof value !== 'string' || !/^\d{2}:\d{2}$/.test(value)) return '';
+  if (typeof value !== 'string' || !/^\d{2}:\d{2}$/.test(value)) {
+    return '';
+  }
   const [hours, minutes] = value.split(':').map(Number);
   return hours! <= 23 && minutes! <= 59 ? value : '';
 }
@@ -169,26 +173,66 @@ export function normalizeDailyEntry(entry: LegacyDailyEntry & { date: string }):
       ? entry.recordedFields.filter((field): field is DailyRecordedFieldId => dailyRecordedFieldIds.includes(field as DailyRecordedFieldId))
       : [],
   );
-  if (bedtime) recordedFields.add('bedtime');
-  if (wakeTime) recordedFields.add('wakeTime');
-  if (sleepMinutes !== null) recordedFields.add('sleepMinutes');
-  if (timeInBedMinutes !== null) recordedFields.add('timeInBedMinutes');
-  if (sleepQuality !== null) recordedFields.add('sleepQuality');
-  if (energy !== null) recordedFields.add('energy');
-  if (contextFactorsRecorded) recordedFields.add('contextFactors');
-  if (contextNote.trim()) recordedFields.add('contextNote');
-  if (specialDay) recordedFields.add('specialDay');
-  if (careerStates.length) recordedFields.add('careerStates');
-  if (activitiesRecorded) recordedFields.add('activities');
-  if (nutritionState !== null) recordedFields.add('nutritionState');
-  if (nutritionNote.trim()) recordedFields.add('nutritionNote');
-  if (weightKg !== null) recordedFields.add('weightKg');
-  if (actionDirection !== null) recordedFields.add('actionDirection');
-  if (actionNote.trim()) recordedFields.add('actionNote');
-  if (lifeAreasRecorded) recordedFields.add('lifeAreas');
-  if (importantFact.trim()) recordedFields.add('importantFact');
-  if (experimentCompleted !== null) recordedFields.add('experimentCompleted');
-  if (experimentNote.trim()) recordedFields.add('experimentNote');
+  if (bedtime) {
+    recordedFields.add('bedtime');
+  }
+  if (wakeTime) {
+    recordedFields.add('wakeTime');
+  }
+  if (sleepMinutes !== null) {
+    recordedFields.add('sleepMinutes');
+  }
+  if (timeInBedMinutes !== null) {
+    recordedFields.add('timeInBedMinutes');
+  }
+  if (sleepQuality !== null) {
+    recordedFields.add('sleepQuality');
+  }
+  if (energy !== null) {
+    recordedFields.add('energy');
+  }
+  if (contextFactorsRecorded) {
+    recordedFields.add('contextFactors');
+  }
+  if (contextNote.trim()) {
+    recordedFields.add('contextNote');
+  }
+  if (specialDay) {
+    recordedFields.add('specialDay');
+  }
+  if (careerStates.length) {
+    recordedFields.add('careerStates');
+  }
+  if (activitiesRecorded) {
+    recordedFields.add('activities');
+  }
+  if (nutritionState !== null) {
+    recordedFields.add('nutritionState');
+  }
+  if (nutritionNote.trim()) {
+    recordedFields.add('nutritionNote');
+  }
+  if (weightKg !== null) {
+    recordedFields.add('weightKg');
+  }
+  if (actionDirection !== null) {
+    recordedFields.add('actionDirection');
+  }
+  if (actionNote.trim()) {
+    recordedFields.add('actionNote');
+  }
+  if (lifeAreasRecorded) {
+    recordedFields.add('lifeAreas');
+  }
+  if (importantFact.trim()) {
+    recordedFields.add('importantFact');
+  }
+  if (experimentCompleted !== null) {
+    recordedFields.add('experimentCompleted');
+  }
+  if (experimentNote.trim()) {
+    recordedFields.add('experimentNote');
+  }
   const activeDailyBlocksSnapshot = Array.isArray(entry.activeDailyBlocksSnapshot)
     ? Array.from(
         new Set(
@@ -241,7 +285,9 @@ export function normalizeDailyEntry(entry: LegacyDailyEntry & { date: string }):
 }
 
 export function dailyFieldWasRecorded(entry: DailyEntry, field: DailyRecordedFieldId): boolean {
-  if (entry.recordedFields.includes(field)) return true;
+  if (entry.recordedFields.includes(field)) {
+    return true;
+  }
   switch (field) {
     case 'bedtime':
       return Boolean(entry.bedtime);

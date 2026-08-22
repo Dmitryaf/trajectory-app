@@ -45,7 +45,9 @@ const {
 
 async function saveResult() {
   const clean = title.value.trim();
-  if (!clean) return;
+  if (!clean) {
+    return;
+  }
   if (!date.value) {
     notifyError('Укажите дату итога');
     return;
@@ -75,7 +77,9 @@ async function saveResult() {
 }
 
 function edit(result: ResultRecord) {
-  if (result.id === undefined) return;
+  if (result.id === undefined) {
+    return;
+  }
   editingId.value = result.id;
   editingCreatedAt.value = result.createdAt;
   title.value = result.title;
@@ -94,11 +98,15 @@ function resetForm() {
 }
 
 async function remove(id?: number) {
-  if (id === undefined || removingIds.value.includes(id) || !window.confirm('Удалить этот итог?')) return;
+  if (id === undefined || removingIds.value.includes(id) || !window.confirm('Удалить этот итог?')) {
+    return;
+  }
   removingIds.value.push(id);
   try {
     await store.removeResult(id);
-    if (editingId.value === id) resetForm();
+    if (editingId.value === id) {
+      resetForm();
+    }
     notifyInfo('Итог удалён');
   } catch (error) {
     notifyUnknownError(error, 'Не удалось удалить итог');

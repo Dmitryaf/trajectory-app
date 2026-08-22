@@ -103,7 +103,9 @@ const monthMetricOptions = computed(() =>
 watch(
   monthMetricOptions,
   (options) => {
-    if (!options.some((option) => option.id === selectedMonthMetric.value) && options[0]) selectedMonthMetric.value = options[0].id;
+    if (!options.some((option) => option.id === selectedMonthMetric.value) && options[0]) {
+      selectedMonthMetric.value = options[0].id;
+    }
   },
   { immediate: true },
 );
@@ -215,8 +217,12 @@ const weightOption = computed<EChartsCoreOption>(() => {
   };
 });
 const monthMetricOption = computed(() => {
-  if (selectedMonthMetric.value === 'weight') return weightOption.value;
-  if (selectedMonthMetric.value === 'energy') return energyOption.value;
+  if (selectedMonthMetric.value === 'weight') {
+    return weightOption.value;
+  }
+  if (selectedMonthMetric.value === 'energy') {
+    return energyOption.value;
+  }
   return sleepOption.value;
 });
 const selectedMonthMetricInfo = computed(() => monthMetricOptions.value.find((option) => option.id === selectedMonthMetric.value));
@@ -225,8 +231,12 @@ const monthMetricDescription = computed(() => {
   const rows = metric === 'sleep' ? sleepEntries.value : metric === 'energy' ? energyEntries.value : weightEntries.value;
   const values = rows.map((entry) => {
     const date = formatDate(entry.date, { day: 'numeric', month: 'short' });
-    if (metric === 'sleep') return `${date}: ${minutesToHours(entry.sleepMinutes)} ч`;
-    if (metric === 'energy') return `${date}: ${entry.energy}/5`;
+    if (metric === 'sleep') {
+      return `${date}: ${minutesToHours(entry.sleepMinutes)} ч`;
+    }
+    if (metric === 'energy') {
+      return `${date}: ${entry.energy}/5`;
+    }
     return `${date}: ${entry.weightKg} кг`;
   });
   return `${selectedMonthMetricInfo.value?.label ?? 'Показатель'}: ${rows.length} наблюдений. ${values.join('; ')}. Особые дни исключены, пропуски не заполняются.`;

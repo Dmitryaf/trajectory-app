@@ -44,7 +44,9 @@ const props = defineProps<{ initialWeek?: string }>();
 const store = useAppStore();
 
 function validAnchor(value: string | undefined) {
-  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return todayKey();
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return todayKey();
+  }
   return toDateKey(fromDateKey(value)) === value ? value : todayKey();
 }
 
@@ -121,7 +123,9 @@ type WeekExperimentCard = {
 
 const activeExperiment = computed(() => {
   const experiment = store.settings.experiment;
-  if (!experiment.active || !experimentOverlapsRange(experiment, start.value, end.value)) return null;
+  if (!experiment.active || !experimentOverlapsRange(experiment, start.value, end.value)) {
+    return null;
+  }
   return experiment;
 });
 const completedExperiments = computed(() =>
@@ -142,7 +146,9 @@ watch(
     if (!cards.some((experiment) => experiment.id === openExperimentId.value)) {
       openExperimentId.value = cards.find((experiment) => experiment.active)?.id ?? cards[0]?.id ?? '';
     }
-    if (!cards.some((experiment) => experiment.id === openExperimentNotesId.value)) openExperimentNotesId.value = '';
+    if (!cards.some((experiment) => experiment.id === openExperimentNotesId.value)) {
+      openExperimentNotesId.value = '';
+    }
   },
   { immediate: true },
 );
@@ -192,13 +198,18 @@ function truncateExperimentText(value: string, maxLength: number): string {
 
 function handleExperimentToggle(event: Event, id: string): void {
   const details = event.currentTarget as HTMLDetailsElement;
-  if (details.open) openExperimentId.value = id;
-  else if (openExperimentId.value === id) openExperimentId.value = '';
+  if (details.open) {
+    openExperimentId.value = id;
+  } else if (openExperimentId.value === id) {
+    openExperimentId.value = '';
+  }
 }
 
 function toggleExperimentNotes(id: string): void {
   openExperimentNotesId.value = openExperimentNotesId.value === id ? '' : id;
-  if (!experimentNotePages[id]) experimentNotePages[id] = 1;
+  if (!experimentNotePages[id]) {
+    experimentNotePages[id] = 1;
+  }
 }
 
 function experimentNotePage(id: string): number {
@@ -214,8 +225,12 @@ function visibleExperimentNote(experiment: WeekExperimentCard): DailyEntry | nul
 }
 
 function experimentNoteStatus(entry: DailyEntry): string {
-  if (entry.experimentCompleted === true) return 'Получилось';
-  if (entry.experimentCompleted === false) return 'Не получилось';
+  if (entry.experimentCompleted === true) {
+    return 'Получилось';
+  }
+  if (entry.experimentCompleted === false) {
+    return 'Не получилось';
+  }
   return 'Без отметки';
 }
 const reviewCues = computed(() =>
@@ -248,8 +263,12 @@ const {
     draft.highlights.some((value) => value.trim()) ||
     Boolean(draft.stateContext.trim() || draft.support.trim() || draft.obstacle.trim()),
   prepareDraft: (draft) => {
-    while (draft.results.length < 3) draft.results.push('');
-    while (draft.highlights.length < 3) draft.highlights.push('');
+    while (draft.results.length < 3) {
+      draft.results.push('');
+    }
+    while (draft.highlights.length < 3) {
+      draft.highlights.push('');
+    }
   },
 });
 const previousReview = computed(() => store.reviewByWeek(addDays(start.value, -7)));
@@ -258,8 +277,9 @@ const decisionFollowUp = computed(() =>
 );
 const recoveredReview = computed(() => {
   const weekStart = store.settings.firstUse.weekStart;
-  if (store.settings.firstUse.status !== 'completed' || !weekStart || weekStart === start.value || !store.settings.firstUse.overviewSeen)
+  if (store.settings.firstUse.status !== 'completed' || !weekStart || weekStart === start.value || !store.settings.firstUse.overviewSeen) {
     return null;
+  }
   return store.reviewByWeek(weekStart) ?? null;
 });
 const recoveredWeekEnd = computed(() =>
@@ -274,7 +294,9 @@ const isRecoveredReview = computed(
 );
 const showRecoveredOverview = computed(() => isRecoveredReview.value && window.location.hash === '#first-use-overview');
 const navigatorSubtitle = computed(() => {
-  if (showRecoveredOverview.value) return 'Ваш первый обзор недели';
+  if (showRecoveredOverview.value) {
+    return 'Ваш первый обзор недели';
+  }
   return start.value === startOfWeek(todayKey()) ? 'Текущая неделя' : '';
 });
 const recoveredPeriodIsIncomplete = computed(
@@ -319,15 +341,33 @@ function weekDayFacts(item: (typeof rhythmDays.value)[number]): string[] {
   if (item.entry?.sleepMinutes !== null && item.entry?.sleepMinutes !== undefined) {
     facts.push(`Сон ${formatMinutes(item.entry.sleepMinutes)}`);
   }
-  if (item.entry?.energy !== null && item.entry?.energy !== undefined) facts.push(`Энергия ${item.entry.energy}/5`);
-  if (item.hasCareer) facts.push('Работа');
-  if (item.hasExternalAction) facts.push('Шаг к цели');
-  if (item.hasDrift) facts.push('Другие дела');
-  if (item.hasMovement) facts.push('Физическая активность');
-  if (item.hasNutritionSupport) facts.push('Питание поддержало');
-  if (item.hasNutritionNeutral) facts.push('Питание нейтрально');
-  if (item.hasNutritionBlock) facts.push('Питание мешало');
-  if (item.entry?.specialDay) facts.push(specialDayLabel(item.entry.specialDay));
+  if (item.entry?.energy !== null && item.entry?.energy !== undefined) {
+    facts.push(`Энергия ${item.entry.energy}/5`);
+  }
+  if (item.hasCareer) {
+    facts.push('Работа');
+  }
+  if (item.hasExternalAction) {
+    facts.push('Шаг к цели');
+  }
+  if (item.hasDrift) {
+    facts.push('Другие дела');
+  }
+  if (item.hasMovement) {
+    facts.push('Физическая активность');
+  }
+  if (item.hasNutritionSupport) {
+    facts.push('Питание поддержало');
+  }
+  if (item.hasNutritionNeutral) {
+    facts.push('Питание нейтрально');
+  }
+  if (item.hasNutritionBlock) {
+    facts.push('Питание мешало');
+  }
+  if (item.entry?.specialDay) {
+    facts.push(specialDayLabel(item.entry.specialDay));
+  }
   return facts;
 }
 watch(

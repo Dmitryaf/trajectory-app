@@ -57,7 +57,9 @@ function handleWindowFocus() {
 }
 
 function handleVisibilityChange() {
-  if (document.visibilityState === 'visible') handleWindowFocus();
+  if (document.visibilityState === 'visible') {
+    handleWindowFocus();
+  }
 }
 
 function handleOnline() {
@@ -67,17 +69,27 @@ function handleOnline() {
 function startCloudUpdates() {
   stopCloudSubscription?.();
   stopCloudSubscription = undefined;
-  if (cloudRefreshTimer !== undefined) window.clearInterval(cloudRefreshTimer);
+  if (cloudRefreshTimer !== undefined) {
+    window.clearInterval(cloudRefreshTimer);
+  }
   const userId = auth.requiresAuth ? auth.session?.user.id : null;
-  if (userId) stopCloudSubscription = subscribeToCloudSnapshot(userId, () => requestAutomaticCloudRefresh(true));
+  if (userId) {
+    stopCloudSubscription = subscribeToCloudSnapshot(userId, () => requestAutomaticCloudRefresh(true));
+  }
   cloudRefreshTimer = window.setInterval(() => {
-    if (document.visibilityState === 'visible') requestAutomaticCloudRefresh();
+    if (document.visibilityState === 'visible') {
+      requestAutomaticCloudRefresh();
+    }
   }, 30_000);
 }
 
 async function keepUnauthenticatedRouteAtEntry() {
-  if (!auth.initialized || !auth.requiresAuth || auth.isAuthenticated || auth.recoveryRequired) return;
-  if (router.currentRoute.value.path !== '/') await router.replace('/');
+  if (!auth.initialized || !auth.requiresAuth || auth.isAuthenticated || auth.recoveryRequired) {
+    return;
+  }
+  if (router.currentRoute.value.path !== '/') {
+    await router.replace('/');
+  }
 }
 
 onMounted(async () => {
@@ -85,7 +97,9 @@ onMounted(async () => {
   window.addEventListener('online', handleOnline);
   document.addEventListener('visibilitychange', handleVisibilityChange);
   stopEditingSubscription = onUnsavedSyncEditorsChange((dirty) => {
-    if (!dirty && cloudRefreshDeferred) requestAutomaticCloudRefresh(true);
+    if (!dirty && cloudRefreshDeferred) {
+      requestAutomaticCloudRefresh(true);
+    }
   });
   await auth.init();
   if (auth.recoveryRequired && router.currentRoute.value.path !== '/password-reset') {
@@ -105,7 +119,9 @@ onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', handleVisibilityChange);
   stopCloudSubscription?.();
   stopEditingSubscription?.();
-  if (cloudRefreshTimer !== undefined) window.clearInterval(cloudRefreshTimer);
+  if (cloudRefreshTimer !== undefined) {
+    window.clearInterval(cloudRefreshTimer);
+  }
 });
 
 watch(canOpenApp, async (allowed) => {
@@ -135,8 +151,12 @@ watch(
 );
 
 async function loadAppData() {
-  if (appDataReady.value && store.loaded && !effectiveLoadError.value) return;
-  if (appDataLoadPromise) return appDataLoadPromise;
+  if (appDataReady.value && store.loaded && !effectiveLoadError.value) {
+    return;
+  }
+  if (appDataLoadPromise) {
+    return appDataLoadPromise;
+  }
 
   appDataReady.value = false;
   appDataLoadError.value = '';
@@ -146,7 +166,9 @@ async function loadAppData() {
       const userId = auth.requiresAuth ? auth.session?.user.id : null;
       await prepareLocalCacheOwner(store, userId);
       await store.load();
-      if (userId) appDataLoadingText.value = 'Сверяю записи с облаком…';
+      if (userId) {
+        appDataLoadingText.value = 'Сверяю записи с облаком…';
+      }
       await reconcileCloudSnapshotOnStartup(store, userId);
       recordFirstUseReturnEvents();
     } catch (error) {

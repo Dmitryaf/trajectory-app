@@ -61,7 +61,9 @@ export function monthsBetween(start: string, end: string): string[] {
 
 export function dateRange(start: string, end: string): string[] {
   const result: string[] = [];
-  for (let current = start; current <= end; current = addDays(current, 1)) result.push(current);
+  for (let current = start; current <= end; current = addDays(current, 1)) {
+    result.push(current);
+  }
   return result;
 }
 
@@ -70,7 +72,9 @@ export function formatDate(key: string, options: Intl.DateTimeFormatOptions = { 
 }
 
 export function formatMinutes(value: number | null): string {
-  if (value === null) return '—';
+  if (value === null) {
+    return '—';
+  }
   const hours = Math.floor(value / 60);
   const minutes = value % 60;
   return minutes ? `${hours} ч ${minutes} мин` : `${hours} ч`;

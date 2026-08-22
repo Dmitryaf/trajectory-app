@@ -126,10 +126,14 @@ export const useAppStore = defineStore('app', {
       }
     },
     async saveEntry(entry: DailyEntry) {
-      if (!validDate(entry.date)) throw new Error('Укажите корректную дату записи');
+      if (!validDate(entry.date)) {
+        throw new Error('Укажите корректную дату записи');
+      }
       const saved = plainCopy(normalizeDailyEntry({ ...entry, updatedAt: new Date().toISOString() }));
       const entryLinkError = experimentEntryLinkError([saved], this.settings);
-      if (entryLinkError) throw new Error(entryLinkError);
+      if (entryLinkError) {
+        throw new Error(entryLinkError);
+      }
       await runStorageWrite(() =>
         db.transaction('rw', [db.dailyEntries, db.dailyEntryDrafts], async () => {
           await db.dailyEntries.put(saved);
@@ -137,18 +141,25 @@ export const useAppStore = defineStore('app', {
         }),
       );
       const index = this.dailyEntries.findIndex((item) => item.date === saved.date);
-      if (index >= 0) this.dailyEntries[index] = saved;
-      else this.dailyEntries.push(saved);
+      if (index >= 0) {
+        this.dailyEntries[index] = saved;
+      } else {
+        this.dailyEntries.push(saved);
+      }
       this.dailyEntryDrafts = this.dailyEntryDrafts.filter((draft) => draft.date !== saved.date);
       void this.requestLocalStoragePersistence();
       void this.syncCloudSnapshot();
       return saved;
     },
     async saveDailyEntryDraft(entry: DailyEntry) {
-      if (!validDate(entry.date)) throw new Error('Укажите корректную дату черновика');
+      if (!validDate(entry.date)) {
+        throw new Error('Укажите корректную дату черновика');
+      }
       const normalizedEntry = plainCopy(normalizeDailyEntry(entry));
       const entryLinkError = experimentEntryLinkError([normalizedEntry], this.settings);
-      if (entryLinkError) throw new Error(entryLinkError);
+      if (entryLinkError) {
+        throw new Error(entryLinkError);
+      }
       const draft: DailyEntryDraft = {
         date: normalizedEntry.date,
         entry: normalizedEntry,
@@ -156,8 +167,11 @@ export const useAppStore = defineStore('app', {
       };
       await runStorageWrite(() => db.dailyEntryDrafts.put(draft));
       const index = this.dailyEntryDrafts.findIndex((item) => item.date === draft.date);
-      if (index >= 0) this.dailyEntryDrafts[index] = draft;
-      else this.dailyEntryDrafts.push(draft);
+      if (index >= 0) {
+        this.dailyEntryDrafts[index] = draft;
+      } else {
+        this.dailyEntryDrafts.push(draft);
+      }
       return draft;
     },
     async removeDailyEntryDraft(date: string) {
@@ -165,7 +179,9 @@ export const useAppStore = defineStore('app', {
       this.dailyEntryDrafts = this.dailyEntryDrafts.filter((draft) => draft.date !== date);
     },
     async addResult(result: Omit<ResultRecord, 'id' | 'createdAt'>) {
-      if (!validDate(result.date)) throw new Error('Укажите корректную дату итога');
+      if (!validDate(result.date)) {
+        throw new Error('Укажите корректную дату итога');
+      }
       const record: ResultRecord = plainCopy(
         normalizeResult({
           ...result,
@@ -178,12 +194,18 @@ export const useAppStore = defineStore('app', {
       void this.syncCloudSnapshot();
     },
     async updateResult(result: ResultRecord) {
-      if (result.id === undefined) return;
-      if (!validDate(result.date)) throw new Error('Укажите корректную дату итога');
+      if (result.id === undefined) {
+        return;
+      }
+      if (!validDate(result.date)) {
+        throw new Error('Укажите корректную дату итога');
+      }
       const record = plainCopy(normalizeResult(result));
       await runStorageWrite(() => db.results.put(record));
       const index = this.results.findIndex((item) => item.id === record.id);
-      if (index >= 0) this.results[index] = record;
+      if (index >= 0) {
+        this.results[index] = record;
+      }
       this.results.sort((a, b) => b.date.localeCompare(a.date));
       void this.requestLocalStoragePersistence();
       void this.syncCloudSnapshot();
@@ -195,7 +217,9 @@ export const useAppStore = defineStore('app', {
       void this.syncCloudSnapshot();
     },
     async addLifeEvent(event: Omit<LifeEventRecord, 'id' | 'createdAt'>) {
-      if (!validDate(event.date)) throw new Error('Укажите корректную дату события');
+      if (!validDate(event.date)) {
+        throw new Error('Укажите корректную дату события');
+      }
       const record: LifeEventRecord = plainCopy(
         normalizeLifeEvent({
           ...event,
@@ -209,12 +233,18 @@ export const useAppStore = defineStore('app', {
       void this.syncCloudSnapshot();
     },
     async updateLifeEvent(event: LifeEventRecord) {
-      if (event.id === undefined) return;
-      if (!validDate(event.date)) throw new Error('Укажите корректную дату события');
+      if (event.id === undefined) {
+        return;
+      }
+      if (!validDate(event.date)) {
+        throw new Error('Укажите корректную дату события');
+      }
       const record = plainCopy(normalizeLifeEvent(event));
       await runStorageWrite(() => db.lifeEvents.put(record));
       const index = this.lifeEvents.findIndex((item) => item.id === record.id);
-      if (index >= 0) this.lifeEvents[index] = record;
+      if (index >= 0) {
+        this.lifeEvents[index] = record;
+      }
       this.lifeEvents.sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
       void this.requestLocalStoragePersistence();
       void this.syncCloudSnapshot();
@@ -237,8 +267,11 @@ export const useAppStore = defineStore('app', {
       );
       await runStorageWrite(() => db.weeklyReviews.put(plainReview));
       const index = this.weeklyReviews.findIndex((item) => item.weekStart === review.weekStart);
-      if (index >= 0) this.weeklyReviews[index] = plainReview;
-      else this.weeklyReviews.push(plainReview);
+      if (index >= 0) {
+        this.weeklyReviews[index] = plainReview;
+      } else {
+        this.weeklyReviews.push(plainReview);
+      }
       void this.requestLocalStoragePersistence();
       void this.syncCloudSnapshot();
     },
@@ -254,17 +287,24 @@ export const useAppStore = defineStore('app', {
       );
       await runStorageWrite(() => db.monthlyReviews.put(plainReview));
       const index = this.monthlyReviews.findIndex((item) => item.monthStart === review.monthStart);
-      if (index >= 0) this.monthlyReviews[index] = plainReview;
-      else this.monthlyReviews.push(plainReview);
+      if (index >= 0) {
+        this.monthlyReviews[index] = plainReview;
+      } else {
+        this.monthlyReviews.push(plainReview);
+      }
       void this.requestLocalStoragePersistence();
       void this.syncCloudSnapshot();
     },
     async saveSettings(settings: AppSettings) {
       const integrityError = experimentIntegrityError(settings);
-      if (integrityError) throw new Error(integrityError);
+      if (integrityError) {
+        throw new Error(integrityError);
+      }
       const normalized = plainCopy(normalizeSettings(settings));
       const entryLinkError = experimentEntryLinkError(this.dailyEntries, normalized);
-      if (entryLinkError) throw new Error(entryLinkError);
+      if (entryLinkError) {
+        throw new Error(entryLinkError);
+      }
       await runStorageWrite(() => db.settings.put(normalized));
       this.settings = normalized;
       void this.requestLocalStoragePersistence();
@@ -309,7 +349,9 @@ export const useAppStore = defineStore('app', {
       );
       await this.load();
       void this.requestLocalStoragePersistence();
-      if (options.syncCloud) void this.syncCloudSnapshot({ force: true });
+      if (options.syncCloud) {
+        void this.syncCloudSnapshot({ force: true });
+      }
     },
     async clearAll(options: { syncCloud?: boolean } = { syncCloud: true }) {
       await runStorageWrite(() =>
@@ -348,7 +390,9 @@ export const useAppStore = defineStore('app', {
       this.settings = structuredClone(defaultSettings);
       clearFirstUseFunnel();
       await runStorageWrite(() => db.settings.put(plainCopy(this.settings)));
-      if (options.syncCloud) void this.syncCloudSnapshot({ force: true });
+      if (options.syncCloud) {
+        void this.syncCloudSnapshot({ force: true });
+      }
     },
     setCloudSyncState(status: CloudSyncStatus, message = '', details: { updatedAt?: string; error?: string } = {}) {
       this.cloudSyncStatus = isCloudSyncConfigured() ? status : 'disabled';
@@ -360,16 +404,22 @@ export const useAppStore = defineStore('app', {
       const revision = ++this.storagePersistenceRevision;
       this.storagePersistenceStatus = 'checking';
       const status = await checkStoragePersistence();
-      if (revision === this.storagePersistenceRevision) this.storagePersistenceStatus = status;
+      if (revision === this.storagePersistenceRevision) {
+        this.storagePersistenceStatus = status;
+      }
       return status;
     },
     async requestLocalStoragePersistence() {
-      if (this.storagePersistenceRequested || this.storagePersistenceStatus === 'persisted') return this.storagePersistenceStatus;
+      if (this.storagePersistenceRequested || this.storagePersistenceStatus === 'persisted') {
+        return this.storagePersistenceStatus;
+      }
       this.storagePersistenceRequested = true;
       const revision = ++this.storagePersistenceRevision;
       this.storagePersistenceStatus = 'checking';
       const status = await requestStoragePersistence();
-      if (revision === this.storagePersistenceRevision) this.storagePersistenceStatus = status;
+      if (revision === this.storagePersistenceRevision) {
+        this.storagePersistenceStatus = status;
+      }
       return status;
     },
     async syncCloudSnapshot(options: { force?: boolean } = {}) {
@@ -384,7 +434,9 @@ export const useAppStore = defineStore('app', {
       }
 
       const userId = useAuthStore().session?.user.id;
-      if (userId) markCloudSyncPending(userId, 'Локальные изменения ожидают синхронизации');
+      if (userId) {
+        markCloudSyncPending(userId, 'Локальные изменения ожидают синхронизации');
+      }
       this.setCloudSyncState('syncing', 'Сохраняю облачную копию…');
       let updatedAt = '';
       do {
@@ -396,10 +448,14 @@ export const useAppStore = defineStore('app', {
             try {
               const saved = await saveCloudSnapshot(payload, expectedRevision);
               updatedAt = saved.updatedAt;
-              if (userId) await saveCloudSyncBase(userId, saved.revision ?? expectedRevision + 1, saved.payload);
+              if (userId) {
+                await saveCloudSyncBase(userId, saved.revision ?? expectedRevision + 1, saved.payload);
+              }
               break;
             } catch (error) {
-              if (!(error instanceof CloudRevisionConflictError) || !userId || attempt === 2) throw error;
+              if (!(error instanceof CloudRevisionConflictError) || !userId || attempt === 2) {
+                throw error;
+              }
               const remote = await loadCloudSnapshot();
               if (!remote) {
                 expectedRevision = 0;
@@ -414,7 +470,9 @@ export const useAppStore = defineStore('app', {
           this.setCloudSyncState('synced', `Облако обновлено: ${new Date(updatedAt).toLocaleString('ru-RU')}`, { updatedAt });
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Не удалось сохранить облачную копию';
-          if (userId) markCloudSyncPending(userId, message);
+          if (userId) {
+            markCloudSyncPending(userId, message);
+          }
           this.setCloudSyncState('pending', 'Изменения сохранены локально. Облако обновится после повторной синхронизации.', {
             error: message,
           });

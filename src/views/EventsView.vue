@@ -43,7 +43,9 @@ const {
 
 async function saveEvent() {
   const cleanTitle = title.value.trim();
-  if (!cleanTitle) return;
+  if (!cleanTitle) {
+    return;
+  }
   if (!date.value) {
     notifyError('Укажите дату события');
     return;
@@ -73,7 +75,9 @@ async function saveEvent() {
 }
 
 function edit(event: LifeEventRecord) {
-  if (event.id === undefined) return;
+  if (event.id === undefined) {
+    return;
+  }
   editingId.value = event.id;
   editingCreatedAt.value = event.createdAt;
   title.value = event.title;
@@ -92,11 +96,15 @@ function resetForm() {
 }
 
 async function remove(id?: number) {
-  if (id === undefined || removingIds.value.includes(id) || !window.confirm('Удалить это событие?')) return;
+  if (id === undefined || removingIds.value.includes(id) || !window.confirm('Удалить это событие?')) {
+    return;
+  }
   removingIds.value.push(id);
   try {
     await store.removeLifeEvent(id);
-    if (editingId.value === id) resetForm();
+    if (editingId.value === id) {
+      resetForm();
+    }
     notifyInfo('Событие удалено');
   } catch (error) {
     notifyUnknownError(error, 'Не удалось удалить событие');

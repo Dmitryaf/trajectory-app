@@ -21,7 +21,9 @@ export function useDialogFocus(active: Ref<boolean>, dialog: Ref<HTMLElement | u
   }
 
   function handleDialogKeydown(event: KeyboardEvent) {
-    if (event.key !== 'Tab') return;
+    if (event.key !== 'Tab') {
+      return;
+    }
     const elements = focusableElements();
     if (!elements.length) {
       event.preventDefault();
@@ -46,14 +48,18 @@ export function useDialogFocus(active: Ref<boolean>, dialog: Ref<HTMLElement | u
       if (open) {
         previouslyFocused = returnFocus?.value ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
         await nextTick();
-        if (!dialog.value?.contains(document.activeElement)) focusableElements()[0]?.focus();
+        if (!dialog.value?.contains(document.activeElement)) {
+          focusableElements()[0]?.focus();
+        }
         return;
       }
 
       const target = previouslyFocused;
       previouslyFocused = null;
       await nextTick();
-      if (target?.isConnected) target.focus();
+      if (target?.isConnected) {
+        target.focus();
+      }
     },
     { immediate: true },
   );

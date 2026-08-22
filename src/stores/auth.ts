@@ -55,7 +55,9 @@ function withAuthRequestTimeout<T>(request: Promise<T>): Promise<T> {
 }
 
 function authErrorDetails(error: unknown): AuthErrorDetails {
-  if (!error || typeof error !== 'object') return { code: '', message: '', status: null };
+  if (!error || typeof error !== 'object') {
+    return { code: '', message: '', status: null };
+  }
   const source = error as { code?: unknown; message?: unknown; status?: unknown };
   return {
     code: typeof source.code === 'string' ? source.code.toLocaleLowerCase() : '',
@@ -72,9 +74,15 @@ function signupErrorMessage(error: unknown): string {
   if (details.status === 429 || details.code.includes('rate_limit') || details.message.includes('rate limit')) {
     return 'Слишком много попыток. Подожди несколько минут и попробуй ещё раз.';
   }
-  if (details.message.includes('код приглашения не подошёл')) return 'Код приглашения не подошёл. Проверь код или запроси новый.';
-  if (details.message.includes('регистрация временно закрыта')) return 'Регистрация временно закрыта. Попробуй позже.';
-  if (details.message.includes('набор участников завершён')) return 'Набор участников завершён. Новый аккаунт сейчас создать нельзя.';
+  if (details.message.includes('код приглашения не подошёл')) {
+    return 'Код приглашения не подошёл. Проверь код или запроси новый.';
+  }
+  if (details.message.includes('регистрация временно закрыта')) {
+    return 'Регистрация временно закрыта. Попробуй позже.';
+  }
+  if (details.message.includes('набор участников завершён')) {
+    return 'Набор участников завершён. Новый аккаунт сейчас создать нельзя.';
+  }
   if (details.code.includes('email') || details.message.includes('email address') || details.message.includes('invalid email')) {
     return 'Не удалось использовать этот email. Проверь адрес и попробуй ещё раз.';
   }
@@ -84,7 +92,9 @@ function signupErrorMessage(error: unknown): string {
   if (details.message.includes('fetch') || details.message.includes('network') || details.message.includes('offline')) {
     return 'Нет связи с сервисом. Проверь интернет — введённые данные остались в форме.';
   }
-  if (details.status !== null && details.status >= 500) return 'Сервис регистрации временно недоступен. Попробуй ещё раз позже.';
+  if (details.status !== null && details.status >= 500) {
+    return 'Сервис регистрации временно недоступен. Попробуй ещё раз позже.';
+  }
   return 'Не удалось создать аккаунт. Проверь введённые данные и попробуй ещё раз.';
 }
 
@@ -98,8 +108,11 @@ function hasPasswordRecoveryRedirect() {
 }
 
 function persistPasswordRecovery(required: boolean) {
-  if (required) window.sessionStorage.setItem(passwordRecoveryKey, '1');
-  else window.sessionStorage.removeItem(passwordRecoveryKey);
+  if (required) {
+    window.sessionStorage.setItem(passwordRecoveryKey, '1');
+  } else {
+    window.sessionStorage.removeItem(passwordRecoveryKey);
+  }
 }
 
 export const useAuthStore = defineStore('auth', {
@@ -123,7 +136,9 @@ export const useAuthStore = defineStore('auth', {
   },
   actions: {
     async init() {
-      if (this.initialized || this.loading) return;
+      if (this.initialized || this.loading) {
+        return;
+      }
       this.operation = 'initializing';
       this.error = '';
       try {
@@ -217,7 +232,9 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     async completePasswordRecovery(password: string) {
-      if (!this.recoveryRequired || !this.session) throw new Error('Ссылка восстановления недействительна');
+      if (!this.recoveryRequired || !this.session) {
+        throw new Error('Ссылка восстановления недействительна');
+      }
       this.operation = 'completing-password-recovery';
       this.error = '';
       try {
@@ -238,7 +255,9 @@ export const useAuthStore = defineStore('auth', {
       this.operation = 'canceling-password-recovery';
       this.error = '';
       try {
-        if (this.session) await signOutFromCloud();
+        if (this.session) {
+          await signOutFromCloud();
+        }
       } finally {
         this.session = null;
         this.recoveryRequired = false;
@@ -248,7 +267,9 @@ export const useAuthStore = defineStore('auth', {
     },
     async deleteAccount() {
       const userId = this.session?.user.id;
-      if (!userId) throw new Error('Сессия не найдена');
+      if (!userId) {
+        throw new Error('Сессия не найдена');
+      }
 
       this.operation = 'deleting-account';
       this.error = '';

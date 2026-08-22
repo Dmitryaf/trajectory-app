@@ -142,12 +142,16 @@ function normalizeFirstUseState(value: unknown, isNewInstall: boolean): FirstUse
     ...structuredClone(defaultSettings.firstUse),
     status: isNewInstall ? 'not_started' : 'available',
   };
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return fallback;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return fallback;
+  }
 
   const source = value as Partial<FirstUseState>;
   const status = isFirstUseStatus(source.status) ? source.status : fallback.status;
   const weekStart = validDate(source.weekStart);
-  if ((status === 'in_progress' || status === 'completed') && !weekStart) return fallback;
+  if ((status === 'in_progress' || status === 'completed') && !weekStart) {
+    return fallback;
+  }
   const hasRecoveryWeek = status === 'in_progress' || status === 'completed';
   const periodEnd = validRecoveryPeriodEnd(source.periodEnd, weekStart);
 
@@ -163,7 +167,9 @@ function normalizeFirstUseState(value: unknown, isNewInstall: boolean): FirstUse
 
 function validRecoveryPeriodEnd(value: unknown, weekStart: string): string {
   const periodEnd = validDate(value);
-  if (!periodEnd || !weekStart) return '';
+  if (!periodEnd || !weekStart) {
+    return '';
+  }
   return periodEnd >= weekStart && periodEnd <= recoveryWeekEnd(weekStart) ? periodEnd : '';
 }
 
@@ -227,15 +233,23 @@ function normalizeExperiment(value: unknown): Experiment {
 }
 
 function normalizeExperimentHistory(value: unknown): ExperimentRecord[] {
-  if (!Array.isArray(value)) return [];
+  if (!Array.isArray(value)) {
+    return [];
+  }
   const seen = new Set<string>();
   return value.flatMap((item, index) => {
-    if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      return [];
+    }
     const source = item as Partial<ExperimentRecord>;
     const experiment = normalizeExperiment(source);
-    if (!experiment.title.trim() || !experiment.startDate || !experiment.endDate || experiment.startDate > experiment.endDate) return [];
+    if (!experiment.title.trim() || !experiment.startDate || !experiment.endDate || experiment.startDate > experiment.endDate) {
+      return [];
+    }
     const id = typeof source.id === 'string' && source.id.trim() ? source.id : `legacy-experiment-${index}-${experiment.startDate}`;
-    if (seen.has(id)) return [];
+    if (seen.has(id)) {
+      return [];
+    }
     seen.add(id);
     const { active: _active, ...snapshot } = experiment;
     return [
@@ -282,7 +296,9 @@ export function experimentAppliesToDate(experiment: Experiment, date: string): b
 }
 
 function sanitizeOptions(options: unknown): Option<string>[] {
-  if (!Array.isArray(options)) return [];
+  if (!Array.isArray(options)) {
+    return [];
+  }
   return options
     .filter((option): option is Option<string> => Boolean(option) && typeof option.id === 'string' && typeof option.label === 'string')
     .map((option) => ({

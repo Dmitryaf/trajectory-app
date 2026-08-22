@@ -252,8 +252,11 @@ function setCareerStates(value: string | string[] | null) {
 
 function setActionDirection(value: string | string[] | null) {
   form.actionDirection = typeof value === 'string' ? (value as ActionDirectionId) : null;
-  if (form.actionDirection) markRecorded('actionDirection');
-  else unmarkRecorded('actionDirection');
+  if (form.actionDirection) {
+    markRecorded('actionDirection');
+  } else {
+    unmarkRecorded('actionDirection');
+  }
 }
 
 function setNoActionDirection() {
@@ -264,12 +267,17 @@ function setNoActionDirection() {
 
 function setNutritionState(value: string | string[] | null) {
   form.nutritionState = typeof value === 'string' ? (value as NutritionState) : null;
-  if (form.nutritionState) markRecorded('nutritionState');
-  else unmarkRecorded('nutritionState');
+  if (form.nutritionState) {
+    markRecorded('nutritionState');
+  } else {
+    unmarkRecorded('nutritionState');
+  }
 }
 
 function markRecorded(field: DailyRecordedFieldId) {
-  if (!form.recordedFields.includes(field)) form.recordedFields.push(field);
+  if (!form.recordedFields.includes(field)) {
+    form.recordedFields.push(field);
+  }
 }
 
 function unmarkRecorded(field: DailyRecordedFieldId) {
@@ -285,7 +293,9 @@ async function saveCurrentGoal(
   },
   successMessage = 'Текущая цель сохранена',
 ) {
-  if (goalSaving.value) return;
+  if (goalSaving.value) {
+    return;
+  }
   goalSaving.value = true;
   try {
     await store.saveSettings({
@@ -310,9 +320,14 @@ async function removeCurrentGoal() {
 
 function openEntryDatePicker() {
   const input = entryDateInput.value;
-  if (!input) return;
-  if (typeof input.showPicker === 'function') input.showPicker();
-  else input.click();
+  if (!input) {
+    return;
+  }
+  if (typeof input.showPicker === 'function') {
+    input.showPicker();
+  } else {
+    input.click();
+  }
 }
 </script>
 

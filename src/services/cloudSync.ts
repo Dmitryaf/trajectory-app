@@ -62,26 +62,36 @@ export function getSupabaseClient(): SupabaseClient {
 
 export async function getCloudSession(): Promise<Session | null> {
   const { data, error } = await getSupabaseClient().auth.getSession();
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
   return data.session;
 }
 
 export async function getVerifiedCloudSession(): Promise<Session | null> {
   const session = await getCloudSession();
-  if (!session) return null;
+  if (!session) {
+    return null;
+  }
 
   const { error } = await getSupabaseClient().auth.getUser();
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
   return session;
 }
 
 export async function getStartupCloudSession(): Promise<Session | null> {
   const session = await getCloudSession();
-  if (!session) return null;
+  if (!session) {
+    return null;
+  }
 
   const { error } = await getSupabaseClient().auth.getUser();
-  if (!error || isAuthRetryableFetchError(error)) return session;
+  if (!error || isAuthRetryableFetchError(error)) {
+    return session;
+  }
 
   throw error;
 }
@@ -92,7 +102,9 @@ export function onCloudAuthChange(callback: (event: AuthChangeEvent, session: Se
 
 export async function signInToCloud(email: string, password: string): Promise<Session | null> {
   const { data, error } = await getSupabaseClient().auth.signInWithPassword({ email, password });
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
   return data.session;
 }
 
@@ -109,7 +121,9 @@ export async function signUpToCloud(
       data: { beta_invite_code: inviteCode },
     },
   });
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
   return { session: data.session, confirmationRequired: !data.session };
 }
 
@@ -117,7 +131,9 @@ export async function requestCloudPasswordReset(email: string): Promise<void> {
   const { error } = await getSupabaseClient().auth.resetPasswordForEmail(email, {
     redirectTo: `${window.location.origin}/password-reset`,
   });
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 }
 
 export async function resendCloudSignupConfirmation(email: string): Promise<void> {
@@ -128,29 +144,39 @@ export async function resendCloudSignupConfirmation(email: string): Promise<void
       emailRedirectTo: `${window.location.origin}/`,
     },
   });
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 }
 
 export async function updateCloudPassword(password: string): Promise<void> {
   const { error } = await getSupabaseClient().auth.updateUser({ password });
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 }
 
 export async function deleteCloudAccount(): Promise<void> {
   const { error } = await getSupabaseClient().functions.invoke('delete-account', {
     body: { confirmation: 'DELETE_MY_ACCOUNT' },
   });
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 }
 
 export async function clearLocalCloudSession(): Promise<void> {
   const { error } = await getSupabaseClient().auth.signOut({ scope: 'local' });
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 }
 
 export async function signOutFromCloud(): Promise<void> {
   const { error } = await getSupabaseClient().auth.signOut();
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 }
 
 export async function loadCloudSnapshot(): Promise<CloudSnapshot | null> {
@@ -161,8 +187,12 @@ export async function loadCloudSnapshot(): Promise<CloudSnapshot | null> {
     .eq('user_id', session.user.id)
     .maybeSingle();
 
-  if (error) throw error;
-  if (!data) return null;
+  if (error) {
+    throw error;
+  }
+  if (!data) {
+    return null;
+  }
 
   return {
     payload: data.payload,
@@ -199,9 +229,15 @@ export async function saveCloudSnapshot(payload: unknown, expectedRevision: numb
           .maybeSingle();
   const { data, error } = await query;
 
-  if (error?.code === '23505' || (!error && !data)) throw new CloudRevisionConflictError();
-  if (error) throw error;
-  if (!data) throw new CloudRevisionConflictError();
+  if (error?.code === '23505' || (!error && !data)) {
+    throw new CloudRevisionConflictError();
+  }
+  if (error) {
+    throw error;
+  }
+  if (!data) {
+    throw new CloudRevisionConflictError();
+  }
   const snapshot = {
     payload: data.payload,
     updatedAt: data.updated_at,
@@ -285,6 +321,8 @@ function cloudSyncMetaKey(userId: string) {
 
 async function requireSession(): Promise<Session> {
   const session = await getVerifiedCloudSession();
-  if (!session) throw new Error('Сначала войди в облачную копию');
+  if (!session) {
+    throw new Error('Сначала войди в облачную копию');
+  }
   return session;
 }

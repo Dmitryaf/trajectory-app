@@ -8,19 +8,25 @@ const overflows = ref(false);
 let resizeObserver: ResizeObserver | null = null;
 
 function measure() {
-  if (!content.value || expanded.value) return;
+  if (!content.value || expanded.value) {
+    return;
+  }
   overflows.value = content.value.scrollHeight > content.value.clientHeight + 1;
 }
 
 async function toggle() {
   expanded.value = !expanded.value;
-  if (!expanded.value) await nextTick(measure);
+  if (!expanded.value) {
+    await nextTick(measure);
+  }
 }
 
 onMounted(async () => {
   await nextTick(measure);
   resizeObserver = new ResizeObserver(measure);
-  if (content.value) resizeObserver.observe(content.value);
+  if (content.value) {
+    resizeObserver.observe(content.value);
+  }
 });
 
 watch(

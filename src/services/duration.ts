@@ -12,7 +12,9 @@ export function splitDuration(totalMinutes: number | null): DurationParts {
 }
 
 export function combineDuration(hours: number | null, minutes: number | null, maxMinutes: number): number | null {
-  if (hours === null && minutes === null) return null;
+  if (hours === null && minutes === null) {
+    return null;
+  }
   const safeHours = hours === null || !Number.isFinite(hours) ? 0 : Math.max(0, Math.floor(hours));
   const safeMinutes = minutes === null || !Number.isFinite(minutes) ? 0 : Math.min(59, Math.max(0, Math.floor(minutes)));
   return Math.min(maxMinutes, safeHours * 60 + safeMinutes);

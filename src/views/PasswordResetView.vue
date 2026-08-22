@@ -11,14 +11,20 @@ const passwordConfirmation = ref('');
 const status = ref('');
 
 const submitIssue = computed(() => {
-  if (password.value.length < 8) return 'Пароль должен содержать не меньше 8 символов.';
-  if (password.value !== passwordConfirmation.value) return 'Пароли не совпадают.';
+  if (password.value.length < 8) {
+    return 'Пароль должен содержать не меньше 8 символов.';
+  }
+  if (password.value !== passwordConfirmation.value) {
+    return 'Пароли не совпадают.';
+  }
   return '';
 });
 
 async function savePassword() {
   status.value = submitIssue.value;
-  if (status.value) return;
+  if (status.value) {
+    return;
+  }
 
   try {
     await auth.completePasswordRecovery(password.value);

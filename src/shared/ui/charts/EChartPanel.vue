@@ -46,7 +46,9 @@ let chart: ECharts | null = null;
 let resizeObserver: ResizeObserver | null = null;
 
 function render() {
-  if (!chart) return;
+  if (!chart) {
+    return;
+  }
   chart.setOption(props.option, true);
 }
 
@@ -56,7 +58,9 @@ function resize() {
 
 onMounted(async () => {
   await nextTick();
-  if (!chartEl.value) return;
+  if (!chartEl.value) {
+    return;
+  }
   chart = init(chartEl.value, null, { renderer: 'canvas' });
   render();
   resizeObserver = new ResizeObserver(resize);

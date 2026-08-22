@@ -35,12 +35,12 @@ export function createDeleteAccountHandler(dependencies: DeleteAccountDependenci
   const logError = dependencies.logError ?? console.error;
 
   return async (request: Request): Promise<Response> => {
-    if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-    if (request.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
+    if (request.method === 'OPTIONS') {return new Response('ok', { headers: corsHeaders });}
+    if (request.method !== 'POST') {return jsonResponse({ error: 'Method not allowed' }, 405);}
 
     const authorization = request.headers.get('Authorization') ?? '';
     const accessToken = authorization.match(/^Bearer\s+(.+)$/i)?.[1];
-    if (!accessToken) return jsonResponse({ error: 'Unauthorized' }, 401);
+    if (!accessToken) {return jsonResponse({ error: 'Unauthorized' }, 401);}
 
     let body: unknown;
     try {
@@ -66,7 +66,7 @@ export function createDeleteAccountHandler(dependencies: DeleteAccountDependenci
       logError('Account authentication failed');
       return jsonResponse({ error: 'Unauthorized' }, 401);
     }
-    if (userResult.error || !userResult.user) return jsonResponse({ error: 'Unauthorized' }, 401);
+    if (userResult.error || !userResult.user) {return jsonResponse({ error: 'Unauthorized' }, 401);}
 
     let deletionResult: Awaited<ReturnType<DeleteAccountDependencies['deleteUser']>>;
     try {

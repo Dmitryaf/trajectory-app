@@ -10,7 +10,9 @@ const preloadRecoveryKey = 'trajectory:preload-recovery';
 
 window.addEventListener('vite:preloadError', (event) => {
   event.preventDefault();
-  if (window.sessionStorage.getItem(preloadRecoveryKey)) return;
+  if (window.sessionStorage.getItem(preloadRecoveryKey)) {
+    return;
+  }
   window.sessionStorage.setItem(preloadRecoveryKey, '1');
   window.location.reload();
 });
@@ -21,7 +23,9 @@ registerSW({ immediate: true });
 const router = createRouter({
   history: createWebHistory(),
   scrollBehavior(to) {
-    if (to.hash) return { el: to.hash, top: 88, behavior: 'smooth' };
+    if (to.hash) {
+      return { el: to.hash, top: 88, behavior: 'smooth' };
+    }
     return { top: 0 };
   },
   routes: [
