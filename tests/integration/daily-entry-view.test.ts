@@ -8,6 +8,7 @@ import { LocalStorageQuotaError } from '../../src/services/storageProtection';
 import CurrentGoalDialog from '../../src/features/daily-entry/ui/CurrentGoalDialog.vue';
 import { emptyDailyEntry, emptyWeeklyReview } from '../../src/types';
 import { DAILY_ENTRY_SCHEMA_VERSION } from '../../src/model/dataVersions';
+import { addDays, todayKey } from '../../src/services/dates';
 import TodayView from '../../src/views/TodayView.vue';
 import { createStore, routerLinkStub } from '../helpers/viewScenario';
 
@@ -51,6 +52,33 @@ describe('daily entry scenario', () => {
     expect(wrapper.text()).toContain('Остальные части дня');
     expect(wrapper.text()).toContain('Короткий итог дня');
     expect(wrapper.text()).not.toContain('Сон перед этой датой и сколько сил было в этот день.');
+  });
+
+  it('shows external analysis after three filled days and persists dismissal', async () => {
+    const { pinia, store } = createStore();
+    const today = todayKey();
+    store.dailyEntries = [-2, -1, 0].map((offset) => ({
+      ...emptyDailyEntry(addDays(today, offset)),
+      importantFact: `Запись ${offset}`,
+    }));
+    vi.spyOn(store, 'saveSettings').mockImplementation(async (settings) => {
+      store.settings = settings;
+    });
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+
+    const nudge = wrapper.get('.ai-analysis-nudge');
+    expect(nudge.text()).toContain('Приложение только соберёт текст и ничего не отправит само');
+    expect(nudge.text()).toContain('Подготовить текст');
+    expect(nudge.text()).toContain('Открыть выбранный сервис');
+    expect(nudge.get('a').attributes('href')).toBe('/week#ai-analysis');
+
+    await nudge.get('.ai-analysis-nudge__dismiss').trigger('click');
+    await flushPromises();
+
+    expect(store.settings.aiAnalysisNudgeDismissed).toBe(true);
+    expect(wrapper.find('.ai-analysis-nudge').exists()).toBe(false);
   });
 
   it('keeps one goal action before optional work context', async () => {

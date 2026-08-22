@@ -26,7 +26,9 @@ watch(
 );
 
 watch([hours, minutes], () => {
-  if (syncing) return;
+  if (syncing) {
+    return;
+  }
   const hourValue = typeof hours.value === 'number' ? hours.value : null;
   const minuteValue = typeof minutes.value === 'number' ? minutes.value : null;
   emit('update:modelValue', combineDuration(hourValue, minuteValue, props.maxHours * 60));

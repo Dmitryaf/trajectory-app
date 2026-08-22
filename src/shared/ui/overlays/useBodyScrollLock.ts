@@ -9,7 +9,9 @@ let documentOverflow = '';
 
 function lockBody() {
   lockCount += 1;
-  if (lockCount > 1) return;
+  if (lockCount > 1) {
+    return;
+  }
 
   scrollTop = window.scrollY;
   const { style } = document.body;
@@ -33,9 +35,13 @@ function lockBody() {
 }
 
 function unlockBody() {
-  if (!lockCount) return;
+  if (!lockCount) {
+    return;
+  }
   lockCount -= 1;
-  if (lockCount || !bodyStyle) return;
+  if (lockCount || !bodyStyle) {
+    return;
+  }
 
   const { style } = document.body;
   Object.assign(style, bodyStyle);
@@ -63,6 +69,8 @@ export function useBodyScrollLock(active: Ref<boolean>) {
 
   onBeforeUnmount(() => {
     stop();
-    if (held) unlockBody();
+    if (held) {
+      unlockBody();
+    }
   });
 }

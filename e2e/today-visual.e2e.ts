@@ -24,7 +24,7 @@ async function expectTodayScreenshot(page: Page, name: string) {
 }
 
 async function stabilizeTodayScreenshot(page: Page) {
-  await page.locator('.entry-date-control > span').evaluate((date) => date.classList.add('visual-dynamic-text'));
+  await page.locator('.entry-date-control__trigger > span').evaluate((date) => date.classList.add('visual-dynamic-text'));
   await page
     .locator('.review-nudge, .recovery-nudge, .today-pulse')
     .evaluateAll((sections) => sections.forEach((section) => section.classList.add('visual-calendar-dependent')));

@@ -45,7 +45,9 @@ watch(
   items,
   (nextItems) => {
     for (const item of nextItems) {
-      if (drafts[item.key]) continue;
+      if (drafts[item.key]) {
+        continue;
+      }
       if (item.kind === 'result') {
         const existing = store.results.find(
           (record) =>
@@ -74,7 +76,9 @@ function normalizedTitle(value: string) {
 
 function isAlreadySaved(item: JournalItem) {
   const draft = drafts[item.key];
-  if (!draft?.date) return false;
+  if (!draft?.date) {
+    return false;
+  }
   const records = item.kind === 'result' ? store.results : store.lifeEvents;
   return records.some((record) => record.date === draft.date && normalizedTitle(record.title) === normalizedTitle(item.title));
 }
@@ -92,7 +96,9 @@ function canSave(item: JournalItem) {
 }
 
 async function saveToJournal(item: JournalItem) {
-  if (!canSave(item)) return;
+  if (!canSave(item)) {
+    return;
+  }
   const draft = drafts[item.key]!;
   savingKey.value = item.key;
   saveErrors[item.key] = '';

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
-import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
-import PasswordField from '../shared/ui/forms/PasswordField.vue';
+import AccountSettingsCard from '../features/auth/ui/AccountSettingsCard.vue';
+import ExternalAnalysisSettingsCard from '../features/analysis/ui/ExternalAnalysisSettingsCard.vue';
+import ExperimentSettingsCard from '../features/experiments/ui/ExperimentSettingsCard.vue';
+import ChipGroup from '../shared/ui/forms/ChipGroup.vue';
 import PwaInstallGuide from '../features/pwa/ui/PwaInstallGuide.vue';
 import { pwaPlatform } from '../features/pwa/installation';
 import { useSettingsForm } from '../features/settings/useSettingsForm';
@@ -31,22 +33,35 @@ const passwordRecoveryRequested = new URLSearchParams(window.location.search).ge
 
 function settingsGroupForHash(hash: string): SettingsGroup | null {
   const id = hash.replace(/^#/, '');
-  if (dailySectionHashes.has(id)) return 'daily';
-  if (id === 'experiment-settings' || id === 'experiment-settings-group') return 'experiment';
-  if (dataSectionHashes.has(id)) return 'data';
-  if (id === 'account-settings') return 'account';
+  if (dailySectionHashes.has(id)) {
+    return 'daily';
+  }
+  if (id === 'experiment-settings' || id === 'experiment-settings-group') {
+    return 'experiment';
+  }
+  if (dataSectionHashes.has(id)) {
+    return 'data';
+  }
+  if (id === 'account-settings') {
+    return 'account';
+  }
   return null;
 }
 
 function scrollToSettingsHash(): void {
   const id = window.location.hash.replace(/^#/, '');
-  if (!id) return;
+  if (!id) {
+    return;
+  }
   void nextTick(() => document.getElementById(id)?.scrollIntoView({ block: 'start' }));
 }
 
 function syncSettingsGroupWithLocation(): void {
-  if (passwordRecoveryRequested) activeSettingsGroup.value = 'account';
-  else activeSettingsGroup.value = settingsGroupForHash(window.location.hash) ?? activeSettingsGroup.value;
+  if (passwordRecoveryRequested) {
+    activeSettingsGroup.value = 'account';
+  } else {
+    activeSettingsGroup.value = settingsGroupForHash(window.location.hash) ?? activeSettingsGroup.value;
+  }
   scrollToSettingsHash();
 }
 
@@ -64,9 +79,6 @@ onMounted(() => {
 onBeforeUnmount(() => window.removeEventListener('hashchange', syncSettingsGroupWithLocation));
 
 const {
-  ChipGroup,
-  experimentDecisionOptions,
-  experimentTextLimits,
   dailyBlockOptions,
   store,
   settings,
@@ -75,11 +87,6 @@ const {
   newActivityLabel,
   newLifeAreaLabel,
   newContextFactorLabel,
-  newPassword,
-  newPasswordConfirmation,
-  analysisStart,
-  analysisEnd,
-  analysisMaxDate,
   auth,
   allCareerOptions,
   activeActivityOptions,
@@ -88,7 +95,6 @@ const {
   activeContextFactorOptions,
   hiddenContextFactorOptions,
   cloudSession,
-  cloudUserEmail,
   cloudStatusTitle,
   cloudStatusText,
   storageProtectionTitle,
@@ -111,15 +117,9 @@ const {
   removeContextFactor,
   restoreContextFactor,
   exportData,
-  signOutCloud,
-  changePassword,
-  copyAnalysisPrompt,
-  downloadAnalysisData,
-  copyCustomAnalysisPrompt,
-  downloadCustomAnalysisData,
   importData,
   clearAll,
-  deleteAccount,
+  replaceSettingsFromStore,
 } = useSettingsForm();
 </script>
 
@@ -452,87 +452,17 @@ const {
       :style="settingsGroupStyle"
       aria-label="Настройка личного эксперимента"
     >
-      <article id="experiment-settings" class="settings-card settings-card--experiment">
-        <div class="form-card__heading">
-          <span class="section-icon section-icon--orange">⌁</span>
-          <div>
-            <h2>Личный эксперимент</h2>
-            <p>Попробуйте одно изменение несколько дней или недель, а потом запишите, что вы заметили.</p>
-          </div>
-        </div>
-        <label class="toggle-row"
-          ><span><strong>Включить эксперимент</strong><small>В ежедневной записи появится один дополнительный вопрос.</small></span
-          ><input v-model="settings.experiment.active" type="checkbox"
-        /></label>
-        <label class="field-label" for="experiment-title">Что хотите попробовать</label>
-        <AutoGrowTextarea
-          id="experiment-title"
-          v-model="settings.experiment.title"
-          :rows="5"
-          :max-length="experimentTextLimits.title"
-          :read-only="experimentIdentityLocked"
-          placeholder="Не читать новости после 22:00"
-        />
-        <p v-if="experimentIdentityLocked" class="field-hint">
-          Условие и дата начала зафиксированы после первой дневной записи. Дату окончания можно продлить.
-        </p>
-        <label class="field-label" for="experiment-hypothesis">Что хотите узнать <span class="field-optional">необязательно</span></label>
-        <AutoGrowTextarea
-          id="experiment-hypothesis"
-          v-model="settings.experiment.hypothesis"
-          :rows="4"
-          :max-length="experimentTextLimits.hypothesis"
-          placeholder="Например: станет ли проще засыпать и сохранять энергию утром"
-        />
-        <div class="form-row">
-          <label class="form-control"
-            ><span class="field-label">С какого дня</span
-            ><input v-model="settings.experiment.startDate" type="date" :disabled="experimentIdentityLocked"
-          /></label>
-          <label class="form-control"
-            ><span class="field-label">До какого дня</span
-            ><input
-              v-model="settings.experiment.endDate"
-              type="date"
-              :min="experimentIdentityLocked ? store.settings.experiment.endDate : undefined"
-          /></label>
-        </div>
-        <template v-if="experimentCanConclude || settings.experiment.conclusion.trim()">
-          <label class="field-label" for="experiment-conclusion">
-            {{ experimentCanConclude ? 'Что вы заметили?' : 'Промежуточное наблюдение' }}
-          </label>
-          <AutoGrowTextarea
-            id="experiment-conclusion"
-            v-model="settings.experiment.conclusion"
-            :rows="6"
-            :max-length="experimentTextLimits.conclusion"
-            placeholder="Опиши наблюдения своими словами. Совпадение показателей не обязательно означает влияние эксперимента."
-          />
-          <label class="field-label">
-            {{ experimentCanConclude ? 'Что хотите делать дальше?' : 'Ранее выбранное решение' }}
-            <span class="field-optional">необязательно</span>
-          </label>
-          <ChipGroup v-model="settings.experiment.decision" :options="experimentDecisionOptions" allow-clear />
-        </template>
-        <p v-else-if="settings.experiment.endDate" class="field-hint">
-          После последнего дня здесь можно записать, что вы заметили. Завершённый эксперимент появится в разделе «История».
-        </p>
-        <button class="primary-button" type="button" :disabled="isSaving('experiment')" @click="saveExperiment">
-          {{ experimentSaveLabel }}
-        </button>
-        <button
-          v-if="experimentCanConclude"
-          class="secondary-button"
-          type="button"
-          :disabled="isSaving('experiment')"
-          @click="completeExperiment"
-        >
-          Завершить эксперимент
-        </button>
-        <p v-if="settings.experimentHistory.length" class="data-note">
-          Завершённые эксперименты можно посмотреть в разделе «История»: {{ settings.experimentHistory.length }}.
-        </p>
-      </article>
+      <ExperimentSettingsCard
+        v-model:experiment="settings.experiment"
+        :can-conclude="experimentCanConclude"
+        :history-count="settings.experimentHistory.length"
+        :identity-locked="experimentIdentityLocked"
+        :saved-end-date="store.settings.experiment.endDate"
+        :save-label="experimentSaveLabel"
+        :saving="isSaving('experiment')"
+        @complete="completeExperiment"
+        @save="saveExperiment"
+      />
     </section>
 
     <section
@@ -619,81 +549,7 @@ const {
         </template>
       </article>
 
-      <article id="analysis-settings" class="settings-card settings-card--analysis">
-        <div class="form-card__heading">
-          <span class="section-icon section-icon--green">↗</span>
-          <div>
-            <h2>Данные для внешнего анализа</h2>
-            <p>
-              Промпт содержит читаемую сводку, а отдельный JSON — полную копию данных выбранного периода. Приложение само ничего не
-              отправляет.
-            </p>
-          </div>
-        </div>
-        <div class="ai-actions">
-          <button
-            class="secondary-button"
-            type="button"
-            :disabled="isSaving('analysis-week')"
-            :aria-busy="isSaving('analysis-week')"
-            @click="copyAnalysisPrompt('week')"
-          >
-            Промпт недели
-          </button>
-          <button
-            class="secondary-button"
-            type="button"
-            :disabled="isSaving('analysis-month')"
-            :aria-busy="isSaving('analysis-month')"
-            @click="copyAnalysisPrompt('month')"
-          >
-            Промпт месяца
-          </button>
-          <button class="secondary-button" type="button" @click="downloadAnalysisData('week')">Данные недели</button>
-          <button class="secondary-button" type="button" @click="downloadAnalysisData('month')">Данные месяца</button>
-        </div>
-        <details class="analysis-range">
-          <summary>Выбрать другой период</summary>
-          <div class="analysis-range__content">
-            <p>Например, можно захватить часть прошлого месяца и несколько дней текущего.</p>
-            <div class="form-row">
-              <div>
-                <label class="field-label" for="analysis-start">Начало периода</label>
-                <input id="analysis-start" v-model="analysisStart" type="date" :max="analysisEnd" aria-label="Начало периода анализа" />
-              </div>
-              <div>
-                <label class="field-label" for="analysis-end">Конец периода</label>
-                <input
-                  id="analysis-end"
-                  v-model="analysisEnd"
-                  type="date"
-                  :min="analysisStart"
-                  :max="analysisMaxDate"
-                  aria-label="Конец периода анализа"
-                />
-              </div>
-            </div>
-            <div class="ai-actions">
-              <button
-                class="secondary-button"
-                type="button"
-                :disabled="isSaving('analysis-range')"
-                :aria-busy="isSaving('analysis-range')"
-                @click="copyCustomAnalysisPrompt"
-              >
-                Скопировать промпт периода
-              </button>
-              <button class="secondary-button" type="button" @click="downloadCustomAnalysisData">Скачать данные периода</button>
-            </div>
-            <p class="data-note">
-              В промпт входят записи по каждому дню выбранного периода, включая личные заметки. JSON остаётся полной копией без сокращений.
-            </p>
-          </div>
-        </details>
-        <p class="data-note">
-          В пакет входят личные заметки выбранного периода. Перед передачей внешнему сервису можно просмотреть скачанный JSON.
-        </p>
-      </article>
+      <ExternalAnalysisSettingsCard />
     </section>
 
     <section
@@ -703,64 +559,7 @@ const {
       :style="settingsGroupStyle"
       aria-label="Аккаунт и безопасность"
     >
-      <article class="settings-card settings-card--account settings-card--career">
-        <div class="form-card__heading">
-          <span class="section-icon section-icon--blue">◉</span>
-          <div>
-            <h2>Аккаунт и безопасность</h2>
-            <p>Управляйте входом, паролем и удалением аккаунта отдельно от копий данных.</p>
-          </div>
-        </div>
-        <div v-if="!auth.configured" class="cloud-sync-note">
-          <strong>Аккаунт недоступен</strong>
-          <p>В этой сборке облачный вход не настроен.</p>
-        </div>
-        <template v-else-if="cloudSession">
-          <div class="cloud-session">
-            <div>
-              <strong>{{ cloudUserEmail }}</strong>
-            </div>
-            <button class="secondary-button cloud-session__logout" type="button" :disabled="auth.loading" @click="signOutCloud">
-              Выйти
-            </button>
-          </div>
-          <details class="account-security" :open="passwordRecoveryRequested">
-            <summary>Изменить пароль</summary>
-            <div class="settings-field-stack account-security__form">
-              <label class="field-label" for="new-password">Новый пароль</label>
-              <PasswordField
-                id="new-password"
-                v-model="newPassword"
-                autocomplete="new-password"
-                minlength="8"
-                placeholder="Не меньше 8 символов"
-              />
-              <label class="field-label" for="new-password-confirmation">Повтори пароль</label>
-              <PasswordField
-                id="new-password-confirmation"
-                v-model="newPasswordConfirmation"
-                autocomplete="new-password"
-                minlength="8"
-                placeholder="Повтори пароль"
-              />
-              <button class="secondary-button" type="button" :disabled="auth.loading || !newPassword" @click="changePassword">
-                Сохранить новый пароль
-              </button>
-            </div>
-          </details>
-          <div class="danger-zone">
-            <div>
-              <strong>Удалить аккаунт</strong>
-              <p>Аккаунт, облачная копия и данные на этом устройстве будут удалены.</p>
-            </div>
-            <button class="danger-button" type="button" :disabled="auth.loading" @click="deleteAccount">Удалить аккаунт</button>
-          </div>
-        </template>
-        <div v-else class="cloud-sync-note">
-          <strong>Сессия не найдена</strong>
-          <p>Обновите страницу и войдите снова, чтобы управлять аккаунтом.</p>
-        </div>
-      </article>
+      <AccountSettingsCard :password-recovery-requested="passwordRecoveryRequested" @local-data-reset="replaceSettingsFromStore" />
     </section>
   </section>
 </template>

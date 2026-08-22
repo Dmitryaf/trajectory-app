@@ -17,7 +17,9 @@ export function buildWeightSeries(dates: string[], entries: DailyEntry[], dataTh
     .filter((date) => date <= dataThrough)
     .map((date) => {
       const weight = weightByDate.get(date) ?? null;
-      if (weight === null) return { date, weight, rolling: null };
+      if (weight === null) {
+        return { date, weight, rolling: null };
+      }
 
       const windowStart = addDays(date, -6);
       const windowValues = measurements

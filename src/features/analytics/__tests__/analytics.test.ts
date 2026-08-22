@@ -30,12 +30,21 @@ import {
 
 function entry(date: string, patch: Partial<DailyEntry>): DailyEntry {
   const recordedFields = new Set(patch.recordedFields ?? []);
-  if (Object.prototype.hasOwnProperty.call(patch, 'activities')) recordedFields.add('activities');
-  if (Object.prototype.hasOwnProperty.call(patch, 'contextFactors')) recordedFields.add('contextFactors');
-  if (Object.prototype.hasOwnProperty.call(patch, 'lifeAreas')) recordedFields.add('lifeAreas');
-  if (Object.prototype.hasOwnProperty.call(patch, 'careerStates') || Object.prototype.hasOwnProperty.call(patch, 'careerState'))
+  if (Object.prototype.hasOwnProperty.call(patch, 'activities')) {
+    recordedFields.add('activities');
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'contextFactors')) {
+    recordedFields.add('contextFactors');
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'lifeAreas')) {
+    recordedFields.add('lifeAreas');
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'careerStates') || Object.prototype.hasOwnProperty.call(patch, 'careerState')) {
     recordedFields.add('careerStates');
-  if (Object.prototype.hasOwnProperty.call(patch, 'actionDirection')) recordedFields.add('actionDirection');
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'actionDirection')) {
+    recordedFields.add('actionDirection');
+  }
   return {
     ...emptyDailyEntry(date),
     ...patch,
@@ -275,13 +284,51 @@ describe('analytics', () => {
     expect(prompt).toContain('подробности: Показал сценарий двум пользователям и записал вопросы');
     expect(prompt).toContain('Наблюдаемый результат цели: Показать работающий сценарий трём людям.');
     expect(prompt).toContain('Цель нужно пересмотреть 2026-07-31.');
-    expect(prompt).toContain('если данных мало, прямо скажи об этом и не придумывай совет');
+    expect(prompt).toContain('если данных меньше трёх сопоставимых наблюдений, прямо назови это малым количеством данных');
     expect(prompt).toContain('не утверждай, что одно вызвало другое');
+    expect(prompt).toContain('факт — конкретная сохранённая запись');
+    expect(prompt).toContain('наблюдение — осторожное описание');
+    expect(prompt).toContain('гипотеза — возможное объяснение');
+    expect(prompt).toContain('проверка — небольшой способ');
+    expect(prompt).toContain('вывод пользователя — только явно сохранённый');
+    expect(prompt).toContain('точными датами и числом наблюдений');
     expect(prompt).toContain('не давай обязательный совет только ради заполнения формата');
     expect(prompt).not.toContain('Данные JSON');
     expect(prompt).not.toContain('custom:context:rain');
     expect(prompt).not.toContain('"generatedAt"');
     expect(prompt.length).toBeLessThan(JSON.stringify(payload, null, 2).length);
+  });
+
+  it('keeps own actions separate when no external response was recorded', () => {
+    const payload = buildAiReportPayload('week', '2026-07-16', {
+      entries: [entry('2026-07-13', { actionDirection: 'external', actionNote: 'Отправил предложение' })],
+      results: [],
+      lifeEvents: [],
+      reviews: [],
+      monthlyReviews: [],
+      settings: defaultSettings,
+    });
+
+    const prompt = buildAiReportPrompt(payload, defaultSettings);
+    expect(prompt).toContain('по цели: Шаг к цели (Отправил предложение)');
+    expect(prompt).toContain('если внешнего ответа или результата нет в записях, так и скажи');
+    expect(prompt).toContain('Не называй действие результатом, если ответ извне не записан.');
+  });
+
+  it('names a sample below three observations as insufficient for a conclusion', () => {
+    const payload = buildAiReportPayload('week', '2026-07-16', {
+      entries: [entry('2026-07-13', { energy: 2 }), entry('2026-07-14', { energy: 4 })],
+      results: [],
+      lifeEvents: [],
+      reviews: [],
+      monthlyReviews: [],
+      settings: defaultSettings,
+    });
+
+    const prompt = buildAiReportPrompt(payload, defaultSettings);
+    expect(prompt).toContain('Энергия: 3 / 5 (2 измерения).');
+    expect(prompt).toContain('если данных меньше трёх сопоставимых наблюдений, прямо назови это малым количеством данных');
+    expect(prompt).toContain('пропуск не считай нулём');
   });
 
   it('builds an analysis package from reactive application settings', () => {

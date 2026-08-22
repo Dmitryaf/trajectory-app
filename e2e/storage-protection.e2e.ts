@@ -21,7 +21,9 @@ test('requests persistent storage after a meaningful mobile action and reports a
 
   await page.goto('/');
   const introClose = page.getByRole('button', { name: 'Закрыть объяснение' });
-  if (await introClose.isVisible()) await introClose.click();
+  if (await introClose.isVisible()) {
+    await introClose.click();
+  }
   await page.getByRole('button', { name: 'Начать с сегодняшнего дня' }).click();
 
   await page.getByRole('button', { name: 'Выбрать цель' }).first().click();

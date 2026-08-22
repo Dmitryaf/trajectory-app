@@ -15,8 +15,11 @@ export function normalizeResult(result: Partial<ResultRecord> & { date: string; 
 
 export function normalizeLifeEvent(event: Partial<LifeEventRecord> & { date: string; title: string }): LifeEventRecord {
   let type: LifeEventType = 'other';
-  if (event.type === 'milestone') type = 'change';
-  else if (lifeEventTypeOptions.some((option) => option.id === event.type)) type = event.type as LifeEventType;
+  if (event.type === 'milestone') {
+    type = 'change';
+  } else if (lifeEventTypeOptions.some((option) => option.id === event.type)) {
+    type = event.type as LifeEventType;
+  }
   return {
     date: event.date,
     type,
@@ -64,7 +67,9 @@ export function normalizeWeeklyReview(review: Partial<WeeklyReview> & { weekStar
 
 function validCoveredThrough(value: unknown, weekStart: string): string {
   const coveredThrough = validDate(value);
-  if (!coveredThrough || coveredThrough < weekStart) return '';
+  if (!coveredThrough || coveredThrough < weekStart) {
+    return '';
+  }
   const weekEnd = new Date(`${weekStart}T00:00:00Z`);
   weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
   return coveredThrough <= weekEnd.toISOString().slice(0, 10) ? coveredThrough : '';

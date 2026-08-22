@@ -54,7 +54,7 @@ CI использует версию Node.js из `.nvmrc`, устанавлив
 2. Оставить автоматические Preview deployments для коротких веток.
 3. Закрепить постоянный staging-домен за Preview-веткой `develop`.
 4. Назначить для `develop` отдельные Preview environment variables.
-5. Не продвигать Preview в production без успешного CI и ручной smoke-проверки.
+5. Не продвигать Preview в production без успешного CI и ручной проверки по [`MANUAL_REGRESSION.md`](./MANUAL_REGRESSION.md) в объёме затронутых сценариев.
 
 Для staging нужны отдельные значения:
 

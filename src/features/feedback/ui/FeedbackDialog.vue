@@ -5,6 +5,7 @@ import { notifyError, notifySaved } from '../../../services/notifications';
 import DialogCloseButton from '../../../shared/ui/overlays/DialogCloseButton.vue';
 import { useBodyScrollLock } from '../../../shared/ui/overlays/useBodyScrollLock';
 import { useDialogBackdropClose } from '../../../shared/ui/overlays/useDialogBackdropClose';
+import { useDialogFocus } from '../../../shared/ui/overlays/useDialogFocus';
 
 const props = defineProps<{
   accessToken: string;
@@ -14,8 +15,10 @@ const isOpen = ref(false);
 const isSending = ref(false);
 const message = ref('');
 const messageInput = ref<HTMLTextAreaElement>();
+const dialog = ref<HTMLElement>();
 
 useBodyScrollLock(isOpen);
+const { handleDialogKeydown } = useDialogFocus(isOpen, dialog);
 
 async function open() {
   isOpen.value = true;
@@ -24,7 +27,9 @@ async function open() {
 }
 
 function close() {
-  if (isSending.value) return;
+  if (isSending.value) {
+    return;
+  }
   isOpen.value = false;
 }
 
@@ -65,7 +70,15 @@ async function submit() {
       @pointerup="finishBackdropClose"
       @pointercancel="cancelBackdropClose"
     >
-      <section class="feedback-dialog" role="dialog" aria-modal="true" aria-labelledby="feedback-title" @keydown.esc="close">
+      <section
+        ref="dialog"
+        class="feedback-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="feedback-title"
+        @keydown="handleDialogKeydown"
+        @keydown.esc="close"
+      >
         <div class="feedback-dialog__heading">
           <div>
             <span class="eyebrow">Закрытая бета</span>

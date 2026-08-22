@@ -4,6 +4,7 @@ import ArchiveDateRange from '../features/journal/ui/ArchiveDateRange.vue';
 import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
 import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
 import ChipGroup from '../shared/ui/forms/ChipGroup.vue';
+import ClampedText from '../shared/ui/content/ClampedText.vue';
 import { archiveRangeFromQuery } from '../features/journal/archiveQuery';
 import { useArchiveList } from '../features/journal/useArchiveList';
 import { formatDate, todayKey } from '../services/dates';
@@ -20,7 +21,6 @@ const editingId = ref<number | null>(null);
 const editingCreatedAt = ref('');
 const saving = ref(false);
 const removingIds = ref<number[]>([]);
-const expandedNotes = ref<string[]>([]);
 const archiveRange = archiveRangeFromQuery();
 const recentResults = computed(() => [...store.results].sort((a, b) => b.date.localeCompare(a.date)));
 const resultOptions = computed(() => [...resultAreaOptions, ...store.settings.customLifeAreaOptions]);
@@ -45,7 +45,9 @@ const {
 
 async function saveResult() {
   const clean = title.value.trim();
-  if (!clean) return;
+  if (!clean) {
+    return;
+  }
   if (!date.value) {
     notifyError('Укажите дату итога');
     return;
@@ -75,7 +77,9 @@ async function saveResult() {
 }
 
 function edit(result: ResultRecord) {
-  if (result.id === undefined) return;
+  if (result.id === undefined) {
+    return;
+  }
   editingId.value = result.id;
   editingCreatedAt.value = result.createdAt;
   title.value = result.title;
@@ -94,11 +98,15 @@ function resetForm() {
 }
 
 async function remove(id?: number) {
-  if (id === undefined || removingIds.value.includes(id) || !window.confirm('Удалить этот итог?')) return;
+  if (id === undefined || removingIds.value.includes(id) || !window.confirm('Удалить этот итог?')) {
+    return;
+  }
   removingIds.value.push(id);
   try {
     await store.removeResult(id);
-    if (editingId.value === id) resetForm();
+    if (editingId.value === id) {
+      resetForm();
+    }
     notifyInfo('Итог удалён');
   } catch (error) {
     notifyUnknownError(error, 'Не удалось удалить итог');
@@ -113,17 +121,6 @@ function areaMeta(value: ResultRecord['area']) {
 
 function resultKey(result: ResultRecord) {
   return String(result.id ?? result.createdAt);
-}
-
-function noteIsExpanded(result: ResultRecord) {
-  return expandedNotes.value.includes(resultKey(result));
-}
-
-function toggleNote(result: ResultRecord) {
-  const key = resultKey(result);
-  expandedNotes.value = expandedNotes.value.includes(key)
-    ? expandedNotes.value.filter((item) => item !== key)
-    : [...expandedNotes.value, key];
 }
 </script>
 
@@ -196,24 +193,12 @@ function toggleNote(result: ResultRecord) {
                 >{{ areaMeta(result.area).label }} ·
                 {{ formatDate(result.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</small
               >
-              <p
+              <ClampedText
                 v-if="result.note"
-                :id="`result-note-${resultKey(result)}`"
-                class="result-item__note"
-                :class="{ 'result-item__note--clamped': result.note.length > 240 && !noteIsExpanded(result) }"
-              >
-                {{ result.note }}
-              </p>
-              <button
-                v-if="result.note.length > 240"
-                class="result-item__note-toggle"
-                type="button"
-                :aria-expanded="noteIsExpanded(result)"
-                :aria-controls="`result-note-${resultKey(result)}`"
-                @click="toggleNote(result)"
-              >
-                {{ noteIsExpanded(result) ? 'Свернуть' : 'Показать полностью' }}
-              </button>
+                :text="result.note"
+                :content-id="`result-note-${resultKey(result)}`"
+                text-class="result-item__note"
+              />
             </div>
             <div class="item-actions">
               <button class="ghost-button" type="button" aria-label="Редактировать итог" @click="edit(result)">✎</button>

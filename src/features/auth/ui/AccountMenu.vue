@@ -28,7 +28,9 @@ function signOut() {
     <summary aria-label="Открыть меню аккаунта">
       <span class="account-menu__avatar" aria-hidden="true">{{ initial }}</span>
       <span class="account-menu__email" :title="email">{{ email }}</span>
-      <span class="account-menu__chevron" aria-hidden="true">⌄</span>
+      <svg class="account-menu__chevron" aria-hidden="true" viewBox="0 0 16 16" fill="none">
+        <path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
     </summary>
     <div class="account-menu__panel">
       <RouterLink to="/settings" class="account-menu__action" @click="close">

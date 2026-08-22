@@ -50,7 +50,9 @@ export function linkLegacyExperimentEntries(entries: DailyEntry[], settings: App
   );
 
   return entries.map((entry) => {
-    if (entry.experimentId || (entry.experimentCompleted === null && !entry.experimentNote.trim())) return entry;
+    if (entry.experimentId || (entry.experimentCompleted === null && !entry.experimentNote.trim())) {
+      return entry;
+    }
     const matches = experiments.filter((experiment) => entry.date >= experiment.startDate && entry.date <= experiment.endDate);
     return matches.length === 1 ? { ...entry, experimentId: matches[0]!.id } : entry;
   });
@@ -88,7 +90,9 @@ export function experimentIntegrityError(settings: AppSettings): string {
   const historyIds = new Set<string>();
 
   for (const record of settings.experimentHistory) {
-    if (historyIds.has(record.id)) return `Повторяющийся id завершённого эксперимента: ${record.id}`;
+    if (historyIds.has(record.id)) {
+      return `Повторяющийся id завершённого эксперимента: ${record.id}`;
+    }
     historyIds.add(record.id);
     if (record.startDate && record.endDate && record.startDate > record.endDate) {
       return `Дата окончания завершённого эксперимента должна быть не раньше даты начала: ${record.id}`;
@@ -121,9 +125,13 @@ export function experimentEntryLinkError(entries: DailyEntry[], settings: AppSet
   const byId = new Map(experiments.map((experiment) => [experiment.id, experiment]));
 
   for (const entry of entries) {
-    if (!entry.experimentId) continue;
+    if (!entry.experimentId) {
+      continue;
+    }
     const experiment = byId.get(entry.experimentId);
-    if (!experiment) return `Запись ${entry.date} ссылается на неизвестный эксперимент: ${entry.experimentId}`;
+    if (!experiment) {
+      return `Запись ${entry.date} ссылается на неизвестный эксперимент: ${entry.experimentId}`;
+    }
     if (entry.date < experiment.startDate || entry.date > experiment.endDate) {
       return `Запись ${entry.date} находится вне периода эксперимента: ${entry.experimentId}`;
     }
@@ -132,11 +140,14 @@ export function experimentEntryLinkError(entries: DailyEntry[], settings: AppSet
 }
 
 export function validateExperimentTextLengths(experiment: Experiment): string {
-  if (experiment.title.length > experimentTextLimits.title)
+  if (experiment.title.length > experimentTextLimits.title) {
     return `Условие эксперимента длиннее ${experimentTextLimits.title} символов. Сократите текст, чтобы сохранить его.`;
-  if (experiment.hypothesis.length > experimentTextLimits.hypothesis)
+  }
+  if (experiment.hypothesis.length > experimentTextLimits.hypothesis) {
     return `Вопрос эксперимента длиннее ${experimentTextLimits.hypothesis} символов. Сократите текст, чтобы сохранить его.`;
-  if (experiment.conclusion.length > experimentTextLimits.conclusion)
+  }
+  if (experiment.conclusion.length > experimentTextLimits.conclusion) {
     return `Итог эксперимента длиннее ${experimentTextLimits.conclusion} символов. Сократите текст, чтобы сохранить его.`;
+  }
   return '';
 }

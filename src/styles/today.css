@@ -74,6 +74,18 @@
   font-weight: 750;
   backdrop-filter: blur(12px);
 }
+.entry-date-control__trigger {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
 .entry-date-control .date-input {
   position: absolute;
   inset: 0;
@@ -402,6 +414,16 @@
 }
 .review-nudge p {
   color: #61718a;
+}
+
+.ai-analysis-nudge__actions {
+  display: grid;
+  flex: 0 0 min(300px, 38%);
+  gap: 8px;
+}
+.ai-analysis-nudge__dismiss {
+  border: 0;
+  background: transparent;
 }
 
 .checkin-grid {

@@ -21,6 +21,7 @@ export const defaultSettings: AppSettings = {
   id: 'main',
   settingsVersion: SETTINGS_VERSION,
   introSeen: false,
+  aiAnalysisNudgeDismissed: false,
   firstUse: {
     status: 'not_started',
     weekStart: '',
@@ -101,11 +102,16 @@ export function normalizeSettings(settings: LegacyAppSettings | null | undefined
       )
     : [];
 
-  const parsedDailyBlocks = Array.isArray(source.activeDailyBlocks)
-    ? source.activeDailyBlocks.filter((block): block is DailyBlockId => dailyBlockOptions.some((option) => option.id === block))
-    : settings == null
-      ? defaultSettings.activeDailyBlocks
-      : dailyBlockOptions.map((option) => option.id);
+  let parsedDailyBlocks: DailyBlockId[];
+  if (Array.isArray(source.activeDailyBlocks)) {
+    parsedDailyBlocks = source.activeDailyBlocks.filter((block): block is DailyBlockId =>
+      dailyBlockOptions.some((option) => option.id === block),
+    );
+  } else if (settings == null) {
+    parsedDailyBlocks = defaultSettings.activeDailyBlocks;
+  } else {
+    parsedDailyBlocks = dailyBlockOptions.map((option) => option.id);
+  }
   const activeDailyBlocks =
     (source.settingsVersion ?? 1) < 5 && !parsedDailyBlocks.includes('context')
       ? [...parsedDailyBlocks, 'context' as const]
@@ -116,6 +122,7 @@ export function normalizeSettings(settings: LegacyAppSettings | null | undefined
     id: 'main',
     settingsVersion: defaultSettings.settingsVersion,
     introSeen: source.introSeen === true,
+    aiAnalysisNudgeDismissed: source.aiAnalysisNudgeDismissed === true,
     firstUse: normalizeFirstUseState(source.firstUse, settings == null),
     activeDailyBlocks,
     activeLifeAreas: (source.settingsVersion ?? 1) < 2 ? activeLifeAreas.filter((area) => area !== 'spiritual') : activeLifeAreas,
@@ -140,12 +147,16 @@ function normalizeFirstUseState(value: unknown, isNewInstall: boolean): FirstUse
     ...structuredClone(defaultSettings.firstUse),
     status: isNewInstall ? 'not_started' : 'available',
   };
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return fallback;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return fallback;
+  }
 
   const source = value as Partial<FirstUseState>;
   const status = isFirstUseStatus(source.status) ? source.status : fallback.status;
   const weekStart = validDate(source.weekStart);
-  if ((status === 'in_progress' || status === 'completed') && !weekStart) return fallback;
+  if ((status === 'in_progress' || status === 'completed') && !weekStart) {
+    return fallback;
+  }
   const hasRecoveryWeek = status === 'in_progress' || status === 'completed';
   const periodEnd = validRecoveryPeriodEnd(source.periodEnd, weekStart);
 
@@ -161,7 +172,9 @@ function normalizeFirstUseState(value: unknown, isNewInstall: boolean): FirstUse
 
 function validRecoveryPeriodEnd(value: unknown, weekStart: string): string {
   const periodEnd = validDate(value);
-  if (!periodEnd || !weekStart) return '';
+  if (!periodEnd || !weekStart) {
+    return '';
+  }
   return periodEnd >= weekStart && periodEnd <= recoveryWeekEnd(weekStart) ? periodEnd : '';
 }
 
@@ -187,53 +200,73 @@ function isFirstUseStep(value: unknown): value is FirstUseStep {
   );
 }
 
+function objectValue<T extends object>(value: unknown): Partial<T> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Partial<T>) : {};
+}
+
+function stringOrEmpty(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
 function normalizeExperiment(value: unknown): Experiment {
-  const source = value && typeof value === 'object' && !Array.isArray(value) ? (value as Partial<Experiment>) : {};
-  const active = typeof source.active === 'boolean' ? source.active : false;
-  const title = typeof source.title === 'string' ? source.title : '';
+  const source = objectValue<Experiment>(value);
+  const active = source.active === true;
+  const title = stringOrEmpty(source.title);
   const startDate = validDate(source.startDate);
   const endDate = validDate(source.endDate);
-  const targetMetric = typeof source.targetMetric === 'string' ? source.targetMetric : '';
+  const targetMetric = stringOrEmpty(source.targetMetric);
   const targetMetricId = isExperimentMetricId(source.targetMetricId) ? source.targetMetricId : legacyExperimentMetricId(targetMetric);
   const metricOption = experimentMetricOptions.find((option) => option.id === targetMetricId);
+  let id = '';
+  if (typeof source.id === 'string' && source.id.trim()) {
+    id = source.id.trim();
+  } else if (active && title.trim() && startDate && endDate) {
+    id = `legacy-active-${startDate}-${endDate}`;
+  }
+  let minimumMeaningfulChange: number | null = null;
+  if (
+    typeof source.minimumMeaningfulChange === 'number' &&
+    Number.isFinite(source.minimumMeaningfulChange) &&
+    source.minimumMeaningfulChange > 0
+  ) {
+    minimumMeaningfulChange = source.minimumMeaningfulChange;
+  } else if (targetMetricId) {
+    minimumMeaningfulChange = metricOption?.defaultMinimumChange ?? null;
+  }
   return {
-    id:
-      typeof source.id === 'string' && source.id.trim()
-        ? source.id.trim()
-        : active && title.trim() && startDate && endDate
-          ? `legacy-active-${startDate}-${endDate}`
-          : '',
+    id,
     active,
     title,
-    hypothesis: typeof source.hypothesis === 'string' ? source.hypothesis : '',
+    hypothesis: stringOrEmpty(source.hypothesis),
     targetMetricId,
     targetMetric: metricOption?.label ?? targetMetric,
     targetDirection: source.targetDirection === 'decrease' ? 'decrease' : 'increase',
-    minimumMeaningfulChange:
-      typeof source.minimumMeaningfulChange === 'number' &&
-      Number.isFinite(source.minimumMeaningfulChange) &&
-      source.minimumMeaningfulChange > 0
-        ? source.minimumMeaningfulChange
-        : targetMetricId
-          ? (metricOption?.defaultMinimumChange ?? null)
-          : null,
+    minimumMeaningfulChange,
     startDate,
     endDate,
-    conclusion: typeof source.conclusion === 'string' ? source.conclusion : '',
+    conclusion: stringOrEmpty(source.conclusion),
     decision: isExperimentDecision(source.decision) ? source.decision : null,
   };
 }
 
 function normalizeExperimentHistory(value: unknown): ExperimentRecord[] {
-  if (!Array.isArray(value)) return [];
+  if (!Array.isArray(value)) {
+    return [];
+  }
   const seen = new Set<string>();
   return value.flatMap((item, index) => {
-    if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      return [];
+    }
     const source = item as Partial<ExperimentRecord>;
     const experiment = normalizeExperiment(source);
-    if (!experiment.title.trim() || !experiment.startDate || !experiment.endDate || experiment.startDate > experiment.endDate) return [];
+    if (!experiment.title.trim() || !experiment.startDate || !experiment.endDate || experiment.startDate > experiment.endDate) {
+      return [];
+    }
     const id = typeof source.id === 'string' && source.id.trim() ? source.id : `legacy-experiment-${index}-${experiment.startDate}`;
-    if (seen.has(id)) return [];
+    if (seen.has(id)) {
+      return [];
+    }
     seen.add(id);
     const { active: _active, ...snapshot } = experiment;
     return [
@@ -280,7 +313,9 @@ export function experimentAppliesToDate(experiment: Experiment, date: string): b
 }
 
 function sanitizeOptions(options: unknown): Option<string>[] {
-  if (!Array.isArray(options)) return [];
+  if (!Array.isArray(options)) {
+    return [];
+  }
   return options
     .filter((option): option is Option<string> => Boolean(option) && typeof option.id === 'string' && typeof option.label === 'string')
     .map((option) => ({

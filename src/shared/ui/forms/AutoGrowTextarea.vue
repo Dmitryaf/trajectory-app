@@ -23,7 +23,9 @@ const maxHeight = 320;
 
 function resize() {
   const element = field.value;
-  if (!element) return;
+  if (!element) {
+    return;
+  }
   element.style.height = 'auto';
   const height = Math.min(element.scrollHeight, maxHeight);
   element.style.height = `${height}px`;

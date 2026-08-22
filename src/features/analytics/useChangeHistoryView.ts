@@ -107,7 +107,9 @@ export function useChangeHistoryView() {
   watch(
     trendMetricOptions,
     (options) => {
-      if (!options.some((option) => option.id === selectedTrendMetric.value) && options[0]) selectedTrendMetric.value = options[0].id;
+      if (!options.some((option) => option.id === selectedTrendMetric.value) && options[0]) {
+        selectedTrendMetric.value = options[0].id;
+      }
     },
     { immediate: true },
   );
@@ -125,21 +127,40 @@ export function useChangeHistoryView() {
         : [];
     }),
   );
+  const trendMetricValues = computed(() =>
+    monthRows.value.map((row) => {
+      if (selectedTrendMetric.value === 'sleep') {
+        return minutesToHours(row.summary.averageSleep);
+      }
+      if (selectedTrendMetric.value === 'energy') {
+        return roundValue(row.summary.averageEnergy);
+      }
+      return roundValue(row.summary.averageWeightKg);
+    }),
+  );
+  const trendMetricDescription = computed(() => {
+    const metric = selectedTrendMetric.value;
+    const values = monthRows.value
+      .map((row, index) => {
+        const value = trendMetricValues.value[index];
+        return value === null ? null : `${row.label}: ${formatTrendTooltipValue(metric, value)}`;
+      })
+      .filter((value): value is string => Boolean(value));
+    return `${selectedTrendMetricInfo.value?.label ?? 'Показатель'}: ${selectedTrendMetricInfo.value?.samples ?? 0} наблюдений. Месячные значения: ${values.join('; ')}. Текущий месяц может быть неполным; совпадение с событиями не доказывает причину.`;
+  });
   const trendMetricOption = computed<EChartsCoreOption>(() => {
     const metric = selectedTrendMetric.value;
-    const values = monthRows.value.map((row) => {
-      if (metric === 'sleep') return minutesToHours(row.summary.averageSleep);
-      if (metric === 'energy') return roundValue(row.summary.averageEnergy);
-      return roundValue(row.summary.averageWeightKg);
-    });
-    const axis =
-      metric === 'sleep'
-        ? { min: 0, max: 12, formatter: '{value}ч' }
-        : metric === 'energy'
-          ? { min: 1, max: 5, formatter: '{value}' }
-          : { scale: true, formatter: '{value}кг' };
+    let axis: Record<string, unknown> = { scale: true, formatter: '{value}кг' };
+    let color = '#d9952f';
+    if (metric === 'sleep') {
+      axis = { min: 0, max: 12, formatter: '{value}ч' };
+      color = '#7467e8';
+    } else if (metric === 'energy') {
+      axis = { min: 1, max: 5, formatter: '{value}' };
+      color = '#2eaa7f';
+    }
     return {
-      color: [metric === 'sleep' ? '#7467e8' : metric === 'energy' ? '#2eaa7f' : '#d9952f'],
+      color: [color],
       tooltip: { trigger: 'axis' },
       grid: { left: 52, right: 24, top: 20, bottom: 34 },
       xAxis: {
@@ -160,7 +181,7 @@ export function useChangeHistoryView() {
           name: selectedTrendMetricInfo.value?.label,
           type: 'line',
           symbolSize: 8,
-          data: values,
+          data: trendMetricValues.value,
           connectNulls: false,
           lineStyle: { width: 3 },
           tooltip: {
@@ -184,8 +205,9 @@ export function useChangeHistoryView() {
   watch(
     lifeEvents,
     (events) => {
-      if (!events.some((event) => eventKey(event) === selectedEventKey.value))
+      if (!events.some((event) => eventKey(event) === selectedEventKey.value)) {
         selectedEventKey.value = events[0] ? eventKey(events[0]) : '';
+      }
     },
     { immediate: true },
   );
@@ -205,7 +227,9 @@ export function useChangeHistoryView() {
   );
 
   function savedDate(updatedAt: string, fallback: string): string {
-    if (!updatedAt) return fallback;
+    if (!updatedAt) {
+      return fallback;
+    }
     const date = new Date(updatedAt);
     return Number.isNaN(date.getTime()) ? fallback : toDateKey(date);
   }
@@ -213,8 +237,12 @@ export function useChangeHistoryView() {
     const experimentSummary = buildExperimentSummary(store.dailyEntries, record);
     const parts = [`Вывод: ${record.conclusion}`];
     const decision = experimentDecisionLabel(record.decision);
-    if (decision) parts.push(`Дальше: ${decision.toLocaleLowerCase('ru-RU')}`);
-    if (!experimentSummary) return { detail: parts.join('. ') };
+    if (decision) {
+      parts.push(`Дальше: ${decision.toLocaleLowerCase('ru-RU')}`);
+    }
+    if (!experimentSummary) {
+      return { detail: parts.join('. ') };
+    }
     parts.push(
       `Условие выполнено в ${experimentSummary.adherenceCompletedDays} из ${experimentSummary.adherenceMarkedDays} отмеченных дней; без отметки — ${experimentSummary.adherenceUnmarkedDays}`,
     );
@@ -229,7 +257,7 @@ export function useChangeHistoryView() {
         ...store.weeklyReviews.flatMap((review) => {
           const date = savedDate(review.updatedAt, endOfWeek(review.weekStart));
           const items = [];
-          if (review.nextLever || review.ifThenPlan)
+          if (review.nextLever || review.ifThenPlan) {
             items.push({
               date,
               type: 'Решение недели',
@@ -237,8 +265,10 @@ export function useChangeHistoryView() {
               title: review.nextLever || 'План недели',
               detail: review.ifThenPlan,
             });
-          if (review.previousPlanOutcome)
+          }
+          if (review.previousPlanOutcome) {
             items.push({ date, type: 'Проверка решения', tone: 'outcome', title: review.previousPlanOutcome, detail: '' });
+          }
           return items;
         }),
         ...store.monthlyReviews.map((review) => ({
@@ -276,20 +306,40 @@ export function useChangeHistoryView() {
   );
 
   function formatComparisonValue(value: number | null, format: EventComparisonMetric['format']): string {
-    if (value === null) return '—';
-    if (format === 'minutes') return formatMinutes(Math.round(value));
-    if (format === 'number') return `${roundValue(value)}/5`;
-    if (format === 'weight') return `${roundValue(value)} кг`;
-    if (format === 'percent') return `${Math.round(value)}%`;
+    if (value === null) {
+      return '—';
+    }
+    if (format === 'minutes') {
+      return formatMinutes(Math.round(value));
+    }
+    if (format === 'number') {
+      return `${roundValue(value)}/5`;
+    }
+    if (format === 'weight') {
+      return `${roundValue(value)} кг`;
+    }
+    if (format === 'percent') {
+      return `${Math.round(value)}%`;
+    }
     return String(Math.round(value));
   }
   function observationLabel(samples: number | null): string {
-    if (samples === null) return '';
-    if (samples === 0) return 'нет наблюдений';
+    if (samples === null) {
+      return '';
+    }
+    if (samples === 0) {
+      return 'нет наблюдений';
+    }
     const lastTwo = samples % 100;
     const last = samples % 10;
-    const noun =
-      lastTwo >= 11 && lastTwo <= 14 ? 'наблюдений' : last === 1 ? 'наблюдение' : last >= 2 && last <= 4 ? 'наблюдения' : 'наблюдений';
+    let noun = 'наблюдений';
+    if (lastTwo < 11 || lastTwo > 14) {
+      if (last === 1) {
+        noun = 'наблюдение';
+      } else if (last >= 2 && last <= 4) {
+        noun = 'наблюдения';
+      }
+    }
     return `${samples} ${noun}`;
   }
   function selectEvent(event: (typeof store.lifeEvents)[number]) {
@@ -309,9 +359,9 @@ export function useChangeHistoryView() {
   async function copyPrompt() {
     try {
       await copyPackagePrompt(createPackage(), store.settings);
-      notifySaved(`Промпт за ${range.value} мес. скопирован`);
+      notifySaved(`Текст за ${range.value} мес. скопирован`);
     } catch (error) {
-      notifyUnknownError(error, 'Не удалось скопировать промпт');
+      notifyUnknownError(error, 'Не удалось подготовить текст для нейросети');
     }
   }
   function downloadJson() {
@@ -331,23 +381,35 @@ export function useChangeHistoryView() {
 
   function formatTrendTooltipValue(metric: TrendMetricId, rawValue: unknown): string {
     const value = numericTrendValue(rawValue);
-    if (value === null) return '—';
+    if (value === null) {
+      return '—';
+    }
     const formatted = value.toLocaleString('ru-RU', { maximumFractionDigits: 1 });
-    if (metric === 'sleep') return `${formatted} ч`;
-    if (metric === 'energy') return `${formatted}/5`;
+    if (metric === 'sleep') {
+      return `${formatted} ч`;
+    }
+    if (metric === 'energy') {
+      return `${formatted}/5`;
+    }
     return `${formatted} кг`;
   }
 
   function numericTrendValue(value: unknown): number | null {
-    if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : null;
+    }
     if (Array.isArray(value)) {
       for (let index = value.length - 1; index >= 0; index -= 1) {
         const item = value[index];
-        if (typeof item === 'number' && Number.isFinite(item)) return item;
+        if (typeof item === 'number' && Number.isFinite(item)) {
+          return item;
+        }
       }
       return null;
     }
-    if (value && typeof value === 'object' && 'value' in value) return numericTrendValue(value.value);
+    if (value && typeof value === 'object' && 'value' in value) {
+      return numericTrendValue(value.value);
+    }
     return null;
   }
 
@@ -364,6 +426,7 @@ export function useChangeHistoryView() {
     trendMetricOptions,
     selectedTrendMetricInfo,
     trendMetricOption,
+    trendMetricDescription,
     eventKey,
     selectedEvent,
     eventComparison,

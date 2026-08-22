@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import AiAnalysisNudge from '../features/analysis/ui/AiAnalysisNudge.vue';
+import { shouldShowAiAnalysisNudge } from '../features/analysis/discovery';
 import CurrentGoalDialog from '../features/daily-entry/ui/CurrentGoalDialog.vue';
 import FirstUseRecovery from '../features/first-use/ui/FirstUseRecovery.vue';
 import HowItWorksDialog from '../features/first-use/ui/HowItWorksDialog.vue';
@@ -208,6 +210,17 @@ const yesterday = computed(() => addDays(todayKey(), -1));
 const yesterdayMissing = computed(
   () => isToday.value && store.loaded && store.dailyEntries.length > 0 && !store.entryByDate(yesterday.value),
 );
+const showAiAnalysisNudge = computed(
+  () => isToday.value && store.loaded && shouldShowAiAnalysisNudge(store.dailyEntries, store.settings.aiAnalysisNudgeDismissed),
+);
+
+async function dismissAiAnalysisNudge() {
+  try {
+    await store.saveSettings({ ...store.settings, aiAnalysisNudgeDismissed: true });
+  } catch (error) {
+    notifyUnknownError(error, 'Не удалось скрыть подсказку');
+  }
+}
 
 function fillYesterday() {
   changeSelectedDate(yesterday.value);
@@ -239,8 +252,11 @@ function setCareerStates(value: string | string[] | null) {
 
 function setActionDirection(value: string | string[] | null) {
   form.actionDirection = typeof value === 'string' ? (value as ActionDirectionId) : null;
-  if (form.actionDirection) markRecorded('actionDirection');
-  else unmarkRecorded('actionDirection');
+  if (form.actionDirection) {
+    markRecorded('actionDirection');
+  } else {
+    unmarkRecorded('actionDirection');
+  }
 }
 
 function setNoActionDirection() {
@@ -251,12 +267,17 @@ function setNoActionDirection() {
 
 function setNutritionState(value: string | string[] | null) {
   form.nutritionState = typeof value === 'string' ? (value as NutritionState) : null;
-  if (form.nutritionState) markRecorded('nutritionState');
-  else unmarkRecorded('nutritionState');
+  if (form.nutritionState) {
+    markRecorded('nutritionState');
+  } else {
+    unmarkRecorded('nutritionState');
+  }
 }
 
 function markRecorded(field: DailyRecordedFieldId) {
-  if (!form.recordedFields.includes(field)) form.recordedFields.push(field);
+  if (!form.recordedFields.includes(field)) {
+    form.recordedFields.push(field);
+  }
 }
 
 function unmarkRecorded(field: DailyRecordedFieldId) {
@@ -272,7 +293,9 @@ async function saveCurrentGoal(
   },
   successMessage = 'Текущая цель сохранена',
 ) {
-  if (goalSaving.value) return;
+  if (goalSaving.value) {
+    return;
+  }
   goalSaving.value = true;
   try {
     await store.saveSettings({
@@ -297,9 +320,14 @@ async function removeCurrentGoal() {
 
 function openEntryDatePicker() {
   const input = entryDateInput.value;
-  if (!input) return;
-  if (typeof input.showPicker === 'function') input.showPicker();
-  else input.focus();
+  if (!input) {
+    return;
+  }
+  if (typeof input.showPicker === 'function') {
+    input.showPicker();
+  } else {
+    input.click();
+  }
 }
 </script>
 
@@ -312,25 +340,21 @@ function openEntryDatePicker() {
       </div>
       <div class="entry-date-picker">
         <span class="entry-date-picker__label">Запись за дату</span>
-        <span
-          class="entry-date-control"
-          role="button"
-          tabindex="0"
-          aria-label="Выбрать дату записи"
-          @click="openEntryDatePicker"
-          @keydown.enter.prevent="openEntryDatePicker"
-          @keydown.space.prevent="openEntryDatePicker"
-        >
-          <span aria-hidden="true">{{ selectedDateLabel }}</span>
-          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
-          </svg>
+        <span class="entry-date-control">
+          <button class="entry-date-control__trigger" type="button" aria-label="Выбрать дату записи" @click="openEntryDatePicker">
+            <span aria-hidden="true">{{ selectedDateLabel }}</span>
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
+            </svg>
+          </button>
           <input
             ref="entryDateInput"
             :value="selectedDate"
             class="date-input"
             type="date"
             :max="todayKey()"
+            tabindex="-1"
+            aria-hidden="true"
             aria-label="Дата записи"
             @click.stop
             @change="selectDate"
@@ -417,6 +441,12 @@ function openEntryDatePicker() {
         <p>{{ currentWeeklyPlan }}</p>
       </div>
     </section>
+
+    <AiAnalysisNudge
+      v-else-if="!firstUseTakesPriority && showAiAnalysisNudge"
+      @dismiss="dismissAiAnalysisNudge()"
+      @prepare="dismissAiAnalysisNudge()"
+    />
 
     <section
       v-else-if="!firstUseTakesPriority && isToday && currentWeekSummary.coveredEntriesCount"

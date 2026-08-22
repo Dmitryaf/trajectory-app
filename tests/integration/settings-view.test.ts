@@ -2,6 +2,7 @@
 
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
+import { copyText } from '../../src/features/export/browser';
 import { notifyError, notifySaved, notifyUnknownError } from '../../src/services/notifications';
 import { useAuthStore } from '../../src/stores/auth';
 import { emptyDailyEntry } from '../../src/types';
@@ -13,6 +14,11 @@ vi.mock('../../src/services/notifications', () => ({
   notifyInfo: vi.fn(),
   notifySaved: vi.fn(),
   notifyUnknownError: vi.fn(),
+}));
+
+vi.mock('../../src/features/export/browser', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/features/export/browser')>()),
+  copyText: vi.fn(),
 }));
 
 describe('settings scenarios', () => {
@@ -55,6 +61,60 @@ describe('settings scenarios', () => {
         .findAll('button')
         .filter((button) => button.text() === 'Удалить аккаунт'),
     ).toHaveLength(1);
+  });
+
+  it('keeps a confirmed password update visible beside the form until the next input', async () => {
+    const { pinia } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    auth.updatePassword = vi.fn().mockResolvedValue(undefined);
+    const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
+
+    await wrapper.get('#new-password').setValue('new-safe-password');
+    await wrapper.get('#new-password-confirmation').setValue('new-safe-password');
+    await wrapper.get('.account-security__form .secondary-button').trigger('click');
+    await flushPromises();
+
+    expect(auth.updatePassword).toHaveBeenCalledWith('new-safe-password');
+    expect((wrapper.get('#new-password').element as HTMLInputElement).value).toBe('');
+    expect((wrapper.get('#new-password-confirmation').element as HTMLInputElement).value).toBe('');
+    expect(wrapper.get('.account-security__form [role="status"]').text()).toBe('Пароль обновлён');
+    expect(wrapper.get('.account-security__form [role="status"]').attributes('aria-live')).toBe('polite');
+
+    await wrapper.get('#new-password').setValue('another-password');
+    expect(wrapper.find('.account-security__form [role="status"]').exists()).toBe(false);
+  });
+
+  it('does not keep a stale password success after an error or sign out', async () => {
+    const { pinia } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    auth.updatePassword = vi.fn().mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('network error'));
+    auth.signOut = vi.fn().mockImplementation(async () => {
+      auth.session = null;
+    });
+    const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
+
+    await wrapper.get('#new-password').setValue('new-safe-password');
+    await wrapper.get('#new-password-confirmation').setValue('new-safe-password');
+    await wrapper.get('.account-security__form .secondary-button').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('.account-security__form [role="status"]').exists()).toBe(true);
+
+    await wrapper.get('#new-password').setValue('second-safe-password');
+    await wrapper.get('#new-password-confirmation').setValue('second-safe-password');
+    await wrapper.get('.account-security__form .secondary-button').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('.account-security__form [role="status"]').exists()).toBe(false);
+    expect(notifyError).toHaveBeenCalledWith('Не удалось изменить пароль');
+
+    auth.updatePassword = vi.fn().mockResolvedValue(undefined);
+    await wrapper.get('.account-security__form .secondary-button').trigger('click');
+    await wrapper.get('.cloud-session__logout').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('.account-security__form [role="status"]').exists()).toBe(false);
   });
 
   it('blocks a repeated settings save and allows retrying after an error', async () => {
@@ -277,6 +337,34 @@ describe('settings scenarios', () => {
     await wrapper.get('#analysis-settings .analysis-range').findAll('button')[0]!.trigger('click');
 
     expect(notifyError).toHaveBeenCalledWith('Начало периода должно быть не позже окончания');
+  });
+
+  it('blocks repeated external analysis copy until the current copy finishes', async () => {
+    const { pinia } = createStore();
+    let finishCopy: () => void = () => undefined;
+    vi.mocked(copyText).mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finishCopy = resolve;
+        }),
+    );
+    const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
+    const copyButton = wrapper
+      .get('#analysis-settings')
+      .findAll('button')
+      .find((button) => button.text() === 'Подготовить текст недели')!;
+
+    await copyButton.trigger('click');
+    await copyButton.trigger('click');
+
+    expect(copyText).toHaveBeenCalledTimes(1);
+    expect(copyButton.attributes('disabled')).toBeDefined();
+
+    finishCopy();
+    await flushPromises();
+
+    expect(copyButton.attributes('disabled')).toBeUndefined();
+    expect(notifySaved).toHaveBeenCalledWith('Текст для нейросети скопирован');
   });
 
   it('saves a free-form experiment and completes it into history', async () => {

@@ -141,10 +141,6 @@
     right: -92px;
     top: -136px;
   }
-  .review-jump {
-    min-height: 38px;
-    padding: 8px 11px;
-  }
   .page--archive > .page-heading {
     min-height: 132px;
     margin: 4px 0 14px;
@@ -166,9 +162,6 @@
   }
   .page--settings > .page-heading h1 {
     font-size: 40px;
-  }
-  .page--settings > .page-heading::after {
-    display: none;
   }
   .entry-date-picker {
     gap: 3px;
@@ -246,6 +239,15 @@
   }
   .current-goal-summary .context-action {
     width: 100%;
+  }
+  .ai-analysis-nudge {
+    gap: 16px;
+  }
+  .ai-analysis-nudge__copy ol {
+    display: grid;
+  }
+  .ai-analysis-nudge__actions {
+    flex-basis: auto;
   }
   .pwa-install-nudge {
     grid-template-columns: 38px minmax(0, 1fr);
@@ -636,6 +638,14 @@
     gap: 2px;
     padding: 6px;
     border-radius: 18px;
+    transition:
+      opacity var(--motion-fast) var(--motion-ease),
+      transform var(--motion-fast) var(--motion-ease);
+  }
+  .app-shell:has(input:focus, textarea:focus, select:focus) .bottom-nav {
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(calc(100% + 24px + var(--safe-bottom)));
   }
   .bottom-nav__item {
     min-width: 0;

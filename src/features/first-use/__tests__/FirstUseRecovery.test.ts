@@ -18,8 +18,11 @@ function setupStore() {
   });
   store.saveReview = vi.fn(async (review: WeeklyReview) => {
     const index = store.weeklyReviews.findIndex((item) => item.weekStart === review.weekStart);
-    if (index >= 0) store.weeklyReviews[index] = structuredClone(review);
-    else store.weeklyReviews.push(structuredClone(review));
+    if (index >= 0) {
+      store.weeklyReviews[index] = structuredClone(review);
+    } else {
+      store.weeklyReviews.push(structuredClone(review));
+    }
   });
   return { pinia, store };
 }

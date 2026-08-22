@@ -29,6 +29,7 @@
 - [DELIVERY.md](./operations/DELIVERY.md) — Git-процесс, CI, staging, production и hotfix.
 - [BETA_RELEASE.md](./operations/BETA_RELEASE.md) — проверка готовности закрытой беты.
 - [PWA_INSTALLATION.md](./operations/PWA_INSTALLATION.md) — установка и ручная матрица мобильной PWA на staging.
+- [MANUAL_REGRESSION.md](./operations/MANUAL_REGRESSION.md) — сквозной ручной regression-чеклист для компьютера, мобильных браузеров и установленной PWA.
 - [BACKEND_AUTH_CI.md](./operations/BACKEND_AUTH_CI.md) — настройка backend, авторизации и CI.
 - [DATA_GOVERNANCE.md](./operations/DATA_GOVERNANCE.md) — работа с пользовательскими данными.
 - [HOSTING_MIGRATION.md](./operations/HOSTING_MIGRATION.md) — перенос хостинга.
@@ -42,6 +43,7 @@
 
 ### `audits/` — датированные снимки состояния
 
+- [2026-07-30-architecture-audit.md](./audits/2026-07-30-architecture-audit.md) — архитектурный снимок ветки `fix/beta-readiness` на commit `d9ee30e`.
 - [2026-08-08-new-user-review.md](./audits/2026-08-08-new-user-review.md) — независимое ревью первого пользовательского сценария.
 - [2026-07-30-git-state.md](./audits/2026-07-30-git-state.md) — датированный аудит Git на момент переработки документации.
 - [SYSTEM_AUDIT_2026-07-22.md](./audits/SYSTEM_AUDIT_2026-07-22.md) — системный аудит на указанную дату.

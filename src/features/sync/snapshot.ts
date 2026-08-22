@@ -26,7 +26,9 @@ export async function applyCloudSnapshot(
   store.setCloudSyncState('synced', `${message}: ${formatCloudUpdatedAt(snapshot.updatedAt)}`, {
     updatedAt: snapshot.updatedAt,
   });
-  if (typeof window !== 'undefined') window.dispatchEvent(new Event('trajectory:cloud-snapshot-applied'));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('trajectory:cloud-snapshot-applied'));
+  }
 }
 
 export function formatCloudUpdatedAt(value: string) {

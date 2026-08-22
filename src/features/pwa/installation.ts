@@ -17,26 +17,38 @@ export const pwaInstallPromptAvailable = ref(false);
 export const pwaPlatform = computed<'ios' | 'android' | 'other'>(() => detectPwaPlatform());
 
 export function detectStandaloneMode(): boolean {
-  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return false;
+  }
   return window.matchMedia?.('(display-mode: standalone)').matches || Boolean((navigator as NavigatorWithStandalone).standalone);
 }
 
 export function detectPwaPlatform(): 'ios' | 'android' | 'other' {
-  if (typeof navigator === 'undefined') return 'other';
+  if (typeof navigator === 'undefined') {
+    return 'other';
+  }
   const userAgent = navigator.userAgent.toLowerCase();
-  if (/iphone|ipad|ipod/.test(userAgent) || (userAgent.includes('macintosh') && navigator.maxTouchPoints > 1)) return 'ios';
-  if (userAgent.includes('android')) return 'android';
+  if (/iphone|ipad|ipod/.test(userAgent) || (userAgent.includes('macintosh') && navigator.maxTouchPoints > 1)) {
+    return 'ios';
+  }
+  if (userAgent.includes('android')) {
+    return 'android';
+  }
   return 'other';
 }
 
 export function initPwaInstallation() {
-  if (initialized || typeof window === 'undefined') return;
+  if (initialized || typeof window === 'undefined') {
+    return;
+  }
   initialized = true;
   pwaInstalled.value = detectStandaloneMode();
 
   window.addEventListener('beforeinstallprompt', (event) => {
     const candidate = event as Partial<BeforeInstallPromptEvent>;
-    if (typeof candidate.prompt !== 'function' || !candidate.userChoice) return;
+    if (typeof candidate.prompt !== 'function' || !candidate.userChoice) {
+      return;
+    }
     event.preventDefault();
     deferredPrompt = candidate as BeforeInstallPromptEvent;
     pwaInstallPromptAvailable.value = true;
@@ -53,7 +65,9 @@ export function initPwaInstallation() {
 
 export async function promptPwaInstallation(): Promise<InstallOutcome | 'unavailable'> {
   const prompt = deferredPrompt;
-  if (!prompt) return 'unavailable';
+  if (!prompt) {
+    return 'unavailable';
+  }
   try {
     await prompt.prompt();
     const { outcome } = await prompt.userChoice;

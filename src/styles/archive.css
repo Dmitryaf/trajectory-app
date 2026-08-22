@@ -111,7 +111,7 @@
   place-items: center;
   border-radius: 15px;
   background: #102d2c;
-  color: #8ce1bf;
+  color: var(--mint);
   font-size: 19px;
 }
 .journal-settings-card small {
@@ -216,7 +216,7 @@
   box-shadow: var(--shadow);
 }
 .more-card--mint {
-  --journal-glow: #8ce1bf;
+  --journal-glow: var(--mint);
 }
 .more-card--amber {
   --journal-glow: #ffd98a;

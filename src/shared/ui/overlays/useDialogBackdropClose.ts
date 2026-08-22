@@ -10,7 +10,9 @@ export function useDialogBackdropClose(close: () => void) {
   function finishBackdropClose(event: PointerEvent) {
     const shouldClose = event.target === event.currentTarget && backdropPointerId.value === event.pointerId;
     backdropPointerId.value = null;
-    if (shouldClose) close();
+    if (shouldClose) {
+      close();
+    }
   }
 
   function cancelBackdropClose() {

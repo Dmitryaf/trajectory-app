@@ -78,8 +78,8 @@ describe('period review navigation', () => {
     const global = { plugins: [pinia], stubs: { EChartPanel: true, RouterLink: routerLinkStub } };
     const week = mount(WeekView, { global });
     const month = mount(MonthView, { global });
-    const weekButton = week.findAll('button').find((button) => button.text() === 'Скопировать промпт')!;
-    const monthButton = month.findAll('button').find((button) => button.text() === 'Скопировать промпт')!;
+    const weekButton = week.findAll('button').find((button) => button.text() === 'Подготовить текст для нейросети')!;
+    const monthButton = month.findAll('button').find((button) => button.text() === 'Подготовить текст для нейросети')!;
 
     for (const wrapper of [week, month]) {
       const customPeriodLink = wrapper.get('.range-custom-action a');
@@ -94,8 +94,8 @@ describe('period review navigation', () => {
     await monthButton.trigger('click');
 
     expect(copyAiPrompt).toHaveBeenCalledTimes(2);
-    expect(weekButton.text()).toBe('Скопировать промпт');
-    expect(monthButton.text()).toBe('Скопировать промпт');
+    expect(weekButton.text()).toBe('Подготовить текст для нейросети');
+    expect(monthButton.text()).toBe('Подготовить текст для нейросети');
     expect(weekButton.attributes('aria-busy')).toBe('true');
     expect(monthButton.attributes('aria-busy')).toBe('true');
     expect(weekButton.attributes('disabled')).toBeDefined();
@@ -105,8 +105,8 @@ describe('period review navigation', () => {
     finishMonthCopy();
     await flushPromises();
 
-    expect(weekButton.text()).toBe('Скопировать промпт');
-    expect(monthButton.text()).toBe('Скопировать промпт');
+    expect(weekButton.text()).toBe('Подготовить текст для нейросети');
+    expect(monthButton.text()).toBe('Подготовить текст для нейросети');
     expect(weekButton.attributes('disabled')).toBeUndefined();
     expect(monthButton.attributes('disabled')).toBeUndefined();
   });

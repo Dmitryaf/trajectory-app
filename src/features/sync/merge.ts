@@ -35,7 +35,9 @@ function mergeKeyed<T extends object>(base: T[], local: T[], remote: T[], keyOf:
 
   for (const key of keys) {
     const value = mergeValue(baseByKey.get(key), localByKey.get(key), remoteByKey.get(key));
-    if (value !== undefined) merged.push(value as T);
+    if (value !== undefined) {
+      merged.push(value as T);
+    }
   }
   return merged;
 }
@@ -48,7 +50,9 @@ function mergeJournalRecords<T extends ResultRecord | LifeEventRecord>(base: T[]
   const collisions = [...localByKey.keys()].filter(
     (key) => !baseKeys.has(key) && remoteByKey.has(key) && !same(localByKey.get(key), remoteByKey.get(key)),
   );
-  if (!collisions.length) return mergeKeyed(base, local, remote, keyOf);
+  if (!collisions.length) {
+    return mergeKeyed(base, local, remote, keyOf);
+  }
 
   let nextId =
     Math.max(0, ...base.map((item) => item.id ?? 0), ...local.map((item) => item.id ?? 0), ...remote.map((item) => item.id ?? 0)) + 1;
@@ -57,11 +61,21 @@ function mergeJournalRecords<T extends ResultRecord | LifeEventRecord>(base: T[]
 }
 
 function mergeValue(base: unknown, local: unknown, remote: unknown): unknown {
-  if (same(local, remote)) return local;
-  if (same(local, base)) return remote;
-  if (same(remote, base)) return local;
-  if (local === undefined || remote === undefined) return local;
-  if (isRecord(local) && isRecord(remote)) return mergeObjectFields(isRecord(base) ? base : {}, local, remote);
+  if (same(local, remote)) {
+    return local;
+  }
+  if (same(local, base)) {
+    return remote;
+  }
+  if (same(remote, base)) {
+    return local;
+  }
+  if (local === undefined || remote === undefined) {
+    return local;
+  }
+  if (isRecord(local) && isRecord(remote)) {
+    return mergeObjectFields(isRecord(base) ? base : {}, local, remote);
+  }
   return local;
 }
 
@@ -70,7 +84,9 @@ function mergeObjectFields<T extends KeyedRecord>(base: T, local: T, remote: T):
   const merged: KeyedRecord = {};
   for (const key of keys) {
     const value = mergeValue(base[key], local[key], remote[key]);
-    if (value !== undefined) merged[key] = value;
+    if (value !== undefined) {
+      merged[key] = value;
+    }
   }
   return merged as T;
 }

@@ -20,6 +20,9 @@ describe('AccountMenu', () => {
     expect(wrapper.text()).toContain('Настройки');
     expect(wrapper.find('a[href="/settings#install-settings"]').exists()).toBe(false);
     expect(wrapper.text()).not.toContain('Обновить данные');
+    expect(wrapper.get('summary').attributes('aria-label')).toBe('Открыть меню аккаунта');
+    expect(wrapper.get('.account-menu__chevron').element.tagName).toBe('svg');
+    expect(wrapper.get('.account-menu__chevron path').attributes('d')).toBe('m4 6 4 4 4-4');
     await wrapper.get('.account-menu__logout').trigger('click');
     expect(wrapper.emitted('signOut')).toHaveLength(1);
   });

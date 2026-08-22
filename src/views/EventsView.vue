@@ -4,6 +4,7 @@ import ArchiveDateRange from '../features/journal/ui/ArchiveDateRange.vue';
 import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
 import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
 import ChipGroup from '../shared/ui/forms/ChipGroup.vue';
+import ClampedText from '../shared/ui/content/ClampedText.vue';
 import { archiveRangeFromQuery } from '../features/journal/archiveQuery';
 import { useArchiveList } from '../features/journal/useArchiveList';
 import { formatDate, todayKey } from '../services/dates';
@@ -20,7 +21,6 @@ const editingId = ref<number | null>(null);
 const editingCreatedAt = ref('');
 const saving = ref(false);
 const removingIds = ref<number[]>([]);
-const expandedNotes = ref<string[]>([]);
 const archiveRange = archiveRangeFromQuery();
 
 const recentEvents = computed(() =>
@@ -43,7 +43,9 @@ const {
 
 async function saveEvent() {
   const cleanTitle = title.value.trim();
-  if (!cleanTitle) return;
+  if (!cleanTitle) {
+    return;
+  }
   if (!date.value) {
     notifyError('Укажите дату события');
     return;
@@ -73,7 +75,9 @@ async function saveEvent() {
 }
 
 function edit(event: LifeEventRecord) {
-  if (event.id === undefined) return;
+  if (event.id === undefined) {
+    return;
+  }
   editingId.value = event.id;
   editingCreatedAt.value = event.createdAt;
   title.value = event.title;
@@ -92,11 +96,15 @@ function resetForm() {
 }
 
 async function remove(id?: number) {
-  if (id === undefined || removingIds.value.includes(id) || !window.confirm('Удалить это событие?')) return;
+  if (id === undefined || removingIds.value.includes(id) || !window.confirm('Удалить это событие?')) {
+    return;
+  }
   removingIds.value.push(id);
   try {
     await store.removeLifeEvent(id);
-    if (editingId.value === id) resetForm();
+    if (editingId.value === id) {
+      resetForm();
+    }
     notifyInfo('Событие удалено');
   } catch (error) {
     notifyUnknownError(error, 'Не удалось удалить событие');
@@ -111,17 +119,6 @@ function eventMeta(value: LifeEventRecord['type']) {
 
 function eventKey(event: LifeEventRecord) {
   return String(event.id ?? event.createdAt);
-}
-
-function noteIsExpanded(event: LifeEventRecord) {
-  return expandedNotes.value.includes(eventKey(event));
-}
-
-function toggleNote(event: LifeEventRecord) {
-  const key = eventKey(event);
-  expandedNotes.value = expandedNotes.value.includes(key)
-    ? expandedNotes.value.filter((item) => item !== key)
-    : [...expandedNotes.value, key];
 }
 </script>
 
@@ -185,24 +182,12 @@ function toggleNote(event: LifeEventRecord) {
                 >{{ eventMeta(event.type).label }} ·
                 {{ formatDate(event.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</small
               >
-              <p
+              <ClampedText
                 v-if="event.note"
-                :id="`event-note-${eventKey(event)}`"
-                class="timeline-item__note"
-                :class="{ 'timeline-item__note--clamped': event.note.length > 240 && !noteIsExpanded(event) }"
-              >
-                {{ event.note }}
-              </p>
-              <button
-                v-if="event.note.length > 240"
-                class="timeline-item__note-toggle"
-                type="button"
-                :aria-expanded="noteIsExpanded(event)"
-                :aria-controls="`event-note-${eventKey(event)}`"
-                @click="toggleNote(event)"
-              >
-                {{ noteIsExpanded(event) ? 'Свернуть' : 'Показать полностью' }}
-              </button>
+                :text="event.note"
+                :content-id="`event-note-${eventKey(event)}`"
+                text-class="timeline-item__note"
+              />
             </div>
             <div class="item-actions">
               <button class="ghost-button" type="button" aria-label="Редактировать событие" @click="edit(event)">✎</button>

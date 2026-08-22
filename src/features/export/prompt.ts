@@ -18,14 +18,14 @@ import { AI_PROMPT_CHARACTER_LIMIT, type AiReportPayload } from './payload';
 export function buildAiReportPrompt(payload: AiReportPayload, settings: AppSettings): string {
   const areaOptions = [...lifeAreaOptions, ...settings.customLifeAreaOptions];
   const summaryText = payload.period === 'week' ? weekSummaryText(payload.summary, settings.activeLifeAreas, areaOptions) : '';
-  const periodTitle =
-    payload.period === 'week'
-      ? `неделю ${formatDate(payload.start, { day: 'numeric', month: 'short' })} — ${formatDate(payload.end, { day: 'numeric', month: 'short' })}`
-      : payload.period === 'month'
-        ? `месяц ${formatDate(payload.start, { month: 'long', year: 'numeric' })}`
-        : payload.rangeMonths
-          ? `${payload.rangeMonths} месяцев: ${formatDate(payload.start, { month: 'short', year: 'numeric' })} — ${formatDate(payload.end, { month: 'short', year: 'numeric' })}`
-          : `период ${formatDate(payload.start, { day: 'numeric', month: 'long', year: 'numeric' })} — ${formatDate(payload.end, { day: 'numeric', month: 'long', year: 'numeric' })}`;
+  let periodTitle = `период ${formatDate(payload.start, { day: 'numeric', month: 'long', year: 'numeric' })} — ${formatDate(payload.end, { day: 'numeric', month: 'long', year: 'numeric' })}`;
+  if (payload.period === 'week') {
+    periodTitle = `неделю ${formatDate(payload.start, { day: 'numeric', month: 'short' })} — ${formatDate(payload.end, { day: 'numeric', month: 'short' })}`;
+  } else if (payload.period === 'month') {
+    periodTitle = `месяц ${formatDate(payload.start, { month: 'long', year: 'numeric' })}`;
+  } else if (payload.rangeMonths) {
+    periodTitle = `${payload.rangeMonths} месяцев: ${formatDate(payload.start, { month: 'short', year: 'numeric' })} — ${formatDate(payload.end, { month: 'short', year: 'numeric' })}`;
+  }
 
   const sections = buildReadableSections(payload);
 
@@ -37,11 +37,20 @@ export function buildAiReportPrompt(payload: AiReportPayload, settings: AppSetti
     '',
     'Формат ответа:',
     '1. «Главное за период» — начни с 2–4 предложений о самых значимых изменениях, событиях или повторяющейся картине. Не начинай с количества записей и средних значений.',
-    '2. «Что изменилось» — свяжи действия, важные события, итоги и собственные наблюдения пользователя в понятную последовательность.',
+    '2. «Что изменилось» — опиши последовательность собственных действий пользователя, внешних ответов или результатов, важных событий и его наблюдений. Не называй действие результатом, если ответ извне не записан.',
     '3. «Что поддерживало и что мешало» — выбери не больше трёх действительно заметных связей. Если картина противоречивая, скажи об этом простыми словами.',
     '4. «Что показало прошлое решение» — добавь только при наличии прошлого обзора или эксперимента. Отдели выполнимость решения от его возможного влияния на состояние.',
-    '5. «На чём сосредоточиться дальше» — предложи один вопрос, фокус или небольшое изменение, которое следует из записей и не требует усложнять ежедневное ведение.',
+    '5. «Вопросы для исследования» — предложи не больше трёх кандидатов, которые пользователь может выбрать для продолжения разговора. Для каждого укажи основание с точными датами и числом наблюдений, альтернативное объяснение или пробел данных и один открытый вопрос пользователю. Не добавляй кандидатов без достаточного основания.',
+    '6. «На чём сосредоточиться дальше» — предложи один фокус или небольшую проверку только после открытого вопроса и не требуй усложнять ежедневное ведение.',
     'Не создавай раздел ради формата, если для него нет содержательного материала.',
+    '',
+    'Уровни доказательности:',
+    '- факт — конкретная сохранённая запись: действие пользователя, внешний ответ, полученный результат или событие; не смешивай эти виды фактов;',
+    '- наблюдение — осторожное описание того, что повторялось, различалось или следовало одно за другим в доступных записях;',
+    '- гипотеза — возможное объяснение наблюдения, которое ещё не подтверждено;',
+    '- проверка — небольшой способ отличить гипотезу от альтернативного объяснения в следующих записях;',
+    '- вывод пользователя — только явно сохранённый самим пользователем итог обзора или эксперимента; не создавай его от своего имени;',
+    '- маркируй гипотезу и проверку прямо, а факт, наблюдение и вывод пользователя формулируй так, чтобы их нельзя было спутать.',
     '',
     'Язык и подача:',
     '- пиши естественно, короткими абзацами и словами обычного человека; обращайся на «ты»;',
@@ -56,7 +65,9 @@ export function buildAiReportPrompt(payload: AiReportPayload, settings: AppSetti
     '- особые дни не используй как обычную базу сравнения;',
     '- условия дня сравнивай с отмеченными днями без них и упоминай только заметные и достаточно подтверждённые различия;',
     '- совместное появление фактов и порядок событий не доказывают причину: не утверждай, что одно вызвало другое;',
-    '- если данных мало, прямо скажи об этом и не придумывай совет;',
+    '- причинную формулировку заменяй описанием временной связи или последующего записанного результата;',
+    '- если данных меньше трёх сопоставимых наблюдений, прямо назови это малым количеством данных и не придумывай совет;',
+    '- если внешнего ответа или результата нет в записях, так и скажи: собственное действие пользователя не подтверждает внешний эффект;',
     '- не давай обязательный совет только ради заполнения формата;',
     '- не обсуждай работу, вес или эксперимент, если соответствующих данных нет;',
     '- не продолжай данные в будущее и не выдавай сглаживание за прогноз;',
@@ -111,6 +122,12 @@ function buildReadableSections(payload: AiReportPayload): string[] {
     formatExperimentSummary(payload.experimentSummary),
   ]);
 
+  let entryLimit = payload.entries.length;
+  if (payload.period === 'week') {
+    entryLimit = 7;
+  } else if (payload.period === 'month') {
+    entryLimit = 31;
+  }
   appendSection(
     lines,
     'Автоматические наблюдения приложения',
@@ -125,7 +142,7 @@ function buildReadableSections(payload: AiReportPayload): string[] {
       ? monthlyEntryLines(payload)
       : limitedValues(
           payload.entries.map((entry) => formatEntry(entry, payload)),
-          payload.period === 'week' ? 7 : payload.period === 'month' ? 31 : payload.entries.length,
+          entryLimit,
           1_600,
         ),
   );
@@ -193,17 +210,23 @@ function monthlyEntryLines(payload: AiReportPayload): string[] {
 
 function limitedValues(values: string[], maxItems: number, maxLineLength: number): string[] {
   const limited = values.slice(0, maxItems).map((value) => clipText(value, maxLineLength));
-  if (values.length > maxItems) limited.push(`Не включено подробностей: ${values.length - maxItems}. Они остаются в полном JSON-экспорте.`);
+  if (values.length > maxItems) {
+    limited.push(`Не включено подробностей: ${values.length - maxItems}. Они остаются в полном JSON-экспорте.`);
+  }
   return limited;
 }
 
 function clipText(value: string, maxLength: number): string {
-  if (value.length <= maxLength) return value;
+  if (value.length <= maxLength) {
+    return value;
+  }
   return `${value.slice(0, Math.max(0, maxLength - 34)).trimEnd()}… [подробности сокращены]`;
 }
 
 function constrainPrompt(prompt: string): string {
-  if (prompt.length <= AI_PROMPT_CHARACTER_LIMIT) return prompt;
+  if (prompt.length <= AI_PROMPT_CHARACTER_LIMIT) {
+    return prompt;
+  }
   const notice = '\n\n[Пакет сокращён до безопасного объёма. Остальные подробности доступны в полном JSON-экспорте.]';
   const boundary = AI_PROMPT_CHARACTER_LIMIT - notice.length;
   const lastLineBreak = prompt.lastIndexOf('\n', boundary);
@@ -217,7 +240,9 @@ function appendSection(target: string[], title: string, values: string[]) {
 }
 
 function metricLine(label: string, value: string | null, samples: number, suffix = ''): string {
-  if (value === null || samples === 0) return '';
+  if (value === null || samples === 0) {
+    return '';
+  }
   return `${label}: ${value}${suffix ? ` ${suffix}` : ''} (${samples} ${sampleWord(samples)}).`;
 }
 
@@ -225,16 +250,24 @@ function schemaCoverageLine(entries: DailyEntry[]): string {
   const known = entries.filter((entry) => entry.entrySchemaVersion !== null && entry.activeDailyBlocksSnapshot !== null);
   const legacyCount = entries.length - known.length;
   const parts = [`состав показанных блоков сохранён для ${known.length} из ${entries.length} записей`];
-  if (legacyCount) parts.push(`для ${legacyCount} старых записей он неизвестен`);
+  if (legacyCount) {
+    parts.push(`для ${legacyCount} старых записей он неизвестен`);
+  }
   return `Контекст формы: ${parts.join('; ')}.`;
 }
 
 function sampleWord(value: number): string {
   const mod100 = value % 100;
   const mod10 = value % 10;
-  if (mod100 >= 11 && mod100 <= 14) return 'измерений';
-  if (mod10 === 1) return 'измерение';
-  if (mod10 >= 2 && mod10 <= 4) return 'измерения';
+  if (mod100 >= 11 && mod100 <= 14) {
+    return 'измерений';
+  }
+  if (mod10 === 1) {
+    return 'измерение';
+  }
+  if (mod10 >= 2 && mod10 <= 4) {
+    return 'измерения';
+  }
   return 'измерений';
 }
 
@@ -252,6 +285,15 @@ function labelFor(options: Array<{ id: string; label: string }>, id: string): st
 
 function formatEntry(entry: DailyEntry, payload: AiReportPayload): string {
   const values: string[] = [];
+  appendEntryFocus(values, entry, payload);
+  appendEntryState(values, entry);
+  appendEntryContext(values, entry, payload);
+  appendEntryActions(values, entry, payload);
+  appendEntryOutcome(values, entry, payload);
+  return `${entry.date} — ${values.length ? values.join('; ') : 'есть запись без заполненных показателей'}.`;
+}
+
+function appendEntryFocus(values: string[], entry: DailyEntry, payload: AiReportPayload): void {
   if (entry.focusTitle && entry.focusTitle !== payload.settingsSnapshot.activeFocusTitle) {
     values.push(`цель на эту дату: ${cleanText(entry.focusTitle)}`);
   }
@@ -261,49 +303,89 @@ function formatEntry(entry: DailyEntry, payload: AiReportPayload): string {
   if (entry.focusReviewDate && entry.focusReviewDate !== payload.settingsSnapshot.focusReviewDate) {
     values.push(`дата пересмотра цели на эту дату: ${entry.focusReviewDate}`);
   }
-  if (entry.bedtime) values.push(`лёг ${entry.bedtime}`);
-  if (entry.wakeTime) values.push(`встал ${entry.wakeTime}`);
-  if (entry.sleepMinutes !== null) values.push(`сон ${formatMinutes(entry.sleepMinutes)}`);
-  if (entry.timeInBedMinutes !== null) values.push(`в кровати ${formatMinutes(entry.timeInBedMinutes)}`);
-  if (entry.sleepQuality !== null) values.push(`качество сна ${entry.sleepQuality}/5`);
-  if (entry.energy !== null) values.push(`энергия ${entry.energy}/5`);
+}
+
+function appendEntryState(values: string[], entry: DailyEntry): void {
+  if (entry.bedtime) {
+    values.push(`лёг ${entry.bedtime}`);
+  }
+  if (entry.wakeTime) {
+    values.push(`встал ${entry.wakeTime}`);
+  }
+  if (entry.sleepMinutes !== null) {
+    values.push(`сон ${formatMinutes(entry.sleepMinutes)}`);
+  }
+  if (entry.timeInBedMinutes !== null) {
+    values.push(`в кровати ${formatMinutes(entry.timeInBedMinutes)}`);
+  }
+  if (entry.sleepQuality !== null) {
+    values.push(`качество сна ${entry.sleepQuality}/5`);
+  }
+  if (entry.energy !== null) {
+    values.push(`энергия ${entry.energy}/5`);
+  }
+}
+
+function appendEntryContext(values: string[], entry: DailyEntry, payload: AiReportPayload): void {
   if (dailyFieldWasRecorded(entry, 'contextFactors')) {
     const factors = entry.contextFactors.map((id) => labelFor(payload.labels.contextFactors, id));
     values.push(`условия дня: ${factors.length ? factors.join(', ') : 'ничего из списка'}`);
   }
-  if (cleanText(entry.contextNote)) values.push(`контекст: ${cleanText(entry.contextNote)}`);
-  if (entry.specialDay)
+  if (cleanText(entry.contextNote)) {
+    values.push(`контекст: ${cleanText(entry.contextNote)}`);
+  }
+  if (entry.specialDay) {
     values.push(
       `необычный день: ${labelFor(payload.labels.specialDays, entry.specialDay)}${entry.specialDayNote ? ` (${cleanText(entry.specialDayNote)})` : ''}`,
     );
-  const careerStates = entry.careerStates.length ? entry.careerStates : entry.careerState ? [entry.careerState] : [];
-  if (dailyFieldWasRecorded(entry, 'careerStates'))
+  }
+}
+
+function appendEntryActions(values: string[], entry: DailyEntry, payload: AiReportPayload): void {
+  let careerStates = entry.careerStates;
+  if (!careerStates.length && entry.careerState) {
+    careerStates = [entry.careerState];
+  }
+  if (dailyFieldWasRecorded(entry, 'careerStates')) {
     values.push(
       `работа: ${careerStates.length ? careerStates.map((id) => labelFor(payload.labels.career, id)).join(', ') : 'ничего из списка'}`,
     );
-  if (dailyFieldWasRecorded(entry, 'actionDirection'))
+  }
+  if (dailyFieldWasRecorded(entry, 'actionDirection')) {
     values.push(
       entry.actionDirection
         ? `по цели: ${labelFor(payload.labels.actionDirections, entry.actionDirection)}${entry.actionNote ? ` (${cleanText(entry.actionNote)})` : ''}`
         : 'по цели: действий не было',
     );
+  }
   if (dailyFieldWasRecorded(entry, 'activities')) {
     const activities = entry.activities.map((id) => labelFor(payload.labels.activities, id));
     values.push(`активность: ${activities.length ? activities.join(', ') : 'не было'}`);
   }
-  if (entry.nutritionState)
+}
+
+function appendEntryOutcome(values: string[], entry: DailyEntry, payload: AiReportPayload): void {
+  if (entry.nutritionState) {
     values.push(
       `питание: ${labelFor(payload.labels.nutrition, entry.nutritionState)}${entry.nutritionNote ? ` (${cleanText(entry.nutritionNote)})` : ''}`,
     );
-  if (entry.weightKg !== null) values.push(`вес ${formatDecimal(entry.weightKg)} кг`);
+  }
+  if (entry.weightKg !== null) {
+    values.push(`вес ${formatDecimal(entry.weightKg)} кг`);
+  }
   if (dailyFieldWasRecorded(entry, 'lifeAreas')) {
     const areas = entry.lifeAreas.map((id) => labelFor(payload.labels.lifeAreas, id));
     values.push(`области жизни: ${areas.length ? areas.join(', ') : 'ничего не отмечено'}`);
   }
-  if (cleanText(entry.importantFact)) values.push(`заметка пользователя: ${cleanText(entry.importantFact)}`);
-  if (entry.experimentCompleted !== null) values.push(`условие эксперимента: ${entry.experimentCompleted ? 'выполнено' : 'не выполнено'}`);
-  if (entry.experimentNote) values.push(`заметка к эксперименту: ${cleanText(entry.experimentNote)}`);
-  return `${entry.date} — ${values.length ? values.join('; ') : 'есть запись без заполненных показателей'}.`;
+  if (cleanText(entry.importantFact)) {
+    values.push(`заметка пользователя: ${cleanText(entry.importantFact)}`);
+  }
+  if (entry.experimentCompleted !== null) {
+    values.push(`условие эксперимента: ${entry.experimentCompleted ? 'выполнено' : 'не выполнено'}`);
+  }
+  if (entry.experimentNote) {
+    values.push(`заметка к эксперименту: ${cleanText(entry.experimentNote)}`);
+  }
 }
 
 function formatFactorSummary(factor: AiReportPayload['factorSummaries'][number]): string {
@@ -322,18 +404,29 @@ function formatFactorSummary(factor: AiReportPayload['factorSummaries'][number])
 }
 
 function formatExperiment(experiment: AppSettings['experiment'] | null): string {
-  if (!experiment) return '';
-  if (!experiment.active && !cleanText(experiment.title)) return '';
+  if (!experiment) {
+    return '';
+  }
+  if (!experiment.active && !cleanText(experiment.title)) {
+    return '';
+  }
   const values = [cleanText(experiment.title) || 'без названия'];
-  if (cleanText(experiment.hypothesis)) values.push(`что пользователь хочет проверить: ${cleanText(experiment.hypothesis)}`);
-  if (experiment.startDate || experiment.endDate)
+  if (cleanText(experiment.hypothesis)) {
+    values.push(`что пользователь хочет проверить: ${cleanText(experiment.hypothesis)}`);
+  }
+  if (experiment.startDate || experiment.endDate) {
     values.push(`даты: ${experiment.startDate || 'не указано'} — ${experiment.endDate || 'не указано'}`);
-  if (cleanText(experiment.conclusion)) values.push(`итог: ${cleanText(experiment.conclusion)}`);
+  }
+  if (cleanText(experiment.conclusion)) {
+    values.push(`итог: ${cleanText(experiment.conclusion)}`);
+  }
   return `Эксперимент: ${values.join('; ')}.`;
 }
 
 function formatExperimentSummary(summary: ExperimentSummary | null): string {
-  if (!summary) return '';
+  if (!summary) {
+    return '';
+  }
   const metrics = summary.metrics.map(
     (metric) =>
       `${metric.label}: до ${formatExperimentMetricValue(metric.baselineAverage, metric.id)} (${metric.baselineSamples}), во время ${formatExperimentMetricValue(metric.experimentAverage, metric.id)} (${metric.experimentSamples})`,
@@ -342,9 +435,15 @@ function formatExperimentSummary(summary: ExperimentSummary | null): string {
 }
 
 function formatExperimentMetricValue(value: number | null, metricId: ExperimentMetricId): string {
-  if (value === null) return 'нет данных';
-  if (metricId === 'sleepMinutes' || metricId === 'timeInBedMinutes') return formatMinutes(Math.round(value));
-  if (metricId === 'sleepQuality' || metricId === 'energy') return `${formatDecimal(value)}/5`;
+  if (value === null) {
+    return 'нет данных';
+  }
+  if (metricId === 'sleepMinutes' || metricId === 'timeInBedMinutes') {
+    return formatMinutes(Math.round(value));
+  }
+  if (metricId === 'sleepQuality' || metricId === 'energy') {
+    return `${formatDecimal(value)}/5`;
+  }
   return `${formatDecimal(value)} кг`;
 }
 
@@ -361,12 +460,24 @@ function formatCompletedExperiment(record: ExperimentRecord, summary: Experiment
 
 function reviewLines(payload: AiReportPayload): string[] {
   const lines: string[] = [];
-  if (payload.previousWeeklyReview) lines.push(formatWeeklyReview('Предыдущая неделя', payload.previousWeeklyReview));
-  if (payload.weeklyReview) lines.push(formatWeeklyReview('Текущая неделя', payload.weeklyReview));
-  for (const review of payload.weeklyReviews ?? []) lines.push(formatWeeklyReview(review.weekStart, review));
-  if (payload.previousMonthlyReview) lines.push(formatMonthlyReview('Предыдущий месяц', payload.previousMonthlyReview));
-  if (payload.monthlyReview) lines.push(formatMonthlyReview('Текущий месяц', payload.monthlyReview));
-  for (const review of payload.monthlyReviews ?? []) lines.push(formatMonthlyReview(review.monthStart, review));
+  if (payload.previousWeeklyReview) {
+    lines.push(formatWeeklyReview('Предыдущая неделя', payload.previousWeeklyReview));
+  }
+  if (payload.weeklyReview) {
+    lines.push(formatWeeklyReview('Текущая неделя', payload.weeklyReview));
+  }
+  for (const review of payload.weeklyReviews ?? []) {
+    lines.push(formatWeeklyReview(review.weekStart, review));
+  }
+  if (payload.previousMonthlyReview) {
+    lines.push(formatMonthlyReview('Предыдущий месяц', payload.previousMonthlyReview));
+  }
+  if (payload.monthlyReview) {
+    lines.push(formatMonthlyReview('Текущий месяц', payload.monthlyReview));
+  }
+  for (const review of payload.monthlyReviews ?? []) {
+    lines.push(formatMonthlyReview(review.monthStart, review));
+  }
   return lines;
 }
 

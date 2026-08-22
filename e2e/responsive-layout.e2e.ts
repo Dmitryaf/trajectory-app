@@ -15,11 +15,47 @@ test('keeps every primary screen inside the minimum viewport width', async ({ pa
   for (const route of routes) {
     await page.goto(route);
     await page.locator('.page').waitFor();
-    const widths = await page.evaluate(() => ({
+    const layout = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
       content: document.documentElement.scrollWidth,
     }));
-    expect(widths.content, `${route} should not scroll horizontally`).toBeLessThanOrEqual(widths.viewport);
+    const offenders =
+      layout.content > layout.viewport
+        ? await page.evaluate(
+            (viewport) =>
+              [...document.querySelectorAll<HTMLElement>('body *')]
+                .map((element) => {
+                  const rect = element.getBoundingClientRect();
+                  const style = getComputedStyle(element);
+                  const selector = `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ''}${[...element.classList]
+                    .slice(0, 3)
+                    .map((name) => `.${name}`)
+                    .join('')}`;
+                  return {
+                    selector,
+                    left: Math.round(rect.left * 10) / 10,
+                    right: Math.round(rect.right * 10) / 10,
+                    width: Math.round(rect.width * 10) / 10,
+                    clientWidth: element.clientWidth,
+                    scrollWidth: element.scrollWidth,
+                    display: style.display,
+                    position: style.position,
+                    overflowX: style.overflowX,
+                  };
+                })
+                .filter(
+                  (item) =>
+                    item.left < -0.5 ||
+                    item.right > viewport + 0.5 ||
+                    (item.overflowX === 'visible' && item.scrollWidth > item.clientWidth + 1),
+                )
+                .slice(0, 12),
+            layout.viewport,
+          )
+        : [];
+    expect(layout.content, `${route} should not scroll horizontally; offenders: ${JSON.stringify(offenders)}`).toBeLessThanOrEqual(
+      layout.viewport,
+    );
     const feedback = page.getByRole('button', { name: 'Обратная связь' });
     await expect(feedback).toBeVisible();
   }
@@ -54,7 +90,9 @@ test('keeps empty-period actions below their explanatory text', async ({ page })
   await page.goto(`/week?week=${emptyDate}`);
   await expectEmptyGuideSpacing();
   await page.goto('/month');
-  for (let index = 0; index < 5; index += 1) await page.getByRole('button', { name: 'Предыдущий период' }).click();
+  for (let index = 0; index < 5; index += 1) {
+    await page.getByRole('button', { name: 'Предыдущий период' }).click();
+  }
   await expectEmptyGuideSpacing();
 });
 
@@ -245,7 +283,10 @@ test('explains the app from the permanent help button', async ({ page }) => {
   await expect(dialog).toContainText('Увидеть период целиком');
   await expect(dialog).toContainText('Сохранить следующее решение');
   await expect(page.locator('body')).toHaveCSS('position', 'fixed');
-  const dialogActions = dialog.locator('.help-dialog__actions a');
+  const dialogActions = dialog.locator(':scope > .help-dialog__actions > a');
+  const analysisLink = dialog.getByRole('link', { name: 'Подготовить текст для нейросети' });
+  await expect(analysisLink).toHaveCSS('display', 'flex');
+  await expect(analysisLink).toHaveCSS('background-color', 'rgb(233, 238, 234)');
   await expect(dialogActions).toHaveCount(2);
   await expect(dialogActions.nth(0)).toHaveCSS('text-align', 'center');
   await expect(dialogActions.nth(1)).toHaveCSS('text-align', 'center');
@@ -253,6 +294,12 @@ test('explains the app from the permanent help button', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Как работает приложение' })).toBeFocused();
   await expect(page.locator('body')).not.toHaveCSS('position', 'fixed');
   expect(await page.evaluate(() => window.scrollY)).toBe(scrollBeforeOpen);
+
+  await page.getByRole('button', { name: 'Как работает приложение' }).click();
+  await dialog.getByRole('link', { name: 'Настроить записи' }).click();
+  await expect(page).toHaveURL(/\/settings#daily-settings$/);
+  await expect(page.getByRole('button', { name: 'Ежедневная запись' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#daily-settings')).toBeVisible();
 });
 
 test('opens the exact settings section from a daily card', async ({ page }) => {

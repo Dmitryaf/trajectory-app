@@ -32,7 +32,9 @@ export function buildEventComparison(
   requestedWindowDays = 14,
   observationEnd = todayKey(),
 ): EventComparison | null {
-  if (observationEnd <= eventDate) return null;
+  if (observationEnd <= eventDate) {
+    return null;
+  }
   const availableAfterDays = dateRange(addDays(eventDate, 1), observationEnd).length;
   const windowDays = Math.min(Math.max(1, requestedWindowDays), availableAfterDays);
   const beforeStart = addDays(eventDate, -windowDays);

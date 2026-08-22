@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { nextTick, ref, toRef, watch } from 'vue';
+import AutoGrowTextarea from '../../../shared/ui/forms/AutoGrowTextarea.vue';
 import DialogCloseButton from '../../../shared/ui/overlays/DialogCloseButton.vue';
 import { useBodyScrollLock } from '../../../shared/ui/overlays/useBodyScrollLock';
 import { useDialogBackdropClose } from '../../../shared/ui/overlays/useDialogBackdropClose';
+import { useDialogFocus } from '../../../shared/ui/overlays/useDialogFocus';
 
 const props = defineProps<{
   open: boolean;
@@ -24,13 +26,17 @@ const draftOutcomeCriterion = ref('');
 const draftReviewDate = ref('');
 const draftExternalEvidenceCriterion = ref('');
 const titleInput = ref<HTMLInputElement>();
+const dialog = ref<HTMLElement>();
 
 useBodyScrollLock(toRef(props, 'open'));
+const { handleDialogKeydown } = useDialogFocus(toRef(props, 'open'), dialog);
 
 watch(
   () => props.open,
   async (open) => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
     draftTitle.value = props.title;
     draftOutcomeCriterion.value = props.outcomeCriterion;
     draftReviewDate.value = props.reviewDate;
@@ -41,14 +47,18 @@ watch(
 );
 
 function close() {
-  if (!props.saving) emit('close');
+  if (!props.saving) {
+    emit('close');
+  }
 }
 
 const { startBackdropClose, finishBackdropClose, cancelBackdropClose } = useDialogBackdropClose(close);
 
 function submit() {
   const preparedTitle = draftTitle.value.trim();
-  if (!preparedTitle || props.saving) return;
+  if (!preparedTitle || props.saving) {
+    return;
+  }
   emit('save', {
     title: preparedTitle,
     outcomeCriterion: draftOutcomeCriterion.value.trim(),
@@ -58,7 +68,9 @@ function submit() {
 }
 
 function remove() {
-  if (!props.saving) emit('remove');
+  if (!props.saving) {
+    emit('remove');
+  }
 }
 </script>
 
@@ -71,7 +83,15 @@ function remove() {
       @pointerup="finishBackdropClose"
       @pointercancel="cancelBackdropClose"
     >
-      <section class="goal-dialog" role="dialog" aria-modal="true" aria-labelledby="current-goal-dialog-title" @keydown.esc="close">
+      <section
+        ref="dialog"
+        class="goal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="current-goal-dialog-title"
+        @keydown="handleDialogKeydown"
+        @keydown.esc="close"
+      >
         <div class="goal-dialog__heading">
           <div>
             <span class="eyebrow">Текущая цель</span>
@@ -105,13 +125,13 @@ function remove() {
           <input id="current-goal-review-date" v-model="draftReviewDate" type="date" />
 
           <label class="field-label" for="current-goal-evidence">Что считать шагом к цели</label>
-          <textarea
+          <AutoGrowTextarea
             id="current-goal-evidence"
             v-model="draftExternalEvidenceCriterion"
-            rows="2"
-            maxlength="220"
+            :rows="2"
+            :max-length="220"
             placeholder="Например: выполненное задание, тренировка, разговор или принятое решение"
-          ></textarea>
+          />
           <p class="goal-dialog__hint">Цель помогает связать отдельные шаги с периодом, но не обязательна для сохранения дня.</p>
 
           <div class="goal-dialog__actions">

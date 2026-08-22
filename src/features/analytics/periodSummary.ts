@@ -50,8 +50,12 @@ export function summarize(entries: DailyEntry[], externalCareerIds: string[] = e
   const areaCounts = Object.fromEntries(lifeAreaOptions.map(({ id }) => [id, 0])) as Record<string, number>;
   const actionDirectionCounts = Object.fromEntries(actionDirectionOptions.map(({ id }) => [id, 0])) as Record<ActionDirectionId, number>;
   for (const entry of entries) {
-    for (const area of entry.lifeAreas) areaCounts[area] = (areaCounts[area] ?? 0) + 1;
-    if (entry.actionDirection) actionDirectionCounts[entry.actionDirection] += 1;
+    for (const area of entry.lifeAreas) {
+      areaCounts[area] = (areaCounts[area] ?? 0) + 1;
+    }
+    if (entry.actionDirection) {
+      actionDirectionCounts[entry.actionDirection] += 1;
+    }
   }
 
   return {
@@ -114,7 +118,10 @@ export function resultsForPeriod(results: ResultRecord[], start: string, end: st
 }
 
 export function careerStatesForEntry(entry: DailyEntry): string[] {
-  return entry.careerStates.length ? entry.careerStates : entry.careerState ? [entry.careerState] : [];
+  if (entry.careerStates.length) {
+    return entry.careerStates;
+  }
+  return entry.careerState ? [entry.careerState] : [];
 }
 
 export function hasMovement(entry: DailyEntry): boolean {
@@ -131,21 +138,29 @@ function sampleCount(values: Array<number | null>): number {
 }
 
 function sleepEfficiency(entry: DailyEntry): number | null {
-  if (entry.sleepMinutes === null || entry.timeInBedMinutes === null || entry.timeInBedMinutes <= 0) return null;
+  if (entry.sleepMinutes === null || entry.timeInBedMinutes === null || entry.timeInBedMinutes <= 0) {
+    return null;
+  }
   return Math.min(100, (entry.sleepMinutes / entry.timeInBedMinutes) * 100);
 }
 
 function clockMinutes(value: string, shiftMorning: boolean): number | null {
-  if (!/^\d{2}:\d{2}$/.test(value)) return null;
+  if (!/^\d{2}:\d{2}$/.test(value)) {
+    return null;
+  }
   const [hours, minutes] = value.split(':').map(Number);
-  if (hours > 23 || minutes > 59) return null;
+  if (hours > 23 || minutes > 59) {
+    return null;
+  }
   const total = hours * 60 + minutes;
   return shiftMorning && total < 12 * 60 ? total + 24 * 60 : total;
 }
 
 function clockVariation(values: Array<number | null>): number | null {
   const valid = values.filter((value): value is number => value !== null);
-  if (valid.length < 2) return null;
+  if (valid.length < 2) {
+    return null;
+  }
   const mean = valid.reduce((sum, value) => sum + value, 0) / valid.length;
   const variance = valid.reduce((sum, value) => sum + (value - mean) ** 2, 0) / valid.length;
   return Math.round(Math.sqrt(variance));

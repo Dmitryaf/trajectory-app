@@ -26,7 +26,9 @@ export function emptyPeriodDate(): string {
   const firstEntry = readDemoPayload()
     .dailyEntries.map((entry) => entry.date)
     .sort()[0];
-  if (!firstEntry) throw new Error('Demo fixture must contain daily entries');
+  if (!firstEntry) {
+    throw new Error('Demo fixture must contain daily entries');
+  }
   return addDays(parseDate(firstEntry), -60);
 }
 

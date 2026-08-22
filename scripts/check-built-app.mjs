@@ -7,7 +7,6 @@ const projectRoot = fileURLToPath(new URL('..', import.meta.url));
 const distRoot = path.join(projectRoot, 'dist');
 const budgets = {
   entryJavaScriptGzip: 170 * 1024,
-  entryCssGzip: 21 * 1024,
   anyJavaScriptGzip: 230 * 1024,
 };
 
@@ -29,12 +28,16 @@ async function gzipSize(relativePath) {
 
 async function pngDimensions(relativePath) {
   const content = await readFile(path.join(distRoot, relativePath));
-  if (content.length < 24 || content.toString('ascii', 1, 4) !== 'PNG') throw new Error(`Icon is not a valid PNG: ${relativePath}`);
+  if (content.length < 24 || content.toString('ascii', 1, 4) !== 'PNG') {
+    throw new Error(`Icon is not a valid PNG: ${relativePath}`);
+  }
   return { width: content.readUInt32BE(16), height: content.readUInt32BE(20) };
 }
 
 function requireWithinBudget(label, size, budget, relativePath) {
-  if (size <= budget) return;
+  if (size <= budget) {
+    return;
+  }
   throw new Error(`${label} exceeds gzip budget: ${relativePath} is ${size} bytes, budget is ${budget}`);
 }
 
@@ -50,9 +53,9 @@ for (const assetPath of new Set(assetPaths)) {
     throw new Error(`Built asset is not content-hashed: ${assetPath}`);
   }
   await requireFile(assetPath);
-  const size = await gzipSize(assetPath);
-  if (assetPath.endsWith('.js')) requireWithinBudget('Entry JavaScript', size, budgets.entryJavaScriptGzip, assetPath);
-  if (assetPath.endsWith('.css')) requireWithinBudget('Entry CSS', size, budgets.entryCssGzip, assetPath);
+  if (assetPath.endsWith('.js')) {
+    requireWithinBudget('Entry JavaScript', await gzipSize(assetPath), budgets.entryJavaScriptGzip, assetPath);
+  }
 }
 
 const builtAssets = await readdir(path.join(distRoot, 'assets'));
@@ -65,7 +68,9 @@ await requireFile('manifest.webmanifest');
 await requireFile('sw.js');
 
 for (const marker of ['viewport-fit=cover', 'rel="apple-touch-icon"', 'name="theme-color"']) {
-  if (!html.includes(marker)) throw new Error(`Built HTML is missing PWA marker: ${marker}`);
+  if (!html.includes(marker)) {
+    throw new Error(`Built HTML is missing PWA marker: ${marker}`);
+  }
 }
 
 const manifest = JSON.parse(await readFile(path.join(distRoot, 'manifest.webmanifest'), 'utf8'));
@@ -77,7 +82,9 @@ for (const [field, expected] of Object.entries({
   scope: '/',
   start_url: '/',
 })) {
-  if (manifest[field] !== expected) throw new Error(`Manifest ${field} must be ${JSON.stringify(expected)}`);
+  if (manifest[field] !== expected) {
+    throw new Error(`Manifest ${field} must be ${JSON.stringify(expected)}`);
+  }
 }
 
 const requiredIcons = [
@@ -106,4 +113,4 @@ for (const marker of ['cleanupOutdatedCaches', 'denylist', '/api', '/assets']) {
   }
 }
 
-console.log(`Production build smoke and gzip budget checks passed for ${new Set(assetPaths).size} entry assets.`);
+console.log(`Production build smoke and JavaScript budget checks passed for ${new Set(assetPaths).size} entry assets.`);

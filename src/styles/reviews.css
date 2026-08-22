@@ -32,87 +32,6 @@
 .page--review > .page-heading p {
   max-width: 520px;
 }
-.review-jump {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  min-height: 42px;
-  padding: 10px 14px;
-  border: 1px solid #c7e1d6;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.78);
-  color: #21654f;
-  font-size: 13px;
-  font-weight: 800;
-  text-decoration: none;
-  box-shadow: 0 7px 20px rgba(16, 45, 44, 0.07);
-  transition:
-    transform var(--motion-fast) var(--motion-ease),
-    border-color var(--motion-fast) var(--motion-ease),
-    background-color var(--motion-fast) var(--motion-ease);
-}
-.review-jump span {
-  color: #2a9a74;
-  font-size: 16px;
-}
-.review-jump:hover {
-  transform: translateY(-1px);
-  border-color: #91cfb7;
-  background: #fff;
-}
-.period-nav {
-  display: grid;
-  grid-template-columns: 46px 1fr 46px;
-  gap: 8px;
-  align-items: center;
-  max-width: 560px;
-  margin: 0 auto 22px;
-  padding: 7px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  background: #102d2c;
-  box-shadow: 0 14px 32px rgba(16, 45, 44, 0.18);
-}
-.icon-button {
-  width: 46px;
-  height: 46px;
-  border: 0;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.09);
-  color: #bfe9d9;
-  cursor: pointer;
-  font-size: 18px;
-  transition:
-    background-color 0.15s,
-    color 0.15s;
-}
-.icon-button:hover {
-  background: rgba(140, 225, 191, 0.18);
-  color: #fff;
-}
-.period-nav__label {
-  min-height: 46px;
-  border: 0;
-  border-radius: 14px;
-  background: transparent;
-  color: white;
-  cursor: pointer;
-  text-align: center;
-}
-.period-nav__label strong,
-.period-nav__label span {
-  display: block;
-}
-.period-nav__label strong {
-  font-size: 17px;
-  text-transform: capitalize;
-}
-.period-nav__label span {
-  color: #a9c8be;
-  font-size: 11px;
-  margin-top: 3px;
-}
 .metrics-grid {
   display: grid;
   min-width: 0;
@@ -222,11 +141,6 @@
 .page--review .review-card > .section-heading {
   padding-bottom: 16px;
   border-bottom: 1px solid #d9ebe3;
-}
-.page--review .review-card .period-pill {
-  border-color: #cce4da;
-  background: #e4f5ee;
-  color: #26654f;
 }
 .review-plan-field {
   min-height: 88px;
@@ -626,6 +540,37 @@
 }
 .weekly-review-journal__error {
   color: #a44343;
+}
+.decision-follow-up__step {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #f3f7f5;
+}
+.decision-follow-up__step > span {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  background: #dcefe7;
+  color: #175c49;
+  font-weight: 850;
+}
+.decision-follow-up__step p {
+  overflow-wrap: anywhere;
+}
+.decision-follow-up__step li time {
+  color: var(--muted);
+  font-size: 12px;
+}
+.decision-follow-up__step--outcome {
+  border: 1px solid #bfe0d2;
+  background: #eef9f4;
+}
+.decision-follow-up__missing {
+  color: var(--muted);
 }
 @media (max-width: 720px) {
   .recovered-week-link {

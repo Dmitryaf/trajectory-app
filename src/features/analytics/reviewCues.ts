@@ -39,29 +39,7 @@ export function buildReviewCues(
     tone: enoughEntries ? 'good' : 'warning',
   });
 
-  const shortSleepDays = entries.filter(
-    (entry) => entry.specialDay === null && entry.sleepMinutes !== null && entry.sleepMinutes < 420,
-  ).length;
-  if (shortSleepDays >= 2) {
-    cues.push({
-      id: 'short-sleep',
-      title: 'Сон проседал несколько раз',
-      text: `${shortSleepDays} ${plural(shortSleepDays, 'день был', 'дня были', 'дней были')} со сном меньше 7 часов. Это стоит проверить перед выводами про действия и состояние.`,
-      tone: 'warning',
-    });
-  } else if (summary.averageSleep !== null) {
-    cues.push({ id: 'sleep-baseline', title: 'База сна', text: sleepContextText(summary), tone: 'neutral' });
-  }
-
-  const timingVariation = Math.max(summary.bedtimeVariationMinutes ?? 0, summary.wakeTimeVariationMinutes ?? 0);
-  if (summary.sleepTimingSamples >= 4 && timingVariation >= 90) {
-    cues.push({
-      id: 'sleep-regularity',
-      title: 'Время сна заметно менялось',
-      text: `Разброс времени отхода ко сну или подъёма около ${Math.round(timingVariation)} мин. Это отдельный контекст помимо длительности сна.`,
-      tone: 'neutral',
-    });
-  }
+  appendSleepCues(cues, entries, summary);
 
   const leadingFactor = factors[0];
   if (leadingFactor && leadingFactor.count >= 2) {
@@ -83,6 +61,38 @@ export function buildReviewCues(
     });
   }
 
+  appendDirectionCues(cues, summary);
+  appendPeriodOutcomeCues(cues, summary, results, lifeEvents);
+
+  return limitCues(cues, ['coverage', 'results', 'context']);
+}
+
+function appendSleepCues(cues: ReviewCue[], entries: DailyEntry[], summary: PeriodSummary): void {
+  const shortSleepDays = entries.filter(
+    (entry) => entry.specialDay === null && entry.sleepMinutes !== null && entry.sleepMinutes < 420,
+  ).length;
+  if (shortSleepDays >= 2) {
+    cues.push({
+      id: 'short-sleep',
+      title: 'Сон проседал несколько раз',
+      text: `${shortSleepDays} ${plural(shortSleepDays, 'день был', 'дня были', 'дней были')} со сном меньше 7 часов. Это стоит проверить перед выводами про действия и состояние.`,
+      tone: 'warning',
+    });
+  } else if (summary.averageSleep !== null) {
+    cues.push({ id: 'sleep-baseline', title: 'База сна', text: sleepContextText(summary), tone: 'neutral' });
+  }
+  const timingVariation = Math.max(summary.bedtimeVariationMinutes ?? 0, summary.wakeTimeVariationMinutes ?? 0);
+  if (summary.sleepTimingSamples >= 4 && timingVariation >= 90) {
+    cues.push({
+      id: 'sleep-regularity',
+      title: 'Время сна заметно менялось',
+      text: `Разброс времени отхода ко сну или подъёма около ${Math.round(timingVariation)} мин. Это отдельный контекст помимо длительности сна.`,
+      tone: 'neutral',
+    });
+  }
+}
+
+function appendDirectionCues(cues: ReviewCue[], summary: PeriodSummary): void {
   if (summary.preparationDays >= 3 && summary.externalActionDays <= 1) {
     cues.push({
       id: 'direction-preparation',
@@ -98,7 +108,6 @@ export function buildReviewCues(
       tone: 'good',
     });
   }
-
   if (summary.driftDays >= 2) {
     cues.push({
       id: 'direction-drift',
@@ -107,7 +116,9 @@ export function buildReviewCues(
       tone: 'warning',
     });
   }
+}
 
+function appendPeriodOutcomeCues(cues: ReviewCue[], summary: PeriodSummary, results: ResultRecord[], lifeEvents: LifeEventRecord[]): void {
   if (results.length) {
     cues.push({
       id: 'results',
@@ -116,19 +127,17 @@ export function buildReviewCues(
       tone: 'good',
     });
   }
-
   if (summary.nutritionBlockDays >= 2 || summary.nutritionSupportDays >= 3) {
+    const blocksGoal = summary.nutritionBlockDays >= 2;
     cues.push({
       id: 'nutrition',
-      title: summary.nutritionBlockDays >= 2 ? 'Питание мешало цели' : 'Питание поддерживало цель',
-      text:
-        summary.nutritionBlockDays >= 2
-          ? `${summary.nutritionBlockDays} ${plural(summary.nutritionBlockDays, 'день', 'дня', 'дней')} питание отмечено как мешающее цели. Лучше искать один повторяющийся сценарий, а не менять всё сразу.`
-          : `${summary.nutritionSupportDays} ${plural(summary.nutritionSupportDays, 'день', 'дня', 'дней')} питание поддерживало цель. Это стоит сохранить как рабочее условие.`,
-      tone: summary.nutritionBlockDays >= 2 ? 'warning' : 'good',
+      title: blocksGoal ? 'Питание мешало цели' : 'Питание поддерживало цель',
+      text: blocksGoal
+        ? `${summary.nutritionBlockDays} ${plural(summary.nutritionBlockDays, 'день', 'дня', 'дней')} питание отмечено как мешающее цели. Лучше искать один повторяющийся сценарий, а не менять всё сразу.`
+        : `${summary.nutritionSupportDays} ${plural(summary.nutritionSupportDays, 'день', 'дня', 'дней')} питание поддерживало цель. Это стоит сохранить как рабочее условие.`,
+      tone: blocksGoal ? 'warning' : 'good',
     });
   }
-
   if (summary.experimentMarkedDays >= 2) {
     cues.push({
       id: 'experiment',
@@ -137,7 +146,6 @@ export function buildReviewCues(
       tone: 'neutral',
     });
   }
-
   if (summary.specialDays || lifeEvents.length) {
     cues.push({
       id: 'context',
@@ -146,8 +154,6 @@ export function buildReviewCues(
       tone: 'neutral',
     });
   }
-
-  return limitCues(cues, ['coverage', 'results', 'context']);
 }
 
 export function buildRangeReviewCues(
@@ -243,7 +249,9 @@ function limitCues(cues: ReviewCue[], requiredIds: string[]): ReviewCue[] {
   const selected = cues.slice(0, 6);
   for (const id of requiredIds) {
     const required = cues.find((cue) => cue.id === id);
-    if (!required || selected.some((cue) => cue.id === id)) continue;
+    if (!required || selected.some((cue) => cue.id === id)) {
+      continue;
+    }
     let replaceIndex = -1;
     for (let index = selected.length - 1; index >= 0; index -= 1) {
       if (!requiredIds.includes(selected[index].id)) {
@@ -251,7 +259,9 @@ function limitCues(cues: ReviewCue[], requiredIds: string[]): ReviewCue[] {
         break;
       }
     }
-    if (replaceIndex >= 0) selected[replaceIndex] = required;
+    if (replaceIndex >= 0) {
+      selected[replaceIndex] = required;
+    }
   }
   return selected.sort((a, b) => cues.indexOf(a) - cues.indexOf(b));
 }
@@ -266,7 +276,11 @@ function sleepContextText(summary: PeriodSummary): string {
 function plural(value: number, one: string, few: string, many: string): string {
   const mod10 = value % 10;
   const mod100 = value % 100;
-  if (mod10 === 1 && mod100 !== 11) return one;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+  if (mod10 === 1 && mod100 !== 11) {
+    return one;
+  }
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+    return few;
+  }
   return many;
 }

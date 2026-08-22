@@ -28,7 +28,9 @@ type StoredFunnel = {
 const storageKey = `trajectory:first-use-funnel:v${FIRST_USE_FUNNEL_VERSION}`;
 
 function defaultStorage(): FunnelStorage | undefined {
-  if (typeof window === 'undefined') return undefined;
+  if (typeof window === 'undefined') {
+    return undefined;
+  }
   try {
     return window.localStorage;
   } catch {
@@ -45,10 +47,14 @@ function isValidTimestamp(value: unknown): value is string {
 }
 
 function readStoredFunnel(storage: FunnelStorage | undefined): StoredFunnel {
-  if (!storage) return emptyFunnel();
+  if (!storage) {
+    return emptyFunnel();
+  }
   try {
     const raw = storage.getItem(storageKey);
-    if (!raw) return emptyFunnel();
+    if (!raw) {
+      return emptyFunnel();
+    }
     const parsed = JSON.parse(raw) as { version?: unknown; events?: unknown };
     if (
       parsed.version !== FIRST_USE_FUNNEL_VERSION ||
@@ -61,7 +67,9 @@ function readStoredFunnel(storage: FunnelStorage | undefined): StoredFunnel {
     const source = parsed.events as Record<string, unknown>;
     const events: StoredFunnel['events'] = {};
     for (const name of firstUseFunnelEventNames) {
-      if (isValidTimestamp(source[name])) events[name] = source[name];
+      if (isValidTimestamp(source[name])) {
+        events[name] = source[name];
+      }
     }
     return { version: FIRST_USE_FUNNEL_VERSION, events };
   } catch {
@@ -70,7 +78,9 @@ function readStoredFunnel(storage: FunnelStorage | undefined): StoredFunnel {
 }
 
 function writeStoredFunnel(funnel: StoredFunnel, storage: FunnelStorage | undefined) {
-  if (!storage) return false;
+  if (!storage) {
+    return false;
+  }
   try {
     storage.setItem(storageKey, JSON.stringify(funnel));
     return true;
@@ -84,9 +94,13 @@ export function recordFirstUseEvent(
   occurredAt: Date = new Date(),
   storage: FunnelStorage | undefined = defaultStorage(),
 ) {
-  if (!Number.isFinite(occurredAt.getTime())) return false;
+  if (!Number.isFinite(occurredAt.getTime())) {
+    return false;
+  }
   const funnel = readStoredFunnel(storage);
-  if (funnel.events[name]) return false;
+  if (funnel.events[name]) {
+    return false;
+  }
   funnel.events[name] = occurredAt.toISOString();
   return writeStoredFunnel(funnel, storage);
 }
@@ -100,7 +114,9 @@ export function readFirstUseFunnel(storage: FunnelStorage | undefined = defaultS
 }
 
 export function clearFirstUseFunnel(storage: FunnelStorage | undefined = defaultStorage()) {
-  if (!storage) return;
+  if (!storage) {
+    return;
+  }
   try {
     storage.removeItem(storageKey);
   } catch {
@@ -115,10 +131,14 @@ function calendarDayDifference(start: Date, end: Date) {
 }
 
 export function recordFirstUseReturnEvents(openedAt: Date = new Date(), storage: FunnelStorage | undefined = defaultStorage()) {
-  if (!Number.isFinite(openedAt.getTime())) return [] as FirstUseFunnelEventName[];
+  if (!Number.isFinite(openedAt.getTime())) {
+    return [] as FirstUseFunnelEventName[];
+  }
   const funnel = readStoredFunnel(storage);
   const startedAt = funnel.events.first_use_recovery_started;
-  if (!startedAt) return [] as FirstUseFunnelEventName[];
+  if (!startedAt) {
+    return [] as FirstUseFunnelEventName[];
+  }
 
   const dayDifference = calendarDayDifference(new Date(startedAt), openedAt);
   const recorded: FirstUseFunnelEventName[] = [];

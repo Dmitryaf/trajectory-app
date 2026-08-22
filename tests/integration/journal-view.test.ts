@@ -198,14 +198,9 @@ describe('journal scenarios', () => {
     expect(wrapper.get('[aria-label="Конечная дата событий"]').element).toHaveProperty('value', '');
     expect(wrapper.text()).toContain('Сегодняшнее решение');
     expect(wrapper.text()).not.toContain('Наблюдение');
-    const longNoteToggle = wrapper.get('.timeline-item__note-toggle');
-    expect(longNoteToggle.attributes('aria-expanded')).toBe('false');
-    expect(longNoteToggle.attributes('aria-controls')).toBe(wrapper.get('.timeline-item__note').attributes('id'));
-    expect(wrapper.get('.timeline-item__note').classes()).toContain('timeline-item__note--clamped');
-    await longNoteToggle.trigger('click');
-    expect(longNoteToggle.attributes('aria-expanded')).toBe('true');
-    expect(wrapper.get('.timeline-item__note').classes()).not.toContain('timeline-item__note--clamped');
-    expect(longNoteToggle.text()).toBe('Свернуть');
+    const longNoteParagraph = wrapper.get('.timeline-item__note');
+    expect(longNoteParagraph.text()).toBe(longNote);
+    expect(longNoteParagraph.classes()).toContain('clamped-text--collapsed');
     await wrapper.get('.archive-filter__all-time').trigger('click');
     await wrapper.get('[aria-label="Поиск по событиям"]').setValue('прогулки');
     expect(wrapper.text()).toContain('Наблюдение');

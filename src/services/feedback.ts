@@ -12,7 +12,9 @@ export async function sendFeedback(message: string, accessToken: string): Promis
     body: JSON.stringify({ message }),
   });
 
-  if (response.ok) return;
+  if (response.ok) {
+    return;
+  }
 
   const body = (await response.json().catch(() => ({}))) as FeedbackErrorBody;
   throw new Error(body.error || 'Не удалось отправить сообщение. Попробуй ещё раз.');

@@ -21,7 +21,10 @@ export function buildCustomRangePackage(start: string, end: string, source: AiRe
 }
 
 export function downloadAiPackage(payload: AiReportPayload) {
-  const suffix = payload.period === 'range' ? (payload.rangeMonths ? `${payload.rangeMonths}-months` : 'period') : payload.period;
+  let suffix: string = payload.period;
+  if (payload.period === 'range') {
+    suffix = payload.rangeMonths ? `${payload.rangeMonths}-months` : 'period';
+  }
   downloadJson(payload, `trajectory-analysis-${suffix}-${payload.start}-${payload.dataThrough}.json`);
 }
 
@@ -61,5 +64,7 @@ export async function copyText(value: string) {
   field.select();
   const copied = document.execCommand('copy');
   field.remove();
-  if (!copied) throw new Error('Браузер не разрешил скопировать текст. Попробуй скачать данные.');
+  if (!copied) {
+    throw new Error('Браузер не разрешил скопировать текст. Попробуй скачать данные.');
+  }
 }

@@ -28,7 +28,9 @@ export {
 export { buildRangeReviewCues, buildReviewCues, ratioPercent, type ReviewCue } from '../features/analytics/reviewCues';
 
 export function weekSummaryText(summary: PeriodSummary, activeAreas: LifeAreaId[], areaOptions: Option[] = lifeAreaOptions): string {
-  if (!summary.coveredEntriesCount) return 'Пока нет заполненных записей за эту неделю. Здесь появится краткая сводка фактов.';
+  if (!summary.coveredEntriesCount) {
+    return 'Пока нет заполненных записей за эту неделю. Здесь появится краткая сводка фактов.';
+  }
 
   const labels = new Map(areaOptions.map((item) => [item.id, item.label]));
   const present = activeAreas.filter((area) => summary.areaCounts[area] > 0).map((area) => (labels.get(area) ?? area).toLowerCase());
@@ -48,20 +50,32 @@ export function weekSummaryText(summary: PeriodSummary, activeAreas: LifeAreaId[
       `действия по цели: конкретные действия ${summary.externalActionDays}, подготовка ${summary.preparationDays}, занимался другим ${summary.driftDays}`,
     );
   }
-  if (summary.averageSleep !== null) parts.push(`средний сон ${formatMinutes(Math.round(summary.averageSleep))}`);
+  if (summary.averageSleep !== null) {
+    parts.push(`средний сон ${formatMinutes(Math.round(summary.averageSleep))}`);
+  }
   if (summary.averageTimeInBed !== null && summary.averageSleep !== null && summary.averageTimeInBed - summary.averageSleep >= 45) {
     parts.push(`в кровати ${formatMinutes(Math.round(summary.averageTimeInBed))}`);
   }
   let text = `За неделю: ${parts.join(', ')}.`;
-  if (present.length) text += ` Присутствовали: ${present.join(', ')}.`;
-  if (absent.length) text += ` Не отмечались: ${absent.join(', ')}.`;
+  if (present.length) {
+    text += ` Присутствовали: ${present.join(', ')}.`;
+  }
+  if (absent.length) {
+    text += ` Не отмечались: ${absent.join(', ')}.`;
+  }
   return text;
 }
 
 export function hasArea(entry: DailyEntry | undefined, area: string): boolean {
-  if (!entry) return false;
-  if (area === 'career') return careerStatesForEntry(entry).length > 0;
-  if (area === 'sport') return entry.activities.some((activity) => activity !== 'recovery');
+  if (!entry) {
+    return false;
+  }
+  if (area === 'career') {
+    return careerStatesForEntry(entry).length > 0;
+  }
+  if (area === 'sport') {
+    return entry.activities.some((activity) => activity !== 'recovery');
+  }
   return entry.lifeAreas.includes(area as LifeAreaId);
 }
 
@@ -96,7 +110,11 @@ export function actionDirectionLabel(value: string | null): string {
 function plural(value: number, one: string, few: string, many: string): string {
   const mod10 = value % 10;
   const mod100 = value % 100;
-  if (mod10 === 1 && mod100 !== 11) return one;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+  if (mod10 === 1 && mod100 !== 11) {
+    return one;
+  }
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+    return few;
+  }
   return many;
 }

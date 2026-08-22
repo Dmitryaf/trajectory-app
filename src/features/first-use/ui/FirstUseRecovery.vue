@@ -65,13 +65,17 @@ watch(
 watch(
   () => isRecovery.value && currentStep.value === 'overview',
   (visible) => {
-    if (visible) recordFirstUseEvent('first_use_overview_viewed');
+    if (visible) {
+      recordFirstUseEvent('first_use_overview_viewed');
+    }
   },
   { immediate: true },
 );
 
 onMounted(() => {
-  if (editRequested && firstUse.value.status === 'completed' && firstUse.value.weekStart) void reopenRecovery();
+  if (editRequested && firstUse.value.status === 'completed' && firstUse.value.weekStart) {
+    void reopenRecovery();
+  }
 });
 
 function lines(value: string) {
@@ -94,7 +98,9 @@ function periodStatus(option: FirstUsePeriodOption) {
 }
 
 function loadDraft() {
-  if (!firstUse.value.weekStart) return;
+  if (!firstUse.value.weekStart) {
+    return;
+  }
   const existing = store.reviewByWeek(firstUse.value.weekStart);
   Object.assign(review, emptyWeeklyReview(firstUse.value.weekStart), existing ? plainCopy(existing) : {});
   review.coveredThrough = firstUse.value.periodEnd;
@@ -103,10 +109,15 @@ function loadDraft() {
   stateContext.value = review.stateContext;
   support.value = review.support;
   obstacle.value = review.obstacle;
-  if (review.nextLever === 'Продолжить как есть') decision.value = 'continue';
-  else if (review.nextLever === 'Пока без решения') decision.value = 'later';
-  else if (review.nextLever) decision.value = 'change';
-  else decision.value = '';
+  if (review.nextLever === 'Продолжить как есть') {
+    decision.value = 'continue';
+  } else if (review.nextLever === 'Пока без решения') {
+    decision.value = 'later';
+  } else if (review.nextLever) {
+    decision.value = 'change';
+  } else {
+    decision.value = '';
+  }
   decisionText.value = decision.value === 'change' ? review.nextLever : '';
   ifThenPlan.value = review.ifThenPlan;
 }
@@ -176,32 +187,49 @@ async function dismiss() {
 }
 
 function applyCurrentAnswer() {
-  if (currentStep.value === 'results') review.results = lines(resultsText.value);
-  if (currentStep.value === 'highlights') review.highlights = lines(highlightsText.value);
-  if (currentStep.value === 'state_context') review.stateContext = stateContext.value.trim();
+  if (currentStep.value === 'results') {
+    review.results = lines(resultsText.value);
+  }
+  if (currentStep.value === 'highlights') {
+    review.highlights = lines(highlightsText.value);
+  }
+  if (currentStep.value === 'state_context') {
+    review.stateContext = stateContext.value.trim();
+  }
   if (currentStep.value === 'support_obstacle') {
     review.support = support.value.trim();
     review.obstacle = obstacle.value.trim();
   }
   if (currentStep.value === 'decision') {
-    review.nextLever =
-      decision.value === 'continue'
-        ? 'Продолжить как есть'
-        : decision.value === 'later'
-          ? 'Пока без решения'
-          : decision.value === 'change'
-            ? decisionText.value.trim()
-            : '';
+    let nextLever = '';
+    if (decision.value === 'continue') {
+      nextLever = 'Продолжить как есть';
+    } else if (decision.value === 'later') {
+      nextLever = 'Пока без решения';
+    } else if (decision.value === 'change') {
+      nextLever = decisionText.value.trim();
+    }
+    review.nextLever = nextLever;
     review.ifThenPlan = decision.value === 'change' ? ifThenPlan.value.trim() : '';
   }
 }
 
 function currentAnswerHasContent() {
-  if (currentStep.value === 'results') return review.results.some((item) => item.trim());
-  if (currentStep.value === 'highlights') return review.highlights.some((item) => item.trim());
-  if (currentStep.value === 'state_context') return Boolean(review.stateContext.trim());
-  if (currentStep.value === 'support_obstacle') return Boolean(review.support.trim() || review.obstacle.trim());
-  if (currentStep.value === 'decision') return Boolean(review.nextLever.trim());
+  if (currentStep.value === 'results') {
+    return review.results.some((item) => item.trim());
+  }
+  if (currentStep.value === 'highlights') {
+    return review.highlights.some((item) => item.trim());
+  }
+  if (currentStep.value === 'state_context') {
+    return Boolean(review.stateContext.trim());
+  }
+  if (currentStep.value === 'support_obstacle') {
+    return Boolean(review.support.trim() || review.obstacle.trim());
+  }
+  if (currentStep.value === 'decision') {
+    return Boolean(review.nextLever.trim());
+  }
   return false;
 }
 
@@ -212,7 +240,9 @@ async function moveTo(nextStep: FirstUseStep, saveAnswer: boolean) {
     if (saveAnswer) {
       applyCurrentAnswer();
       await store.saveReview(plainCopy(review));
-      if (currentAnswerHasContent()) recordFirstUseEvent('first_use_first_answer_saved');
+      if (currentAnswerHasContent()) {
+        recordFirstUseEvent('first_use_first_answer_saved');
+      }
     }
     await saveFirstUse({
       status: 'in_progress',
@@ -230,13 +260,17 @@ async function moveTo(nextStep: FirstUseStep, saveAnswer: boolean) {
 }
 
 function nextStep() {
-  if (currentStep.value === 'decision') return 'overview';
+  if (currentStep.value === 'decision') {
+    return 'overview';
+  }
   const index = currentStepIndex.value;
   return steps[index + 1] ?? 'overview';
 }
 
 function previousStep() {
-  if (currentStep.value === 'overview') return 'decision';
+  if (currentStep.value === 'overview') {
+    return 'decision';
+  }
   const index = currentStepIndex.value;
   return index <= 0 ? 'choice' : steps[index - 1]!;
 }
@@ -255,7 +289,9 @@ async function completeRecovery() {
       overviewSeen: true,
       updatedAt: '',
     });
-    if (router) await router.push({ path: '/week', query: { week: weekStart }, hash: '#first-use-overview' });
+    if (router) {
+      await router.push({ path: '/week', query: { week: weekStart }, hash: '#first-use-overview' });
+    }
   } catch {
     saveError.value = 'Не удалось завершить обзор. Ответы остались на экране — попробуйте ещё раз.';
   } finally {

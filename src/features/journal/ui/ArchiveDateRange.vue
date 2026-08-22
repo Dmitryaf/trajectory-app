@@ -18,9 +18,15 @@ const hasRange = computed(() => Boolean(props.dateFrom || props.dateTo));
 const rangeLabel = computed(() => {
   const from = readableDate(props.dateFrom);
   const to = readableDate(props.dateTo);
-  if (from && to) return `Показаны записи с ${from} по ${to}`;
-  if (from) return `Показаны записи с ${from}`;
-  if (to) return `Показаны записи по ${to}`;
+  if (from && to) {
+    return `Показаны записи с ${from} по ${to}`;
+  }
+  if (from) {
+    return `Показаны записи с ${from}`;
+  }
+  if (to) {
+    return `Показаны записи по ${to}`;
+  }
   return 'Показаны записи за всё время';
 });
 

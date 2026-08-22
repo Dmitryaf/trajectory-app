@@ -77,25 +77,41 @@ const confirmationEmail = ref('');
 const statusIsError = ref(false);
 const activePreview = computed(() => previewLevels.find((level) => level.id === activePreviewId.value) ?? previewLevels[0]!);
 const submitLabel = computed(() => {
-  if (auth.operation === 'signing-up') return 'Создаём аккаунт…';
-  if (auth.operation === 'signing-in') return 'Входим…';
+  if (auth.operation === 'signing-up') {
+    return 'Создаём аккаунт…';
+  }
+  if (auth.operation === 'signing-in') {
+    return 'Входим…';
+  }
   return mode.value === 'sign-up' ? 'Создать аккаунт' : 'Войти';
 });
 
 onMounted(() => recordFirstUseEvent('first_use_presentation_viewed'));
 
 const canSubmit = computed(() => {
-  if (email.value.trim().length <= 3 || auth.loading) return false;
-  if (mode.value === 'sign-in') return password.value.length >= 6;
+  if (email.value.trim().length <= 3 || auth.loading) {
+    return false;
+  }
+  if (mode.value === 'sign-in') {
+    return password.value.length >= 6;
+  }
   return password.value.length >= 8 && password.value === passwordConfirmation.value && inviteCode.value.trim().length >= 10;
 });
 
 const submitIssue = computed(() => {
-  if (email.value.trim().length <= 3) return 'Укажи email.';
+  if (email.value.trim().length <= 3) {
+    return 'Укажи email.';
+  }
   const minimumLength = mode.value === 'sign-up' ? 8 : 6;
-  if (password.value.length < minimumLength) return `Пароль должен содержать не меньше ${minimumLength} символов.`;
-  if (mode.value === 'sign-up' && password.value !== passwordConfirmation.value) return 'Пароли не совпадают.';
-  if (mode.value === 'sign-up' && inviteCode.value.trim().length < 10) return 'Укажи код приглашения.';
+  if (password.value.length < minimumLength) {
+    return `Пароль должен содержать не меньше ${minimumLength} символов.`;
+  }
+  if (mode.value === 'sign-up' && password.value !== passwordConfirmation.value) {
+    return 'Пароли не совпадают.';
+  }
+  if (mode.value === 'sign-up' && inviteCode.value.trim().length < 10) {
+    return 'Укажи код приглашения.';
+  }
   return '';
 });
 
@@ -148,7 +164,9 @@ async function submit() {
 }
 
 async function resendConfirmation() {
-  if (!confirmationEmail.value || auth.loading) return;
+  if (!confirmationEmail.value || auth.loading) {
+    return;
+  }
   status.value = '';
   statusIsError.value = false;
   try {

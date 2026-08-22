@@ -10,15 +10,6 @@
   background: linear-gradient(135deg, #fff, #e3f4ed);
   box-shadow: var(--shadow-soft);
 }
-.page--settings > .page-heading::after {
-  content: '⚙';
-  position: absolute;
-  right: 28px;
-  color: rgba(29, 81, 72, 0.1);
-  font-size: 126px;
-  line-height: 1;
-  transform: rotate(12deg);
-}
 .page--settings > .page-heading > * {
   position: relative;
   z-index: 1;
@@ -26,10 +17,9 @@
 .page--settings > .page-heading h1 {
   margin-top: 5px;
   font-size: clamp(38px, 5vw, 58px);
-  letter-spacing: -0.045em;
 }
 .settings-card {
-  --settings-accent: #8ce1bf;
+  --settings-accent: var(--mint);
   position: relative;
   margin-bottom: 16px;
   overflow: hidden;
@@ -350,14 +340,6 @@
   margin: 3px 0 0;
   font-size: 12px;
 }
-.visually-hidden {
-  position: absolute !important;
-  width: 1px !important;
-  height: 1px !important;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
 .loading-card {
   width: min(420px, 100%);
   min-height: 118px;
@@ -386,7 +368,7 @@
   width: 19px;
   height: 19px;
   border: 3px solid rgba(140, 225, 191, 0.28);
-  border-top-color: #8ce1bf;
+  border-top-color: var(--mint);
   border-radius: 50%;
   animation: loader-spin 0.85s linear infinite;
 }

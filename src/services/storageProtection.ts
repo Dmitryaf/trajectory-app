@@ -24,14 +24,18 @@ export class LocalStorageQuotaError extends Error {
 }
 
 function browserStorageManager(): StorageManagerLike | undefined {
-  if (typeof navigator === 'undefined') return undefined;
+  if (typeof navigator === 'undefined') {
+    return undefined;
+  }
   return navigator.storage;
 }
 
 export async function checkStoragePersistence(
   storage: StorageManagerLike | undefined = browserStorageManager(),
 ): Promise<StoragePersistenceResult> {
-  if (typeof storage?.persisted !== 'function') return 'unsupported';
+  if (typeof storage?.persisted !== 'function') {
+    return 'unsupported';
+  }
   try {
     return (await storage.persisted()) ? 'persisted' : 'best-effort';
   } catch {
@@ -42,9 +46,13 @@ export async function checkStoragePersistence(
 export async function requestStoragePersistence(
   storage: StorageManagerLike | undefined = browserStorageManager(),
 ): Promise<StoragePersistenceResult> {
-  if (typeof storage?.persisted !== 'function' || typeof storage.persist !== 'function') return 'unsupported';
+  if (typeof storage?.persisted !== 'function' || typeof storage.persist !== 'function') {
+    return 'unsupported';
+  }
   try {
-    if (await storage.persisted()) return 'persisted';
+    if (await storage.persisted()) {
+      return 'persisted';
+    }
     return (await storage.persist()) ? 'persisted' : 'best-effort';
   } catch {
     return 'error';
@@ -58,8 +66,12 @@ export function isStorageQuotaError(error: unknown): boolean {
     visited.add(current);
     if (current instanceof Error) {
       const candidate = current as ErrorWithCause;
-      if (candidate.name === 'QuotaExceededError' || candidate.name === 'NS_ERROR_DOM_QUOTA_REACHED') return true;
-      if (candidate.code === 22 || candidate.code === 1014) return true;
+      if (candidate.name === 'QuotaExceededError' || candidate.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+        return true;
+      }
+      if (candidate.code === 22 || candidate.code === 1014) {
+        return true;
+      }
       current = candidate.cause ?? candidate.inner;
       continue;
     }
