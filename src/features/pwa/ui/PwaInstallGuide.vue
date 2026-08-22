@@ -11,14 +11,20 @@ const summary = computed(() => (pwaInstalled.value ? 'Приложение ус�
 initPwaInstallation();
 
 async function install() {
-  if (installing.value) return;
+  if (installing.value) {
+    return;
+  }
   installing.value = true;
   installStatus.value = '';
   try {
     const outcome = await promptPwaInstallation();
-    if (outcome === 'accepted') installStatus.value = 'Подтвердите установку в окне браузера.';
-    else if (outcome === 'dismissed') installStatus.value = 'Установка отменена. Позже её можно запустить из меню браузера.';
-    else installStatus.value = 'Откройте меню браузера и выберите установку приложения.';
+    if (outcome === 'accepted') {
+      installStatus.value = 'Подтвердите установку в окне браузера.';
+    } else if (outcome === 'dismissed') {
+      installStatus.value = 'Установка отменена. Позже её можно запустить из меню браузера.';
+    } else {
+      installStatus.value = 'Откройте меню браузера и выберите установку приложения.';
+    }
   } catch {
     installStatus.value = 'Не удалось открыть установку. Используйте команду установки в меню браузера.';
   } finally {

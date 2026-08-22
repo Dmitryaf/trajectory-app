@@ -27,7 +27,9 @@ async function open() {
 }
 
 function close() {
-  if (isSending.value) return;
+  if (isSending.value) {
+    return;
+  }
   isOpen.value = false;
 }
 

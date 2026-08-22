@@ -9,7 +9,9 @@ export const test = base.extend<BrowserErrorOptions>({
   page: async ({ page, allowedBrowserErrors }, use, testInfo) => {
     const browserErrors: string[] = [];
     const recordConsoleError = (message: ConsoleMessage) => {
-      if (message.type() === 'error') browserErrors.push(`console.error: ${message.text()}`);
+      if (message.type() === 'error') {
+        browserErrors.push(`console.error: ${message.text()}`);
+      }
     };
 
     page.on('console', recordConsoleError);
@@ -18,7 +20,9 @@ export const test = base.extend<BrowserErrorOptions>({
     await use(page);
 
     const unexpectedErrors = browserErrors.filter((message) => !allowedBrowserErrors.some((pattern) => pattern.test(message)));
-    if (!unexpectedErrors.length) return;
+    if (!unexpectedErrors.length) {
+      return;
+    }
 
     await testInfo.attach('unexpected-browser-errors.txt', {
       body: unexpectedErrors.join('\n'),

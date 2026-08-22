@@ -26,11 +26,15 @@ function postpone() {
 }
 
 async function install() {
-  if (installing.value) return;
+  if (installing.value) {
+    return;
+  }
   installing.value = true;
   try {
     const outcome = await promptPwaInstallation();
-    if (outcome !== 'unavailable') postpone();
+    if (outcome !== 'unavailable') {
+      postpone();
+    }
   } finally {
     installing.value = false;
   }

@@ -86,7 +86,9 @@ export function normalizeSnapshot(input: unknown): ExportPayload {
     }
   });
   const entryLinkError = experimentEntryLinkError(dailyEntries, settings);
-  if (entryLinkError) throw new Error(entryLinkError);
+  if (entryLinkError) {
+    throw new Error(entryLinkError);
+  }
   return {
     version: version as number,
     exportedAt: typeof source.exportedAt === 'string' ? source.exportedAt : '',
@@ -139,23 +141,31 @@ function requireRecord(value: unknown, field: string): UnknownRecord {
 }
 
 function requireArray(value: unknown, field: string): unknown[] {
-  if (!Array.isArray(value)) throw new Error(`Некорректное поле ${field}`);
+  if (!Array.isArray(value)) {
+    throw new Error(`Некорректное поле ${field}`);
+  }
   return value;
 }
 
 function optionalArray(value: unknown, field: string): unknown[] {
-  if (value === undefined) return [];
+  if (value === undefined) {
+    return [];
+  }
   return requireArray(value, field);
 }
 
 function requireString(value: unknown, field: string): string {
-  if (typeof value !== 'string') throw new Error(`Некорректное поле ${field}`);
+  if (typeof value !== 'string') {
+    throw new Error(`Некорректное поле ${field}`);
+  }
   return value;
 }
 
 function requireDate(value: unknown, field: string): string {
   const date = requireString(value, field);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error(`Некорректная дата в ${field}`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    throw new Error(`Некорректная дата в ${field}`);
+  }
   const [year, month, day] = date.split('-').map(Number);
   const parsed = new Date(year!, month! - 1, day!);
   if (parsed.getFullYear() !== year || parsed.getMonth() !== month! - 1 || parsed.getDate() !== day) {
@@ -168,7 +178,9 @@ function requireUniqueKeys<T, K extends string | number>(items: T[], keyOf: (ite
   const seen = new Set<K>();
   for (const item of items) {
     const key = keyOf(item);
-    if (seen.has(key)) throw new Error(`Повторяющееся поле ${field}: ${key}`);
+    if (seen.has(key)) {
+      throw new Error(`Повторяющееся поле ${field}: ${key}`);
+    }
     seen.add(key);
   }
 }
@@ -176,13 +188,17 @@ function requireUniqueKeys<T, K extends string | number>(items: T[], keyOf: (ite
 function requireExperimentInvariants(settings: AppSettings, source: UnknownRecord | undefined) {
   const rawHistory = Array.isArray(source?.experimentHistory) ? source.experimentHistory : [];
   const rawIds = rawHistory.flatMap((item) => {
-    if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      return [];
+    }
     const id = (item as UnknownRecord).id;
     return typeof id === 'string' && id.trim() ? [id.trim()] : [];
   });
   requireUniqueKeys(rawIds, (id) => id, 'settings.experimentHistory.id');
   rawHistory.forEach((item, index) => {
-    if (!item || typeof item !== 'object' || Array.isArray(item)) return;
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      return;
+    }
     const record = item as UnknownRecord;
     if (
       typeof record.startDate === 'string' &&
@@ -196,5 +212,7 @@ function requireExperimentInvariants(settings: AppSettings, source: UnknownRecor
   });
 
   const integrityError = experimentIntegrityError(settings);
-  if (integrityError) throw new Error(integrityError);
+  if (integrityError) {
+    throw new Error(integrityError);
+  }
 }

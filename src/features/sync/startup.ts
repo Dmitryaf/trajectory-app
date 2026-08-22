@@ -38,15 +38,20 @@ export async function reconcileCloudSnapshotAfterResume(
 }
 
 async function reconcileCloudSnapshot(store: AppStore, userId: string | null | undefined, services: StartupSyncServices) {
-  if (!userId) return;
+  if (!userId) {
+    return;
+  }
 
   try {
     const snapshot = await services.loadSnapshot();
     const meta = services.getMeta(userId);
 
     if (!snapshot) {
-      if (hasLocalUserData(store) || meta.pending) await store.syncCloudSnapshot({ force: true });
-      else store.setCloudSyncState('synced', 'Облако пока пустое');
+      if (hasLocalUserData(store) || meta.pending) {
+        await store.syncCloudSnapshot({ force: true });
+      } else {
+        store.setCloudSyncState('synced', 'Облако пока пустое');
+      }
       return;
     }
 
@@ -90,7 +95,9 @@ export async function prepareLocalCacheOwner(
   userId: string | null | undefined,
   storage: Pick<Storage, 'getItem' | 'setItem'> = window.localStorage,
 ) {
-  if (!userId) return;
+  if (!userId) {
+    return;
+  }
 
   const localOwnerId = storage.getItem(localOwnerKey);
   if (localOwnerId && localOwnerId !== userId) {

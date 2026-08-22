@@ -44,22 +44,38 @@ export function useDailyEntryForm(store: AppStore) {
   const currentEntrySnapshot = computed(() => snapshotDailyEntry(form, currentMetrics()));
   const isDirty = computed(() => currentEntrySnapshot.value !== originalEntrySnapshot.value);
   const entryChangeNotice = computed(() => {
-    if (saved.value) return '';
-    if (draftStatus.value === 'error') return 'Не удалось защитить черновик. Сохраните день, прежде чем закрывать страницу.';
-    if (isDirty.value && draftStatus.value === 'saving') return 'Сохраняю черновик на этом устройстве…';
-    if (isDirty.value && draftStatus.value === 'saved')
+    if (saved.value) {
+      return '';
+    }
+    if (draftStatus.value === 'error') {
+      return 'Не удалось защитить черновик. Сохраните день, прежде чем закрывать страницу.';
+    }
+    if (isDirty.value && draftStatus.value === 'saving') {
+      return 'Сохраняю черновик на этом устройстве…';
+    }
+    if (isDirty.value && draftStatus.value === 'saved') {
       return restoredDraft.value
         ? 'Восстановлены несохранённые изменения. Черновик хранится только на этом устройстве.'
         : 'Черновик сохранён на этом устройстве. Чтобы добавить день в историю, нажмите «Сохранить день».';
-    if (isDirty.value && hasSavedEntry.value)
+    }
+    if (isDirty.value && hasSavedEntry.value) {
       return `Есть изменения за ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })}. Сохрани, чтобы обновить запись.`;
-    if (isDirty.value) return `Есть несохранённая запись за ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })}.`;
+    }
+    if (isDirty.value) {
+      return `Есть несохранённая запись за ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })}.`;
+    }
     return '';
   });
   const saveButtonText = computed(() => {
-    if (saving.value) return 'Сохраняю…';
-    if (hasSavedEntry.value && isDirty.value) return 'Сохранить изменения';
-    if (hasSavedEntry.value) return 'Запись сохранена';
+    if (saving.value) {
+      return 'Сохраняю…';
+    }
+    if (hasSavedEntry.value && isDirty.value) {
+      return 'Сохранить изменения';
+    }
+    if (hasSavedEntry.value) {
+      return 'Запись сохранена';
+    }
     return 'Сохранить день';
   });
   const saveButtonDisabled = computed(() => draftConflict.value || saving.value || (hasSavedEntry.value && !isDirty.value && !saved.value));
@@ -126,34 +142,48 @@ export function useDailyEntryForm(store: AppStore) {
   }
 
   function confirmDiscardChanges(): boolean {
-    if (!isDirty.value || persistedDraftSnapshot.value === currentEntrySnapshot.value) return true;
+    if (!isDirty.value || persistedDraftSnapshot.value === currentEntrySnapshot.value) {
+      return true;
+    }
     return window.confirm('Черновик ещё не сохранён на устройстве. Отбросить изменения и продолжить?');
   }
 
   function changeSelectedDate(date: string): boolean {
-    if (!date || date === selectedDate.value) return true;
-    if (!confirmDiscardChanges()) return false;
+    if (!date || date === selectedDate.value) {
+      return true;
+    }
+    if (!confirmDiscardChanges()) {
+      return false;
+    }
     selectedDate.value = date;
     return true;
   }
 
   function selectDate(event: Event) {
     const input = event.currentTarget as HTMLInputElement;
-    if (!changeSelectedDate(input.value)) input.value = selectedDate.value;
+    if (!changeSelectedDate(input.value)) {
+      input.value = selectedDate.value;
+    }
   }
 
   function handleBeforeUnload(event: BeforeUnloadEvent) {
-    if (!isDirty.value || persistedDraftSnapshot.value === currentEntrySnapshot.value) return;
+    if (!isDirty.value || persistedDraftSnapshot.value === currentEntrySnapshot.value) {
+      return;
+    }
     event.preventDefault();
     event.returnValue = '';
   }
 
   function handleCloudSnapshotApplied() {
-    if (!isDirty.value) void loadEntry(selectedDate.value);
+    if (!isDirty.value) {
+      void loadEntry(selectedDate.value);
+    }
   }
 
   function queueDraftSave() {
-    if (draftTimer !== undefined) window.clearTimeout(draftTimer);
+    if (draftTimer !== undefined) {
+      window.clearTimeout(draftTimer);
+    }
     draftStatus.value = 'saving';
     draftTimer = window.setTimeout(() => void persistDraft(), 500);
   }
@@ -161,13 +191,17 @@ export function useDailyEntryForm(store: AppStore) {
   async function persistDraft() {
     while (draftSavePromise) {
       await draftSavePromise;
-      if (!isDirty.value || persistedDraftSnapshot.value === currentEntrySnapshot.value) return true;
+      if (!isDirty.value || persistedDraftSnapshot.value === currentEntrySnapshot.value) {
+        return true;
+      }
     }
     if (draftTimer !== undefined) {
       window.clearTimeout(draftTimer);
       draftTimer = undefined;
     }
-    if (!isDirty.value) return true;
+    if (!isDirty.value) {
+      return true;
+    }
     const snapshot = currentEntrySnapshot.value;
     draftStatus.value = 'saving';
     const operation = (async () => {
@@ -190,12 +224,16 @@ export function useDailyEntryForm(store: AppStore) {
     try {
       return await operation;
     } finally {
-      if (draftSavePromise === operation) draftSavePromise = null;
+      if (draftSavePromise === operation) {
+        draftSavePromise = null;
+      }
     }
   }
 
   async function save() {
-    if (saving.value) return;
+    if (saving.value) {
+      return;
+    }
     if (draftConflict.value) {
       notifyError('Сначала выберите, какую версию записи оставить.');
       return;
@@ -222,7 +260,9 @@ export function useDailyEntryForm(store: AppStore) {
     const wasExistingEntry = hasSavedEntry.value;
     saving.value = true;
     try {
-      if (draftSavePromise) await draftSavePromise;
+      if (draftSavePromise) {
+        await draftSavePromise;
+      }
       if (draftTimer !== undefined) {
         window.clearTimeout(draftTimer);
         draftTimer = undefined;
@@ -238,7 +278,9 @@ export function useDailyEntryForm(store: AppStore) {
         ? `Запись за ${formatDate(selectedDate.value, { day: 'numeric', month: 'long' })} обновлена на устройстве`
         : 'День сохранён на устройстве';
       notifySaved(store.cloudSyncStatus === 'disabled' ? localSaveMessage : `${localSaveMessage} · облако обновляется`);
-      if (savedTimer !== undefined) window.clearTimeout(savedTimer);
+      if (savedTimer !== undefined) {
+        window.clearTimeout(savedTimer);
+      }
       savedTimer = window.setTimeout(() => (saved.value = false), 2200);
     } catch (error) {
       notifyUnknownError(error, 'Не удалось сохранить день');
@@ -248,7 +290,9 @@ export function useDailyEntryForm(store: AppStore) {
   }
 
   async function resolveDraftConflict(useDraft: boolean) {
-    if (!draftConflict.value) return;
+    if (!draftConflict.value) {
+      return;
+    }
     if (!useDraft && conflictingSavedEntry.value) {
       try {
         await store.removeDailyEntryDraft(selectedDate.value);
@@ -271,10 +315,14 @@ export function useDailyEntryForm(store: AppStore) {
   watch(
     currentEntrySnapshot,
     (snapshot) => {
-      if (syncingEntry) return;
+      if (syncingEntry) {
+        return;
+      }
       saved.value = false;
       if (snapshot === originalEntrySnapshot.value) {
-        if (draftTimer !== undefined) window.clearTimeout(draftTimer);
+        if (draftTimer !== undefined) {
+          window.clearTimeout(draftTimer);
+        }
         draftTimer = undefined;
         persistedDraftSnapshot.value = '';
         draftStatus.value = 'idle';
@@ -289,7 +337,9 @@ export function useDailyEntryForm(store: AppStore) {
   watch(
     () => [form.bedtime, form.wakeTime],
     ([bedtime, wakeTime]) => {
-      if (syncingEntry) return;
+      if (syncingEntry) {
+        return;
+      }
       const duration = timeBetween(String(bedtime), String(wakeTime));
       if (duration !== null) {
         timeInBedDurationMinutes.value = duration;
@@ -306,7 +356,9 @@ export function useDailyEntryForm(store: AppStore) {
 
   if (getCurrentInstance()?.appContext.config.globalProperties.$router) {
     onBeforeRouteLeave(async () => {
-      if (!isDirty.value || persistedDraftSnapshot.value === currentEntrySnapshot.value) return true;
+      if (!isDirty.value || persistedDraftSnapshot.value === currentEntrySnapshot.value) {
+        return true;
+      }
       return (await persistDraft()) || confirmDiscardChanges();
     });
   }
@@ -318,8 +370,12 @@ export function useDailyEntryForm(store: AppStore) {
     setSyncEditorDirty('daily-entry', false);
     window.removeEventListener('beforeunload', handleBeforeUnload);
     window.removeEventListener('trajectory:cloud-snapshot-applied', handleCloudSnapshotApplied);
-    if (savedTimer !== undefined) window.clearTimeout(savedTimer);
-    if (draftTimer !== undefined) window.clearTimeout(draftTimer);
+    if (savedTimer !== undefined) {
+      window.clearTimeout(savedTimer);
+    }
+    if (draftTimer !== undefined) {
+      window.clearTimeout(draftTimer);
+    }
   });
 
   return {

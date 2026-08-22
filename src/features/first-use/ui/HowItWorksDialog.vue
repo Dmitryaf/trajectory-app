@@ -35,7 +35,9 @@ watch(
       }
       return;
     }
-    if (isOpen.value) return;
+    if (isOpen.value) {
+      return;
+    }
     openedAsIntro.value = true;
     isOpen.value = true;
     await nextTick();
@@ -53,7 +55,9 @@ async function open() {
 
 function close() {
   isOpen.value = false;
-  if (openedAsIntro.value) emit('intro-seen');
+  if (openedAsIntro.value) {
+    emit('intro-seen');
+  }
   openedAsIntro.value = false;
 }
 

@@ -371,7 +371,9 @@ function isoAt(date, hour = 20) {
 
 function eachDate(from, through) {
   const dates = [];
-  for (let cursor = from; cursor <= through; cursor = addDays(cursor, 1)) dates.push(cursor);
+  for (let cursor = from; cursor <= through; cursor = addDays(cursor, 1)) {
+    dates.push(cursor);
+  }
   return dates;
 }
 
@@ -405,11 +407,17 @@ function readCliOptions(argv) {
   const options = {};
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (argument.startsWith('--anchor=')) options.anchor = argument.slice('--anchor='.length);
-    else if (argument === '--anchor') options.anchor = argv[++index];
-    else if (argument.startsWith('--output=')) options.output = argument.slice('--output='.length);
-    else if (argument === '--output') options.output = argv[++index];
-    else throw new Error(`Неизвестный аргумент: ${argument}`);
+    if (argument.startsWith('--anchor=')) {
+      options.anchor = argument.slice('--anchor='.length);
+    } else if (argument === '--anchor') {
+      options.anchor = argv[++index];
+    } else if (argument.startsWith('--output=')) {
+      options.output = argument.slice('--output='.length);
+    } else if (argument === '--output') {
+      options.output = argv[++index];
+    } else {
+      throw new Error(`Неизвестный аргумент: ${argument}`);
+    }
   }
   return options;
 }

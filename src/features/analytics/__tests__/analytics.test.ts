@@ -30,12 +30,21 @@ import {
 
 function entry(date: string, patch: Partial<DailyEntry>): DailyEntry {
   const recordedFields = new Set(patch.recordedFields ?? []);
-  if (Object.prototype.hasOwnProperty.call(patch, 'activities')) recordedFields.add('activities');
-  if (Object.prototype.hasOwnProperty.call(patch, 'contextFactors')) recordedFields.add('contextFactors');
-  if (Object.prototype.hasOwnProperty.call(patch, 'lifeAreas')) recordedFields.add('lifeAreas');
-  if (Object.prototype.hasOwnProperty.call(patch, 'careerStates') || Object.prototype.hasOwnProperty.call(patch, 'careerState'))
+  if (Object.prototype.hasOwnProperty.call(patch, 'activities')) {
+    recordedFields.add('activities');
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'contextFactors')) {
+    recordedFields.add('contextFactors');
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'lifeAreas')) {
+    recordedFields.add('lifeAreas');
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'careerStates') || Object.prototype.hasOwnProperty.call(patch, 'careerState')) {
     recordedFields.add('careerStates');
-  if (Object.prototype.hasOwnProperty.call(patch, 'actionDirection')) recordedFields.add('actionDirection');
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'actionDirection')) {
+    recordedFields.add('actionDirection');
+  }
   return {
     ...emptyDailyEntry(date),
     ...patch,

@@ -26,19 +26,27 @@ export function buildDecisionFollowUp(
   results: ResultRecord[],
   lifeEvents: LifeEventRecord[],
 ): DecisionFollowUp | null {
-  if (!previousReview || !currentReview) return null;
-  if (currentReview.weekStart !== addDays(previousReview.weekStart, 7)) return null;
+  if (!previousReview || !currentReview) {
+    return null;
+  }
+  if (currentReview.weekStart !== addDays(previousReview.weekStart, 7)) {
+    return null;
+  }
 
   const decision = previousReview.nextLever.trim();
   const ifThenPlan = previousReview.ifThenPlan.trim();
   const userOutcome = currentReview.previousPlanOutcome.trim();
-  if ((!decision && !ifThenPlan) || !userOutcome) return null;
+  if ((!decision && !ifThenPlan) || !userOutcome) {
+    return null;
+  }
 
   const start = currentReview.weekStart;
   const end = addDays(start, 6);
   const facts: DecisionFollowUpFact[] = [];
   const addFact = (fact: DecisionFollowUpFact) => {
-    if (facts.length < 3 && !facts.some((item) => item.label === fact.label && item.text === fact.text)) facts.push(fact);
+    if (facts.length < 3 && !facts.some((item) => item.label === fact.label && item.text === fact.text)) {
+      facts.push(fact);
+    }
   };
 
   results

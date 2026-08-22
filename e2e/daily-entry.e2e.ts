@@ -5,7 +5,9 @@ test.use({ viewport: { width: 390, height: 844 }, isMobile: true });
 async function openDailyEntry(page: Page) {
   await page.goto('/');
   const introClose = page.getByRole('button', { name: 'Закрыть объяснение' });
-  if (await introClose.isVisible()) await introClose.click();
+  if (await introClose.isVisible()) {
+    await introClose.click();
+  }
   const startToday = page.getByRole('button', { name: 'Начать с сегодняшнего дня' });
   await expect(startToday).toBeVisible();
   await startToday.click();
@@ -325,10 +327,14 @@ test('keeps one experiment identity while extending it across weekly slices', as
   await expect(page.getByText('Эксперимент сохранён', { exact: true })).toBeVisible();
 
   const saveExperimentDay = async (date: string, answer: 'Да' | 'Нет', note: string) => {
-    if (new URL(page.url()).pathname !== '/') await page.goto('/');
+    if (new URL(page.url()).pathname !== '/') {
+      await page.goto('/');
+    }
     await selectEntryDate(page, date);
     const startToday = page.getByRole('button', { name: 'Начать с сегодняшнего дня' });
-    if (await startToday.isVisible()) await startToday.click();
+    if (await startToday.isVisible()) {
+      await startToday.click();
+    }
     const experimentCard = page.locator('#experiment');
     await expect(experimentCard).toBeVisible();
     await experimentCard.getByRole('button', { name: answer, exact: true }).click();

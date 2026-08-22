@@ -80,7 +80,9 @@ function median(values: number[]) {
 
 test('measures production PWA entry and the analytics route on a mid-range mobile profile', async ({ browser }, testInfo) => {
   const results: RoundResult[] = [];
-  for (let round = 0; round < rounds; round += 1) results.push(await runRound(browser));
+  for (let round = 0; round < rounds; round += 1) {
+    results.push(await runRound(browser));
+  }
 
   const medians = {
     firstOpenMs: median(results.map((result) => result.firstOpenMs)),

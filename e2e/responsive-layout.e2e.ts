@@ -54,7 +54,9 @@ test('keeps empty-period actions below their explanatory text', async ({ page })
   await page.goto(`/week?week=${emptyDate}`);
   await expectEmptyGuideSpacing();
   await page.goto('/month');
-  for (let index = 0; index < 5; index += 1) await page.getByRole('button', { name: 'Предыдущий период' }).click();
+  for (let index = 0; index < 5; index += 1) {
+    await page.getByRole('button', { name: 'Предыдущий период' }).click();
+  }
   await expectEmptyGuideSpacing();
 });
 

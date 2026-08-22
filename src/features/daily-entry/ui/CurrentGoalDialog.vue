@@ -33,7 +33,9 @@ const { handleDialogKeydown } = useDialogFocus(toRef(props, 'open'), dialog);
 watch(
   () => props.open,
   async (open) => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
     draftTitle.value = props.title;
     draftOutcomeCriterion.value = props.outcomeCriterion;
     draftReviewDate.value = props.reviewDate;
@@ -44,14 +46,18 @@ watch(
 );
 
 function close() {
-  if (!props.saving) emit('close');
+  if (!props.saving) {
+    emit('close');
+  }
 }
 
 const { startBackdropClose, finishBackdropClose, cancelBackdropClose } = useDialogBackdropClose(close);
 
 function submit() {
   const preparedTitle = draftTitle.value.trim();
-  if (!preparedTitle || props.saving) return;
+  if (!preparedTitle || props.saving) {
+    return;
+  }
   emit('save', {
     title: preparedTitle,
     outcomeCriterion: draftOutcomeCriterion.value.trim(),
@@ -61,7 +67,9 @@ function submit() {
 }
 
 function remove() {
-  if (!props.saving) emit('remove');
+  if (!props.saving) {
+    emit('remove');
+  }
 }
 </script>
 

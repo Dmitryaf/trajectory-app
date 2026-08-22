@@ -71,7 +71,9 @@ export function usePeriodReview<T extends PeriodReview>(options: PeriodReviewOpt
   }
 
   async function saveReview() {
-    if (reviewSaving.value) return;
+    if (reviewSaving.value) {
+      return;
+    }
     reviewSaving.value = true;
     try {
       await options.persistReview(plainCopy(review));
@@ -95,7 +97,9 @@ export function usePeriodReview<T extends PeriodReview>(options: PeriodReviewOpt
   }
 
   async function copyPrompt() {
-    if (promptCopying.value) return;
+    if (promptCopying.value) {
+      return;
+    }
     promptCopying.value = true;
     try {
       await copyAiPrompt(createPackage(), store.settings);

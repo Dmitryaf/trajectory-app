@@ -31,7 +31,9 @@ function environment() {
 
 async function authenticatedUser(request: Request, supabaseUrl: string, supabaseAnonKey: string): Promise<SupabaseUser | null> {
   const authorization = request.headers.get('authorization');
-  if (!authorization?.startsWith('Bearer ')) return null;
+  if (!authorization?.startsWith('Bearer ')) {
+    return null;
+  }
 
   const response = await fetch(`${supabaseUrl.replace(/\/$/, '')}/auth/v1/user`, {
     headers: {
@@ -39,7 +41,9 @@ async function authenticatedUser(request: Request, supabaseUrl: string, supabase
       Authorization: authorization,
     },
   });
-  if (!response.ok) return null;
+  if (!response.ok) {
+    return null;
+  }
 
   const user = (await response.json()) as Partial<SupabaseUser>;
   return typeof user.id === 'string' ? { id: user.id, email: typeof user.email === 'string' ? user.email : undefined } : null;
@@ -47,7 +51,9 @@ async function authenticatedUser(request: Request, supabaseUrl: string, supabase
 
 export async function POST(request: Request): Promise<Response> {
   const origin = request.headers.get('origin');
-  if (origin && origin !== new URL(request.url).origin) return json({ error: 'Запрос отклонён' }, 403);
+  if (origin && origin !== new URL(request.url).origin) {
+    return json({ error: 'Запрос отклонён' }, 403);
+  }
 
   const env = environment();
   if (!env.supabaseUrl || !env.supabaseAnonKey || !env.resendApiKey || !env.feedbackToEmail || !env.feedbackFromEmail) {
@@ -62,7 +68,9 @@ export async function POST(request: Request): Promise<Response> {
     console.error('Feedback auth verification failed');
     return json({ error: 'Не удалось проверить сессию. Попробуй позже.' }, 502);
   }
-  if (!user) return json({ error: 'Сессия закончилась. Войди снова и повтори отправку.' }, 401);
+  if (!user) {
+    return json({ error: 'Сессия закончилась. Войди снова и повтори отправку.' }, 401);
+  }
 
   let body: FeedbackRequestBody;
   try {

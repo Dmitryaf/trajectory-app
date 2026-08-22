@@ -61,5 +61,7 @@ export async function copyText(value: string) {
   field.select();
   const copied = document.execCommand('copy');
   field.remove();
-  if (!copied) throw new Error('Браузер не разрешил скопировать текст. Попробуй скачать данные.');
+  if (!copied) {
+    throw new Error('Браузер не разрешил скопировать текст. Попробуй скачать данные.');
+  }
 }

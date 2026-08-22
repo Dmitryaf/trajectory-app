@@ -32,7 +32,9 @@ export type ExperimentSummary = {
 };
 
 export function buildExperimentSummary(entries: DailyEntry[], experiment: ExperimentPeriod): ExperimentSummary | null {
-  if (!experiment.startDate || !experiment.endDate || experiment.startDate > experiment.endDate) return null;
+  if (!experiment.startDate || !experiment.endDate || experiment.startDate > experiment.endDate) {
+    return null;
+  }
 
   const plannedDays = dateRange(experiment.startDate, experiment.endDate).length;
   const baselineEnd = addDays(experiment.startDate, -1);
@@ -59,7 +61,9 @@ export function buildExperimentSummary(entries: DailyEntry[], experiment: Experi
     metrics: experimentMetricOptions.flatMap((metric) => {
       const baselineValues = metricValues(baselineEntries, metric.id);
       const experimentValues = metricValues(experimentEntries, metric.id);
-      if (!baselineValues.length && !experimentValues.length) return [];
+      if (!baselineValues.length && !experimentValues.length) {
+        return [];
+      }
       const baselineAverage = average(baselineValues);
       const experimentAverage = average(experimentValues);
       return [

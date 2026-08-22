@@ -3,7 +3,9 @@ import { readFile } from 'node:fs/promises';
 import { completedCrossMonthRange, demoFilePath } from './demo-data';
 
 async function prepareClipboard(page: Page, browserName: string) {
-  if (browserName !== 'webkit') return;
+  if (browserName !== 'webkit') {
+    return;
+  }
 
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'clipboard', {

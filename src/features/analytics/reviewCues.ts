@@ -243,7 +243,9 @@ function limitCues(cues: ReviewCue[], requiredIds: string[]): ReviewCue[] {
   const selected = cues.slice(0, 6);
   for (const id of requiredIds) {
     const required = cues.find((cue) => cue.id === id);
-    if (!required || selected.some((cue) => cue.id === id)) continue;
+    if (!required || selected.some((cue) => cue.id === id)) {
+      continue;
+    }
     let replaceIndex = -1;
     for (let index = selected.length - 1; index >= 0; index -= 1) {
       if (!requiredIds.includes(selected[index].id)) {
@@ -251,7 +253,9 @@ function limitCues(cues: ReviewCue[], requiredIds: string[]): ReviewCue[] {
         break;
       }
     }
-    if (replaceIndex >= 0) selected[replaceIndex] = required;
+    if (replaceIndex >= 0) {
+      selected[replaceIndex] = required;
+    }
   }
   return selected.sort((a, b) => cues.indexOf(a) - cues.indexOf(b));
 }
@@ -266,7 +270,11 @@ function sleepContextText(summary: PeriodSummary): string {
 function plural(value: number, one: string, few: string, many: string): string {
   const mod10 = value % 10;
   const mod100 = value % 100;
-  if (mod10 === 1 && mod100 !== 11) return one;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+  if (mod10 === 1 && mod100 !== 11) {
+    return one;
+  }
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+    return few;
+  }
   return many;
 }

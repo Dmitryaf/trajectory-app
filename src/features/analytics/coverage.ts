@@ -22,7 +22,9 @@ export function dataCoverageLevel(entry: DailyEntry): DataCoverageLevel {
     entry.importantFact.trim().length > 0;
   const hasNutrition = entry.nutritionState !== null || entry.weightKg !== null || entry.nutritionNote.trim().length > 0;
   const coreDomains = [hasState, hasAction, hasNutrition].filter(Boolean).length;
-  if (coreDomains >= 2) return 2;
+  if (coreDomains >= 2) {
+    return 2;
+  }
 
   const hasContext = entry.specialDay !== null || dailyFieldWasRecorded(entry, 'contextFactors') || entry.contextNote.trim().length > 0;
   const hasExperiment = entry.experimentCompleted !== null || entry.experimentNote.trim().length > 0;

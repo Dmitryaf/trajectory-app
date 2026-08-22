@@ -141,7 +141,9 @@ export function factorComparisonText(factor: FactorSummary): string {
 
 function average(values: Array<number | null>): number | null {
   const valid = values.filter((value): value is number => value !== null);
-  if (!valid.length) return null;
+  if (!valid.length) {
+    return null;
+  }
   return valid.reduce((sum, value) => sum + value, 0) / valid.length;
 }
 
@@ -150,12 +152,16 @@ function sampleCount(values: Array<number | null>): number {
 }
 
 function signedMinutes(value: number): string {
-  if (value === 0) return 'без разницы';
+  if (value === 0) {
+    return 'без разницы';
+  }
   return `${value > 0 ? '+' : '−'}${formatMinutes(Math.abs(value))}`;
 }
 
 function signedNumber(value: number): string {
-  if (Math.abs(value) < 0.05) return 'без разницы';
+  if (Math.abs(value) < 0.05) {
+    return 'без разницы';
+  }
   return `${value > 0 ? '+' : '−'}${formatNumber(Math.abs(value))}`;
 }
 
@@ -166,7 +172,11 @@ function formatNumber(value: number): string {
 function plural(value: number, one: string, few: string, many: string): string {
   const mod10 = value % 10;
   const mod100 = value % 100;
-  if (mod10 === 1 && mod100 !== 11) return one;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+  if (mod10 === 1 && mod100 !== 11) {
+    return one;
+  }
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+    return few;
+  }
   return many;
 }

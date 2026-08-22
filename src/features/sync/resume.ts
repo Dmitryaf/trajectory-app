@@ -19,9 +19,13 @@ export function createResumeCloudRefresh(refresh: () => Promise<void>, options: 
     if (!state.authenticated || !state.loaded || state.status === 'disabled' || state.status === 'syncing') {
       return Promise.resolve(false);
     }
-    if (inFlight) return inFlight;
+    if (inFlight) {
+      return inFlight;
+    }
     const startedAt = now();
-    if (!force && startedAt - lastStartedAt < minIntervalMs) return Promise.resolve(false);
+    if (!force && startedAt - lastStartedAt < minIntervalMs) {
+      return Promise.resolve(false);
+    }
 
     lastStartedAt = startedAt;
     inFlight = refresh()

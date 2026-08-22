@@ -29,12 +29,16 @@ async function gzipSize(relativePath) {
 
 async function pngDimensions(relativePath) {
   const content = await readFile(path.join(distRoot, relativePath));
-  if (content.length < 24 || content.toString('ascii', 1, 4) !== 'PNG') throw new Error(`Icon is not a valid PNG: ${relativePath}`);
+  if (content.length < 24 || content.toString('ascii', 1, 4) !== 'PNG') {
+    throw new Error(`Icon is not a valid PNG: ${relativePath}`);
+  }
   return { width: content.readUInt32BE(16), height: content.readUInt32BE(20) };
 }
 
 function requireWithinBudget(label, size, budget, relativePath) {
-  if (size <= budget) return;
+  if (size <= budget) {
+    return;
+  }
   throw new Error(`${label} exceeds gzip budget: ${relativePath} is ${size} bytes, budget is ${budget}`);
 }
 
@@ -51,8 +55,12 @@ for (const assetPath of new Set(assetPaths)) {
   }
   await requireFile(assetPath);
   const size = await gzipSize(assetPath);
-  if (assetPath.endsWith('.js')) requireWithinBudget('Entry JavaScript', size, budgets.entryJavaScriptGzip, assetPath);
-  if (assetPath.endsWith('.css')) requireWithinBudget('Entry CSS', size, budgets.entryCssGzip, assetPath);
+  if (assetPath.endsWith('.js')) {
+    requireWithinBudget('Entry JavaScript', size, budgets.entryJavaScriptGzip, assetPath);
+  }
+  if (assetPath.endsWith('.css')) {
+    requireWithinBudget('Entry CSS', size, budgets.entryCssGzip, assetPath);
+  }
 }
 
 const builtAssets = await readdir(path.join(distRoot, 'assets'));
@@ -65,7 +73,9 @@ await requireFile('manifest.webmanifest');
 await requireFile('sw.js');
 
 for (const marker of ['viewport-fit=cover', 'rel="apple-touch-icon"', 'name="theme-color"']) {
-  if (!html.includes(marker)) throw new Error(`Built HTML is missing PWA marker: ${marker}`);
+  if (!html.includes(marker)) {
+    throw new Error(`Built HTML is missing PWA marker: ${marker}`);
+  }
 }
 
 const manifest = JSON.parse(await readFile(path.join(distRoot, 'manifest.webmanifest'), 'utf8'));
@@ -77,7 +87,9 @@ for (const [field, expected] of Object.entries({
   scope: '/',
   start_url: '/',
 })) {
-  if (manifest[field] !== expected) throw new Error(`Manifest ${field} must be ${JSON.stringify(expected)}`);
+  if (manifest[field] !== expected) {
+    throw new Error(`Manifest ${field} must be ${JSON.stringify(expected)}`);
+  }
 }
 
 const requiredIcons = [
