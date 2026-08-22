@@ -18,6 +18,7 @@ const {
   trendMetricOptions,
   selectedTrendMetricInfo,
   trendMetricOption,
+  trendMetricDescription,
   eventKey,
   selectedEvent,
   eventComparison,
@@ -148,7 +149,12 @@ const {
                 {{ option.label }}
               </button>
             </div>
-            <EChartPanel :option="trendMetricOption" :height="300" :aria-label="`Динамика: ${selectedTrendMetricInfo?.label}`" />
+            <EChartPanel
+              :option="trendMetricOption"
+              :height="300"
+              :aria-label="`Динамика: ${selectedTrendMetricInfo?.label}`"
+              :description="trendMetricDescription"
+            />
             <p class="data-note trend-chart-description">
               Показаны месячные средние и важные события. Совпадение изменений во времени не доказывает причину; текущий месяц может быть
               неполным.

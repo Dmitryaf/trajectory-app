@@ -15,7 +15,7 @@
   --navy: #102d2c;
   --navy-soft: #1b4741;
   --text: #233330;
-  --muted: #74807c;
+  --muted: #65726e;
   --line: #dde4df;
   --surface: #ffffff;
   --surface-soft: #f7f8f4;
@@ -129,4 +129,13 @@ textarea {
 .auto-grow-textarea {
   resize: none;
   overflow-y: hidden;
+}
+/* Keep non-visual explanations available to assistive technology. */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }

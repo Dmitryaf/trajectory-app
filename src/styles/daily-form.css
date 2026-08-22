@@ -195,7 +195,7 @@
 .number-field span {
   padding-right: 14px;
   white-space: nowrap;
-  color: var(--muted);
+  color: #65726e;
   font-size: 13px;
 }
 .duration-field {
@@ -227,7 +227,7 @@
 }
 .duration-field span {
   padding-right: 9px;
-  color: var(--muted);
+  color: #65726e;
   font-size: 12px;
   white-space: nowrap;
 }

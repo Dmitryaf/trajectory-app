@@ -3,6 +3,7 @@ import { nextTick, ref, toRef, watch } from 'vue';
 import DialogCloseButton from '../../../shared/ui/overlays/DialogCloseButton.vue';
 import { useBodyScrollLock } from '../../../shared/ui/overlays/useBodyScrollLock';
 import { useDialogBackdropClose } from '../../../shared/ui/overlays/useDialogBackdropClose';
+import { useDialogFocus } from '../../../shared/ui/overlays/useDialogFocus';
 
 const props = defineProps<{
   open: boolean;
@@ -24,8 +25,10 @@ const draftOutcomeCriterion = ref('');
 const draftReviewDate = ref('');
 const draftExternalEvidenceCriterion = ref('');
 const titleInput = ref<HTMLInputElement>();
+const dialog = ref<HTMLElement>();
 
 useBodyScrollLock(toRef(props, 'open'));
+const { handleDialogKeydown } = useDialogFocus(toRef(props, 'open'), dialog);
 
 watch(
   () => props.open,
@@ -71,7 +74,15 @@ function remove() {
       @pointerup="finishBackdropClose"
       @pointercancel="cancelBackdropClose"
     >
-      <section class="goal-dialog" role="dialog" aria-modal="true" aria-labelledby="current-goal-dialog-title" @keydown.esc="close">
+      <section
+        ref="dialog"
+        class="goal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="current-goal-dialog-title"
+        @keydown="handleDialogKeydown"
+        @keydown.esc="close"
+      >
         <div class="goal-dialog__heading">
           <div>
             <span class="eyebrow">Текущая цель</span>

@@ -227,6 +227,17 @@ const monthMetricOption = computed(() => {
   return sleepOption.value;
 });
 const selectedMonthMetricInfo = computed(() => monthMetricOptions.value.find((option) => option.id === selectedMonthMetric.value));
+const monthMetricDescription = computed(() => {
+  const metric = selectedMonthMetric.value;
+  const rows = metric === 'sleep' ? sleepEntries.value : metric === 'energy' ? energyEntries.value : weightEntries.value;
+  const values = rows.map((entry) => {
+    const date = formatDate(entry.date, { day: 'numeric', month: 'short' });
+    if (metric === 'sleep') return `${date}: ${minutesToHours(entry.sleepMinutes)} ч`;
+    if (metric === 'energy') return `${date}: ${entry.energy}/5`;
+    return `${date}: ${entry.weightKg} кг`;
+  });
+  return `${selectedMonthMetricInfo.value?.label ?? 'Показатель'}: ${rows.length} наблюдений. ${values.join('; ')}. Особые дни исключены, пропуски не заполняются.`;
+});
 const contextNotes = computed(() => entries.value.filter((entry) => entry.contextNote.trim()).sort((a, b) => b.date.localeCompare(a.date)));
 const actionNotes = computed(() =>
   entries.value.filter((entry) => entry.actionDirection !== null).sort((a, b) => b.date.localeCompare(a.date)),
@@ -548,7 +559,12 @@ function shiftMonth(offset: number) {
                 {{ option.label }}
               </button>
             </div>
-            <EChartPanel :option="monthMetricOption" :height="280" :aria-label="`Динамика: ${selectedMonthMetricInfo?.label}`" />
+            <EChartPanel
+              :option="monthMetricOption"
+              :height="280"
+              :aria-label="`Динамика: ${selectedMonthMetricInfo?.label}`"
+              :description="monthMetricDescription"
+            />
           </article>
           <div v-else class="period-review-note month-chart-guide">
             <strong>Для графика пока мало данных</strong>

@@ -312,7 +312,7 @@ function openEntryDatePicker() {
   const input = entryDateInput.value;
   if (!input) return;
   if (typeof input.showPicker === 'function') input.showPicker();
-  else input.focus();
+  else input.click();
 }
 </script>
 
@@ -325,25 +325,21 @@ function openEntryDatePicker() {
       </div>
       <div class="entry-date-picker">
         <span class="entry-date-picker__label">Запись за дату</span>
-        <span
-          class="entry-date-control"
-          role="button"
-          tabindex="0"
-          aria-label="Выбрать дату записи"
-          @click="openEntryDatePicker"
-          @keydown.enter.prevent="openEntryDatePicker"
-          @keydown.space.prevent="openEntryDatePicker"
-        >
-          <span aria-hidden="true">{{ selectedDateLabel }}</span>
-          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
-          </svg>
+        <span class="entry-date-control">
+          <button class="entry-date-control__trigger" type="button" aria-label="Выбрать дату записи" @click="openEntryDatePicker">
+            <span aria-hidden="true">{{ selectedDateLabel }}</span>
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
+            </svg>
+          </button>
           <input
             ref="entryDateInput"
             :value="selectedDate"
             class="date-input"
             type="date"
             :max="todayKey()"
+            tabindex="-1"
+            aria-hidden="true"
             aria-label="Дата записи"
             @click.stop
             @change="selectDate"

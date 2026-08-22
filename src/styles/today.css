@@ -74,6 +74,18 @@
   font-weight: 750;
   backdrop-filter: blur(12px);
 }
+.entry-date-control__trigger {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
 .entry-date-control .date-input {
   position: absolute;
   inset: 0;

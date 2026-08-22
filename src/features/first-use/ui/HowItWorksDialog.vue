@@ -3,6 +3,7 @@ import { nextTick, ref, watch } from 'vue';
 import DialogCloseButton from '../../../shared/ui/overlays/DialogCloseButton.vue';
 import { useBodyScrollLock } from '../../../shared/ui/overlays/useBodyScrollLock';
 import { useDialogBackdropClose } from '../../../shared/ui/overlays/useDialogBackdropClose';
+import { useDialogFocus } from '../../../shared/ui/overlays/useDialogFocus';
 import AiAnalysisSteps from '../../analysis/ui/AiAnalysisSteps.vue';
 
 const props = withDefaults(
@@ -18,9 +19,11 @@ const emit = defineEmits<{ 'intro-seen': [] }>();
 const isOpen = ref(false);
 const triggerButton = ref<HTMLButtonElement>();
 const closeButton = ref<InstanceType<typeof DialogCloseButton>>();
+const dialog = ref<HTMLElement>();
 const openedAsIntro = ref(false);
 
 useBodyScrollLock(isOpen);
+const { handleDialogKeydown } = useDialogFocus(isOpen, dialog, triggerButton);
 
 watch(
   () => props.openForFirstVisit,
@@ -48,15 +51,10 @@ async function open() {
   closeButton.value?.focus();
 }
 
-async function close() {
-  const shouldRestoreFocus = !openedAsIntro.value;
+function close() {
   isOpen.value = false;
   if (openedAsIntro.value) emit('intro-seen');
   openedAsIntro.value = false;
-  if (shouldRestoreFocus) {
-    await nextTick();
-    triggerButton.value?.focus();
-  }
 }
 
 const { startBackdropClose, finishBackdropClose, cancelBackdropClose } = useDialogBackdropClose(close);
@@ -85,7 +83,15 @@ const { startBackdropClose, finishBackdropClose, cancelBackdropClose } = useDial
       @pointerup="finishBackdropClose"
       @pointercancel="cancelBackdropClose"
     >
-      <section class="help-dialog" role="dialog" aria-modal="true" aria-labelledby="how-it-works-title" @keydown.esc="close">
+      <section
+        ref="dialog"
+        class="help-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="how-it-works-title"
+        @keydown="handleDialogKeydown"
+        @keydown.esc="close"
+      >
         <div class="help-dialog__heading">
           <div>
             <span class="eyebrow">Зачем нужны записи</span>

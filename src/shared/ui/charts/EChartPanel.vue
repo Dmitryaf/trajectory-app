@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue';
 import { init, use } from 'echarts/core';
 import { BarChart, HeatmapChart, LineChart, ScatterChart } from 'echarts/charts';
 import {
@@ -32,6 +32,7 @@ const props = withDefaults(
     option: EChartsCoreOption;
     height?: number;
     ariaLabel?: string;
+    description: string;
   }>(),
   {
     height: 300,
@@ -40,6 +41,7 @@ const props = withDefaults(
 );
 
 const chartEl = ref<HTMLDivElement>();
+const descriptionId = `chart-description-${useId()}`;
 let chart: ECharts | null = null;
 let resizeObserver: ResizeObserver | null = null;
 
@@ -74,5 +76,13 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="chartEl" class="echart-panel" :style="{ height: `${height}px` }" role="img" :aria-label="ariaLabel"></div>
+  <div
+    ref="chartEl"
+    class="echart-panel"
+    :style="{ height: `${height}px` }"
+    role="img"
+    :aria-label="ariaLabel"
+    :aria-describedby="descriptionId"
+  ></div>
+  <p :id="descriptionId" class="visually-hidden">{{ description }}</p>
 </template>

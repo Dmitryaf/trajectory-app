@@ -356,8 +356,10 @@
   white-space: nowrap;
 }
 .account-menu__chevron {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
   color: #83908b;
-  font-size: 14px;
   transition: transform var(--motion-fast);
 }
 .account-menu[open] .account-menu__chevron {

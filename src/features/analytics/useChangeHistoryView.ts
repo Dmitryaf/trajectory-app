@@ -125,13 +125,25 @@ export function useChangeHistoryView() {
         : [];
     }),
   );
+  const trendMetricValues = computed(() =>
+    monthRows.value.map((row) => {
+      if (selectedTrendMetric.value === 'sleep') return minutesToHours(row.summary.averageSleep);
+      if (selectedTrendMetric.value === 'energy') return roundValue(row.summary.averageEnergy);
+      return roundValue(row.summary.averageWeightKg);
+    }),
+  );
+  const trendMetricDescription = computed(() => {
+    const metric = selectedTrendMetric.value;
+    const values = monthRows.value
+      .map((row, index) => {
+        const value = trendMetricValues.value[index];
+        return value === null ? null : `${row.label}: ${formatTrendTooltipValue(metric, value)}`;
+      })
+      .filter((value): value is string => Boolean(value));
+    return `${selectedTrendMetricInfo.value?.label ?? 'Показатель'}: ${selectedTrendMetricInfo.value?.samples ?? 0} наблюдений. Месячные значения: ${values.join('; ')}. Текущий месяц может быть неполным; совпадение с событиями не доказывает причину.`;
+  });
   const trendMetricOption = computed<EChartsCoreOption>(() => {
     const metric = selectedTrendMetric.value;
-    const values = monthRows.value.map((row) => {
-      if (metric === 'sleep') return minutesToHours(row.summary.averageSleep);
-      if (metric === 'energy') return roundValue(row.summary.averageEnergy);
-      return roundValue(row.summary.averageWeightKg);
-    });
     const axis =
       metric === 'sleep'
         ? { min: 0, max: 12, formatter: '{value}ч' }
@@ -160,7 +172,7 @@ export function useChangeHistoryView() {
           name: selectedTrendMetricInfo.value?.label,
           type: 'line',
           symbolSize: 8,
-          data: values,
+          data: trendMetricValues.value,
           connectNulls: false,
           lineStyle: { width: 3 },
           tooltip: {
@@ -364,6 +376,7 @@ export function useChangeHistoryView() {
     trendMetricOptions,
     selectedTrendMetricInfo,
     trendMetricOption,
+    trendMetricDescription,
     eventKey,
     selectedEvent,
     eventComparison,
