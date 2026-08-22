@@ -4,7 +4,10 @@ import { dateRange } from '../../services/dates';
 export type DataCoverageLevel = 0 | 1 | 2;
 
 export function dataCoverageLevel(entry: DailyEntry): DataCoverageLevel {
-  const careerStates = entry.careerStates.length ? entry.careerStates : entry.careerState ? [entry.careerState] : [];
+  let careerStates = entry.careerStates;
+  if (!careerStates.length && entry.careerState) {
+    careerStates = [entry.careerState];
+  }
   const hasState =
     entry.sleepMinutes !== null ||
     entry.timeInBedMinutes !== null ||

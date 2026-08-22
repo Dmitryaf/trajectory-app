@@ -79,26 +79,70 @@ export function buildDemoPayload(anchor = todayKey()) {
   const dailyEntries = trackedDates.map((date, index) => {
     const factors = factorCycles[index % factorCycles.length];
     const special = specialDays.get(date) ?? null;
-    const careerStates =
-      index % 4 === 0
-        ? ['preparation', 'external']
-        : index % 5 === 0
-          ? ['project', 'external']
-          : [index % 3 === 0 ? 'project' : 'preparation'];
+    let careerStates = [index % 3 === 0 ? 'project' : 'preparation'];
+    if (index % 4 === 0) {
+      careerStates = ['preparation', 'external'];
+    } else if (index % 5 === 0) {
+      careerStates = ['project', 'external'];
+    }
     const late = factors.includes('late_bedtime');
-    const sleepMinutes = special?.[0] === 'travel' ? 365 : late ? 390 : 440 + (index % 4) * 10;
+    let sleepMinutes = 440 + (index % 4) * 10;
+    if (special?.[0] === 'travel') {
+      sleepMinutes = 365;
+    } else if (late) {
+      sleepMinutes = 390;
+    }
     const inActiveExperiment = date >= activeExperimentStart && date <= anchor;
     const inCompletedExperiment = date >= completedExperimentStart && date <= completedExperimentEnd;
-    const experimentCompleted = inActiveExperiment ? index % 4 !== 0 : inCompletedExperiment ? index % 3 !== 0 : null;
-    const experimentId = inActiveExperiment ? activeExperimentId : inCompletedExperiment ? completedExperimentId : null;
-    const experimentNote =
-      experimentCompleted === null
-        ? ''
-        : experimentCompleted
-          ? index % 2 === 0
-            ? 'Удалось начать выбранную задачу без уведомлений; помог заранее записанный первый шаг.'
-            : 'Начал вовремя, хотя первые минуты хотелось проверить сообщения.'
-          : 'Помешал незапланированный звонок, после него было сложно вернуться к выбранной задаче.';
+    let experimentCompleted = null;
+    let experimentId = null;
+    if (inActiveExperiment) {
+      experimentCompleted = index % 4 !== 0;
+      experimentId = activeExperimentId;
+    } else if (inCompletedExperiment) {
+      experimentCompleted = index % 3 !== 0;
+      experimentId = completedExperimentId;
+    }
+    let experimentNote = '';
+    if (experimentCompleted === true) {
+      experimentNote =
+        index % 2 === 0
+          ? 'Удалось начать выбранную задачу без уведомлений; помог заранее записанный первый шаг.'
+          : 'Начал вовремя, хотя первые минуты хотелось проверить сообщения.';
+    } else if (experimentCompleted === false) {
+      experimentNote = 'Помешал незапланированный звонок, после него было сложно вернуться к выбранной задаче.';
+    }
+
+    let sleepQuality = 4 + (index % 2);
+    if (special) {
+      sleepQuality = 2;
+    } else if (late) {
+      sleepQuality = 3;
+    }
+    let energy = 4 + (index % 2);
+    if (special?.[0] === 'overload') {
+      energy = 2;
+    } else if (late) {
+      energy = 3;
+    }
+    let contextNote = '';
+    if (factors.includes('anxiety_overload')) {
+      contextNote = 'Было сложно переключиться после насыщенного дня';
+    } else if (!special && index % 6 === 0) {
+      contextNote = 'День с большим количеством встреч';
+    }
+    let nutritionState = 'supports_goal';
+    if (index % 7 === 0) {
+      nutritionState = 'blocks_goal';
+    } else if (index % 3 === 0) {
+      nutritionState = 'neutral';
+    }
+    let actionDirection = 'preparation';
+    if (careerStates.includes('external')) {
+      actionDirection = 'external';
+    } else if (index % 6 === 0) {
+      actionDirection = 'recovery';
+    }
 
     return {
       date,
@@ -129,26 +173,22 @@ export function buildDemoPayload(anchor = todayKey()) {
       wakeTime: special?.[0] === 'travel' ? '06:20' : ['07:20', '07:35', '07:50'][index % 3],
       sleepMinutes,
       timeInBedMinutes: sleepMinutes + 25,
-      sleepQuality: special ? 2 : late ? 3 : 4 + (index % 2),
-      energy: special?.[0] === 'overload' ? 2 : late ? 3 : 4 + (index % 2),
+      sleepQuality,
+      energy,
       contextFactors: factors,
       contextFactorsRecorded: true,
-      contextNote: factors.includes('anxiety_overload')
-        ? 'Было сложно переключиться после насыщенного дня'
-        : !special && index % 6 === 0
-          ? 'День с большим количеством встреч'
-          : '',
+      contextNote,
       specialDay: special?.[0] ?? null,
       specialDayNote: special?.[1] ?? '',
       careerState: careerStates[0],
       careerStates,
       activities: activityCycles[index % activityCycles.length],
       activitiesRecorded: true,
-      nutritionState: index % 7 === 0 ? 'blocks_goal' : index % 3 === 0 ? 'neutral' : 'supports_goal',
+      nutritionState,
       nutritionNote: index % 7 === 0 ? 'Поздний ужин после насыщенного дня' : '',
       nutritionCriterion: 'Регулярные приёмы пищи без позднего переедания',
       weightKg: parseDate(date).getUTCDay() === 1 ? Number((72.4 + Math.sin(index / 3) * 0.35).toFixed(1)) : null,
-      actionDirection: careerStates.includes('external') ? 'external' : index % 6 === 0 ? 'recovery' : 'preparation',
+      actionDirection,
       actionNote: careerStates.includes('external') ? 'Отправил материал и запросил конкретный комментарий' : '',
       focusTitle: 'Подготовить короткий доклад для профессиональной встречи',
       focusOutcomeCriterion: 'Готовая версия доклада и проведённая репетиция',
@@ -209,36 +249,39 @@ export function buildDemoPayload(anchor = todayKey()) {
   const firstReviewWeek = firstMondayOnOrAfter(rangeStart);
   const lastReviewWeek = addDays(currentWeekStart, -7);
   const weekStarts = eachDate(firstReviewWeek, lastReviewWeek).filter((date) => parseDate(date).getUTCDay() === 1);
-  const weeklyReviews = weekStarts.map((weekStart, index) => ({
-    weekStart,
-    updatedAt: isoAt(addDays(weekStart, 6), 17),
-    previousPlanOutcome:
-      index === 0
-        ? 'Первый обзор в наборе данных'
-        : index % 3 === 0
-          ? 'План сработал частично: материал отправил, вечер перегрузил'
-          : 'Основной следующий шаг выполнен',
-    results: [
-      resultTitles[(index * 2) % resultTitles.length][1],
-      resultTitles[(index * 2 + 1) % resultTitles.length][1],
-      index % 2 === 0 ? 'Сохранил время на восстановление' : '',
-    ],
-    highlights: [
-      index % 2 === 0
-        ? 'Заметил, что короткие завершённые шаги легче вспомнить при обзоре'
-        : 'Пересмотрел порядок дел после изменения недели',
-      index % 3 === 0 ? 'Усталость сильнее влияла на оценку недели к вечеру' : '',
-      '',
-    ],
-    stateContext: index % 3 === 0 ? 'Неделя была неровной из-за позднего завершения работы.' : 'Состояние в целом было устойчивым.',
-    support: index % 2 === 0 ? 'Один небольшой раздел на день' : 'Заранее определённый первый шаг',
-    obstacle: index % 3 === 0 ? 'Позднее завершение работы' : 'Слишком широкий список задач',
-    nextLever: index % 2 === 0 ? 'Отправлять готовый фрагмент до обеда' : 'Закрывать подготовку коротким итогом',
-    ifThenPlan:
-      index % 2 === 0
-        ? 'Если начинаю снова перепроверять готовый фрагмент, отправляю его организатору на комментарий'
-        : 'Если после 22:30 остаётся задача, переношу её в план следующего дня',
-  }));
+  const weeklyReviews = weekStarts.map((weekStart, index) => {
+    let previousPlanOutcome = 'Основной следующий шаг выполнен';
+    if (index === 0) {
+      previousPlanOutcome = 'Первый обзор в наборе данных';
+    } else if (index % 3 === 0) {
+      previousPlanOutcome = 'План сработал частично: материал отправил, вечер перегрузил';
+    }
+    return {
+      weekStart,
+      updatedAt: isoAt(addDays(weekStart, 6), 17),
+      previousPlanOutcome,
+      results: [
+        resultTitles[(index * 2) % resultTitles.length][1],
+        resultTitles[(index * 2 + 1) % resultTitles.length][1],
+        index % 2 === 0 ? 'Сохранил время на восстановление' : '',
+      ],
+      highlights: [
+        index % 2 === 0
+          ? 'Заметил, что короткие завершённые шаги легче вспомнить при обзоре'
+          : 'Пересмотрел порядок дел после изменения недели',
+        index % 3 === 0 ? 'Усталость сильнее влияла на оценку недели к вечеру' : '',
+        '',
+      ],
+      stateContext: index % 3 === 0 ? 'Неделя была неровной из-за позднего завершения работы.' : 'Состояние в целом было устойчивым.',
+      support: index % 2 === 0 ? 'Один небольшой раздел на день' : 'Заранее определённый первый шаг',
+      obstacle: index % 3 === 0 ? 'Позднее завершение работы' : 'Слишком широкий список задач',
+      nextLever: index % 2 === 0 ? 'Отправлять готовый фрагмент до обеда' : 'Закрывать подготовку коротким итогом',
+      ifThenPlan:
+        index % 2 === 0
+          ? 'Если начинаю снова перепроверять готовый фрагмент, отправляю его организатору на комментарий'
+          : 'Если после 22:30 остаётся задача, переношу её в план следующего дня',
+    };
+  });
 
   const monthlyReviews = [-3, -2, -1].map((offset, index) => {
     const monthStart = startOfMonth(addMonths(anchor, offset));

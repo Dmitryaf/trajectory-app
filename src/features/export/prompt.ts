@@ -18,14 +18,14 @@ import { AI_PROMPT_CHARACTER_LIMIT, type AiReportPayload } from './payload';
 export function buildAiReportPrompt(payload: AiReportPayload, settings: AppSettings): string {
   const areaOptions = [...lifeAreaOptions, ...settings.customLifeAreaOptions];
   const summaryText = payload.period === 'week' ? weekSummaryText(payload.summary, settings.activeLifeAreas, areaOptions) : '';
-  const periodTitle =
-    payload.period === 'week'
-      ? `неделю ${formatDate(payload.start, { day: 'numeric', month: 'short' })} — ${formatDate(payload.end, { day: 'numeric', month: 'short' })}`
-      : payload.period === 'month'
-        ? `месяц ${formatDate(payload.start, { month: 'long', year: 'numeric' })}`
-        : payload.rangeMonths
-          ? `${payload.rangeMonths} месяцев: ${formatDate(payload.start, { month: 'short', year: 'numeric' })} — ${formatDate(payload.end, { month: 'short', year: 'numeric' })}`
-          : `период ${formatDate(payload.start, { day: 'numeric', month: 'long', year: 'numeric' })} — ${formatDate(payload.end, { day: 'numeric', month: 'long', year: 'numeric' })}`;
+  let periodTitle = `период ${formatDate(payload.start, { day: 'numeric', month: 'long', year: 'numeric' })} — ${formatDate(payload.end, { day: 'numeric', month: 'long', year: 'numeric' })}`;
+  if (payload.period === 'week') {
+    periodTitle = `неделю ${formatDate(payload.start, { day: 'numeric', month: 'short' })} — ${formatDate(payload.end, { day: 'numeric', month: 'short' })}`;
+  } else if (payload.period === 'month') {
+    periodTitle = `месяц ${formatDate(payload.start, { month: 'long', year: 'numeric' })}`;
+  } else if (payload.rangeMonths) {
+    periodTitle = `${payload.rangeMonths} месяцев: ${formatDate(payload.start, { month: 'short', year: 'numeric' })} — ${formatDate(payload.end, { month: 'short', year: 'numeric' })}`;
+  }
 
   const sections = buildReadableSections(payload);
 
@@ -122,6 +122,12 @@ function buildReadableSections(payload: AiReportPayload): string[] {
     formatExperimentSummary(payload.experimentSummary),
   ]);
 
+  let entryLimit = payload.entries.length;
+  if (payload.period === 'week') {
+    entryLimit = 7;
+  } else if (payload.period === 'month') {
+    entryLimit = 31;
+  }
   appendSection(
     lines,
     'Автоматические наблюдения приложения',
@@ -136,7 +142,7 @@ function buildReadableSections(payload: AiReportPayload): string[] {
       ? monthlyEntryLines(payload)
       : limitedValues(
           payload.entries.map((entry) => formatEntry(entry, payload)),
-          payload.period === 'week' ? 7 : payload.period === 'month' ? 31 : payload.entries.length,
+          entryLimit,
           1_600,
         ),
   );
@@ -318,7 +324,10 @@ function formatEntry(entry: DailyEntry, payload: AiReportPayload): string {
       `необычный день: ${labelFor(payload.labels.specialDays, entry.specialDay)}${entry.specialDayNote ? ` (${cleanText(entry.specialDayNote)})` : ''}`,
     );
   }
-  const careerStates = entry.careerStates.length ? entry.careerStates : entry.careerState ? [entry.careerState] : [];
+  let careerStates = entry.careerStates;
+  if (!careerStates.length && entry.careerState) {
+    careerStates = [entry.careerState];
+  }
   if (dailyFieldWasRecorded(entry, 'careerStates')) {
     values.push(
       `работа: ${careerStates.length ? careerStates.map((id) => labelFor(payload.labels.career, id)).join(', ') : 'ничего из списка'}`,

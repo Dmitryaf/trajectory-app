@@ -228,7 +228,11 @@ const monthMetricOption = computed(() => {
 const selectedMonthMetricInfo = computed(() => monthMetricOptions.value.find((option) => option.id === selectedMonthMetric.value));
 const monthMetricDescription = computed(() => {
   const metric = selectedMonthMetric.value;
-  const rows = metric === 'sleep' ? sleepEntries.value : metric === 'energy' ? energyEntries.value : weightEntries.value;
+  const rows = {
+    energy: energyEntries.value,
+    sleep: sleepEntries.value,
+    weight: weightEntries.value,
+  }[metric];
   const values = rows.map((entry) => {
     const date = formatDate(entry.date, { day: 'numeric', month: 'short' });
     if (metric === 'sleep') {

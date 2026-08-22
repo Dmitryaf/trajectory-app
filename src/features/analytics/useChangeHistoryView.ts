@@ -150,14 +150,17 @@ export function useChangeHistoryView() {
   });
   const trendMetricOption = computed<EChartsCoreOption>(() => {
     const metric = selectedTrendMetric.value;
-    const axis =
-      metric === 'sleep'
-        ? { min: 0, max: 12, formatter: '{value}ч' }
-        : metric === 'energy'
-          ? { min: 1, max: 5, formatter: '{value}' }
-          : { scale: true, formatter: '{value}кг' };
+    let axis: Record<string, unknown> = { scale: true, formatter: '{value}кг' };
+    let color = '#d9952f';
+    if (metric === 'sleep') {
+      axis = { min: 0, max: 12, formatter: '{value}ч' };
+      color = '#7467e8';
+    } else if (metric === 'energy') {
+      axis = { min: 1, max: 5, formatter: '{value}' };
+      color = '#2eaa7f';
+    }
     return {
-      color: [metric === 'sleep' ? '#7467e8' : metric === 'energy' ? '#2eaa7f' : '#d9952f'],
+      color: [color],
       tooltip: { trigger: 'axis' },
       grid: { left: 52, right: 24, top: 20, bottom: 34 },
       xAxis: {
@@ -329,8 +332,14 @@ export function useChangeHistoryView() {
     }
     const lastTwo = samples % 100;
     const last = samples % 10;
-    const noun =
-      lastTwo >= 11 && lastTwo <= 14 ? 'наблюдений' : last === 1 ? 'наблюдение' : last >= 2 && last <= 4 ? 'наблюдения' : 'наблюдений';
+    let noun = 'наблюдений';
+    if (lastTwo < 11 || lastTwo > 14) {
+      if (last === 1) {
+        noun = 'наблюдение';
+      } else if (last >= 2 && last <= 4) {
+        noun = 'наблюдения';
+      }
+    }
     return `${samples} ${noun}`;
   }
   function selectEvent(event: (typeof store.lifeEvents)[number]) {

@@ -102,11 +102,16 @@ export function normalizeSettings(settings: LegacyAppSettings | null | undefined
       )
     : [];
 
-  const parsedDailyBlocks = Array.isArray(source.activeDailyBlocks)
-    ? source.activeDailyBlocks.filter((block): block is DailyBlockId => dailyBlockOptions.some((option) => option.id === block))
-    : settings == null
-      ? defaultSettings.activeDailyBlocks
-      : dailyBlockOptions.map((option) => option.id);
+  let parsedDailyBlocks: DailyBlockId[];
+  if (Array.isArray(source.activeDailyBlocks)) {
+    parsedDailyBlocks = source.activeDailyBlocks.filter((block): block is DailyBlockId =>
+      dailyBlockOptions.some((option) => option.id === block),
+    );
+  } else if (settings == null) {
+    parsedDailyBlocks = defaultSettings.activeDailyBlocks;
+  } else {
+    parsedDailyBlocks = dailyBlockOptions.map((option) => option.id);
+  }
   const activeDailyBlocks =
     (source.settingsVersion ?? 1) < 5 && !parsedDailyBlocks.includes('context')
       ? [...parsedDailyBlocks, 'context' as const]
@@ -204,27 +209,31 @@ function normalizeExperiment(value: unknown): Experiment {
   const targetMetric = typeof source.targetMetric === 'string' ? source.targetMetric : '';
   const targetMetricId = isExperimentMetricId(source.targetMetricId) ? source.targetMetricId : legacyExperimentMetricId(targetMetric);
   const metricOption = experimentMetricOptions.find((option) => option.id === targetMetricId);
+  let id = '';
+  if (typeof source.id === 'string' && source.id.trim()) {
+    id = source.id.trim();
+  } else if (active && title.trim() && startDate && endDate) {
+    id = `legacy-active-${startDate}-${endDate}`;
+  }
+  let minimumMeaningfulChange: number | null = null;
+  if (
+    typeof source.minimumMeaningfulChange === 'number' &&
+    Number.isFinite(source.minimumMeaningfulChange) &&
+    source.minimumMeaningfulChange > 0
+  ) {
+    minimumMeaningfulChange = source.minimumMeaningfulChange;
+  } else if (targetMetricId) {
+    minimumMeaningfulChange = metricOption?.defaultMinimumChange ?? null;
+  }
   return {
-    id:
-      typeof source.id === 'string' && source.id.trim()
-        ? source.id.trim()
-        : active && title.trim() && startDate && endDate
-          ? `legacy-active-${startDate}-${endDate}`
-          : '',
+    id,
     active,
     title,
     hypothesis: typeof source.hypothesis === 'string' ? source.hypothesis : '',
     targetMetricId,
     targetMetric: metricOption?.label ?? targetMetric,
     targetDirection: source.targetDirection === 'decrease' ? 'decrease' : 'increase',
-    minimumMeaningfulChange:
-      typeof source.minimumMeaningfulChange === 'number' &&
-      Number.isFinite(source.minimumMeaningfulChange) &&
-      source.minimumMeaningfulChange > 0
-        ? source.minimumMeaningfulChange
-        : targetMetricId
-          ? (metricOption?.defaultMinimumChange ?? null)
-          : null,
+    minimumMeaningfulChange,
     startDate,
     endDate,
     conclusion: typeof source.conclusion === 'string' ? source.conclusion : '',

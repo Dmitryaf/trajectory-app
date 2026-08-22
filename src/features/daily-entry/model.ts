@@ -35,12 +35,12 @@ export function timeBetween(start: string, end: string): number | null {
 }
 
 export function normalizeWeight(value: unknown): number | null {
-  const numericValue =
-    typeof value === 'number'
-      ? value
-      : typeof value === 'string' && /^\d+(?:[.,]\d+)?$/.test(value.trim())
-        ? Number(value.trim().replace(',', '.'))
-        : Number.NaN;
+  let numericValue = Number.NaN;
+  if (typeof value === 'number') {
+    numericValue = value;
+  } else if (typeof value === 'string' && /^\d+(?:[.,]\d+)?$/.test(value.trim())) {
+    numericValue = Number(value.trim().replace(',', '.'));
+  }
   return Number.isFinite(numericValue) ? Math.round(numericValue * 10) / 10 : null;
 }
 

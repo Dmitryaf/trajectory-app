@@ -109,11 +109,12 @@ type LegacyDailyEntry = Partial<DailyEntry> & {
 };
 
 export function normalizeDailyEntry(entry: LegacyDailyEntry & { date: string }): DailyEntry {
-  const sourceCareerStates = Array.isArray(entry.careerStates)
-    ? Array.from(new Set(entry.careerStates.filter((state): state is CareerState => typeof state === 'string')))
-    : typeof entry.careerState === 'string'
-      ? [entry.careerState]
-      : [];
+  let sourceCareerStates: CareerState[] = [];
+  if (Array.isArray(entry.careerStates)) {
+    sourceCareerStates = Array.from(new Set(entry.careerStates.filter((state): state is CareerState => typeof state === 'string')));
+  } else if (typeof entry.careerState === 'string') {
+    sourceCareerStates = [entry.careerState];
+  }
   const careerStates = Array.from(new Set(sourceCareerStates.map((state) => (state === removedDemoCareerOptionId ? 'external' : state))));
   const activities = Array.isArray(entry.activities)
     ? Array.from(
@@ -126,11 +127,12 @@ export function normalizeDailyEntry(entry: LegacyDailyEntry & { date: string }):
         ),
       )
     : [];
-  const sourceContextFactors = Array.isArray(entry.contextFactors)
-    ? entry.contextFactors
-    : Array.isArray(entry.eveningFactors)
-      ? entry.eveningFactors
-      : [];
+  let sourceContextFactors: unknown[] = [];
+  if (Array.isArray(entry.contextFactors)) {
+    sourceContextFactors = entry.contextFactors;
+  } else if (Array.isArray(entry.eveningFactors)) {
+    sourceContextFactors = entry.eveningFactors;
+  }
   const contextFactors = sourceContextFactors.filter(
     (factor): factor is ContextFactorId => typeof factor === 'string' && factor !== removedDemoContextFactorId,
   );
@@ -162,12 +164,12 @@ export function normalizeDailyEntry(entry: LegacyDailyEntry & { date: string }):
   const experimentNote = typeof entry.experimentNote === 'string' ? entry.experimentNote : '';
   const activitiesRecorded = typeof entry.activitiesRecorded === 'boolean' ? entry.activitiesRecorded : activities.length > 0;
   const lifeAreasRecorded = typeof entry.lifeAreasRecorded === 'boolean' ? entry.lifeAreasRecorded : lifeAreas.length > 0;
-  const contextFactorsRecorded =
-    typeof entry.contextFactorsRecorded === 'boolean'
-      ? entry.contextFactorsRecorded
-      : typeof entry.eveningFactorsRecorded === 'boolean'
-        ? entry.eveningFactorsRecorded
-        : sourceContextFactors.length > 0;
+  let contextFactorsRecorded = sourceContextFactors.length > 0;
+  if (typeof entry.contextFactorsRecorded === 'boolean') {
+    contextFactorsRecorded = entry.contextFactorsRecorded;
+  } else if (typeof entry.eveningFactorsRecorded === 'boolean') {
+    contextFactorsRecorded = entry.eveningFactorsRecorded;
+  }
   const recordedFields = new Set<DailyRecordedFieldId>(
     Array.isArray(entry.recordedFields)
       ? entry.recordedFields.filter((field): field is DailyRecordedFieldId => dailyRecordedFieldIds.includes(field as DailyRecordedFieldId))

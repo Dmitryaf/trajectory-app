@@ -118,7 +118,10 @@ export function resultsForPeriod(results: ResultRecord[], start: string, end: st
 }
 
 export function careerStatesForEntry(entry: DailyEntry): string[] {
-  return entry.careerStates.length ? entry.careerStates : entry.careerState ? [entry.careerState] : [];
+  if (entry.careerStates.length) {
+    return entry.careerStates;
+  }
+  return entry.careerState ? [entry.careerState] : [];
 }
 
 export function hasMovement(entry: DailyEntry): boolean {

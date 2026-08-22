@@ -25,6 +25,7 @@ import {
 } from '../services/analytics';
 import { addDays, dateRange, endOfWeek, formatDate, formatMinutes, fromDateKey, startOfWeek, todayKey, toDateKey } from '../services/dates';
 import { experimentDecisionLabel, experimentOverlapsRange } from '../features/experiments/model';
+import { experimentWeekStatusLabel, truncateExperimentText } from '../features/experiments/presentation';
 import { useAppStore } from '../stores/app';
 import {
   contextFactorOptions,
@@ -160,6 +161,13 @@ function buildExperimentCard(id: string, experiment: Experiment | ExperimentReco
   const totalDays = dateRange(experiment.startDate, experiment.endDate);
   const totalEntries = store.dailyEntries.filter((entry) => entry.experimentId === experiment.id);
   const totalMarked = totalEntries.filter((entry) => entry.experimentCompleted !== null);
+  const currentWeekStart = startOfWeek(todayKey());
+  const statusLabel = experimentWeekStatusLabel(
+    active,
+    start.value === currentWeekStart,
+    end.value < currentWeekStart,
+    formatDate(experiment.endDate, { weekday: 'short', day: 'numeric' }),
+  );
   return {
     id,
     active,
@@ -168,13 +176,7 @@ function buildExperimentCard(id: string, experiment: Experiment | ExperimentReco
     hypothesis: experiment.hypothesis,
     conclusion: experiment.conclusion,
     decision: experiment.decision,
-    statusLabel: active
-      ? start.value === startOfWeek(todayKey())
-        ? 'Идёт сейчас'
-        : end.value < startOfWeek(todayKey())
-          ? 'Шёл в эту неделю'
-          : 'Запланирован'
-      : `Завершён · ${formatDate(experiment.endDate, { weekday: 'short', day: 'numeric' })}`,
+    statusLabel,
     periodLabel: `${formatDate(experiment.startDate, { day: 'numeric', month: 'short' })} — ${formatDate(experiment.endDate, {
       day: 'numeric',
       month: 'short',
@@ -189,11 +191,6 @@ function buildExperimentCard(id: string, experiment: Experiment | ExperimentReco
     totalUnmarkedDays: Math.max(0, totalDays.length - totalMarked.length),
     notes: experimentEntries.filter((entry) => entry.experimentNote.trim()),
   };
-}
-
-function truncateExperimentText(value: string, maxLength: number): string {
-  const text = value.trim();
-  return text.length <= maxLength ? text : `${text.slice(0, maxLength - 1).trimEnd()}…`;
 }
 
 function handleExperimentToggle(event: Event, id: string): void {

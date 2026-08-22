@@ -21,7 +21,10 @@ export function buildCustomRangePackage(start: string, end: string, source: AiRe
 }
 
 export function downloadAiPackage(payload: AiReportPayload) {
-  const suffix = payload.period === 'range' ? (payload.rangeMonths ? `${payload.rangeMonths}-months` : 'period') : payload.period;
+  let suffix: string = payload.period;
+  if (payload.period === 'range') {
+    suffix = payload.rangeMonths ? `${payload.rangeMonths}-months` : 'period';
+  }
   downloadJson(payload, `trajectory-analysis-${suffix}-${payload.start}-${payload.dataThrough}.json`);
 }
 

@@ -201,14 +201,15 @@ function applyCurrentAnswer() {
     review.obstacle = obstacle.value.trim();
   }
   if (currentStep.value === 'decision') {
-    review.nextLever =
-      decision.value === 'continue'
-        ? 'Продолжить как есть'
-        : decision.value === 'later'
-          ? 'Пока без решения'
-          : decision.value === 'change'
-            ? decisionText.value.trim()
-            : '';
+    let nextLever = '';
+    if (decision.value === 'continue') {
+      nextLever = 'Продолжить как есть';
+    } else if (decision.value === 'later') {
+      nextLever = 'Пока без решения';
+    } else if (decision.value === 'change') {
+      nextLever = decisionText.value.trim();
+    }
+    review.nextLever = nextLever;
     review.ifThenPlan = decision.value === 'change' ? ifThenPlan.value.trim() : '';
   }
 }
