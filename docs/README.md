@@ -43,6 +43,7 @@
 
 ### `audits/` — датированные снимки состояния
 
+- [2026-07-30-architecture-audit.md](./audits/2026-07-30-architecture-audit.md) — архитектурный снимок ветки `fix/beta-readiness` на commit `d9ee30e`.
 - [2026-08-08-new-user-review.md](./audits/2026-08-08-new-user-review.md) — независимое ревью первого пользовательского сценария.
 - [2026-07-30-git-state.md](./audits/2026-07-30-git-state.md) — датированный аудит Git на момент переработки документации.
 - [SYSTEM_AUDIT_2026-07-22.md](./audits/SYSTEM_AUDIT_2026-07-22.md) — системный аудит на указанную дату.
