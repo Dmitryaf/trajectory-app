@@ -108,44 +108,110 @@ type LegacyDailyEntry = Partial<DailyEntry> & {
   eveningFactorNote?: unknown;
 };
 
-export function normalizeDailyEntry(entry: LegacyDailyEntry & { date: string }): DailyEntry {
-  let sourceCareerStates: CareerState[] = [];
+const recordedFieldFallbacks: Record<DailyRecordedFieldId, (entry: DailyEntry) => boolean> = {
+  bedtime: (entry) => Boolean(entry.bedtime),
+  wakeTime: (entry) => Boolean(entry.wakeTime),
+  sleepMinutes: (entry) => entry.sleepMinutes !== null,
+  timeInBedMinutes: (entry) => entry.timeInBedMinutes !== null,
+  sleepQuality: (entry) => entry.sleepQuality !== null,
+  energy: (entry) => entry.energy !== null,
+  contextFactors: (entry) => entry.contextFactorsRecorded,
+  contextNote: (entry) => Boolean(entry.contextNote.trim()),
+  specialDay: (entry) => entry.specialDay !== null,
+  careerStates: (entry) => entry.careerStates.length > 0 || entry.careerState !== null,
+  activities: (entry) => entry.activitiesRecorded,
+  nutritionState: (entry) => entry.nutritionState !== null,
+  nutritionNote: (entry) => Boolean(entry.nutritionNote.trim()),
+  weightKg: (entry) => entry.weightKg !== null,
+  actionDirection: (entry) => entry.actionDirection !== null,
+  actionNote: (entry) => Boolean(entry.actionNote.trim()),
+  lifeAreas: (entry) => entry.lifeAreasRecorded,
+  importantFact: (entry) => Boolean(entry.importantFact.trim()),
+  experimentCompleted: (entry) => entry.experimentCompleted !== null,
+  experimentNote: (entry) => Boolean(entry.experimentNote.trim()),
+};
+
+function stringOrEmpty(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
+function booleanOrDefault(value: unknown, fallback: boolean): boolean {
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+function normalizedCareerStates(entry: LegacyDailyEntry): CareerState[] {
+  let source: CareerState[] = [];
   if (Array.isArray(entry.careerStates)) {
-    sourceCareerStates = Array.from(new Set(entry.careerStates.filter((state): state is CareerState => typeof state === 'string')));
+    source = entry.careerStates.filter((state): state is CareerState => typeof state === 'string');
   } else if (typeof entry.careerState === 'string') {
-    sourceCareerStates = [entry.careerState];
+    source = [entry.careerState];
   }
-  const careerStates = Array.from(new Set(sourceCareerStates.map((state) => (state === removedDemoCareerOptionId ? 'external' : state))));
-  const activities = Array.isArray(entry.activities)
-    ? Array.from(
-        new Set(
-          entry.activities.filter(
-            (activity): activity is ActivityId =>
-              typeof activity === 'string' &&
-              (knownActivityOptions.some((option) => option.id === activity) || activity.startsWith('custom:activity:')),
-          ),
-        ),
-      )
-    : [];
-  let sourceContextFactors: unknown[] = [];
+  return Array.from(new Set(source.map((state) => (state === removedDemoCareerOptionId ? 'external' : state))));
+}
+
+function normalizedActivities(value: unknown): ActivityId[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return Array.from(
+    new Set(
+      value.filter(
+        (activity): activity is ActivityId =>
+          typeof activity === 'string' &&
+          (knownActivityOptions.some((option) => option.id === activity) || activity.startsWith('custom:activity:')),
+      ),
+    ),
+  );
+}
+
+function sourceContextFactors(entry: LegacyDailyEntry): unknown[] {
   if (Array.isArray(entry.contextFactors)) {
-    sourceContextFactors = entry.contextFactors;
-  } else if (Array.isArray(entry.eveningFactors)) {
-    sourceContextFactors = entry.eveningFactors;
+    return entry.contextFactors;
   }
-  const contextFactors = sourceContextFactors.filter(
+  return Array.isArray(entry.eveningFactors) ? entry.eveningFactors : [];
+}
+
+function normalizedContextNote(entry: LegacyDailyEntry): string {
+  if (typeof entry.contextNote === 'string') {
+    return entry.contextNote;
+  }
+  return [entry.stateContext, entry.eveningFactorNote]
+    .filter((note): note is string => typeof note === 'string' && note.trim().length > 0)
+    .join('\n');
+}
+
+function normalizedSpecialDay(value: unknown): SpecialDayId | null {
+  return typeof value === 'string' && specialDayOptions.some((option) => option.id === value) ? (value as SpecialDayId) : null;
+}
+
+function normalizedLifeAreas(value: unknown): LifeAreaId[] {
+  return Array.isArray(value) ? value.filter((area): area is LifeAreaId => typeof area === 'string') : [];
+}
+
+function normalizedExperimentId(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function normalizedEntrySchemaVersion(value: unknown): number | null {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : null;
+}
+
+function normalizedDailyBlocks(value: unknown): DailyBlockId[] | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+  return Array.from(new Set(value.filter((block): block is DailyBlockId => dailyBlockOptions.some((option) => option.id === block))));
+}
+
+export function normalizeDailyEntry(entry: LegacyDailyEntry & { date: string }): DailyEntry {
+  const careerStates = normalizedCareerStates(entry);
+  const activities = normalizedActivities(entry.activities);
+  const contextFactorSource = sourceContextFactors(entry);
+  const contextFactors = contextFactorSource.filter(
     (factor): factor is ContextFactorId => typeof factor === 'string' && factor !== removedDemoContextFactorId,
   );
-  const contextNote =
-    typeof entry.contextNote === 'string'
-      ? entry.contextNote
-      : [entry.stateContext, entry.eveningFactorNote]
-          .filter((note): note is string => typeof note === 'string' && note.trim().length > 0)
-          .join('\n');
-  const specialDay =
-    typeof entry.specialDay === 'string' && specialDayOptions.some((option) => option.id === entry.specialDay)
-      ? (entry.specialDay as SpecialDayId)
-      : null;
+  const contextNote = normalizedContextNote(entry);
+  const specialDay = normalizedSpecialDay(entry.specialDay);
   const bedtime = validTime(entry.bedtime);
   const wakeTime = validTime(entry.wakeTime);
   const sleepMinutes = nullableNumber(entry.sleepMinutes, 0, 24 * 60, true);
@@ -154,17 +220,17 @@ export function normalizeDailyEntry(entry: LegacyDailyEntry & { date: string }):
   const energy = nullableNumber(entry.energy, 1, 5, true);
   const weightKg = nullableNumber(entry.weightKg, 30, 250);
   const nutritionState = isNutritionState(entry.nutritionState) ? entry.nutritionState : null;
-  const nutritionNote = typeof entry.nutritionNote === 'string' ? entry.nutritionNote : '';
+  const nutritionNote = stringOrEmpty(entry.nutritionNote);
   const actionDirection = isActionDirection(entry.actionDirection) ? entry.actionDirection : null;
-  const actionNote = typeof entry.actionNote === 'string' ? entry.actionNote : '';
-  const lifeAreas = Array.isArray(entry.lifeAreas) ? entry.lifeAreas.filter((area): area is LifeAreaId => typeof area === 'string') : [];
-  const importantFact = typeof entry.importantFact === 'string' ? entry.importantFact : '';
-  const experimentId = typeof entry.experimentId === 'string' && entry.experimentId.trim() ? entry.experimentId.trim() : null;
+  const actionNote = stringOrEmpty(entry.actionNote);
+  const lifeAreas = normalizedLifeAreas(entry.lifeAreas);
+  const importantFact = stringOrEmpty(entry.importantFact);
+  const experimentId = normalizedExperimentId(entry.experimentId);
   const experimentCompleted = typeof entry.experimentCompleted === 'boolean' ? entry.experimentCompleted : null;
-  const experimentNote = typeof entry.experimentNote === 'string' ? entry.experimentNote : '';
-  const activitiesRecorded = typeof entry.activitiesRecorded === 'boolean' ? entry.activitiesRecorded : activities.length > 0;
-  const lifeAreasRecorded = typeof entry.lifeAreasRecorded === 'boolean' ? entry.lifeAreasRecorded : lifeAreas.length > 0;
-  let contextFactorsRecorded = sourceContextFactors.length > 0;
+  const experimentNote = stringOrEmpty(entry.experimentNote);
+  const activitiesRecorded = booleanOrDefault(entry.activitiesRecorded, activities.length > 0);
+  const lifeAreasRecorded = booleanOrDefault(entry.lifeAreasRecorded, lifeAreas.length > 0);
+  let contextFactorsRecorded = contextFactorSource.length > 0;
   if (typeof entry.contextFactorsRecorded === 'boolean') {
     contextFactorsRecorded = entry.contextFactorsRecorded;
   } else if (typeof entry.eveningFactorsRecorded === 'boolean') {
@@ -175,82 +241,13 @@ export function normalizeDailyEntry(entry: LegacyDailyEntry & { date: string }):
       ? entry.recordedFields.filter((field): field is DailyRecordedFieldId => dailyRecordedFieldIds.includes(field as DailyRecordedFieldId))
       : [],
   );
-  if (bedtime) {
-    recordedFields.add('bedtime');
-  }
-  if (wakeTime) {
-    recordedFields.add('wakeTime');
-  }
-  if (sleepMinutes !== null) {
-    recordedFields.add('sleepMinutes');
-  }
-  if (timeInBedMinutes !== null) {
-    recordedFields.add('timeInBedMinutes');
-  }
-  if (sleepQuality !== null) {
-    recordedFields.add('sleepQuality');
-  }
-  if (energy !== null) {
-    recordedFields.add('energy');
-  }
-  if (contextFactorsRecorded) {
-    recordedFields.add('contextFactors');
-  }
-  if (contextNote.trim()) {
-    recordedFields.add('contextNote');
-  }
-  if (specialDay) {
-    recordedFields.add('specialDay');
-  }
-  if (careerStates.length) {
-    recordedFields.add('careerStates');
-  }
-  if (activitiesRecorded) {
-    recordedFields.add('activities');
-  }
-  if (nutritionState !== null) {
-    recordedFields.add('nutritionState');
-  }
-  if (nutritionNote.trim()) {
-    recordedFields.add('nutritionNote');
-  }
-  if (weightKg !== null) {
-    recordedFields.add('weightKg');
-  }
-  if (actionDirection !== null) {
-    recordedFields.add('actionDirection');
-  }
-  if (actionNote.trim()) {
-    recordedFields.add('actionNote');
-  }
-  if (lifeAreasRecorded) {
-    recordedFields.add('lifeAreas');
-  }
-  if (importantFact.trim()) {
-    recordedFields.add('importantFact');
-  }
-  if (experimentCompleted !== null) {
-    recordedFields.add('experimentCompleted');
-  }
-  if (experimentNote.trim()) {
-    recordedFields.add('experimentNote');
-  }
-  const activeDailyBlocksSnapshot = Array.isArray(entry.activeDailyBlocksSnapshot)
-    ? Array.from(
-        new Set(
-          entry.activeDailyBlocksSnapshot.filter((block): block is DailyBlockId => dailyBlockOptions.some((option) => option.id === block)),
-        ),
-      )
-    : null;
+  const activeDailyBlocksSnapshot = normalizedDailyBlocks(entry.activeDailyBlocksSnapshot);
 
-  return {
+  const normalized: DailyEntry = {
     ...emptyDailyEntry(entry.date),
-    entrySchemaVersion:
-      typeof entry.entrySchemaVersion === 'number' && Number.isInteger(entry.entrySchemaVersion) && entry.entrySchemaVersion > 0
-        ? entry.entrySchemaVersion
-        : null,
+    entrySchemaVersion: normalizedEntrySchemaVersion(entry.entrySchemaVersion),
     activeDailyBlocksSnapshot,
-    recordedFields: Array.from(recordedFields),
+    recordedFields: [],
     bedtime,
     wakeTime,
     sleepMinutes,
@@ -261,75 +258,41 @@ export function normalizeDailyEntry(entry: LegacyDailyEntry & { date: string }):
     careerStates,
     weightKg,
     activities,
-    activitiesRecorded: recordedFields.has('activities'),
+    activitiesRecorded,
     nutritionState,
     nutritionNote,
-    nutritionCriterion: typeof entry.nutritionCriterion === 'string' ? entry.nutritionCriterion : '',
+    nutritionCriterion: stringOrEmpty(entry.nutritionCriterion),
     actionDirection,
     actionNote,
-    focusTitle: typeof entry.focusTitle === 'string' ? entry.focusTitle : '',
-    focusOutcomeCriterion: typeof entry.focusOutcomeCriterion === 'string' ? entry.focusOutcomeCriterion : '',
+    focusTitle: stringOrEmpty(entry.focusTitle),
+    focusOutcomeCriterion: stringOrEmpty(entry.focusOutcomeCriterion),
     focusReviewDate: validDate(entry.focusReviewDate),
-    externalEvidenceCriterion: typeof entry.externalEvidenceCriterion === 'string' ? entry.externalEvidenceCriterion : '',
+    externalEvidenceCriterion: stringOrEmpty(entry.externalEvidenceCriterion),
     lifeAreas,
-    lifeAreasRecorded: recordedFields.has('lifeAreas'),
+    lifeAreasRecorded,
     contextFactors,
-    contextFactorsRecorded: recordedFields.has('contextFactors'),
+    contextFactorsRecorded,
     contextNote,
     specialDay,
-    specialDayNote: typeof entry.specialDayNote === 'string' ? entry.specialDayNote : '',
+    specialDayNote: stringOrEmpty(entry.specialDayNote),
     importantFact,
     experimentId,
     experimentCompleted,
     experimentNote,
-    updatedAt: typeof entry.updatedAt === 'string' ? entry.updatedAt : '',
+    updatedAt: stringOrEmpty(entry.updatedAt),
   };
+  for (const field of dailyRecordedFieldIds) {
+    if (recordedFieldFallbacks[field](normalized)) {
+      recordedFields.add(field);
+    }
+  }
+  normalized.recordedFields = Array.from(recordedFields);
+  normalized.activitiesRecorded = recordedFields.has('activities');
+  normalized.lifeAreasRecorded = recordedFields.has('lifeAreas');
+  normalized.contextFactorsRecorded = recordedFields.has('contextFactors');
+  return normalized;
 }
 
 export function dailyFieldWasRecorded(entry: DailyEntry, field: DailyRecordedFieldId): boolean {
-  if (entry.recordedFields.includes(field)) {
-    return true;
-  }
-  switch (field) {
-    case 'bedtime':
-      return Boolean(entry.bedtime);
-    case 'wakeTime':
-      return Boolean(entry.wakeTime);
-    case 'sleepMinutes':
-      return entry.sleepMinutes !== null;
-    case 'timeInBedMinutes':
-      return entry.timeInBedMinutes !== null;
-    case 'sleepQuality':
-      return entry.sleepQuality !== null;
-    case 'energy':
-      return entry.energy !== null;
-    case 'contextFactors':
-      return entry.contextFactorsRecorded;
-    case 'contextNote':
-      return Boolean(entry.contextNote.trim());
-    case 'specialDay':
-      return entry.specialDay !== null;
-    case 'careerStates':
-      return entry.careerStates.length > 0 || entry.careerState !== null;
-    case 'activities':
-      return entry.activitiesRecorded;
-    case 'nutritionState':
-      return entry.nutritionState !== null;
-    case 'nutritionNote':
-      return Boolean(entry.nutritionNote.trim());
-    case 'weightKg':
-      return entry.weightKg !== null;
-    case 'actionDirection':
-      return entry.actionDirection !== null;
-    case 'actionNote':
-      return Boolean(entry.actionNote.trim());
-    case 'lifeAreas':
-      return entry.lifeAreasRecorded;
-    case 'importantFact':
-      return Boolean(entry.importantFact.trim());
-    case 'experimentCompleted':
-      return entry.experimentCompleted !== null;
-    case 'experimentNote':
-      return Boolean(entry.experimentNote.trim());
-  }
+  return entry.recordedFields.includes(field) || recordedFieldFallbacks[field](entry);
 }

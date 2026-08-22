@@ -35,6 +35,78 @@ export function addMonths(date, amount) {
   return formatDate(cursor);
 }
 
+function careerStatesForDay(index) {
+  if (index % 4 === 0) {
+    return ['preparation', 'external'];
+  }
+  if (index % 5 === 0) {
+    return ['project', 'external'];
+  }
+  return [index % 3 === 0 ? 'project' : 'preparation'];
+}
+
+function sleepForDay(special, late, index) {
+  let sleepMinutes = 440 + (index % 4) * 10;
+  if (special?.[0] === 'travel') {
+    sleepMinutes = 365;
+  } else if (late) {
+    sleepMinutes = 390;
+  }
+  let sleepQuality = 4 + (index % 2);
+  if (special) {
+    sleepQuality = 2;
+  } else if (late) {
+    sleepQuality = 3;
+  }
+  let energy = 4 + (index % 2);
+  if (special?.[0] === 'overload') {
+    energy = 2;
+  } else if (late) {
+    energy = 3;
+  }
+  return { energy, sleepMinutes, sleepQuality };
+}
+
+function experimentForDay(date, index, active, completed) {
+  if (date >= active.start && date <= active.end) {
+    return { completed: index % 4 !== 0, id: active.id };
+  }
+  if (date >= completed.start && date <= completed.end) {
+    return { completed: index % 3 !== 0, id: completed.id };
+  }
+  return { completed: null, id: null };
+}
+
+function experimentNoteForDay(completed, index) {
+  if (completed === true) {
+    return index % 2 === 0
+      ? 'Удалось начать выбранную задачу без уведомлений; помог заранее записанный первый шаг.'
+      : 'Начал вовремя, хотя первые минуты хотелось проверить сообщения.';
+  }
+  return completed === false ? 'Помешал незапланированный звонок, после него было сложно вернуться к выбранной задаче.' : '';
+}
+
+function contextNoteForDay(factors, special, index) {
+  if (factors.includes('anxiety_overload')) {
+    return 'Было сложно переключиться после насыщенного дня';
+  }
+  return !special && index % 6 === 0 ? 'День с большим количеством встреч' : '';
+}
+
+function nutritionStateForDay(index) {
+  if (index % 7 === 0) {
+    return 'blocks_goal';
+  }
+  return index % 3 === 0 ? 'neutral' : 'supports_goal';
+}
+
+function actionDirectionForDay(careerStates, index) {
+  if (careerStates.includes('external')) {
+    return 'external';
+  }
+  return index % 6 === 0 ? 'recovery' : 'preparation';
+}
+
 export function buildDemoPayload(anchor = todayKey()) {
   assertDateKey(anchor, 'anchor');
 
@@ -79,70 +151,21 @@ export function buildDemoPayload(anchor = todayKey()) {
   const dailyEntries = trackedDates.map((date, index) => {
     const factors = factorCycles[index % factorCycles.length];
     const special = specialDays.get(date) ?? null;
-    let careerStates = [index % 3 === 0 ? 'project' : 'preparation'];
-    if (index % 4 === 0) {
-      careerStates = ['preparation', 'external'];
-    } else if (index % 5 === 0) {
-      careerStates = ['project', 'external'];
-    }
+    const careerStates = careerStatesForDay(index);
     const late = factors.includes('late_bedtime');
-    let sleepMinutes = 440 + (index % 4) * 10;
-    if (special?.[0] === 'travel') {
-      sleepMinutes = 365;
-    } else if (late) {
-      sleepMinutes = 390;
-    }
-    const inActiveExperiment = date >= activeExperimentStart && date <= anchor;
-    const inCompletedExperiment = date >= completedExperimentStart && date <= completedExperimentEnd;
-    let experimentCompleted = null;
-    let experimentId = null;
-    if (inActiveExperiment) {
-      experimentCompleted = index % 4 !== 0;
-      experimentId = activeExperimentId;
-    } else if (inCompletedExperiment) {
-      experimentCompleted = index % 3 !== 0;
-      experimentId = completedExperimentId;
-    }
-    let experimentNote = '';
-    if (experimentCompleted === true) {
-      experimentNote =
-        index % 2 === 0
-          ? 'Удалось начать выбранную задачу без уведомлений; помог заранее записанный первый шаг.'
-          : 'Начал вовремя, хотя первые минуты хотелось проверить сообщения.';
-    } else if (experimentCompleted === false) {
-      experimentNote = 'Помешал незапланированный звонок, после него было сложно вернуться к выбранной задаче.';
-    }
-
-    let sleepQuality = 4 + (index % 2);
-    if (special) {
-      sleepQuality = 2;
-    } else if (late) {
-      sleepQuality = 3;
-    }
-    let energy = 4 + (index % 2);
-    if (special?.[0] === 'overload') {
-      energy = 2;
-    } else if (late) {
-      energy = 3;
-    }
-    let contextNote = '';
-    if (factors.includes('anxiety_overload')) {
-      contextNote = 'Было сложно переключиться после насыщенного дня';
-    } else if (!special && index % 6 === 0) {
-      contextNote = 'День с большим количеством встреч';
-    }
-    let nutritionState = 'supports_goal';
-    if (index % 7 === 0) {
-      nutritionState = 'blocks_goal';
-    } else if (index % 3 === 0) {
-      nutritionState = 'neutral';
-    }
-    let actionDirection = 'preparation';
-    if (careerStates.includes('external')) {
-      actionDirection = 'external';
-    } else if (index % 6 === 0) {
-      actionDirection = 'recovery';
-    }
+    const { energy, sleepMinutes, sleepQuality } = sleepForDay(special, late, index);
+    const experiment = experimentForDay(
+      date,
+      index,
+      { start: activeExperimentStart, end: anchor, id: activeExperimentId },
+      { start: completedExperimentStart, end: completedExperimentEnd, id: completedExperimentId },
+    );
+    const experimentCompleted = experiment.completed;
+    const experimentId = experiment.id;
+    const experimentNote = experimentNoteForDay(experimentCompleted, index);
+    const contextNote = contextNoteForDay(factors, special, index);
+    const nutritionState = nutritionStateForDay(index);
+    const actionDirection = actionDirectionForDay(careerStates, index);
 
     return {
       date,

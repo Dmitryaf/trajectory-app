@@ -7,6 +7,7 @@ import {
   loadCloudSnapshot,
   markCloudSyncPending,
   saveCloudSnapshot,
+  type CloudSnapshot,
 } from '../services/cloudSync';
 import { plainCopy } from '../services/plain';
 import { useAuthStore } from './auth';
@@ -47,6 +48,39 @@ type CloudSyncStatus = 'disabled' | 'idle' | 'syncing' | 'synced' | 'pending' | 
 
 export type CloudSyncResult =
   { status: 'synced'; updatedAt: string } | { status: 'pending'; error: string } | { status: 'disabled' | 'conflict' | 'queued' };
+
+async function saveSnapshotWithConflictResolution(
+  userId: string | undefined,
+  initialPayload: ExportPayload,
+  importMerged: (payload: ExportPayload) => Promise<void>,
+): Promise<CloudSnapshot> {
+  let payload = initialPayload;
+  let expectedRevision = userId ? getCloudSyncMeta(userId).lastCloudRevision : 0;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const saved = await saveCloudSnapshot(payload, expectedRevision);
+      if (userId) {
+        await saveCloudSyncBase(userId, saved.revision ?? expectedRevision + 1, saved.payload);
+      }
+      return saved;
+    } catch (error) {
+      const canResolveConflict = error instanceof CloudRevisionConflictError && userId && attempt < 2;
+      if (!canResolveConflict) {
+        throw error;
+      }
+      const remote = await loadCloudSnapshot();
+      if (!remote) {
+        expectedRevision = 0;
+        continue;
+      }
+      const base = await loadCloudSyncBase(userId);
+      payload = mergeCloudSnapshots(base?.snapshot ?? emptyExportPayload(), payload, remote.payload);
+      await importMerged(payload);
+      expectedRevision = remote.revision ?? 1;
+    }
+  }
+  throw new Error('Не удалось сохранить облачную копию после повторных попыток');
+}
 
 export const useAppStore = defineStore('app', {
   state: () => ({
@@ -438,35 +472,14 @@ export const useAppStore = defineStore('app', {
         markCloudSyncPending(userId, 'Локальные изменения ожидают синхронизации');
       }
       this.setCloudSyncState('syncing', 'Сохраняю облачную копию…');
-      let updatedAt = '';
+      let updatedAt: string;
       do {
         this.cloudSyncQueued = false;
         try {
-          let payload = this.exportData();
-          let expectedRevision = userId ? getCloudSyncMeta(userId).lastCloudRevision : 0;
-          for (let attempt = 0; attempt < 3; attempt += 1) {
-            try {
-              const saved = await saveCloudSnapshot(payload, expectedRevision);
-              updatedAt = saved.updatedAt;
-              if (userId) {
-                await saveCloudSyncBase(userId, saved.revision ?? expectedRevision + 1, saved.payload);
-              }
-              break;
-            } catch (error) {
-              if (!(error instanceof CloudRevisionConflictError) || !userId || attempt === 2) {
-                throw error;
-              }
-              const remote = await loadCloudSnapshot();
-              if (!remote) {
-                expectedRevision = 0;
-                continue;
-              }
-              const base = await loadCloudSyncBase(userId);
-              payload = mergeCloudSnapshots(base?.snapshot ?? emptyExportPayload(), payload, remote.payload);
-              await this.importData(payload, { syncCloud: false, preserveDailyDrafts: true });
-              expectedRevision = remote.revision ?? 1;
-            }
-          }
+          const saved = await saveSnapshotWithConflictResolution(userId, this.exportData(), (payload) =>
+            this.importData(payload, { syncCloud: false, preserveDailyDrafts: true }),
+          );
+          updatedAt = saved.updatedAt;
           this.setCloudSyncState('synced', `Облако обновлено: ${new Date(updatedAt).toLocaleString('ru-RU')}`, { updatedAt });
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Не удалось сохранить облачную копию';

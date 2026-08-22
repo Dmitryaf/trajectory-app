@@ -46,6 +46,8 @@ export default tseslint.config(
     },
     rules: {
       curly: ['error', 'all'],
+      complexity: ['error', 20],
+      'max-depth': ['error', 4],
       'no-nested-ternary': 'error',
       'trajectory/readable-async-condition': 'error',
     },

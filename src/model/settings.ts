@@ -200,13 +200,21 @@ function isFirstUseStep(value: unknown): value is FirstUseStep {
   );
 }
 
+function objectValue<T extends object>(value: unknown): Partial<T> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Partial<T>) : {};
+}
+
+function stringOrEmpty(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
 function normalizeExperiment(value: unknown): Experiment {
-  const source = value && typeof value === 'object' && !Array.isArray(value) ? (value as Partial<Experiment>) : {};
-  const active = typeof source.active === 'boolean' ? source.active : false;
-  const title = typeof source.title === 'string' ? source.title : '';
+  const source = objectValue<Experiment>(value);
+  const active = source.active === true;
+  const title = stringOrEmpty(source.title);
   const startDate = validDate(source.startDate);
   const endDate = validDate(source.endDate);
-  const targetMetric = typeof source.targetMetric === 'string' ? source.targetMetric : '';
+  const targetMetric = stringOrEmpty(source.targetMetric);
   const targetMetricId = isExperimentMetricId(source.targetMetricId) ? source.targetMetricId : legacyExperimentMetricId(targetMetric);
   const metricOption = experimentMetricOptions.find((option) => option.id === targetMetricId);
   let id = '';
@@ -229,14 +237,14 @@ function normalizeExperiment(value: unknown): Experiment {
     id,
     active,
     title,
-    hypothesis: typeof source.hypothesis === 'string' ? source.hypothesis : '',
+    hypothesis: stringOrEmpty(source.hypothesis),
     targetMetricId,
     targetMetric: metricOption?.label ?? targetMetric,
     targetDirection: source.targetDirection === 'decrease' ? 'decrease' : 'increase',
     minimumMeaningfulChange,
     startDate,
     endDate,
-    conclusion: typeof source.conclusion === 'string' ? source.conclusion : '',
+    conclusion: stringOrEmpty(source.conclusion),
     decision: isExperimentDecision(source.decision) ? source.decision : null,
   };
 }

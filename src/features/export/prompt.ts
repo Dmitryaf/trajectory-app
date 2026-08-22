@@ -285,6 +285,15 @@ function labelFor(options: Array<{ id: string; label: string }>, id: string): st
 
 function formatEntry(entry: DailyEntry, payload: AiReportPayload): string {
   const values: string[] = [];
+  appendEntryFocus(values, entry, payload);
+  appendEntryState(values, entry);
+  appendEntryContext(values, entry, payload);
+  appendEntryActions(values, entry, payload);
+  appendEntryOutcome(values, entry, payload);
+  return `${entry.date} — ${values.length ? values.join('; ') : 'есть запись без заполненных показателей'}.`;
+}
+
+function appendEntryFocus(values: string[], entry: DailyEntry, payload: AiReportPayload): void {
   if (entry.focusTitle && entry.focusTitle !== payload.settingsSnapshot.activeFocusTitle) {
     values.push(`цель на эту дату: ${cleanText(entry.focusTitle)}`);
   }
@@ -294,6 +303,9 @@ function formatEntry(entry: DailyEntry, payload: AiReportPayload): string {
   if (entry.focusReviewDate && entry.focusReviewDate !== payload.settingsSnapshot.focusReviewDate) {
     values.push(`дата пересмотра цели на эту дату: ${entry.focusReviewDate}`);
   }
+}
+
+function appendEntryState(values: string[], entry: DailyEntry): void {
   if (entry.bedtime) {
     values.push(`лёг ${entry.bedtime}`);
   }
@@ -312,6 +324,9 @@ function formatEntry(entry: DailyEntry, payload: AiReportPayload): string {
   if (entry.energy !== null) {
     values.push(`энергия ${entry.energy}/5`);
   }
+}
+
+function appendEntryContext(values: string[], entry: DailyEntry, payload: AiReportPayload): void {
   if (dailyFieldWasRecorded(entry, 'contextFactors')) {
     const factors = entry.contextFactors.map((id) => labelFor(payload.labels.contextFactors, id));
     values.push(`условия дня: ${factors.length ? factors.join(', ') : 'ничего из списка'}`);
@@ -324,6 +339,9 @@ function formatEntry(entry: DailyEntry, payload: AiReportPayload): string {
       `необычный день: ${labelFor(payload.labels.specialDays, entry.specialDay)}${entry.specialDayNote ? ` (${cleanText(entry.specialDayNote)})` : ''}`,
     );
   }
+}
+
+function appendEntryActions(values: string[], entry: DailyEntry, payload: AiReportPayload): void {
   let careerStates = entry.careerStates;
   if (!careerStates.length && entry.careerState) {
     careerStates = [entry.careerState];
@@ -344,6 +362,9 @@ function formatEntry(entry: DailyEntry, payload: AiReportPayload): string {
     const activities = entry.activities.map((id) => labelFor(payload.labels.activities, id));
     values.push(`активность: ${activities.length ? activities.join(', ') : 'не было'}`);
   }
+}
+
+function appendEntryOutcome(values: string[], entry: DailyEntry, payload: AiReportPayload): void {
   if (entry.nutritionState) {
     values.push(
       `питание: ${labelFor(payload.labels.nutrition, entry.nutritionState)}${entry.nutritionNote ? ` (${cleanText(entry.nutritionNote)})` : ''}`,
@@ -365,7 +386,6 @@ function formatEntry(entry: DailyEntry, payload: AiReportPayload): string {
   if (entry.experimentNote) {
     values.push(`заметка к эксперименту: ${cleanText(entry.experimentNote)}`);
   }
-  return `${entry.date} — ${values.length ? values.join('; ') : 'есть запись без заполненных показателей'}.`;
 }
 
 function formatFactorSummary(factor: AiReportPayload['factorSummaries'][number]): string {
