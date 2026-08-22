@@ -3,6 +3,7 @@ import eslintConfigPrettier from 'eslint-config-prettier/flat';
 import eslintPluginVue from 'eslint-plugin-vue';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
+import readableAsyncCondition from './scripts/eslint-rules/readable-async-condition.mjs';
 
 export default tseslint.config(
   {
@@ -25,8 +26,31 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   ...eslintPluginVue.configs['flat/recommended'],
+  eslintConfigPrettier,
   {
-    files: ['src/**/*.{ts,vue}', 'tests/**/*.ts', 'e2e/**/*.ts'],
+    files: [
+      'src/**/*.{ts,vue}',
+      'tests/**/*.{js,ts}',
+      'e2e/**/*.ts',
+      'api/**/*.ts',
+      'scripts/**/*.{js,mjs}',
+      'supabase/functions/**/*.ts',
+      '*.{js,ts}',
+    ],
+    plugins: {
+      trajectory: {
+        rules: {
+          'readable-async-condition': readableAsyncCondition,
+        },
+      },
+    },
+    rules: {
+      curly: ['error', 'all'],
+      'trajectory/readable-async-condition': 'error',
+    },
+  },
+  {
+    files: ['src/**/*.{ts,vue}', 'tests/**/*.{js,ts}', 'e2e/**/*.ts'],
     languageOptions: {
       globals: {
         ...globals.browser,
@@ -147,5 +171,4 @@ export default tseslint.config(
       globals: globals.node,
     },
   },
-  eslintConfigPrettier,
 );

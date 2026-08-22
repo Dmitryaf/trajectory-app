@@ -11,15 +11,15 @@ const reportThresholds = new Map([
   ['.ts', 500],
   ['.css', 500],
 ]);
-const hotspotLineBudgets = new Map([
-  ['src/views/TodayView.vue', 814],
-  ['src/views/SettingsView.vue', 773],
-  ['src/views/WeekView.vue', 726],
-  ['src/views/MonthView.vue', 596],
-  ['src/features/settings/useSettingsForm.ts', 645],
-  ['src/styles/reviews.css', 687],
-  ['src/styles/responsive-mobile.css', 671],
-  ['src/styles/shell.css', 535],
+const hotspotContentBudgets = new Map([
+  ['src/views/TodayView.vue', 27524],
+  ['src/views/SettingsView.vue', 15023],
+  ['src/views/WeekView.vue', 25472],
+  ['src/views/MonthView.vue', 20427],
+  ['src/features/settings/useSettingsForm.ts', 12379],
+  ['src/styles/reviews.css', 11693],
+  ['src/styles/responsive-mobile.css', 10328],
+  ['src/styles/shell.css', 8732],
 ]);
 const allowedDbOwners = new Set(['src/stores/app.ts', 'src/features/sync/base.ts']);
 const allowedServiceFeatureEdges = new Set(['src/services/analytics.ts']);
@@ -74,13 +74,17 @@ function projectPath(filePath) {
 
 function sourceLayer(filePath) {
   const relative = projectPath(filePath);
-  if (relative === 'src/App.vue') return 'views';
+  if (relative === 'src/App.vue') {
+    return 'views';
+  }
   const match = relative.match(/^src\/([^/]+)/);
   return match?.[1] ?? 'other';
 }
 
 function scriptSource(filePath, source) {
-  if (path.extname(filePath) !== '.vue') return source;
+  if (path.extname(filePath) !== '.vue') {
+    return source;
+  }
   return [...source.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map((match) => match[1]).join('\n');
 }
 
@@ -97,7 +101,9 @@ function localSpecifiers(filePath, source) {
   function visit(node) {
     if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier) {
       const specifier = node.moduleSpecifier.text;
-      if (specifier.startsWith('.')) specifiers.add(specifier);
+      if (specifier.startsWith('.')) {
+        specifiers.add(specifier);
+      }
     } else if (
       ts.isCallExpression(node) &&
       node.expression.kind === ts.SyntaxKind.ImportKeyword &&
@@ -105,7 +111,9 @@ function localSpecifiers(filePath, source) {
       ts.isStringLiteral(node.arguments[0])
     ) {
       const specifier = node.arguments[0].text;
-      if (specifier.startsWith('.')) specifiers.add(specifier);
+      if (specifier.startsWith('.')) {
+        specifiers.add(specifier);
+      }
     }
     ts.forEachChild(node, visit);
   }
@@ -145,7 +153,9 @@ function findCycles(graph) {
   }
 
   for (const node of graph.keys()) {
-    if (!state.has(node)) visit(node);
+    if (!state.has(node)) {
+      visit(node);
+    }
   }
   return [...cycles].sort();
 }
@@ -163,35 +173,46 @@ const layerEdges = new Map();
 const largeFiles = [];
 const observedHotspots = new Set();
 
+function contentUnits(source) {
+  return source.replace(/[\s{}]/g, '').length;
+}
+
 for (const filePath of allFiles) {
   const extension = path.extname(filePath);
   const relative = projectPath(filePath);
-  const hotspotBudget = hotspotLineBudgets.get(relative);
+  const hotspotBudget = hotspotContentBudgets.get(relative);
   const threshold = reportThresholds.get(extension);
-  const lines =
-    hotspotBudget !== undefined || threshold !== undefined ? (await readFile(filePath, 'utf8')).split(/\r?\n/).length : undefined;
+  const source = hotspotBudget !== undefined || threshold !== undefined ? await readFile(filePath, 'utf8') : undefined;
+  const lines = source === undefined ? undefined : source.split(/\r?\n/).length;
   if (hotspotBudget !== undefined) {
     observedHotspots.add(relative);
-    if (lines > hotspotBudget) {
+    const size = contentUnits(source);
+    if (size > hotspotBudget) {
       violations.push(
-        `${relative}: файл снова вырос с ${hotspotBudget} до ${lines} строк. Выделите самостоятельную ответственность или обоснуйте новый предел.`,
+        `${relative}: файл снова вырос с ${hotspotBudget} до ${size} содержательных единиц. Выделите самостоятельную ответственность или обоснуйте новый предел.`,
       );
-    } else if (lines < hotspotBudget) {
-      violations.push(`${relative}: после сокращения файла уменьшите его предел с ${hotspotBudget} до ${lines} строк.`);
+    } else if (size < hotspotBudget) {
+      violations.push(`${relative}: после сокращения файла уменьшите его предел с ${hotspotBudget} до ${size} содержательных единиц.`);
     }
   }
   if (threshold !== undefined) {
-    if (lines > threshold) largeFiles.push({ file: projectPath(filePath), lines, threshold });
+    if (lines > threshold) {
+      largeFiles.push({ file: projectPath(filePath), lines, threshold });
+    }
   }
 }
 
-for (const filePath of hotspotLineBudgets.keys()) {
-  if (!observedHotspots.has(filePath)) violations.push(`${filePath}: файл из списка повторяющихся горячих точек не найден.`);
+for (const filePath of hotspotContentBudgets.keys()) {
+  if (!observedHotspots.has(filePath)) {
+    violations.push(`${filePath}: файл из списка повторяющихся горячих точек не найден.`);
+  }
 }
 
 const cssFiles = allFiles.filter((filePath) => path.extname(filePath) === '.css');
 const cssSources = new Map();
-for (const filePath of cssFiles) cssSources.set(projectPath(filePath), await readFile(filePath, 'utf8'));
+for (const filePath of cssFiles) {
+  cssSources.set(projectPath(filePath), await readFile(filePath, 'utf8'));
+}
 
 for (const rule of styleOwnerRules) {
   const definition = new RegExp(`(?:^|\\n)\\.${rule.selector}(?:\\s*,|\\s*\\{)`);
@@ -199,8 +220,12 @@ for (const rule of styleOwnerRules) {
     violations.push(`${rule.owner}: отсутствует базовый селектор .${rule.selector}.`);
   }
   for (const [filePath, source] of cssSources) {
-    if (!definition.test(source) || filePath === rule.owner) continue;
-    if (rule.allowedFiles?.has(filePath) || rule.overrides?.test(filePath)) continue;
+    if (!definition.test(source) || filePath === rule.owner) {
+      continue;
+    }
+    if (rule.allowedFiles?.has(filePath) || rule.overrides?.test(filePath)) {
+      continue;
+    }
     violations.push(`${filePath}: базовый селектор .${rule.selector} принадлежит ${rule.owner}.`);
   }
 }
@@ -233,22 +258,33 @@ for (const importer of architectureFiles) {
 const cycles = findCycles(graph);
 
 console.log('Архитектурные зависимости:');
-for (const [edge, count] of [...layerEdges.entries()].sort()) console.log(`- ${edge}: ${count}`);
+for (const [edge, count] of [...layerEdges.entries()].sort()) {
+  console.log(`- ${edge}: ${count}`);
+}
 
 console.log('\nКрупные файлы — сигнал для ревью, не ошибка:');
 for (const item of largeFiles.sort((a, b) => b.lines - a.lines)) {
   console.log(`- ${item.file}: ${item.lines} строк (порог ${item.threshold})`);
 }
-if (!largeFiles.length) console.log('- нет');
+if (!largeFiles.length) {
+  console.log('- нет');
+}
 
 if (cycles.length) {
   console.error('\nОбнаружены циклические зависимости:');
-  for (const cycle of cycles) console.error(`- ${cycle}`);
+  for (const cycle of cycles) {
+    console.error(`- ${cycle}`);
+  }
 }
 if (violations.length) {
   console.error('\nНарушены архитектурные границы:');
-  for (const violation of violations) console.error(`- ${violation}`);
+  for (const violation of violations) {
+    console.error(`- ${violation}`);
+  }
 }
 
-if (cycles.length || violations.length) process.exitCode = 1;
-else console.log('\nАрхитектурные границы соблюдены.');
+if (cycles.length || violations.length) {
+  process.exitCode = 1;
+} else {
+  console.log('\nАрхитектурные границы соблюдены.');
+}
