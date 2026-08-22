@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import AiAnalysisSteps from '../features/analysis/ui/AiAnalysisSteps.vue';
 import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
+import PeriodAnalysisCard from '../features/reviews/ui/PeriodAnalysisCard.vue';
 import PeriodRecordCard from '../features/reviews/ui/PeriodRecordCard.vue';
 import WeeklyReviewJournalLinks from '../features/reviews/ui/WeeklyReviewJournalLinks.vue';
 import WeeklyReviewOverview from '../features/reviews/ui/WeeklyReviewOverview.vue';
 import DecisionFollowUp from '../features/reviews/ui/DecisionFollowUp.vue';
 import { buildDecisionFollowUp } from '../features/reviews/decisionFollowUp';
+import { usePeriodReview } from '../features/reviews/usePeriodReview';
 import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
 import PeriodNavigator from '../shared/ui/navigation/PeriodNavigator.vue';
 import {
@@ -23,10 +24,7 @@ import {
   weekSummaryText,
 } from '../services/analytics';
 import { addDays, dateRange, endOfWeek, formatDate, formatMinutes, fromDateKey, startOfWeek, todayKey, toDateKey } from '../services/dates';
-import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../features/export/browser';
 import { experimentDecisionLabel, experimentOverlapsRange } from '../features/experiments/model';
-import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
-import { plainCopy } from '../services/plain';
 import { useAppStore } from '../stores/app';
 import {
   contextFactorOptions,
@@ -224,12 +222,40 @@ const reviewCues = computed(() =>
   buildReviewCues('week', entries.value, results.value, lifeEvents.value, externalCareerIds.value, contextFactorItems.value),
 );
 const primaryReviewCues = computed(() => reviewCues.value.slice(0, 3));
+const {
+  copyPrompt,
+  downloadJson,
+  hasSavedReview,
+  promptCopying,
+  review,
+  reviewAvailable,
+  reviewContextOpen,
+  reviewHasContext,
+  reviewSaving,
+  saveReview,
+  savedReview,
+  updateReviewContextOpen,
+} = usePeriodReview<WeeklyReview>({
+  period: 'week',
+  anchor,
+  start,
+  end,
+  emptyReview: emptyWeeklyReview,
+  findReview: (weekStart) => store.reviewByWeek(weekStart),
+  persistReview: (draft) => store.saveReview(draft),
+  hasContext: (draft) =>
+    draft.results.some((value) => value.trim()) ||
+    draft.highlights.some((value) => value.trim()) ||
+    Boolean(draft.stateContext.trim() || draft.support.trim() || draft.obstacle.trim()),
+  prepareDraft: (draft) => {
+    while (draft.results.length < 3) draft.results.push('');
+    while (draft.highlights.length < 3) draft.highlights.push('');
+  },
+});
 const previousReview = computed(() => store.reviewByWeek(addDays(start.value, -7)));
-const savedReview = computed(() => store.reviewByWeek(start.value));
 const decisionFollowUp = computed(() =>
   buildDecisionFollowUp(previousReview.value, savedReview.value, entries.value, results.value, lifeEvents.value),
 );
-const hasSavedReview = computed(() => Boolean(savedReview.value));
 const recoveredReview = computed(() => {
   const weekStart = store.settings.firstUse.weekStart;
   if (store.settings.firstUse.status !== 'completed' || !weekStart || weekStart === start.value || !store.settings.firstUse.overviewSeen)
@@ -258,9 +284,6 @@ const hasDailyData = computed(() => summary.value.coveredEntriesCount > 0);
 const hasJournalData = computed(() => results.value.length > 0 || lifeEvents.value.length > 0);
 const hasPeriodData = computed(
   () => hasDailyData.value || hasJournalData.value || hasSavedReview.value || experimentCards.value.length > 0,
-);
-const reviewAvailable = computed(
-  () => hasSavedReview.value || end.value < todayKey() || (start.value === startOfWeek(todayKey()) && todayKey() >= addDays(end.value, -1)),
 );
 const rows = computed(() => [
   { id: 'career', label: 'Работа', icon: '↗' },
@@ -307,81 +330,12 @@ function weekDayFacts(item: (typeof rhythmDays.value)[number]): string[] {
   if (item.entry?.specialDay) facts.push(specialDayLabel(item.entry.specialDay));
   return facts;
 }
-const review = reactive<WeeklyReview>(emptyWeeklyReview(start.value));
-const reviewSaving = ref(false);
-const promptCopying = ref(false);
-const reviewContextOpen = ref(false);
-const reviewHasContext = computed(
-  () =>
-    review.results.some((value) => value.trim()) ||
-    review.highlights.some((value) => value.trim()) ||
-    Boolean(review.stateContext.trim() || review.support.trim() || review.obstacle.trim()),
-);
-
-function loadReview() {
-  const existing = store.reviewByWeek(start.value);
-  Object.assign(review, emptyWeeklyReview(start.value), existing ? plainCopy(existing) : {});
-  while (review.results.length < 3) review.results.push('');
-  while (review.highlights.length < 3) review.highlights.push('');
-  reviewContextOpen.value = reviewHasContext.value;
-}
-watch(start, loadReview, { immediate: true });
 watch(
   () => props.initialWeek,
   (value) => {
     anchor.value = initialAnchor(value);
   },
 );
-
-function updateReviewContextOpen(event: Event) {
-  reviewContextOpen.value = (event.currentTarget as HTMLDetailsElement).open;
-}
-
-async function saveReview() {
-  if (reviewSaving.value) return;
-  reviewSaving.value = true;
-  try {
-    await store.saveReview(plainCopy(review));
-    notifySaved('Обзор недели сохранён');
-  } catch (error) {
-    notifyUnknownError(error, 'Не удалось сохранить обзор недели');
-  } finally {
-    reviewSaving.value = false;
-  }
-}
-
-function createPackage() {
-  return buildPeriodPackage('week', anchor.value, {
-    entries: store.dailyEntries,
-    results: store.results,
-    lifeEvents: store.lifeEvents,
-    reviews: store.weeklyReviews,
-    monthlyReviews: store.monthlyReviews,
-    settings: store.settings,
-  });
-}
-
-async function copyPrompt() {
-  if (promptCopying.value) return;
-  promptCopying.value = true;
-  try {
-    await copyPackagePrompt(createPackage(), store.settings);
-    notifySaved('Текст для нейросети скопирован');
-  } catch (error) {
-    notifyUnknownError(error, 'Не удалось подготовить текст для нейросети');
-  } finally {
-    promptCopying.value = false;
-  }
-}
-
-function downloadJson() {
-  try {
-    downloadAiPackage(createPackage());
-    notifyInfo('Данные недели скачаны');
-  } catch (error) {
-    notifyUnknownError(error, 'Не удалось скачать данные недели');
-  }
-}
 </script>
 
 <template>
@@ -458,34 +412,15 @@ function downloadJson() {
         <p>{{ summaryText }}</p>
       </article>
 
-      <article v-if="hasDailyData || hasJournalData" id="ai-analysis" class="dashboard-card">
-        <div class="section-heading">
-          <div>
-            <span class="eyebrow">Короткий разбор</span>
-            <h2>На что обратить внимание</h2>
-          </div>
-          <div class="period-actions">
-            <button class="secondary-button" type="button" :disabled="promptCopying" :aria-busy="promptCopying" @click="copyPrompt">
-              Подготовить текст для нейросети
-            </button>
-            <button class="secondary-button" type="button" @click="downloadJson">Скачать данные</button>
-          </div>
-        </div>
-        <AiAnalysisSteps />
-        <div class="review-nudge range-custom-action" style="margin-top: 16px">
-          <div>
-            <strong>Нужен другой период?</strong>
-            <p>Выберите точные даты и подготовьте текст в настройках.</p>
-          </div>
-          <RouterLink class="secondary-button" to="/settings#analysis-settings">Выбрать даты</RouterLink>
-        </div>
-        <div class="review-cue-grid review-cue-grid--primary">
-          <article v-for="cue in primaryReviewCues" :key="cue.id" class="review-cue" :class="`review-cue--${cue.tone}`">
-            <strong>{{ cue.title }}</strong>
-            <p>{{ cue.text }}</p>
-          </article>
-        </div>
-      </article>
+      <PeriodAnalysisCard
+        v-if="hasDailyData || hasJournalData"
+        section-id="ai-analysis"
+        title="На что обратить внимание"
+        :cues="primaryReviewCues"
+        :copying="promptCopying"
+        @copy="copyPrompt"
+        @download="downloadJson"
+      />
 
       <section
         v-if="results.length || lifeEvents.length"

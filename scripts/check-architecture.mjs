@@ -11,6 +11,16 @@ const reportThresholds = new Map([
   ['.ts', 500],
   ['.css', 500],
 ]);
+const hotspotLineBudgets = new Map([
+  ['src/views/TodayView.vue', 814],
+  ['src/views/SettingsView.vue', 773],
+  ['src/views/WeekView.vue', 726],
+  ['src/views/MonthView.vue', 596],
+  ['src/features/settings/useSettingsForm.ts', 645],
+  ['src/styles/reviews.css', 687],
+  ['src/styles/responsive-mobile.css', 671],
+  ['src/styles/shell.css', 535],
+]);
 const allowedDbOwners = new Set(['src/stores/app.ts', 'src/features/sync/base.ts']);
 const allowedServiceFeatureEdges = new Set(['src/services/analytics.ts']);
 const styleOwnerRules = [
@@ -151,15 +161,32 @@ const graph = new Map();
 const violations = [];
 const layerEdges = new Map();
 const largeFiles = [];
+const observedHotspots = new Set();
 
 for (const filePath of allFiles) {
   const extension = path.extname(filePath);
+  const relative = projectPath(filePath);
+  const hotspotBudget = hotspotLineBudgets.get(relative);
   const threshold = reportThresholds.get(extension);
-  if (threshold) {
-    const source = await readFile(filePath, 'utf8');
-    const lines = source.split(/\r?\n/).length;
+  const lines =
+    hotspotBudget !== undefined || threshold !== undefined ? (await readFile(filePath, 'utf8')).split(/\r?\n/).length : undefined;
+  if (hotspotBudget !== undefined) {
+    observedHotspots.add(relative);
+    if (lines > hotspotBudget) {
+      violations.push(
+        `${relative}: файл снова вырос с ${hotspotBudget} до ${lines} строк. Выделите самостоятельную ответственность или обоснуйте новый предел.`,
+      );
+    } else if (lines < hotspotBudget) {
+      violations.push(`${relative}: после сокращения файла уменьшите его предел с ${hotspotBudget} до ${lines} строк.`);
+    }
+  }
+  if (threshold !== undefined) {
     if (lines > threshold) largeFiles.push({ file: projectPath(filePath), lines, threshold });
   }
+}
+
+for (const filePath of hotspotLineBudgets.keys()) {
+  if (!observedHotspots.has(filePath)) violations.push(`${filePath}: файл из списка повторяющихся горячих точек не найден.`);
 }
 
 const cssFiles = allFiles.filter((filePath) => path.extname(filePath) === '.css');

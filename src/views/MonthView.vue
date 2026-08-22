@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue';
-import AiAnalysisSteps from '../features/analysis/ui/AiAnalysisSteps.vue';
+import { computed, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import type { EChartsCoreOption } from 'echarts/core';
 import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
 import PeriodRecordCard from '../features/reviews/ui/PeriodRecordCard.vue';
+import PeriodAnalysisCard from '../features/reviews/ui/PeriodAnalysisCard.vue';
+import { usePeriodReview } from '../features/reviews/usePeriodReview';
 import EChartPanel from '../shared/ui/charts/EChartPanel.vue';
 import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
 import PeriodNavigator from '../shared/ui/navigation/PeriodNavigator.vue';
@@ -18,12 +19,9 @@ import {
   summarize,
 } from '../services/analytics';
 import { addDays, dateRange, endOfMonth, formatDate, fromDateKey, startOfMonth, startOfWeek, todayKey, toDateKey } from '../services/dates';
-import { buildPeriodPackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../features/export/browser';
 import { buildWeightSeries } from '../features/analytics/weightSeries';
 import { pageCount, pageItems } from '../services/pagination';
 import { useAppStore } from '../stores/app';
-import { notifyInfo, notifySaved, notifyUnknownError } from '../services/notifications';
-import { plainCopy } from '../services/plain';
 import {
   actionDirectionOptions,
   contextFactorOptions,
@@ -56,14 +54,9 @@ const primaryReviewCues = computed(() => reviewCues.value.slice(0, 3));
 const additionalObservations = computed(() =>
   observations.value.filter((observation) => !['special-days', 'context-factor'].includes(observation.id)),
 );
-const hasSavedReview = computed(() => Boolean(store.reviewByMonth(start.value)));
 const hasDailyData = computed(() => summary.value.coveredEntriesCount > 0);
 const hasJournalData = computed(() => results.value.length > 0 || lifeEvents.value.length > 0);
 const hasPeriodData = computed(() => hasDailyData.value || hasJournalData.value || hasSavedReview.value);
-const reviewAvailable = computed(
-  () =>
-    hasSavedReview.value || end.value < todayKey() || (start.value === startOfMonth(todayKey()) && todayKey() >= addDays(end.value, -2)),
-);
 const monthDates = computed(() => dateRange(start.value, end.value));
 const chartDates = computed(() => monthDates.value.filter((date) => date <= todayKey()));
 const monthWeekSummaries = computed(() =>
@@ -292,79 +285,38 @@ const eventRecordItems = computed(() =>
 );
 const lifeAreaItems = computed(() => [...lifeAreaOptions, ...store.settings.customLifeAreaOptions]);
 const activeAreas = computed(() => lifeAreaItems.value.filter((option) => store.settings.activeLifeAreas.includes(option.id)));
-const review = reactive<MonthlyReview>(emptyMonthlyReview(start.value));
-const reviewSaving = ref(false);
-const promptCopying = ref(false);
-const reviewContextOpen = ref(false);
-const reviewHasContext = computed(() =>
-  Boolean(review.mainPattern.trim() || review.support.trim() || review.obstacle.trim() || review.courseChange.trim()),
-);
-
-function loadReview() {
-  const existing = store.reviewByMonth(start.value);
-  Object.assign(review, emptyMonthlyReview(start.value), existing ? plainCopy(existing) : {});
-  actionPage.value = 1;
-  contextPage.value = 1;
-  reviewContextOpen.value = reviewHasContext.value;
-}
-
-watch(start, loadReview, { immediate: true });
+const {
+  copyPrompt,
+  downloadJson,
+  hasSavedReview,
+  promptCopying,
+  review,
+  reviewAvailable,
+  reviewContextOpen,
+  reviewHasContext,
+  reviewSaving,
+  saveReview,
+  updateReviewContextOpen,
+} = usePeriodReview<MonthlyReview>({
+  period: 'month',
+  anchor,
+  start,
+  end,
+  emptyReview: emptyMonthlyReview,
+  findReview: (monthStart) => store.reviewByMonth(monthStart),
+  persistReview: (draft) => store.saveMonthlyReview(draft),
+  hasContext: (draft) => Boolean(draft.mainPattern.trim() || draft.support.trim() || draft.obstacle.trim() || draft.courseChange.trim()),
+  afterLoad: () => {
+    actionPage.value = 1;
+    contextPage.value = 1;
+  },
+});
 watch(actionPageCount, (count) => {
   actionPage.value = Math.min(actionPage.value, count);
 });
 watch(contextPageCount, (count) => {
   contextPage.value = Math.min(contextPage.value, count);
 });
-
-function updateReviewContextOpen(event: Event) {
-  reviewContextOpen.value = (event.currentTarget as HTMLDetailsElement).open;
-}
-
-async function saveReview() {
-  if (reviewSaving.value) return;
-  reviewSaving.value = true;
-  try {
-    await store.saveMonthlyReview(plainCopy(review));
-    notifySaved('Итог месяца сохранён');
-  } catch (error) {
-    notifyUnknownError(error, 'Не удалось сохранить итог месяца');
-  } finally {
-    reviewSaving.value = false;
-  }
-}
-
-function createPackage() {
-  return buildPeriodPackage('month', anchor.value, {
-    entries: store.dailyEntries,
-    results: store.results,
-    lifeEvents: store.lifeEvents,
-    reviews: store.weeklyReviews,
-    monthlyReviews: store.monthlyReviews,
-    settings: store.settings,
-  });
-}
-
-async function copyPrompt() {
-  if (promptCopying.value) return;
-  promptCopying.value = true;
-  try {
-    await copyPackagePrompt(createPackage(), store.settings);
-    notifySaved('Текст для нейросети скопирован');
-  } catch (error) {
-    notifyUnknownError(error, 'Не удалось подготовить текст для нейросети');
-  } finally {
-    promptCopying.value = false;
-  }
-}
-
-function downloadJson() {
-  try {
-    downloadAiPackage(createPackage());
-    notifyInfo('Данные месяца скачаны');
-  } catch (error) {
-    notifyUnknownError(error, 'Не удалось скачать данные месяца');
-  }
-}
 
 function minutesToHours(value: number | null): number | null {
   return value === null ? null : Math.round((value / 60) * 10) / 10;
@@ -493,34 +445,14 @@ function shiftMonth(offset: number) {
         <p>Его можно пропустить — дневные записи и сводка месяца останутся на месте.</p>
       </section>
 
-      <article v-if="hasDailyData || hasJournalData" class="dashboard-card">
-        <div class="section-heading">
-          <div>
-            <span class="eyebrow">Короткий разбор</span>
-            <h2>Месячный обзор</h2>
-          </div>
-          <div class="period-actions">
-            <button class="secondary-button" type="button" :disabled="promptCopying" :aria-busy="promptCopying" @click="copyPrompt">
-              Подготовить текст для нейросети
-            </button>
-            <button class="secondary-button" type="button" @click="downloadJson">Скачать данные</button>
-          </div>
-        </div>
-        <AiAnalysisSteps />
-        <div class="review-nudge range-custom-action" style="margin-top: 16px">
-          <div>
-            <strong>Нужен другой период?</strong>
-            <p>Выберите точные даты и подготовьте текст в настройках.</p>
-          </div>
-          <RouterLink class="secondary-button" to="/settings#analysis-settings">Выбрать даты</RouterLink>
-        </div>
-        <div class="review-cue-grid review-cue-grid--primary">
-          <article v-for="cue in primaryReviewCues" :key="cue.id" class="review-cue" :class="'review-cue--' + cue.tone">
-            <strong>{{ cue.title }}</strong>
-            <p>{{ cue.text }}</p>
-          </article>
-        </div>
-      </article>
+      <PeriodAnalysisCard
+        v-if="hasDailyData || hasJournalData"
+        title="Месячный обзор"
+        :cues="primaryReviewCues"
+        :copying="promptCopying"
+        @copy="copyPrompt"
+        @download="downloadJson"
+      />
 
       <details v-if="hasDailyData" class="period-details month-analysis-details">
         <summary>Показать выбранный показатель и подробный разбор</summary>
