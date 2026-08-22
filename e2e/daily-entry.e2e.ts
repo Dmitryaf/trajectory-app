@@ -82,6 +82,42 @@ test('keeps native mobile date and time inputs inside their cards', async ({ pag
   expect(dateOverflow).toBe(0);
 });
 
+test('keeps iPhone text and the current-goal placeholder inside their blocks', async ({ page }) => {
+  await openDailyEntry(page);
+  await page.getByRole('button', { name: 'Выбрать цель' }).first().click();
+
+  const criterion = page.getByLabel('Что считать шагом к цели');
+  const placeholderOverflow = await criterion.evaluate((field) => field.scrollHeight - field.clientHeight);
+  expect(placeholderOverflow).toBeLessThanOrEqual(2);
+
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.goto('/settings#daily-settings');
+  const settingsHeading = page.locator('.page--settings > .page-heading');
+  await expect(settingsHeading).toBeVisible();
+  expect(await settingsHeading.evaluate((heading) => getComputedStyle(heading, '::after').content)).toBe('none');
+
+  const movementTextSize = await page
+    .locator('.settings-card--movement .form-card__heading p')
+    .evaluate((text) => getComputedStyle(text).fontSize);
+  const lifeAreasTextSize = await page
+    .locator('.settings-card--areas .form-card__heading p')
+    .evaluate((text) => getComputedStyle(text).fontSize);
+  expect(movementTextSize).toBe(lifeAreasTextSize);
+});
+
+test('moves mobile navigation away while a form field is being edited', async ({ page }) => {
+  await openDailyEntry(page);
+  const navigation = page.locator('.bottom-nav');
+  const note = page.getByPlaceholder('Например: после прогулки стало легче собраться с мыслями');
+
+  await note.focus();
+  await expect(navigation).toHaveCSS('opacity', '0');
+  await expect(navigation).toHaveCSS('pointer-events', 'none');
+
+  await note.blur();
+  await expect(navigation).toHaveCSS('opacity', '1');
+});
+
 test('saves a dirty daily entry from the mobile action', async ({ page }) => {
   await openDailyEntry(page);
   const floatingSave = page.locator('.floating-save-button');

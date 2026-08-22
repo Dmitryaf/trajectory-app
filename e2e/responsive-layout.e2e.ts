@@ -283,7 +283,10 @@ test('explains the app from the permanent help button', async ({ page }) => {
   await expect(dialog).toContainText('Увидеть период целиком');
   await expect(dialog).toContainText('Сохранить следующее решение');
   await expect(page.locator('body')).toHaveCSS('position', 'fixed');
-  const dialogActions = dialog.locator('.help-dialog__actions a');
+  const dialogActions = dialog.locator(':scope > .help-dialog__actions > a');
+  const analysisLink = dialog.getByRole('link', { name: 'Подготовить текст для нейросети' });
+  await expect(analysisLink).toHaveCSS('display', 'flex');
+  await expect(analysisLink).toHaveCSS('background-color', 'rgb(233, 238, 234)');
   await expect(dialogActions).toHaveCount(2);
   await expect(dialogActions.nth(0)).toHaveCSS('text-align', 'center');
   await expect(dialogActions.nth(1)).toHaveCSS('text-align', 'center');
@@ -291,6 +294,12 @@ test('explains the app from the permanent help button', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Как работает приложение' })).toBeFocused();
   await expect(page.locator('body')).not.toHaveCSS('position', 'fixed');
   expect(await page.evaluate(() => window.scrollY)).toBe(scrollBeforeOpen);
+
+  await page.getByRole('button', { name: 'Как работает приложение' }).click();
+  await dialog.getByRole('link', { name: 'Настроить записи' }).click();
+  await expect(page).toHaveURL(/\/settings#daily-settings$/);
+  await expect(page.getByRole('button', { name: 'Ежедневная запись' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#daily-settings')).toBeVisible();
 });
 
 test('opens the exact settings section from a daily card', async ({ page }) => {

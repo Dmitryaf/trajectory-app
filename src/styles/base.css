@@ -50,6 +50,7 @@
 html {
   min-width: 320px;
   background: #f3f1eb;
+  -webkit-text-size-adjust: 100%;
 }
 body {
   margin: 0;

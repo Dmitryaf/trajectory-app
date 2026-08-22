@@ -143,11 +143,13 @@ const { startBackdropClose, finishBackdropClose, cancelBackdropClose } = useDial
           <strong id="external-analysis-title">Разобрать записи во внешней нейросети</strong>
           <p>Когда накопятся записи, приложение может собрать их в понятный текст для дополнительного разбора.</p>
           <AiAnalysisSteps />
-          <RouterLink to="/week#ai-analysis" @click="close">Подготовить текст для нейросети →</RouterLink>
+          <div class="help-dialog__actions">
+            <RouterLink class="secondary-button" to="/week#ai-analysis" @click="close">Подготовить текст для нейросети →</RouterLink>
+          </div>
         </section>
 
         <div class="help-dialog__actions">
-          <RouterLink class="secondary-button" to="/settings#daily-blocks" @click="close">Настроить записи</RouterLink>
+          <RouterLink class="secondary-button" to="/settings#daily-settings" @click="close">Настроить записи</RouterLink>
           <RouterLink class="primary-button" to="/" @click="close">Начать запись</RouterLink>
         </div>
       </section>

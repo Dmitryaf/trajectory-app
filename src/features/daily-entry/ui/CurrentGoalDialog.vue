@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { nextTick, ref, toRef, watch } from 'vue';
+import AutoGrowTextarea from '../../../shared/ui/forms/AutoGrowTextarea.vue';
 import DialogCloseButton from '../../../shared/ui/overlays/DialogCloseButton.vue';
 import { useBodyScrollLock } from '../../../shared/ui/overlays/useBodyScrollLock';
 import { useDialogBackdropClose } from '../../../shared/ui/overlays/useDialogBackdropClose';
@@ -124,13 +125,13 @@ function remove() {
           <input id="current-goal-review-date" v-model="draftReviewDate" type="date" />
 
           <label class="field-label" for="current-goal-evidence">Что считать шагом к цели</label>
-          <textarea
+          <AutoGrowTextarea
             id="current-goal-evidence"
             v-model="draftExternalEvidenceCriterion"
-            rows="2"
-            maxlength="220"
+            :rows="2"
+            :max-length="220"
             placeholder="Например: выполненное задание, тренировка, разговор или принятое решение"
-          ></textarea>
+          />
           <p class="goal-dialog__hint">Цель помогает связать отдельные шаги с периодом, но не обязательна для сохранения дня.</p>
 
           <div class="goal-dialog__actions">

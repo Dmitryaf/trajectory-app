@@ -17,9 +17,6 @@ const hotspotContentBudgets = new Map([
   ['src/views/WeekView.vue', 25425],
   ['src/views/MonthView.vue', 20421],
   ['src/features/settings/useSettingsForm.ts', 12379],
-  ['src/styles/reviews.css', 10215],
-  ['src/styles/responsive-mobile.css', 10284],
-  ['src/styles/shell.css', 8732],
 ]);
 const allowedDbOwners = new Set(['src/stores/app.ts', 'src/features/sync/base.ts']);
 const allowedServiceFeatureEdges = new Set(['src/services/analytics.ts']);

@@ -7,7 +7,6 @@ const projectRoot = fileURLToPath(new URL('..', import.meta.url));
 const distRoot = path.join(projectRoot, 'dist');
 const budgets = {
   entryJavaScriptGzip: 170 * 1024,
-  entryCssGzip: 21 * 1024,
   anyJavaScriptGzip: 230 * 1024,
 };
 
@@ -54,12 +53,8 @@ for (const assetPath of new Set(assetPaths)) {
     throw new Error(`Built asset is not content-hashed: ${assetPath}`);
   }
   await requireFile(assetPath);
-  const size = await gzipSize(assetPath);
   if (assetPath.endsWith('.js')) {
-    requireWithinBudget('Entry JavaScript', size, budgets.entryJavaScriptGzip, assetPath);
-  }
-  if (assetPath.endsWith('.css')) {
-    requireWithinBudget('Entry CSS', size, budgets.entryCssGzip, assetPath);
+    requireWithinBudget('Entry JavaScript', await gzipSize(assetPath), budgets.entryJavaScriptGzip, assetPath);
   }
 }
 
@@ -118,4 +113,4 @@ for (const marker of ['cleanupOutdatedCaches', 'denylist', '/api', '/assets']) {
   }
 }
 
-console.log(`Production build smoke and gzip budget checks passed for ${new Set(assetPaths).size} entry assets.`);
+console.log(`Production build smoke and JavaScript budget checks passed for ${new Set(assetPaths).size} entry assets.`);

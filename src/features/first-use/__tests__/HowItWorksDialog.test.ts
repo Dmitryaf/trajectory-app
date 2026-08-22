@@ -45,6 +45,10 @@ describe('HowItWorksDialog', () => {
     expect(document.body.textContent).toContain('Сохранить следующее решение');
     expect(document.body.textContent).toContain('Разобрать записи во внешней нейросети');
     expect(document.body.textContent).toContain('приложение ничего не отправляет');
+    const analysisLink = document.querySelector('a[href="/week#ai-analysis"]');
+    const settingsLink = document.querySelector('a[href="/settings#daily-settings"]');
+    expect(analysisLink?.classList.contains('secondary-button')).toBe(true);
+    expect(settingsLink).not.toBeNull();
 
     (document.querySelector('[aria-label="Закрыть объяснение"]') as HTMLButtonElement).click();
     await flushPromises();

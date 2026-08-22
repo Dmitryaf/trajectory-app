@@ -10,15 +10,6 @@
   background: linear-gradient(135deg, #fff, #e3f4ed);
   box-shadow: var(--shadow-soft);
 }
-.page--settings > .page-heading::after {
-  content: '⚙';
-  position: absolute;
-  right: 28px;
-  color: rgba(29, 81, 72, 0.1);
-  font-size: 126px;
-  line-height: 1;
-  transform: rotate(12deg);
-}
 .page--settings > .page-heading > * {
   position: relative;
   z-index: 1;
@@ -26,7 +17,6 @@
 .page--settings > .page-heading h1 {
   margin-top: 5px;
   font-size: clamp(38px, 5vw, 58px);
-  letter-spacing: -0.045em;
 }
 .settings-card {
   --settings-accent: var(--mint);
