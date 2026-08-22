@@ -59,11 +59,21 @@ export function useSettingsForm() {
   const newContextFactorLabel = ref('');
   const newPassword = ref('');
   const newPasswordConfirmation = ref('');
+  const passwordUpdateStatus = ref('');
   const analysisStart = ref(addDays(todayKey(), -30));
   const analysisEnd = ref(todayKey());
   const analysisMaxDate = todayKey();
   const savingActions = reactive(new Set<string>());
   const auth = useAuthStore();
+  watch([newPassword, newPasswordConfirmation], ([password, confirmation]) => {
+    if (password || confirmation) passwordUpdateStatus.value = '';
+  });
+  watch(
+    () => auth.session?.user.id,
+    () => {
+      passwordUpdateStatus.value = '';
+    },
+  );
   const allCareerOptions = computed(() => {
     const usedIds = new Set([
       ...store.dailyEntries.flatMap((entry) => entry.careerStates),
@@ -404,6 +414,7 @@ export function useSettingsForm() {
   }
 
   async function signOutCloud() {
+    passwordUpdateStatus.value = '';
     try {
       await auth.signOut();
       notifyInfo('Выход выполнен');
@@ -413,6 +424,7 @@ export function useSettingsForm() {
   }
 
   async function changePassword() {
+    passwordUpdateStatus.value = '';
     if (newPassword.value.length < 8) {
       notifyError('Пароль должен содержать не меньше 8 символов');
       return;
@@ -425,6 +437,7 @@ export function useSettingsForm() {
       await auth.updatePassword(newPassword.value);
       newPassword.value = '';
       newPasswordConfirmation.value = '';
+      passwordUpdateStatus.value = 'Пароль обновлён';
       notifySaved('Пароль изменён');
     } catch {
       notifyError(auth.error || 'Не удалось изменить пароль');
@@ -583,6 +596,7 @@ export function useSettingsForm() {
     newContextFactorLabel,
     newPassword,
     newPasswordConfirmation,
+    passwordUpdateStatus,
     analysisStart,
     analysisEnd,
     analysisMaxDate,

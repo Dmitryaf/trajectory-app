@@ -77,6 +77,7 @@ const {
   newContextFactorLabel,
   newPassword,
   newPasswordConfirmation,
+  passwordUpdateStatus,
   analysisStart,
   analysisEnd,
   analysisMaxDate,
@@ -746,6 +747,9 @@ const {
               <button class="secondary-button" type="button" :disabled="auth.loading || !newPassword" @click="changePassword">
                 Сохранить новый пароль
               </button>
+              <p v-if="passwordUpdateStatus" class="settings-status" role="status" aria-live="polite">
+                {{ passwordUpdateStatus }}
+              </p>
             </div>
           </details>
           <div class="danger-zone">
