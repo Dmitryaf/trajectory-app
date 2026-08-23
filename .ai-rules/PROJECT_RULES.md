@@ -17,7 +17,9 @@
 ## Структура и документация
 
 - [`../docs/README.md`](../docs/README.md) — индекс проектной документации; не читать всю папку `docs/` без связи с задачей.
-- [`../docs/agent/WORKFLOW.md`](../docs/agent/WORKFLOW.md), [`QUALITY.md`](../docs/agent/QUALITY.md) и [`PRODUCT.md`](../docs/agent/PRODUCT.md) — подробный локальный процесс, проверки и UI-ограничения.
+- [`../docs/agent/WORKFLOW.md`](../docs/agent/WORKFLOW.md) — локальный процесс; читать в начале средней или большой задачи.
+- В [`../docs/agent/QUALITY.md`](../docs/agent/QUALITY.md) до реализации читать относящиеся к изменению канонические решения для повторяющихся регрессий, а перед проверками — относящиеся к задаче критерии самопроверки.
+- [`../docs/agent/PRODUCT.md`](../docs/agent/PRODUCT.md) — локальные продуктовые и UI-ограничения; читать для продуктовых, текстовых и интерфейсных изменений.
 - [`../docs/product/PRODUCT_RULES.md`](../docs/product/PRODUCT_RULES.md) и [`ANALYTICS_DATA_CONTRACT.md`](../docs/product/ANALYTICS_DATA_CONTRACT.md) — канонические продуктовые и аналитические инварианты.
 - [`../docs/development/ARCHITECTURE.md`](../docs/development/ARCHITECTURE.md) — границы `src/features`, `src/model`, store, views и общих модулей.
 - [`../docs/operations/DATA_GOVERNANCE.md`](../docs/operations/DATA_GOVERNANCE.md), [`BETA_RELEASE.md`](../docs/operations/BETA_RELEASE.md) и [`DELIVERY.md`](../docs/operations/DELIVERY.md) — данные, beta-gate, ветки и выпуск.

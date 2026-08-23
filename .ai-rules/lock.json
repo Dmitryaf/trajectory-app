@@ -1,108 +1,104 @@
-﻿{
-    "schemaVersion":  "0.2",
-    "generatedAtUtc":  "2026-08-20T09:17:10.8580455Z",
-    "source":  {
-                   "repository":  "ai-rules-hub",
-                   "revision":  "ef27daa7f059b70397ba5cf4e3d9285163e88c3d",
-                   "dirty":  false,
-                   "catalogVersion":  "0.1"
-               },
-    "manifest":  ".ai-rules/manifest.json",
-    "managedRoot":  ".ai-rules/upstream",
-    "topics":  [
-                   "ai-collaboration",
-                   "architecture-and-data",
-                   "documentation",
-                   "git-and-delivery",
-                   "implementation",
-                   "product",
-                   "quality",
-                   "research-and-evidence",
-                   "security-and-privacy"
-               ],
-    "profiles":  [
-                     "data-sensitive",
-                     "research-driven",
-                     "standard-product"
-                 ],
-    "files":  [
-                  {
-                      "source":  "rules/CORE.md",
-                      "target":  ".ai-rules/upstream/CORE.md",
-                      "sha256":  "b4daf486805650343925f6e23f0891e3638cde4023ea606f38f2bbd9da5e0786",
-                      "state":  "managed"
-                  },
-                  {
-                      "source":  "profiles/data-sensitive.md",
-                      "target":  ".ai-rules/upstream/profiles/data-sensitive.md",
-                      "sha256":  "25f186c3724f4676beadaa59d446e0edd10ac97044df18cde0d6d0d867e17e29",
-                      "state":  "managed"
-                  },
-                  {
-                      "source":  "profiles/research-driven.md",
-                      "target":  ".ai-rules/upstream/profiles/research-driven.md",
-                      "sha256":  "43239c80dc380207e9625acca7b633a20d4e1700222705a4390711c49a8de5c2",
-                      "state":  "managed"
-                  },
-                  {
-                      "source":  "profiles/standard-product.md",
-                      "target":  ".ai-rules/upstream/profiles/standard-product.md",
-                      "sha256":  "e4a4a719d535fc9ddc69629000882e07ddc250597b1cde7799a56fb57d930c64",
-                      "state":  "managed"
-                  },
-                  {
-                      "source":  "rules/AI_COLLABORATION.md",
-                      "target":  ".ai-rules/upstream/rules/AI_COLLABORATION.md",
-                      "sha256":  "2182c05f4120cfddc6fc6e62027a78d7ffc37a459f8a5370bb50667c5f6ff70f",
-                      "state":  "managed"
-                  },
-                  {
-                      "source":  "rules/ARCHITECTURE_AND_DATA.md",
-                      "target":  ".ai-rules/upstream/rules/ARCHITECTURE_AND_DATA.md",
-                      "sha256":  "34e66d67ea09603b563120f149ca53fe397987f486191e44a66eeefa5819a3d8",
-                      "state":  "managed"
-                  },
-                  {
-                      "source":  "rules/DOCUMENTATION.md",
-                      "target":  ".ai-rules/upstream/rules/DOCUMENTATION.md",
-                      "sha256":  "214cc86e8ae6481eaf0a5f51da6d058e2bb419faa5766bee28fc6f9d7042c2cf",
-                      "state":  "managed"
-                  },
-                  {
-                      "source":  "rules/GIT_AND_DELIVERY.md",
-                      "target":  ".ai-rules/upstream/rules/GIT_AND_DELIVERY.md",
-                      "sha256":  "0cbe33b3e46f54dfeaabe7bb44c0a3da1b534fea8a35d8c6568fc56d4430d7a3",
-                      "state":  "managed"
-                  },
-                  {
-                      "source":  "rules/IMPLEMENTATION.md",
-                      "target":  ".ai-rules/upstream/rules/IMPLEMENTATION.md",
-                      "sha256":  "fb818e10d9f9a72e3c5c03c4e4cd5c53f7f00c15ed71884e768110d463c8981e",
-                      "state":  "managed"
-                  },
-                  {
-                      "source":  "rules/PRODUCT.md",
-                      "target":  ".ai-rules/upstream/rules/PRODUCT.md",
-                      "sha256":  "79eefe7b70d9d6411e078cd262bc26edb98a3e993740032b9b90252c035dcd54",
-                      "state":  "managed"
-                  },
-                  {
-                      "source":  "rules/QUALITY.md",
-                      "target":  ".ai-rules/upstream/rules/QUALITY.md",
-                      "sha256":  "2c1c627f96de27121b5ef8599874785b44cdbe3d8ec487c9ad8de611788c1f76",
-                      "state":  "managed"
-                  },
-                  {
-                      "source":  "rules/RESEARCH_AND_EVIDENCE.md",
-                      "target":  ".ai-rules/upstream/rules/RESEARCH_AND_EVIDENCE.md",
-                      "sha256":  "592f78446ae6305e2d6b58e7f691a2cf5f4f1097b5a8d9745d97324b83b3ce14",
-                      "state":  "managed"
-                  },
-                  {
-                      "source":  "rules/SECURITY_AND_PRIVACY.md",
-                      "target":  ".ai-rules/upstream/rules/SECURITY_AND_PRIVACY.md",
-                      "sha256":  "ea661f3f7495c351d21b5692595a09dd1a12aad31396d29d4155b830d58f7b31",
-                      "state":  "managed"
-                  }
-              ]
+{
+  "schemaVersion": "0.2",
+  "generatedAtUtc": "2026-08-23T13:11:20.3951818Z",
+  "source": {
+    "repository": "ai-rules-hub",
+    "revision": "121c1872ef3069a0c8d43a80eb950b25b4ee004b",
+    "dirty": false,
+    "catalogVersion": "0.1"
+  },
+  "manifest": ".ai-rules/manifest.json",
+  "managedRoot": ".ai-rules/upstream",
+  "topics": [
+    "ai-collaboration",
+    "architecture-and-data",
+    "documentation",
+    "git-and-delivery",
+    "implementation",
+    "product",
+    "quality",
+    "research-and-evidence",
+    "security-and-privacy"
+  ],
+  "profiles": ["data-sensitive", "research-driven", "standard-product"],
+  "files": [
+    {
+      "source": "rules/CORE.md",
+      "target": ".ai-rules/upstream/CORE.md",
+      "sha256": "8374683f710c1852111a907d0972c57b2706af3aa74e786095aefb79c210d41d",
+      "state": "managed"
+    },
+    {
+      "source": "profiles/data-sensitive.md",
+      "target": ".ai-rules/upstream/profiles/data-sensitive.md",
+      "sha256": "9db62b9dc307d6bbbbbc2f485aec9e597e35f8400a7bdfc834c7e6a67d13b775",
+      "state": "managed"
+    },
+    {
+      "source": "profiles/research-driven.md",
+      "target": ".ai-rules/upstream/profiles/research-driven.md",
+      "sha256": "653a3628db85a463baacabe825d620fa8ef4a30c1ce0b4b45b52def03215fc60",
+      "state": "managed"
+    },
+    {
+      "source": "profiles/standard-product.md",
+      "target": ".ai-rules/upstream/profiles/standard-product.md",
+      "sha256": "489b897bcaba30ba71e2b6c028813b323bf82afa7765979e8def6e3710d29b78",
+      "state": "managed"
+    },
+    {
+      "source": "rules/AI_COLLABORATION.md",
+      "target": ".ai-rules/upstream/rules/AI_COLLABORATION.md",
+      "sha256": "ac3aa469bed6bfeda503419a166a9e25de2b159a0441f423b0277ae5d0157f85",
+      "state": "managed"
+    },
+    {
+      "source": "rules/ARCHITECTURE_AND_DATA.md",
+      "target": ".ai-rules/upstream/rules/ARCHITECTURE_AND_DATA.md",
+      "sha256": "34e66d67ea09603b563120f149ca53fe397987f486191e44a66eeefa5819a3d8",
+      "state": "managed"
+    },
+    {
+      "source": "rules/DOCUMENTATION.md",
+      "target": ".ai-rules/upstream/rules/DOCUMENTATION.md",
+      "sha256": "214cc86e8ae6481eaf0a5f51da6d058e2bb419faa5766bee28fc6f9d7042c2cf",
+      "state": "managed"
+    },
+    {
+      "source": "rules/GIT_AND_DELIVERY.md",
+      "target": ".ai-rules/upstream/rules/GIT_AND_DELIVERY.md",
+      "sha256": "0cbe33b3e46f54dfeaabe7bb44c0a3da1b534fea8a35d8c6568fc56d4430d7a3",
+      "state": "managed"
+    },
+    {
+      "source": "rules/IMPLEMENTATION.md",
+      "target": ".ai-rules/upstream/rules/IMPLEMENTATION.md",
+      "sha256": "fb818e10d9f9a72e3c5c03c4e4cd5c53f7f00c15ed71884e768110d463c8981e",
+      "state": "managed"
+    },
+    {
+      "source": "rules/PRODUCT.md",
+      "target": ".ai-rules/upstream/rules/PRODUCT.md",
+      "sha256": "27818adc7a3b5ce8145e932bcbda5681b2800c80d02b1e26a36f776645fb7a31",
+      "state": "managed"
+    },
+    {
+      "source": "rules/QUALITY.md",
+      "target": ".ai-rules/upstream/rules/QUALITY.md",
+      "sha256": "2c1c627f96de27121b5ef8599874785b44cdbe3d8ec487c9ad8de611788c1f76",
+      "state": "managed"
+    },
+    {
+      "source": "rules/RESEARCH_AND_EVIDENCE.md",
+      "target": ".ai-rules/upstream/rules/RESEARCH_AND_EVIDENCE.md",
+      "sha256": "3179049abe5e3115ab2744b84b889b2346fee00f9faec37b66a906b12a324536",
+      "state": "managed"
+    },
+    {
+      "source": "rules/SECURITY_AND_PRIVACY.md",
+      "target": ".ai-rules/upstream/rules/SECURITY_AND_PRIVACY.md",
+      "sha256": "c9d126819ef79c75e7613648b62ddbb88b79e9a32c62ce1bd51c52583fd18c53",
+      "state": "managed"
+    }
+  ]
 }
