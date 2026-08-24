@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { formatDate } from '../../../services/dates';
+import { formatDate } from '@/services/dates';
 
 const props = defineProps<{
   dateFrom: string;

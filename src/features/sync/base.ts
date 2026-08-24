@@ -1,4 +1,4 @@
-import { db } from '../../db';
+import { db } from '@/db';
 import { normalizeSnapshot, type ExportPayload } from '../backup/snapshot';
 
 export async function loadCloudSyncBase(userId: string): Promise<{ revision: number; snapshot: ExportPayload } | null> {

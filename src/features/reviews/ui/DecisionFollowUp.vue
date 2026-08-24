@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatDate } from '../../../services/dates';
+import { formatDate } from '@/services/dates';
 import type { DecisionFollowUp } from '../decisionFollowUp';
 
 defineProps<{ followUp: DecisionFollowUp }>();

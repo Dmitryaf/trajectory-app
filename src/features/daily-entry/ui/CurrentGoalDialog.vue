@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { nextTick, ref, toRef, watch } from 'vue';
-import AutoGrowTextarea from '../../../shared/ui/forms/AutoGrowTextarea.vue';
-import DialogCloseButton from '../../../shared/ui/overlays/DialogCloseButton.vue';
-import { useBodyScrollLock } from '../../../shared/ui/overlays/useBodyScrollLock';
-import { useDialogBackdropClose } from '../../../shared/ui/overlays/useDialogBackdropClose';
-import { useDialogFocus } from '../../../shared/ui/overlays/useDialogFocus';
+import AutoGrowTextarea from '@/shared/ui/forms/AutoGrowTextarea.vue';
+import DialogCloseButton from '@/shared/ui/overlays/DialogCloseButton.vue';
+import { useBodyScrollLock } from '@/shared/ui/overlays/useBodyScrollLock';
+import { useDialogBackdropClose } from '@/shared/ui/overlays/useDialogBackdropClose';
+import { useDialogFocus } from '@/shared/ui/overlays/useDialogFocus';
 
 const props = defineProps<{
   open: boolean;

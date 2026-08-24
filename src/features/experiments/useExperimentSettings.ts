@@ -1,9 +1,9 @@
 import { computed } from 'vue';
-import { todayKey } from '../../services/dates';
-import { notifyError } from '../../services/notifications';
-import { plainCopy } from '../../services/plain';
-import { useAppStore } from '../../stores/app';
-import type { AppSettings } from '../../types';
+import { todayKey } from '@/services/dates';
+import { notifyError } from '@/services/notifications';
+import { plainCopy } from '@/services/plain';
+import { useAppStore } from '@/stores/app';
+import type { AppSettings } from '@/types';
 import {
   createExperimentId,
   createExperimentRecord,

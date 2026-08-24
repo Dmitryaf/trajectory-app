@@ -1,10 +1,10 @@
 import { computed, reactive, ref, watch, type Ref } from 'vue';
 import { buildPeriodPackage, copyAiPrompt, downloadAiPackage } from '../export/browser';
-import { addDays, startOfMonth, startOfWeek, todayKey } from '../../services/dates';
-import { notifyInfo, notifySaved, notifyUnknownError } from '../../services/notifications';
-import { plainCopy } from '../../services/plain';
-import { useAppStore } from '../../stores/app';
-import type { MonthlyReview, WeeklyReview } from '../../types';
+import { addDays, startOfMonth, startOfWeek, todayKey } from '@/services/dates';
+import { notifyInfo, notifySaved, notifyUnknownError } from '@/services/notifications';
+import { plainCopy } from '@/services/plain';
+import { useAppStore } from '@/stores/app';
+import type { MonthlyReview, WeeklyReview } from '@/types';
 
 type Period = 'week' | 'month';
 type PeriodReview = WeeklyReview | MonthlyReview;

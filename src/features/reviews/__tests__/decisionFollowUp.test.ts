@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import { buildDecisionFollowUp } from '../decisionFollowUp';
 import DecisionFollowUp from '../ui/DecisionFollowUp.vue';
-import { emptyDailyEntry, emptyWeeklyReview } from '../../../types';
+import { emptyDailyEntry, emptyWeeklyReview } from '@/types';
 
 describe('decision follow-up', () => {
   it('links only sequential reviewed weeks with an explicit user check', () => {

@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends string">
-import type { Option } from '../../../types';
+import type { Option } from '@/types';
 
 const props = defineProps<{
   options: Option<T>[];

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue';
-import DialogCloseButton from '../../../shared/ui/overlays/DialogCloseButton.vue';
-import { useBodyScrollLock } from '../../../shared/ui/overlays/useBodyScrollLock';
-import { useDialogBackdropClose } from '../../../shared/ui/overlays/useDialogBackdropClose';
-import { useDialogFocus } from '../../../shared/ui/overlays/useDialogFocus';
-import AiAnalysisSteps from '../../analysis/ui/AiAnalysisSteps.vue';
+import DialogCloseButton from '@/shared/ui/overlays/DialogCloseButton.vue';
+import { useBodyScrollLock } from '@/shared/ui/overlays/useBodyScrollLock';
+import { useDialogBackdropClose } from '@/shared/ui/overlays/useDialogBackdropClose';
+import { useDialogFocus } from '@/shared/ui/overlays/useDialogFocus';
+import AiAnalysisSteps from '@/features/analysis/ui/AiAnalysisSteps.vue';
 
 const props = withDefaults(
   defineProps<{

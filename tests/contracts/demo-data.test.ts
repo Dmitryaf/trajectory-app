@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { buildDemoPayload, DEMO_BACKUP_VERSION } from '../../scripts/generate-test-user-data.mjs';
-import { normalizeSnapshot } from '../../src/features/backup/snapshot';
-import { BACKUP_VERSION } from '../../src/features/backup/version';
-import { SETTINGS_VERSION } from '../../src/model/dataVersions';
-import { currentDailyEntrySchemaVersion } from '../../src/model/schema';
-import { normalizeDailyEntry, normalizeLifeEvent, normalizeSettings } from '../../src/types';
+import { normalizeSnapshot } from '@/features/backup/snapshot';
+import { BACKUP_VERSION } from '@/features/backup/version';
+import { SETTINGS_VERSION } from '@/model/dataVersions';
+import { currentDailyEntrySchemaVersion } from '@/model/schema';
+import { normalizeDailyEntry, normalizeLifeEvent, normalizeSettings } from '@/types';
 
 const anchor = '2026-08-11';
 

@@ -1,5 +1,5 @@
-import { formatDate, formatMinutes } from '../../services/dates';
-import { summarize, weekSummaryText } from '../../services/analytics';
+import { formatDate, formatMinutes } from '@/services/dates';
+import { summarize, weekSummaryText } from '@/services/analytics';
 import { experimentDecisionLabel } from '../experiments/model';
 import type { ExperimentSummary } from '../analytics/experimentComparison';
 import {
@@ -12,7 +12,7 @@ import {
   type ExperimentRecord,
   type MonthlyReview,
   type WeeklyReview,
-} from '../../types';
+} from '@/types';
 import { AI_PROMPT_CHARACTER_LIMIT, type AiReportPayload } from './payload';
 
 export function buildAiReportPrompt(payload: AiReportPayload, settings: AppSettings): string {

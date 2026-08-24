@@ -39,7 +39,7 @@
 .range-tabs button {
   border: 1px solid var(--line);
   border-radius: 13px;
-  background: #fff;
+  background: var(--surface);
   padding: 10px 14px;
   color: #667189;
   cursor: pointer;

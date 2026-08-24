@@ -15,8 +15,8 @@ const hotspotContentBudgets = new Map([
   ['src/views/TodayView.vue', 27524],
   ['src/views/SettingsView.vue', 15023],
   ['src/views/WeekView.vue', 25425],
-  ['src/views/MonthView.vue', 20421],
-  ['src/features/settings/useSettingsForm.ts', 12379],
+  ['src/views/MonthView.vue', 20419],
+  ['src/features/settings/useSettingsForm.ts', 12359],
 ]);
 const allowedDbOwners = new Set(['src/stores/app.ts', 'src/features/sync/base.ts']);
 const allowedServiceFeatureEdges = new Set(['src/services/analytics.ts']);
@@ -98,7 +98,7 @@ function localSpecifiers(filePath, source) {
   function visit(node) {
     if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier) {
       const specifier = node.moduleSpecifier.text;
-      if (specifier.startsWith('.')) {
+      if (specifier.startsWith('.') || specifier.startsWith('@/')) {
         specifiers.add(specifier);
       }
     } else if (
@@ -108,7 +108,7 @@ function localSpecifiers(filePath, source) {
       ts.isStringLiteral(node.arguments[0])
     ) {
       const specifier = node.arguments[0].text;
-      if (specifier.startsWith('.')) {
+      if (specifier.startsWith('.') || specifier.startsWith('@/')) {
         specifiers.add(specifier);
       }
     }
@@ -119,7 +119,7 @@ function localSpecifiers(filePath, source) {
 }
 
 function resolveLocalImport(importer, specifier, knownFiles) {
-  const base = path.resolve(path.dirname(importer), specifier);
+  const base = specifier.startsWith('@/') ? path.resolve(sourceRoot, specifier.slice(2)) : path.resolve(path.dirname(importer), specifier);
   const candidates = [
     base,
     ...[...sourceExtensions].map((extension) => `${base}${extension}`),

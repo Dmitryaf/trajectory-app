@@ -1,6 +1,6 @@
-import type { ContextFactorId, DailyEntry, LifeEventRecord, Option, ResultRecord } from '../../types';
-import { contextFactorOptions, externalCareerStates } from '../../types';
-import { formatMinutes } from '../../services/dates';
+import type { ContextFactorId, DailyEntry, LifeEventRecord, Option, ResultRecord } from '@/types';
+import { contextFactorOptions, externalCareerStates } from '@/types';
+import { formatMinutes } from '@/services/dates';
 import { dataCoverageLevel } from './coverage';
 import { factorComparisonText, factorSummaries } from './observations';
 import { summarize, type PeriodSummary } from './periodSummary';

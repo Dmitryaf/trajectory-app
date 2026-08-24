@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import ArchivePagination from '../../journal/ui/ArchivePagination.vue';
+import ArchivePagination from '@/features/journal/ui/ArchivePagination.vue';
 
 interface PeriodRecordItem {
   id: string | number;

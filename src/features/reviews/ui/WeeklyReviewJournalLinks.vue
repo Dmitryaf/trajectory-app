@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
-import { recordFirstUseEvent } from '../../first-use/funnel';
-import { addDays, formatDate } from '../../../services/dates';
-import { useAppStore } from '../../../stores/app';
-import { lifeEventTypeOptions, resultAreaOptions, type LifeEventType, type ResultRecord, type WeeklyReview } from '../../../types';
+import { recordFirstUseEvent } from '@/features/first-use/funnel';
+import { addDays, formatDate } from '@/services/dates';
+import { useAppStore } from '@/stores/app';
+import { lifeEventTypeOptions, resultAreaOptions, type LifeEventType, type ResultRecord, type WeeklyReview } from '@/types';
 
 type JournalItem = {
   key: string;

@@ -2,13 +2,14 @@
 import { computed, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import type { EChartsCoreOption } from 'echarts/core';
-import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
-import PeriodRecordCard from '../features/reviews/ui/PeriodRecordCard.vue';
-import PeriodAnalysisCard from '../features/reviews/ui/PeriodAnalysisCard.vue';
-import { usePeriodReview } from '../features/reviews/usePeriodReview';
-import EChartPanel from '../shared/ui/charts/EChartPanel.vue';
-import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
-import PeriodNavigator from '../shared/ui/navigation/PeriodNavigator.vue';
+import ArchivePagination from '@/features/journal/ui/ArchivePagination.vue';
+import PeriodRecordCard from '@/features/reviews/ui/PeriodRecordCard.vue';
+import PeriodAnalysisCard from '@/features/reviews/ui/PeriodAnalysisCard.vue';
+import { usePeriodReview } from '@/features/reviews/usePeriodReview';
+import EChartPanel from '@/shared/ui/charts/EChartPanel.vue';
+import AutoGrowTextarea from '@/shared/ui/forms/AutoGrowTextarea.vue';
+import PeriodNavigator from '@/shared/ui/navigation/PeriodNavigator.vue';
+import { chartColors as c, chartStyles as s } from '@/shared/theme/colors';
 import {
   actionDirectionLabel,
   buildObservations,
@@ -17,11 +18,11 @@ import {
   resultsForPeriod,
   specialDayLabel,
   summarize,
-} from '../services/analytics';
-import { addDays, dateRange, endOfMonth, formatDate, fromDateKey, startOfMonth, startOfWeek, todayKey, toDateKey } from '../services/dates';
-import { buildWeightSeries } from '../features/analytics/weightSeries';
-import { pageCount, pageItems } from '../services/pagination';
-import { useAppStore } from '../stores/app';
+} from '@/services/analytics';
+import { addDays, dateRange, endOfMonth, formatDate, fromDateKey, startOfMonth, startOfWeek, todayKey, toDateKey } from '@/services/dates';
+import { buildWeightSeries } from '@/features/analytics/weightSeries';
+import { pageCount, pageItems } from '@/services/pagination';
+import { useAppStore } from '@/stores/app';
 import {
   actionDirectionOptions,
   contextFactorOptions,
@@ -31,7 +32,7 @@ import {
   lifeEventTypeOptions,
   resultAreaOptions,
   type MonthlyReview,
-} from '../types';
+} from '@/types';
 
 const store = useAppStore();
 const anchor = ref(todayKey());
@@ -115,23 +116,23 @@ const sleepOption = computed<EChartsCoreOption>(() => {
     return { date, entry: entry?.specialDay === null ? entry : undefined };
   });
   return {
-    color: ['#7467e8'],
+    color: [c.sleep],
     tooltip: { trigger: 'axis', valueFormatter: (value: number) => `${value} ч` },
     grid: { left: 46, right: 24, top: 20, bottom: 34 },
     xAxis: {
       type: 'category',
       data: rows.map((row) => formatDate(row.date, { day: 'numeric' })),
       axisTick: { show: false },
-      axisLine: { lineStyle: { color: '#dfe4ed' } },
-      axisLabel: { color: '#7d8798' },
+      axisLine: { lineStyle: s.axisLine },
+      axisLabel: s.axisLabel,
     },
     yAxis: {
       type: 'value',
       min: 0,
       max: 12,
       interval: 3,
-      axisLabel: { formatter: '{value}ч', color: '#7d8798' },
-      splitLine: { lineStyle: { color: '#edf1f6' } },
+      axisLabel: { formatter: '{value}ч', color: c.axis },
+      splitLine: { lineStyle: s.splitLine },
     },
     series: [
       {
@@ -146,23 +147,23 @@ const sleepOption = computed<EChartsCoreOption>(() => {
   };
 });
 const energyOption = computed<EChartsCoreOption>(() => ({
-  color: ['#2eaa7f'],
+  color: [c.energy],
   tooltip: { trigger: 'axis', valueFormatter: (value: number) => `${value}/5` },
   grid: { left: 42, right: 24, top: 20, bottom: 34 },
   xAxis: {
     type: 'category',
     data: chartDates.value.map((date) => formatDate(date, { day: 'numeric' })),
     axisTick: { show: false },
-    axisLine: { lineStyle: { color: '#dfe4ed' } },
-    axisLabel: { color: '#7d8798' },
+    axisLine: { lineStyle: s.axisLine },
+    axisLabel: s.axisLabel,
   },
   yAxis: {
     type: 'value',
     min: 1,
     max: 5,
     interval: 1,
-    axisLabel: { color: '#7d8798' },
-    splitLine: { lineStyle: { color: '#edf1f6' } },
+    axisLabel: s.axisLabel,
+    splitLine: { lineStyle: s.splitLine },
   },
   series: [
     {
@@ -193,22 +194,22 @@ const weightOption = computed<EChartsCoreOption>(() => {
       ]
     : [];
   return {
-    color: ['#d9952f', '#1d5148'],
+    color: [c.weight, c.deepGreen],
     tooltip: { trigger: 'axis' },
-    legend: { top: 0, right: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: '#657085', fontSize: 12 } },
+    legend: { top: 0, right: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: c.legend, fontSize: 12 } },
     grid: { left: 52, right: 24, top: 42, bottom: 34 },
     xAxis: {
       type: 'category',
       data: rows.map((row) => formatDate(row.date, { day: 'numeric' })),
       axisTick: { show: false },
-      axisLine: { lineStyle: { color: '#dfe4ed' } },
-      axisLabel: { color: '#7d8798' },
+      axisLine: { lineStyle: s.axisLine },
+      axisLabel: s.axisLabel,
     },
     yAxis: {
       type: 'value',
       scale: true,
-      axisLabel: { formatter: '{value}кг', color: '#7d8798' },
-      splitLine: { lineStyle: { color: '#edf1f6' } },
+      axisLabel: { formatter: '{value}кг', color: c.axis },
+      splitLine: { lineStyle: s.splitLine },
     },
     series: [
       { name: 'измерение', type: 'line', symbolSize: 7, data: rows.map((row) => row.weight), lineStyle: { width: 1, opacity: 0.4 } },

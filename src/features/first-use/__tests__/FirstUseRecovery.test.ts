@@ -5,8 +5,8 @@ import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFirstUseFunnel } from '../funnel';
 import FirstUseRecovery from '../ui/FirstUseRecovery.vue';
-import { useAppStore } from '../../../stores/app';
-import { defaultSettings, emptyWeeklyReview, type AppSettings, type WeeklyReview } from '../../../types';
+import { useAppStore } from '@/stores/app';
+import { defaultSettings, emptyWeeklyReview, type AppSettings, type WeeklyReview } from '@/types';
 
 function setupStore() {
   const pinia = createPinia();

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { WeeklyReview } from '../../../types';
+import type { WeeklyReview } from '@/types';
 
 const props = defineProps<{ review: WeeklyReview }>();
 const results = computed(() => props.review.results.filter((item) => item.trim()));

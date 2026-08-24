@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue';
-import { recordFirstUseEvent } from '../../first-use/funnel';
-import PasswordField from '../../../shared/ui/forms/PasswordField.vue';
-import PwaInstallGuide from '../../pwa/ui/PwaInstallGuide.vue';
-import { useAuthStore } from '../../../stores/auth';
+import { recordFirstUseEvent } from '@/features/first-use/funnel';
+import PasswordField from '@/shared/ui/forms/PasswordField.vue';
+import PwaInstallGuide from '@/features/pwa/ui/PwaInstallGuide.vue';
+import { useAuthStore } from '@/stores/auth';
 
 type PreviewLevelId = 'today' | 'journal' | 'week' | 'month';
 

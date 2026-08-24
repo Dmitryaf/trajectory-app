@@ -8,8 +8,8 @@
     BlinkMacSystemFont,
     'Segoe UI',
     sans-serif;
-  color: #233330;
-  background: #f3f1eb;
+  color: var(--text);
+  background: var(--page);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   --navy: #102d2c;
@@ -17,8 +17,11 @@
   --text: #233330;
   --muted: #65726e;
   --line: #dde4df;
+  --page: #f3f1eb;
   --surface: #ffffff;
   --surface-soft: #f7f8f4;
+  --text-inverse: #ffffff;
+  --line-inverse: #ffffff;
   --accent: #49c99b;
   --accent-dark: #19795c;
   --mint: #8ce1bf;
@@ -49,7 +52,7 @@
 }
 html {
   min-width: 320px;
-  background: #f3f1eb;
+  background: var(--page);
   -webkit-text-size-adjust: 100%;
 }
 body {
@@ -59,7 +62,7 @@ body {
   overflow-x: hidden;
   background:
     radial-gradient(circle at 12% -8%, rgba(73, 201, 155, 0.18), transparent 31%),
-    radial-gradient(circle at 92% 8%, rgba(231, 164, 59, 0.12), transparent 25%), #f3f1eb;
+    radial-gradient(circle at 92% 8%, rgba(231, 164, 59, 0.12), transparent 25%), var(--page);
 }
 button,
 input,
@@ -110,7 +113,7 @@ select {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fff;
+  background: var(--surface);
   padding: 13px 14px;
   color: var(--text);
   transition:

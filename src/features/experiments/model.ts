@@ -1,4 +1,4 @@
-import type { AppSettings, DailyEntry, Experiment, ExperimentDecision, ExperimentRecord } from '../../types';
+import type { AppSettings, DailyEntry, Experiment, ExperimentDecision, ExperimentRecord } from '@/types';
 
 export const experimentTextLimits = {
   title: 800,

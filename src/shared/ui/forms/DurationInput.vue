@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { combineDuration, splitDuration } from '../../../services/duration';
+import { combineDuration, splitDuration } from '@/services/duration';
 
 const props = defineProps<{
   id: string;

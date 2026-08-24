@@ -1,8 +1,8 @@
 import { enableAutoUnmount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, vi } from 'vitest';
-import { useAppStore } from '../../src/stores/app';
-import { defaultSettings } from '../../src/types';
+import { useAppStore } from '@/stores/app';
+import { defaultSettings } from '@/types';
 
 enableAutoUnmount(afterEach);
 

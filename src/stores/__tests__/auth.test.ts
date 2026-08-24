@@ -17,7 +17,7 @@ const cloud = vi.hoisted(() => ({
   updatePassword: vi.fn(),
 }));
 
-vi.mock('../../services/cloudSync', () => ({
+vi.mock('@/services/cloudSync', () => ({
   clearCloudSyncMeta: vi.fn(),
   clearLocalCloudSession: cloud.clearLocalSession,
   deleteCloudAccount: cloud.deleteAccount,

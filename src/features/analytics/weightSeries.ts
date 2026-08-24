@@ -1,5 +1,5 @@
-import { addDays } from '../../services/dates';
-import type { DailyEntry } from '../../types';
+import { addDays } from '@/services/dates';
+import type { DailyEntry } from '@/types';
 
 export type WeightSeriesRow = {
   date: string;

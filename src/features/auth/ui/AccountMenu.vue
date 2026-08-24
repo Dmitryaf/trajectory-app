@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
-import { pwaPlatform } from '../../pwa/installation';
+import { pwaPlatform } from '@/features/pwa/installation';
 
 const props = defineProps<{
   email: string;

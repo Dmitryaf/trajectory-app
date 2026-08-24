@@ -2,12 +2,12 @@
 
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import { notifyError, notifyInfo, notifyUnknownError } from '../../src/services/notifications';
-import EventsView from '../../src/views/EventsView.vue';
-import ResultsView from '../../src/views/ResultsView.vue';
+import { notifyError, notifyInfo, notifyUnknownError } from '@/services/notifications';
+import EventsView from '@/views/EventsView.vue';
+import ResultsView from '@/views/ResultsView.vue';
 import { createStore, routerLinkStub } from '../helpers/viewScenario';
 
-vi.mock('../../src/services/notifications', () => ({
+vi.mock('@/services/notifications', () => ({
   notifyError: vi.fn(),
   notifyInfo: vi.fn(),
   notifySaved: vi.fn(),

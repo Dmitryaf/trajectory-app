@@ -2,8 +2,8 @@
 
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
-import { emptyDailyEntry, type DailyEntry } from '../../src/types';
-import TrendsView from '../../src/views/TrendsView.vue';
+import { emptyDailyEntry, type DailyEntry } from '@/types';
+import TrendsView from '@/views/TrendsView.vue';
 import { createStore, routerLinkStub } from '../helpers/viewScenario';
 
 describe('trends scenarios', () => {

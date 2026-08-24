@@ -57,7 +57,7 @@
   padding: 11px 13px;
   border: 1px solid #dfe9e4;
   border-radius: 14px;
-  background: linear-gradient(135deg, #f6faf8, #fff);
+  background: linear-gradient(135deg, #f6faf8, var(--surface));
 }
 .factor-summary-item__name {
   display: flex;
@@ -108,11 +108,11 @@
 }
 .event-picker summary:hover {
   border-color: #c7d0df;
-  background: #fff;
+  background: var(--surface);
 }
 .event-picker[open] summary {
   border-color: #aebbd0;
-  background: #fff;
+  background: var(--surface);
 }
 .event-picker__icon {
   width: 32px;
@@ -166,7 +166,7 @@
   padding: 6px;
   border: 1px solid #dfe5ef;
   border-radius: 14px;
-  background: #fff;
+  background: var(--surface);
   box-shadow: 0 18px 44px rgba(28, 38, 64, 0.18);
 }
 .event-picker__option {
@@ -324,10 +324,10 @@
   background: #1d5148;
 }
 .decision-timeline__summary-item--outcome i {
-  background: #e7a43b;
+  background: var(--amber);
 }
 .decision-timeline__summary-item--experiment i {
-  background: #df6d53;
+  background: var(--orange);
 }
 .decision-timeline__item {
   position: relative;
@@ -340,7 +340,7 @@
   border: 1px solid #e6ece9;
   border-left: 2px solid #dce7e2;
   border-radius: 0 14px 14px 0;
-  background: #fff;
+  background: var(--surface);
 }
 .decision-timeline__item + .decision-timeline__item {
   margin-top: 7px;
@@ -352,7 +352,7 @@
   top: 18px;
   width: 10px;
   height: 10px;
-  border: 2px solid #fff;
+  border: 2px solid var(--line-inverse);
   border-radius: 50%;
   background: #7f8ba1;
   box-shadow: 0 0 0 1px #dfe4ed;
@@ -367,10 +367,10 @@
   background: #2eaa7f;
 }
 .decision-timeline__item--outcome::before {
-  background: #e7a43b;
+  background: var(--amber);
 }
 .decision-timeline__item--experiment::before {
-  background: #df6d53;
+  background: var(--orange);
 }
 .decision-timeline__item time {
   color: #7b8598;

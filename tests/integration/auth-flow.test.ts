@@ -4,10 +4,10 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import { describe, expect, it, vi } from 'vitest';
-import AuthGate from '../../src/features/auth/ui/AuthGate.vue';
-import { readFirstUseFunnel } from '../../src/features/first-use/funnel';
-import { useAuthStore } from '../../src/stores/auth';
-import PasswordResetView from '../../src/views/PasswordResetView.vue';
+import AuthGate from '@/features/auth/ui/AuthGate.vue';
+import { readFirstUseFunnel } from '@/features/first-use/funnel';
+import { useAuthStore } from '@/stores/auth';
+import PasswordResetView from '@/views/PasswordResetView.vue';
 
 describe('beta authentication', () => {
   it('explains the app with a clearly marked example before registration', async () => {

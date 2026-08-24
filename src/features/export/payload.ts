@@ -1,8 +1,8 @@
-import { buildObservations, entriesForPeriod, factorSummaries, resultsForPeriod, summarize } from '../../services/analytics';
+import { buildObservations, entriesForPeriod, factorSummaries, resultsForPeriod, summarize } from '@/services/analytics';
 import { buildExperimentSummary, type ExperimentSummary } from '../analytics/experimentComparison';
 import { experimentOverlapsRange } from '../experiments/model';
-import { addDays, addMonths, endOfMonth, endOfWeek, startOfMonth, startOfWeek, todayKey } from '../../services/dates';
-import { AI_REPORT_VERSION } from '../../model/dataVersions';
+import { addDays, addMonths, endOfMonth, endOfWeek, startOfMonth, startOfWeek, todayKey } from '@/services/dates';
+import { AI_REPORT_VERSION } from '@/model/dataVersions';
 import {
   actionDirectionOptions,
   activityOptions,
@@ -24,7 +24,7 @@ import {
   type MonthlyReview,
   type ResultRecord,
   type WeeklyReview,
-} from '../../types';
+} from '@/types';
 
 export type AiReportPeriod = 'week' | 'month' | 'range';
 export const AI_PROMPT_CHARACTER_LIMIT = 48_000;

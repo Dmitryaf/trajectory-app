@@ -2,22 +2,22 @@
 
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import { copyText } from '../../src/features/export/browser';
-import { notifyError, notifySaved, notifyUnknownError } from '../../src/services/notifications';
-import { useAuthStore } from '../../src/stores/auth';
-import { emptyDailyEntry } from '../../src/types';
-import SettingsView from '../../src/views/SettingsView.vue';
+import { copyText } from '@/features/export/browser';
+import { notifyError, notifySaved, notifyUnknownError } from '@/services/notifications';
+import { useAuthStore } from '@/stores/auth';
+import { emptyDailyEntry } from '@/types';
+import SettingsView from '@/views/SettingsView.vue';
 import { createStore } from '../helpers/viewScenario';
 
-vi.mock('../../src/services/notifications', () => ({
+vi.mock('@/services/notifications', () => ({
   notifyError: vi.fn(),
   notifyInfo: vi.fn(),
   notifySaved: vi.fn(),
   notifyUnknownError: vi.fn(),
 }));
 
-vi.mock('../../src/features/export/browser', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../src/features/export/browser')>()),
+vi.mock('@/features/export/browser', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/export/browser')>()),
   copyText: vi.fn(),
 }));
 

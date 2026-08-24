@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
-import AiAnalysisSteps from '../../analysis/ui/AiAnalysisSteps.vue';
-import type { ReviewCue } from '../../analytics/reviewCues';
+import AiAnalysisSteps from '@/features/analysis/ui/AiAnalysisSteps.vue';
+import type { ReviewCue } from '@/features/analytics/reviewCues';
 
 defineProps<{
   title: string;

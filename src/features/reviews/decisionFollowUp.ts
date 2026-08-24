@@ -1,5 +1,5 @@
-import { addDays } from '../../services/dates';
-import type { DailyEntry, LifeEventRecord, ResultRecord, WeeklyReview } from '../../types';
+import { addDays } from '@/services/dates';
+import type { DailyEntry, LifeEventRecord, ResultRecord, WeeklyReview } from '@/types';
 
 export type DecisionFollowUpFact = {
   id: string;

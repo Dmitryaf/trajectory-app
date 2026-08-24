@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { buildExperimentSummary } from '../../src/features/analytics/experimentComparison';
+import { buildExperimentSummary } from '@/features/analytics/experimentComparison';
 import {
   createExperimentRecord,
   emptyExperiment,
   experimentOverlapsRange,
   experimentPeriodsOverlap,
   linkLegacyExperimentEntries,
-} from '../../src/features/experiments/model';
-import { buildAiReportPayload, buildAiReportPrompt } from '../../src/features/export/report';
-import { AI_REPORT_VERSION } from '../../src/model/dataVersions';
-import { defaultSettings, emptyDailyEntry, type DailyEntry, type Experiment } from '../../src/types';
+} from '@/features/experiments/model';
+import { buildAiReportPayload, buildAiReportPrompt } from '@/features/export/report';
+import { AI_REPORT_VERSION } from '@/model/dataVersions';
+import { defaultSettings, emptyDailyEntry, type DailyEntry, type Experiment } from '@/types';
 
 function entry(date: string, patch: Partial<DailyEntry>): DailyEntry {
   return { ...emptyDailyEntry(date), ...patch };

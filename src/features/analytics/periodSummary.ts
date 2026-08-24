@@ -1,7 +1,7 @@
-import type { ActionDirectionId, DailyEntry, ResultRecord } from '../../types';
-import { actionDirectionOptions, dailyFieldWasRecorded, externalCareerStates, lifeAreaOptions } from '../../types';
+import type { ActionDirectionId, DailyEntry, ResultRecord } from '@/types';
+import { actionDirectionOptions, dailyFieldWasRecorded, externalCareerStates, lifeAreaOptions } from '@/types';
 import { dataCoverageLevel } from './coverage';
-import { endOfMonth, endOfWeek, startOfMonth, startOfWeek } from '../../services/dates';
+import { endOfMonth, endOfWeek, startOfMonth, startOfWeek } from '@/services/dates';
 
 export type PeriodSummary = {
   entriesCount: number;

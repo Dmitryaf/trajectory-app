@@ -28,7 +28,7 @@ describe('startup cloud session', () => {
     const session = { user: { id: 'user-1' } };
     auth.getSession.mockResolvedValue({ data: { session }, error: null });
     auth.getUser.mockResolvedValue({ data: { user: null }, error: new AuthRetryableFetchError('Failed to fetch', 0) });
-    const { getStartupCloudSession } = await import('../../src/services/cloudSync');
+    const { getStartupCloudSession } = await import('@/services/cloudSync');
 
     await expect(getStartupCloudSession()).resolves.toBe(session);
   });
@@ -38,7 +38,7 @@ describe('startup cloud session', () => {
     const error = new AuthApiError('Invalid token', 401, 'bad_jwt');
     auth.getSession.mockResolvedValue({ data: { session }, error: null });
     auth.getUser.mockResolvedValue({ data: { user: null }, error });
-    const { getStartupCloudSession } = await import('../../src/services/cloudSync');
+    const { getStartupCloudSession } = await import('@/services/cloudSync');
 
     await expect(getStartupCloudSession()).rejects.toBe(error);
   });

@@ -1,5 +1,5 @@
-import { dailyFieldWasRecorded, type DailyEntry } from '../../types';
-import { dateRange } from '../../services/dates';
+import { dailyFieldWasRecorded, type DailyEntry } from '@/types';
+import { dateRange } from '@/services/dates';
 
 export type DataCoverageLevel = 0 | 1 | 2;
 

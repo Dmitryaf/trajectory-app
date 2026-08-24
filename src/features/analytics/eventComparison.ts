@@ -1,6 +1,6 @@
-import type { DailyEntry, ResultRecord } from '../../types';
-import { externalCareerStates } from '../../types';
-import { addDays, dateRange, todayKey } from '../../services/dates';
+import type { DailyEntry, ResultRecord } from '@/types';
+import { externalCareerStates } from '@/types';
+import { addDays, dateRange, todayKey } from '@/services/dates';
 import { entriesForPeriod, resultsForPeriod, summarize } from './periodSummary';
 
 export type EventComparisonMetric = {

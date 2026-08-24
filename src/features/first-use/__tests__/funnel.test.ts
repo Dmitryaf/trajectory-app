@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { FIRST_USE_FUNNEL_VERSION } from '../../../model/dataVersions';
+import { FIRST_USE_FUNNEL_VERSION } from '@/model/dataVersions';
 import { clearFirstUseFunnel, readFirstUseFunnel, recordFirstUseEvent, recordFirstUseReturnEvents } from '../funnel';
 
 function memoryStorage(initial: Record<string, string> = {}) {

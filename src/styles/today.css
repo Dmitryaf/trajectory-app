@@ -7,7 +7,7 @@
   padding: 20px 30px 28px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 30px;
-  background: linear-gradient(135deg, #102d2c 0%, #19443f 60%, #22564d 100%);
+  background: linear-gradient(135deg, var(--navy) 0%, #19443f 60%, #22564d 100%);
   box-shadow: 0 28px 70px rgba(16, 45, 44, 0.22);
 }
 .page--today > .page-heading::before {
@@ -39,7 +39,7 @@
   z-index: 1;
 }
 .page--today > .page-heading h1 {
-  color: #fff;
+  color: var(--text-inverse);
   font-size: clamp(42px, 7vw, 62px);
 }
 .page--today > .page-heading .eyebrow {
@@ -70,7 +70,7 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 13px;
   background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  color: var(--text-inverse);
   font-weight: 750;
   backdrop-filter: blur(12px);
 }
@@ -151,7 +151,7 @@
   padding: 20px;
   border: 1px solid #bfe2d4;
   border-radius: 20px;
-  background: linear-gradient(135deg, #effbf6, #fff);
+  background: linear-gradient(135deg, #effbf6, var(--surface));
   box-shadow: var(--shadow-soft);
 }
 .first-entry-guide h2 {
@@ -175,7 +175,7 @@
   min-height: 42px;
   justify-content: center;
   padding: 9px 13px;
-  background: #fff;
+  background: var(--surface);
 }
 .help-link--inline strong {
   display: inline;
@@ -292,7 +292,7 @@
 }
 .today-pulse {
   align-items: flex-start;
-  background: linear-gradient(135deg, #f5fbf8, #fff);
+  background: linear-gradient(135deg, #f5fbf8, var(--surface));
   border-color: #dceee7;
 }
 .today-pulse .eyebrow {

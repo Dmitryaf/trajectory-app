@@ -3,12 +3,12 @@ import { computed, getCurrentInstance, onMounted, reactive, ref, watch } from 'v
 import type { Router } from 'vue-router';
 import { recordFirstUseEvent } from '../funnel';
 import { firstUsePeriodOptions, recommendedFirstUsePeriod, type FirstUsePeriodOption } from '../period';
-import WeeklyReviewJournalLinks from '../../reviews/ui/WeeklyReviewJournalLinks.vue';
-import WeeklyReviewOverview from '../../reviews/ui/WeeklyReviewOverview.vue';
-import { addDays, formatDate } from '../../../services/dates';
-import { plainCopy } from '../../../services/plain';
-import { useAppStore } from '../../../stores/app';
-import { emptyWeeklyReview, type FirstUseState, type FirstUseStep, type WeeklyReview } from '../../../types';
+import WeeklyReviewJournalLinks from '@/features/reviews/ui/WeeklyReviewJournalLinks.vue';
+import WeeklyReviewOverview from '@/features/reviews/ui/WeeklyReviewOverview.vue';
+import { addDays, formatDate } from '@/services/dates';
+import { plainCopy } from '@/services/plain';
+import { useAppStore } from '@/stores/app';
+import { emptyWeeklyReview, type FirstUseState, type FirstUseStep, type WeeklyReview } from '@/types';
 
 type DecisionChoice = '' | 'continue' | 'change' | 'later';
 

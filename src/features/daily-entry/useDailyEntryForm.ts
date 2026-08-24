@@ -1,10 +1,10 @@
 import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { onBeforeRouteLeave } from 'vue-router';
-import { formatDate, todayKey } from '../../services/dates';
-import { notifyError, notifySaved, notifyUnknownError } from '../../services/notifications';
-import { plainCopy } from '../../services/plain';
-import { emptyDailyEntry, experimentAppliesToDate, type DailyBlockId, type DailyEntry } from '../../types';
-import type { useAppStore } from '../../stores/app';
+import { formatDate, todayKey } from '@/services/dates';
+import { notifyError, notifySaved, notifyUnknownError } from '@/services/notifications';
+import { plainCopy } from '@/services/plain';
+import { emptyDailyEntry, experimentAppliesToDate, type DailyBlockId, type DailyEntry } from '@/types';
+import type { useAppStore } from '@/stores/app';
 import {
   prepareDailyEntryForSave,
   normalizeWeight,

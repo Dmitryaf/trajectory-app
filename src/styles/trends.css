@@ -4,7 +4,7 @@
   margin: 0 0 22px;
   padding: 6px;
   border-radius: 18px;
-  background: #102d2c;
+  background: var(--navy);
   box-shadow: 0 12px 28px rgba(16, 45, 44, 0.16);
 }
 .page--trends .range-tabs button {
@@ -15,11 +15,11 @@
   color: #a9c8be;
 }
 .page--trends .range-tabs button:hover {
-  color: #fff;
+  color: var(--text-inverse);
   background: rgba(255, 255, 255, 0.08);
 }
 .page--trends .range-tabs button.active {
-  color: #102d2c;
+  color: var(--navy);
   background: var(--mint);
   box-shadow: 0 5px 14px rgba(0, 0, 0, 0.15);
 }
@@ -47,7 +47,7 @@
 }
 .page--trends .dashboard-card--insights {
   --section-accent: #1d5148;
-  background: linear-gradient(145deg, #fff, #f1faf6);
+  background: linear-gradient(145deg, var(--surface), #f1faf6);
 }
 .page--trends .dashboard-card--progress {
   --section-accent: #2eaa7f;
@@ -319,7 +319,7 @@
   min-height: 240px;
   border: 1px solid #dfe8e4;
   border-radius: 18px;
-  background: linear-gradient(180deg, #fff, #f6faf8);
+  background: linear-gradient(180deg, var(--surface), #f6faf8);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     0 8px 20px rgba(16, 45, 44, 0.04);

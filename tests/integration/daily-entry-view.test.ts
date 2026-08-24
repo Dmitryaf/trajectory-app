@@ -3,16 +3,16 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import { describe, expect, it, vi } from 'vitest';
-import { notifyError, notifySaved, notifyUnknownError } from '../../src/services/notifications';
-import { LocalStorageQuotaError } from '../../src/services/storageProtection';
-import CurrentGoalDialog from '../../src/features/daily-entry/ui/CurrentGoalDialog.vue';
-import { emptyDailyEntry, emptyWeeklyReview } from '../../src/types';
-import { DAILY_ENTRY_SCHEMA_VERSION } from '../../src/model/dataVersions';
-import { addDays, todayKey } from '../../src/services/dates';
-import TodayView from '../../src/views/TodayView.vue';
+import { notifyError, notifySaved, notifyUnknownError } from '@/services/notifications';
+import { LocalStorageQuotaError } from '@/services/storageProtection';
+import CurrentGoalDialog from '@/features/daily-entry/ui/CurrentGoalDialog.vue';
+import { emptyDailyEntry, emptyWeeklyReview } from '@/types';
+import { DAILY_ENTRY_SCHEMA_VERSION } from '@/model/dataVersions';
+import { addDays, todayKey } from '@/services/dates';
+import TodayView from '@/views/TodayView.vue';
 import { createStore, routerLinkStub } from '../helpers/viewScenario';
 
-vi.mock('../../src/services/notifications', () => ({
+vi.mock('@/services/notifications', () => ({
   notifyError: vi.fn(),
   notifyInfo: vi.fn(),
   notifySaved: vi.fn(),

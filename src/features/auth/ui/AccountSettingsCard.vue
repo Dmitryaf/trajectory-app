@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import PasswordField from '../../../shared/ui/forms/PasswordField.vue';
+import PasswordField from '@/shared/ui/forms/PasswordField.vue';
 import { useAccountSettings } from '../useAccountSettings';
 
 defineProps<{

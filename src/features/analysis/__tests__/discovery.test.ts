@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { emptyDailyEntry } from '../../../types';
+import { emptyDailyEntry } from '@/types';
 import { shouldShowAiAnalysisNudge } from '../discovery';
 
 describe('AI analysis discovery', () => {

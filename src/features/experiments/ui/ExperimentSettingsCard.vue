@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import AutoGrowTextarea from '../../../shared/ui/forms/AutoGrowTextarea.vue';
-import ChipGroup from '../../../shared/ui/forms/ChipGroup.vue';
-import type { AppSettings } from '../../../types';
+import AutoGrowTextarea from '@/shared/ui/forms/AutoGrowTextarea.vue';
+import ChipGroup from '@/shared/ui/forms/ChipGroup.vue';
+import type { AppSettings } from '@/types';
 import { experimentDecisionOptions, experimentTextLimits } from '../model';
 
 defineProps<{

@@ -1,7 +1,7 @@
-import type { useAppStore } from '../../stores/app';
-import { defaultSettings } from '../../types';
+import type { useAppStore } from '@/stores/app';
+import { defaultSettings } from '@/types';
 import { normalizeSnapshot } from '../backup/snapshot';
-import { getCloudSyncMeta, loadCloudSnapshot, markCloudSyncSynced, type CloudSnapshot, type CloudSyncMeta } from '../../services/cloudSync';
+import { getCloudSyncMeta, loadCloudSnapshot, markCloudSyncSynced, type CloudSnapshot, type CloudSyncMeta } from '@/services/cloudSync';
 import { applyCloudSnapshot, formatCloudUpdatedAt } from './snapshot';
 import { saveCloudSyncBase } from './base';
 

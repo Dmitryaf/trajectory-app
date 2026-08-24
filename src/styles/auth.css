@@ -101,7 +101,7 @@
 }
 .auth-preview__tabs button.is-active {
   background: var(--navy);
-  color: #fff;
+  color: var(--text-inverse);
   box-shadow: 0 7px 16px rgba(16, 45, 44, 0.18);
 }
 .auth-preview__content {
@@ -171,7 +171,7 @@
   right: 0;
   top: 0;
   height: 8px;
-  background: linear-gradient(90deg, #49c99b 0 58%, #ffd06e 58%);
+  background: linear-gradient(90deg, var(--accent) 0 58%, #ffd06e 58%);
 }
 .auth-card::after {
   content: '';
@@ -247,7 +247,7 @@
   display: inline-block;
   margin-right: 7px;
   border: 2px solid rgba(255, 255, 255, 0.45);
-  border-top-color: #fff;
+  border-top-color: var(--line-inverse);
   border-radius: 50%;
   vertical-align: -3px;
   animation: auth-spin 0.8s linear infinite;
@@ -325,7 +325,7 @@
   font-weight: 800;
 }
 .auth-mode button.is-active {
-  background: #fff;
+  background: var(--surface);
   color: var(--navy);
   box-shadow: 0 4px 12px rgba(16, 45, 44, 0.08);
 }
@@ -422,7 +422,7 @@
   right: 0;
   top: 0;
   height: 8px;
-  background: linear-gradient(90deg, #49c99b 0 58%, #ffd06e 58%);
+  background: linear-gradient(90deg, var(--accent) 0 58%, #ffd06e 58%);
 }
 .password-reset-card .auth-card__brand {
   margin-bottom: 30px;

@@ -7,7 +7,7 @@ import {
   resultsForPeriod,
   summarize,
   type EventComparisonMetric,
-} from '../../services/analytics';
+} from '@/services/analytics';
 import {
   addMonths,
   endOfMonth,
@@ -18,14 +18,15 @@ import {
   startOfMonth,
   toDateKey,
   todayKey,
-} from '../../services/dates';
+} from '@/services/dates';
 import { buildRangePackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../export/browser';
 import { buildExperimentSummary } from './experimentComparison';
 import { experimentDecisionLabel } from '../experiments/model';
-import { notifyInfo, notifySaved, notifyUnknownError } from '../../services/notifications';
-import { pageCount, pageItems } from '../../services/pagination';
-import { useAppStore } from '../../stores/app';
-import { contextFactorOptions, externalCareerIdsForOptions, type ExperimentRecord } from '../../types';
+import { notifyInfo, notifySaved, notifyUnknownError } from '@/services/notifications';
+import { pageCount, pageItems } from '@/services/pagination';
+import { useAppStore } from '@/stores/app';
+import { contextFactorOptions, externalCareerIdsForOptions, type ExperimentRecord } from '@/types';
+import { chartColors, chartStyles } from '@/shared/theme/colors';
 
 type RangeMonths = 3 | 6 | 12;
 type TrendMetricId = 'sleep' | 'energy' | 'weight';
@@ -151,13 +152,13 @@ export function useChangeHistoryView() {
   const trendMetricOption = computed<EChartsCoreOption>(() => {
     const metric = selectedTrendMetric.value;
     let axis: Record<string, unknown> = { scale: true, formatter: '{value}кг' };
-    let color = '#d9952f';
+    let color: string = chartColors.weight;
     if (metric === 'sleep') {
       axis = { min: 0, max: 12, formatter: '{value}ч' };
-      color = '#7467e8';
+      color = chartColors.sleep;
     } else if (metric === 'energy') {
       axis = { min: 1, max: 5, formatter: '{value}' };
-      color = '#2eaa7f';
+      color = chartColors.energy;
     }
     return {
       color: [color],
@@ -167,14 +168,14 @@ export function useChangeHistoryView() {
         type: 'category',
         data: monthRows.value.map((row) => row.label),
         axisTick: { show: false },
-        axisLine: { lineStyle: { color: '#dfe4ed' } },
-        axisLabel: { color: '#7d8798' },
+        axisLine: { lineStyle: chartStyles.axisLine },
+        axisLabel: chartStyles.axisLabel,
       },
       yAxis: {
         type: 'value',
         ...axis,
-        axisLabel: { formatter: axis.formatter, color: '#7d8798' },
-        splitLine: { lineStyle: { color: '#edf1f6' } },
+        axisLabel: { formatter: axis.formatter, color: chartColors.axis },
+        splitLine: { lineStyle: chartStyles.splitLine },
       },
       series: [
         {
@@ -189,7 +190,7 @@ export function useChangeHistoryView() {
           },
           markLine: {
             symbol: ['none', 'none'],
-            lineStyle: { color: '#eb7458', type: 'dashed', width: 1.5 },
+            lineStyle: { color: chartColors.event, type: 'dashed', width: 1.5 },
             label: { show: false },
             tooltip: { formatter: (params: { data?: { name?: string } }) => params.data?.name ?? 'Важное событие' },
             data: eventLines.value,

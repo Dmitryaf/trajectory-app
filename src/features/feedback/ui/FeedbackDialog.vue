@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'vue';
-import { sendFeedback } from '../../../services/feedback';
-import { notifyError, notifySaved } from '../../../services/notifications';
-import DialogCloseButton from '../../../shared/ui/overlays/DialogCloseButton.vue';
-import { useBodyScrollLock } from '../../../shared/ui/overlays/useBodyScrollLock';
-import { useDialogBackdropClose } from '../../../shared/ui/overlays/useDialogBackdropClose';
-import { useDialogFocus } from '../../../shared/ui/overlays/useDialogFocus';
+import { sendFeedback } from '@/services/feedback';
+import { notifyError, notifySaved } from '@/services/notifications';
+import DialogCloseButton from '@/shared/ui/overlays/DialogCloseButton.vue';
+import { useBodyScrollLock } from '@/shared/ui/overlays/useBodyScrollLock';
+import { useDialogBackdropClose } from '@/shared/ui/overlays/useDialogBackdropClose';
+import { useDialogFocus } from '@/shared/ui/overlays/useDialogFocus';
 
 const props = defineProps<{
   accessToken: string;
