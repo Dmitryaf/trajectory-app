@@ -67,7 +67,7 @@
 }
 .primary-button {
   color: white;
-  background: linear-gradient(135deg, var(--navy), #1d5148);
+  background: linear-gradient(135deg, var(--navy), var(--brand-strong));
   box-shadow: 0 10px 24px rgba(16, 45, 44, 0.2);
 }
 .primary-button:hover {

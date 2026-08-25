@@ -12,7 +12,7 @@
   border: 0;
   border-radius: 13px;
   background: transparent;
-  color: #a9c8be;
+  color: var(--text-inverse-muted);
 }
 .page--trends .range-tabs button:hover {
   color: var(--text-inverse);
@@ -37,23 +37,23 @@
   --section-accent: var(--mint);
 }
 .page--trends .dashboard-card--trend {
-  --section-accent: #7467e8;
+  --section-accent: var(--purple);
 }
 .page--trends .dashboard-card--event {
-  --section-accent: #eb7458;
+  --section-accent: var(--status-danger-bright);
 }
 .page--trends .dashboard-card--weight {
-  --section-accent: #d9952f;
+  --section-accent: var(--status-warning);
 }
 .page--trends .dashboard-card--insights {
-  --section-accent: #1d5148;
+  --section-accent: var(--brand-strong);
   background: linear-gradient(145deg, var(--surface), #f1faf6);
 }
 .page--trends .dashboard-card--progress {
-  --section-accent: #2eaa7f;
+  --section-accent: var(--status-success);
 }
 .page--trends .dashboard-card--timeline {
-  --section-accent: #e7a43b;
+  --section-accent: var(--amber);
 }
 .observation-grid {
   display: grid;
@@ -121,7 +121,7 @@
   color: #2f604e;
 }
 .review-cue--warning {
-  background: #fff8f1;
+  background: var(--surface-warning);
   border-color: #f2dfc6;
 }
 .review-cue--warning::before {
@@ -210,7 +210,7 @@
   padding: 12px 14px;
   border: 1px solid #f0ddd8;
   border-radius: 14px;
-  background: #fff8f5;
+  background: var(--surface-danger);
 }
 .special-day-item time {
   color: #8a604f;
@@ -369,7 +369,7 @@
   background: var(--amber);
 }
 .legend-dot--nutrition-block {
-  background: #b85c4c;
+  background: var(--status-danger);
 }
 .legend-dot--sleep {
   background: var(--purple);
@@ -387,10 +387,10 @@
   background: var(--blue);
 }
 .legend-dot--direction {
-  background: #5264d8;
+  background: var(--status-info);
 }
 .legend-dot--drift {
-  background: #b85c4c;
+  background: var(--status-danger);
 }
 .legend-dot--results {
   background: var(--amber);

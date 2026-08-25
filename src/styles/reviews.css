@@ -134,7 +134,7 @@
 }
 .page--review .review-card {
   scroll-margin-top: 18px;
-  border-color: #cfe3da;
+  border-color: var(--line-success);
   background: linear-gradient(145deg, var(--surface), #f1faf6);
   box-shadow: 0 14px 34px rgba(16, 45, 44, 0.09);
 }
@@ -159,7 +159,7 @@
   cursor: pointer;
 }
 .period-details[open] > summary {
-  border-bottom: 1px solid #e5ebe8;
+  border-bottom: 1px solid var(--line-soft);
 }
 .period-details__content {
   padding: 16px 16px 0;
@@ -568,7 +568,7 @@
 }
 .decision-follow-up__step--outcome {
   border: 1px solid #bfe0d2;
-  background: #eef9f4;
+  background: var(--surface-success);
 }
 .decision-follow-up__missing {
   color: var(--muted);

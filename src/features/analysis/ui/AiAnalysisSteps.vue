@@ -2,9 +2,24 @@
   <div class="data-note ai-analysis-steps">
     <p><strong>Текст остаётся у вас:</strong> приложение ничего не отправляет и не выбирает внешний сервис.</p>
     <ol>
-      <li><span>1</span> Подготовьте текст</li>
-      <li><span>2</span> Откройте выбранную нейросеть</li>
-      <li><span>3</span> Вставьте текст и получите разбор</li>
+      <li>Подготовьте текст</li>
+      <li>Откройте выбранную нейросеть</li>
+      <li>Вставьте текст и получите разбор</li>
     </ol>
   </div>
 </template>
+
+<style scoped>
+.ai-analysis-steps p {
+  margin-bottom: 6px;
+}
+.ai-analysis-steps ol {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding-left: 20px;
+}
+.ai-analysis-steps li {
+  padding-left: 2px;
+}
+</style>

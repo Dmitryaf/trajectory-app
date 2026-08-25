@@ -260,7 +260,7 @@
 .comparison-table__row {
   min-height: 50px;
   padding: 11px 12px;
-  border: 1px solid #e5ebe8;
+  border: 1px solid var(--line-soft);
   border-radius: 13px;
   background: #fbfdfc;
   color: #4f5b70;
@@ -315,13 +315,13 @@
   color: var(--navy);
 }
 .decision-timeline__summary-item--event i {
-  background: #eb7458;
+  background: var(--status-danger-bright);
 }
 .decision-timeline__summary-item--result i {
-  background: #2eaa7f;
+  background: var(--status-success);
 }
 .decision-timeline__summary-item--decision i {
-  background: #1d5148;
+  background: var(--brand-strong);
 }
 .decision-timeline__summary-item--outcome i {
   background: var(--amber);
@@ -358,13 +358,13 @@
   box-shadow: 0 0 0 1px #dfe4ed;
 }
 .decision-timeline__item--event::before {
-  background: #eb7458;
+  background: var(--status-danger-bright);
 }
 .decision-timeline__item--decision::before {
-  background: #1d5148;
+  background: var(--brand-strong);
 }
 .decision-timeline__item--result::before {
-  background: #2eaa7f;
+  background: var(--status-success);
 }
 .decision-timeline__item--outcome::before {
   background: var(--amber);

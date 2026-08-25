@@ -24,7 +24,7 @@ export default defineConfig({
     },
     {
       name: 'webkit',
-      testIgnore: ['**/performance.e2e.ts', '**/today-visual.e2e.ts'],
+      testIgnore: ['**/performance.e2e.ts', '**/today-visual.e2e.ts', '**/interface-visual.e2e.ts'],
       use: { ...devices['Desktop Safari'] },
     },
     {

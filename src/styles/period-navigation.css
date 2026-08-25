@@ -69,7 +69,7 @@
   text-transform: capitalize;
 }
 .period-nav__label span {
-  color: #a9c8be;
+  color: var(--text-inverse-muted);
   font-size: 11px;
   margin-top: 3px;
 }
@@ -82,5 +82,19 @@
   .review-jump {
     min-height: 38px;
     padding: 8px 11px;
+  }
+  .period-nav {
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
+    margin-bottom: 16px;
+    padding: 6px;
+    border-radius: 18px;
+  }
+  .icon-button,
+  .period-nav__label {
+    min-height: 42px;
+    height: 42px;
+  }
+  .period-nav__label strong {
+    font-size: 16px;
   }
 }

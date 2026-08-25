@@ -24,7 +24,7 @@
   display: grid;
   place-items: center;
   border-radius: 15px;
-  background: linear-gradient(145deg, #0c2425, #1d5148);
+  background: linear-gradient(145deg, var(--brand-deep), var(--brand-strong));
   position: relative;
   overflow: hidden;
   box-shadow: 0 10px 24px rgba(16, 45, 44, 0.24);
@@ -157,7 +157,7 @@
   display: grid;
   place-items: center;
   padding: calc(20px + var(--safe-top)) calc(20px + var(--safe-right)) calc(20px + var(--safe-bottom)) calc(20px + var(--safe-left));
-  background: rgba(11, 28, 27, 0.52);
+  background: var(--overlay-scrim);
   backdrop-filter: blur(5px);
 }
 .feedback-dialog,
