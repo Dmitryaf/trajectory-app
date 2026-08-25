@@ -121,12 +121,16 @@
   }
   .page--today > .page-heading {
     min-height: 132px;
+    gap: clamp(8px, 3vw, 24px);
     margin: 4px 0 0;
     padding: 20px 18px 30px;
     border-radius: 24px;
   }
+  .page--today > .page-heading > :first-child {
+    min-width: 0;
+  }
   .page--today > .page-heading h1 {
-    font-size: 44px;
+    font-size: clamp(38px, 12vw, 44px);
   }
   .page--review > .page-heading {
     min-height: 128px;
@@ -171,7 +175,7 @@
     display: none;
   }
   .entry-date-control {
-    min-width: 132px;
+    min-width: clamp(120px, 37.5vw, 132px);
   }
   h1 {
     font-size: 36px;
@@ -247,7 +251,15 @@
     display: grid;
   }
   .ai-analysis-nudge__actions {
+    min-width: 0;
+    width: 100%;
     flex-basis: auto;
+  }
+  .ai-analysis-nudge .secondary-button {
+    min-width: 0;
+    width: 100%;
+    text-align: center;
+    white-space: normal;
   }
   .pwa-install-nudge {
     grid-template-columns: 38px minmax(0, 1fr);
