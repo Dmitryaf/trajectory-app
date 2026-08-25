@@ -1,4 +1,5 @@
 import { toast } from 'vue-sonner';
+import { reportClientError } from './errorMonitoring';
 
 const toastOptions = {
   duration: 2600,
@@ -21,5 +22,6 @@ export function notifyError(message = 'Действие не выполнено'
 }
 
 export function notifyUnknownError(error: unknown, fallback = 'Действие не выполнено') {
+  reportClientError('ACTION_FAILED');
   notifyError(error instanceof Error ? error.message : fallback);
 }

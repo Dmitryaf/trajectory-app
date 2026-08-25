@@ -73,7 +73,7 @@ async function reconcileCloudSnapshot(store: AppStore, userId: string | null | u
       markSynced: services.markSynced,
     });
   } catch (error) {
-    console.warn('Не удалось загрузить облачную копию', error);
+    console.warn('Не удалось загрузить облачную копию');
     store.setCloudSyncState('pending', 'Локальные данные доступны. Облако пока не проверено.', {
       error: error instanceof Error ? error.message : 'Не удалось проверить облако',
     });

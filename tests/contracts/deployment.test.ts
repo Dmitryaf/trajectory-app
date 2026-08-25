@@ -25,6 +25,7 @@ const snapshotRevisionMigration = readFileSync(
 const deleteAccountFunction = readFileSync(new URL('../../supabase/functions/delete-account/index.ts', import.meta.url), 'utf8');
 const deleteAccountHandler = readFileSync(new URL('../../supabase/functions/delete-account/handler.ts', import.meta.url), 'utf8');
 const feedbackFunction = readFileSync(new URL('../../api/feedback.ts', import.meta.url), 'utf8');
+const clientErrorFunction = readFileSync(new URL('../../api/client-error.ts', import.meta.url), 'utf8');
 const cloudSyncService = readFileSync(new URL('../../src/services/cloudSync.ts', import.meta.url), 'utf8');
 const envExample = readFileSync(new URL('../../.env.example', import.meta.url), 'utf8');
 const viteConfig = readFileSync(new URL('../../vite.config.ts', import.meta.url), 'utf8');
@@ -69,6 +70,7 @@ describe('deployment configuration', () => {
   it('supports fail-closed preview deployments without backend credentials', () => {
     expect(envExample).toContain('VITE_REQUIRE_AUTH=false');
     expect(envExample).toContain('VITE_FEEDBACK_ENABLED=false');
+    expect(envExample).toContain('VITE_ERROR_MONITORING_ENABLED=false');
     expect(cloudSyncService).toContain("import.meta.env.VITE_REQUIRE_AUTH === 'true'");
   });
 
@@ -85,6 +87,14 @@ describe('deployment configuration', () => {
     expect(feedbackFunction).toContain('process.env.RESEND_API_KEY');
     expect(feedbackFunction).toContain('/auth/v1/user');
     expect(feedbackFunction).not.toContain('import.meta.env');
+  });
+
+  it('keeps client error reports structured and delivery credentials on the server', () => {
+    expect(clientErrorFunction).toContain('process.env.ERROR_TO_EMAIL');
+    expect(clientErrorFunction).toContain('/auth/v1/user');
+    expect(clientErrorFunction).toContain('Object.keys(record).length === 2');
+    expect(clientErrorFunction).not.toContain('import.meta.env');
+    expect(clientErrorFunction).not.toContain('body.message');
   });
 
   it('deletes only the authenticated caller through a server-side function', () => {

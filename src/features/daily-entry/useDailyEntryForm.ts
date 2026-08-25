@@ -214,9 +214,9 @@ export function useDailyEntryForm(store: AppStore) {
           queueDraftSave();
         }
         return true;
-      } catch (error) {
+      } catch {
         draftStatus.value = 'error';
-        console.warn('Не удалось сохранить черновик дневной записи', error);
+        console.warn('Не удалось сохранить черновик дневной записи');
         return false;
       }
     })();
