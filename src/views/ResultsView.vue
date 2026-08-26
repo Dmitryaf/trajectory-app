@@ -226,3 +226,5 @@ function resultKey(result: ResultRecord) {
     </section>
   </section>
 </template>
+
+<style scoped src="./ResultsView.css"></style>

@@ -2,6 +2,7 @@
 import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterLink, RouterView, useRouter } from 'vue-router';
 import { Toaster } from 'vue-sonner';
+import BrandMark from './shared/ui/branding/BrandMark.vue';
 import 'vue-sonner/style.css';
 import AccountMenu from './features/auth/ui/AccountMenu.vue';
 import AuthGate from './features/auth/ui/AuthGate.vue';
@@ -226,7 +227,7 @@ const navItems = [
   <div v-else class="app-shell">
     <header class="app-header">
       <RouterLink to="/" class="brand" aria-label="Траектория — главная">
-        <span class="brand__mark"><i></i></span>
+        <BrandMark />
         <span><strong>Траектория</strong><small>факты, а не оценка</small></span>
       </RouterLink>
       <div v-if="canOpenApp && appDataReady && store.loaded && !effectiveLoadError" class="header-actions">
@@ -298,3 +299,5 @@ const navItems = [
     <Toaster position="top-right" rich-colors close-button />
   </div>
 </template>
+
+<style scoped src="./App.css"></style>

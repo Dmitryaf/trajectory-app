@@ -75,3 +75,47 @@ const { auth, changePassword, deleteAccount, newPassword, newPasswordConfirmatio
     </div>
   </article>
 </template>
+
+<style scoped>
+.settings-field-stack {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.cloud-session strong {
+  color: var(--navy);
+}
+.cloud-session p {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+.cloud-session {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 1px solid #d9eee5;
+  border-radius: 15px;
+  background: #f4fbf8;
+}
+.cloud-session__logout {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 10px 14px;
+}
+.account-security__form {
+  padding: 2px 14px 14px;
+}
+.account-security__form .secondary-button {
+  width: fit-content;
+}
+
+@media (max-width: 720px) {
+  .cloud-session {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+</style>

@@ -43,3 +43,32 @@ const highlights = computed(() => props.review.highlights.filter((item) => item.
     </div>
   </div>
 </template>
+
+<style scoped>
+.weekly-review-overview {
+  display: grid;
+  gap: 10px;
+}
+.weekly-review-overview__group {
+  padding: 13px 15px;
+  border: 1px solid #e0ebe6;
+  border-radius: 14px;
+  background: #f3f7f4;
+}
+.weekly-review-overview__group > strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--navy);
+  font-size: 13px;
+}
+.weekly-review-overview__group p,
+.weekly-review-overview__group ul {
+  margin: 0;
+  color: #45554f;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.weekly-review-overview__group ul {
+  padding-left: 18px;
+}
+</style>

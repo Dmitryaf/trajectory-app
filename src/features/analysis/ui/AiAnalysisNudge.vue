@@ -22,3 +22,35 @@ defineEmits<{ dismiss: []; prepare: [] }>();
     </div>
   </aside>
 </template>
+
+<style scoped>
+.ai-analysis-nudge__actions {
+  display: grid;
+  flex: 0 0 min(300px, 38%);
+  gap: 8px;
+}
+.ai-analysis-nudge__dismiss {
+  border: 0;
+  background: transparent;
+}
+
+@media (max-width: 720px) {
+  .ai-analysis-nudge {
+    gap: 16px;
+  }
+  .ai-analysis-nudge__copy ol {
+    display: grid;
+  }
+  .ai-analysis-nudge__actions {
+    width: 100%;
+    min-width: 0;
+    flex-basis: auto;
+  }
+  .ai-analysis-nudge .secondary-button {
+    width: 100%;
+    min-width: 0;
+    text-align: center;
+    white-space: normal;
+  }
+}
+</style>

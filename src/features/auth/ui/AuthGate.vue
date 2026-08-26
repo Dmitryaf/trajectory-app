@@ -4,6 +4,7 @@ import { recordFirstUseEvent } from '@/features/first-use/funnel';
 import PasswordField from '@/shared/ui/forms/PasswordField.vue';
 import PwaInstallGuide from '@/features/pwa/ui/PwaInstallGuide.vue';
 import { useAuthStore } from '@/stores/auth';
+import BrandMark from '@/shared/ui/branding/BrandMark.vue';
 
 type PreviewLevelId = 'today' | 'journal' | 'week' | 'month';
 
@@ -267,7 +268,7 @@ async function requestPasswordReset() {
 
       <article class="auth-card">
         <div class="auth-card__brand">
-          <span class="brand__mark"><i></i></span>
+          <BrandMark />
           <div>
             <p class="eyebrow">{{ mode === 'sign-up' ? 'Новый аккаунт' : 'С возвращением' }}</p>
             <h2>{{ mode === 'sign-up' ? 'Создайте аккаунт' : 'Войдите в «Траекторию»' }}</h2>

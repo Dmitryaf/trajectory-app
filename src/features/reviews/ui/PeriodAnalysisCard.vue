@@ -31,7 +31,7 @@ defineEmits<{
       </div>
     </div>
     <AiAnalysisSteps />
-    <div class="review-nudge range-custom-action" style="margin-top: 16px">
+    <div class="review-nudge range-custom-action period-analysis-card__range">
       <div>
         <strong>Нужен другой период?</strong>
         <p>Выберите точные даты и подготовьте текст в настройках.</p>
@@ -46,3 +46,9 @@ defineEmits<{
     </div>
   </article>
 </template>
+
+<style scoped>
+.period-analysis-card__range {
+  margin-top: 16px;
+}
+</style>

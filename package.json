@@ -19,7 +19,7 @@
     "build": "vue-tsc -b && vite build",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
-    "lint:styles": "stylelint \"src/**/*.css\" && node scripts/check-style-colors.mjs",
+    "lint:styles": "stylelint \"src/**/*.css\" && node scripts/check-style-colors.mjs && node scripts/check-style-boundaries.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",

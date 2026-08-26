@@ -492,3 +492,5 @@ async function completeRecovery() {
     <p v-if="saveError" class="first-use-card__error" role="alert">{{ saveError }}</p>
   </section>
 </template>
+
+<style scoped src="./FirstUseRecovery.css"></style>

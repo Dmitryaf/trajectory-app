@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import PasswordField from '../shared/ui/forms/PasswordField.vue';
+import BrandMark from '../shared/ui/branding/BrandMark.vue';
 import { useAuthStore } from '../stores/auth';
 
 const auth = useAuthStore();
@@ -44,7 +45,7 @@ async function returnToSignIn() {
   <main class="password-reset-shell">
     <article class="password-reset-card">
       <div class="auth-card__brand">
-        <span class="brand__mark"><i></i></span>
+        <BrandMark />
         <div><strong>Траектория</strong></div>
       </div>
 

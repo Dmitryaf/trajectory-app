@@ -62,3 +62,5 @@ const sections = computed(() => [
     </RouterLink>
   </section>
 </template>
+
+<style scoped src="./MoreView.css"></style>

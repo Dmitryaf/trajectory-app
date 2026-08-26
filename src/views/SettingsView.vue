@@ -6,47 +6,13 @@ import ExperimentSettingsCard from '../features/experiments/ui/ExperimentSetting
 import ChipGroup from '../shared/ui/forms/ChipGroup.vue';
 import PwaInstallGuide from '../features/pwa/ui/PwaInstallGuide.vue';
 import { pwaPlatform } from '../features/pwa/installation';
+import { settingsGroupForHash, settingsGroups, type SettingsGroup } from '../features/settings/navigation';
 import { useSettingsForm } from '../features/settings/useSettingsForm';
 import type { DailyBlockId, LifeAreaId } from '../types';
 
-type SettingsGroup = 'daily' | 'experiment' | 'data' | 'account';
-
-const settingsGroups: Array<{ id: SettingsGroup; label: string; hash: string }> = [
-  { id: 'daily', label: 'Ежедневная запись', hash: 'daily-settings' },
-  { id: 'experiment', label: 'Эксперимент', hash: 'experiment-settings' },
-  { id: 'data', label: 'Данные и синхронизация', hash: 'data-settings' },
-  { id: 'account', label: 'Аккаунт и безопасность', hash: 'account-settings' },
-];
 const settingsGroupStyle = { animation: 'page-in 0.25s ease-out' };
-const dailySectionHashes = new Set([
-  'daily-settings',
-  'daily-blocks',
-  'movement-options',
-  'life-areas',
-  'context-options',
-  'work-settings',
-  'nutrition-settings',
-]);
-const dataSectionHashes = new Set(['data-settings', 'install-settings', 'backup-settings', 'cloud-settings', 'analysis-settings']);
 const activeSettingsGroup = ref<SettingsGroup>('daily');
 const passwordRecoveryRequested = new URLSearchParams(window.location.search).get('password-recovery') === '1';
-
-function settingsGroupForHash(hash: string): SettingsGroup | null {
-  const id = hash.replace(/^#/, '');
-  if (dailySectionHashes.has(id)) {
-    return 'daily';
-  }
-  if (id === 'experiment-settings' || id === 'experiment-settings-group') {
-    return 'experiment';
-  }
-  if (dataSectionHashes.has(id)) {
-    return 'data';
-  }
-  if (id === 'account-settings') {
-    return 'account';
-  }
-  return null;
-}
 
 function scrollToSettingsHash(): void {
   const id = window.location.hash.replace(/^#/, '');
@@ -563,3 +529,5 @@ const {
     </section>
   </section>
 </template>
+
+<style scoped src="./SettingsView.css"></style>

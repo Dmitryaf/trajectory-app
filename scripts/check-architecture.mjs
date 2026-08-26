@@ -12,8 +12,8 @@ const reportThresholds = new Map([
   ['.css', 500],
 ]);
 const hotspotContentBudgets = new Map([
-  ['src/views/TodayView.vue', 27524],
-  ['src/views/SettingsView.vue', 15023],
+  ['src/views/TodayView.vue', 27566],
+  ['src/views/SettingsView.vue', 14200],
   ['src/views/WeekView.vue', 25425],
   ['src/views/MonthView.vue', 20419],
   ['src/features/settings/useSettingsForm.ts', 12359],
@@ -21,7 +21,7 @@ const hotspotContentBudgets = new Map([
 const allowedDbOwners = new Set(['src/stores/app.ts', 'src/features/sync/base.ts']);
 const allowedServiceFeatureEdges = new Set(['src/services/analytics.ts']);
 const styleOwnerRules = [
-  { selector: 'bottom-nav', owner: 'src/styles/shell.css', overrides: /^src\/styles\/responsive-/ },
+  { selector: 'bottom-nav', owner: 'src/App.css' },
   { selector: 'primary-button', owner: 'src/styles/primitives.css' },
   { selector: 'secondary-button', owner: 'src/styles/primitives.css' },
   { selector: 'danger-button', owner: 'src/styles/primitives.css' },

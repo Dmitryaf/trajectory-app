@@ -92,3 +92,9 @@ defineEmits<{
     <p v-if="historyCount" class="data-note">Завершённые эксперименты можно посмотреть в разделе «История»: {{ historyCount }}.</p>
   </article>
 </template>
+
+<style scoped>
+.settings-card--experiment {
+  --settings-accent: #df6d53;
+}
+</style>

@@ -145,10 +145,6 @@ textarea {
   resize: vertical;
   min-height: 64px;
 }
-.auto-grow-textarea {
-  resize: none;
-  overflow-y: hidden;
-}
 /* Keep non-visual explanations available to assistive technology. */
 .visually-hidden {
   position: absolute !important;

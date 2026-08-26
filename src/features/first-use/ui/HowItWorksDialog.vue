@@ -156,3 +156,97 @@ const { startBackdropClose, finishBackdropClose, cancelBackdropClose } = useDial
     </div>
   </Teleport>
 </template>
+
+<style scoped>
+.help-link--inline {
+  width: auto;
+  min-height: 42px;
+  justify-content: center;
+  padding: 9px 13px;
+  background: var(--surface);
+}
+.help-link--inline strong {
+  display: inline;
+}
+.help-dialog__actions a {
+  display: flex;
+  min-width: 0;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  padding-right: 14px;
+  padding-left: 14px;
+  line-height: 1.25;
+  text-align: center;
+}
+.help-dialog {
+  width: min(620px, 100%);
+  padding: 28px;
+}
+.help-dialog__heading h2 {
+  font-size: 26px;
+}
+.help-dialog__lead {
+  margin: 14px 0 20px;
+  color: #51625d;
+  line-height: 1.55;
+}
+.help-steps {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.help-steps li {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  background: #f5f7f4;
+}
+.help-steps li > span {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 11px;
+  background: #ddf4ea;
+  color: #17634e;
+  font-weight: 850;
+}
+.help-steps strong,
+.help-steps p {
+  display: block;
+}
+.help-steps p {
+  margin: 3px 0 0;
+  color: #687570;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.help-dialog__note {
+  margin: 18px 0 0;
+  padding: 13px 15px;
+  border-left: 3px solid #79cfad;
+  border-radius: 0 12px 12px 0;
+  background: #f0faf6;
+  color: #315b4e;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .help-link--inline strong {
+    display: inline;
+  }
+  .help-dialog__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .help-dialog__actions a {
+    width: 100%;
+  }
+}
+</style>

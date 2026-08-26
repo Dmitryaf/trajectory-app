@@ -32,3 +32,23 @@ defineExpose({
     </svg>
   </button>
 </template>
+
+<style scoped>
+.dialog-close-button {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: #5f6d68;
+  cursor: pointer;
+}
+.dialog-close-button:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+</style>

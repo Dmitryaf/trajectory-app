@@ -213,3 +213,5 @@ function eventKey(event: LifeEventRecord) {
     </section>
   </section>
 </template>
+
+<style scoped src="./EventsView.css"></style>

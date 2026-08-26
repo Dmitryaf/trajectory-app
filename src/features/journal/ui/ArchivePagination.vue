@@ -21,3 +21,21 @@ function changePage(nextPage: number) {
     <button class="secondary-button" type="button" :disabled="page === pageCount" @click="changePage(page + 1)">Дальше</button>
   </nav>
 </template>
+
+<style scoped>
+.archive-pagination {
+  display: grid;
+  grid-template-columns: 110px 1fr 110px;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e7edea;
+}
+.archive-pagination span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+  text-align: center;
+}
+</style>

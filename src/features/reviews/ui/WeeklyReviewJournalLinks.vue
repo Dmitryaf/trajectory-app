@@ -178,3 +178,91 @@ async function saveToJournal(item: JournalItem) {
     </div>
   </details>
 </template>
+
+<style scoped>
+.weekly-review-journal {
+  margin-top: 14px;
+  border: 1px solid #d9e5e0;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+}
+.weekly-review-journal > summary {
+  padding: 14px 16px;
+  color: var(--navy);
+  font-weight: 800;
+  cursor: pointer;
+}
+.weekly-review-journal__content {
+  padding: 0 16px 16px;
+}
+.weekly-review-journal__content > p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.weekly-review-journal__list {
+  display: grid;
+  gap: 10px;
+}
+.weekly-review-journal__item {
+  padding: 13px;
+  border: 1px solid #e2e9e6;
+  border-radius: 14px;
+  background: var(--surface);
+}
+.weekly-review-journal__item-heading {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+.weekly-review-journal__item-heading span,
+.weekly-review-journal__fields label > span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+.weekly-review-journal__item-heading strong {
+  color: var(--navy);
+  font-size: 14px;
+}
+.weekly-review-journal__fields {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.7fr) minmax(180px, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+.weekly-review-journal__fields label {
+  display: grid;
+  gap: 5px;
+}
+.weekly-review-journal__fields input,
+.weekly-review-journal__fields select {
+  width: 100%;
+  min-width: 0;
+}
+.weekly-review-journal__fields .secondary-button {
+  min-height: 44px;
+}
+.weekly-review-journal__status,
+.weekly-review-journal__error {
+  margin: 8px 0 0;
+  font-size: 12px;
+  font-weight: 750;
+}
+.weekly-review-journal__status {
+  color: #16715e;
+}
+.weekly-review-journal__error {
+  color: #a44343;
+}
+
+@media (max-width: 720px) {
+  .weekly-review-journal__fields {
+    grid-template-columns: 1fr;
+  }
+  .weekly-review-journal__fields .secondary-button {
+    width: 100%;
+  }
+}
+</style>

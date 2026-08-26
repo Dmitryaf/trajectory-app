@@ -70,3 +70,41 @@ watch(pageCount, (count) => {
     <ArchivePagination v-model:page="page" :page-count="pageCount" :context-label="paginationLabel" />
   </article>
 </template>
+
+<style scoped>
+.period-record-preview {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.period-record-preview li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 1px solid #e1ebe6;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #38564d;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.period-record-preview li > span {
+  color: #298564;
+  font-weight: 850;
+  text-align: center;
+}
+.period-record-preview li > div,
+.period-record-preview small {
+  min-width: 0;
+}
+.period-record-preview small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+}
+</style>

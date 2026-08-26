@@ -146,3 +146,45 @@ function remove() {
     </div>
   </Teleport>
 </template>
+
+<style scoped>
+.goal-dialog {
+  width: min(560px, 100%);
+  padding: 26px;
+}
+.goal-dialog form {
+  display: grid;
+  gap: 10px;
+}
+.goal-dialog__hint {
+  margin: 0;
+  color: #77827e;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.goal-dialog__actions {
+  margin-top: 10px;
+}
+.goal-dialog__actions button {
+  min-width: 130px;
+}
+
+@media (max-width: 720px) {
+  .goal-dialog-backdrop {
+    align-items: end;
+    padding: var(--safe-top) var(--safe-right) 0 var(--safe-left);
+  }
+  .goal-dialog {
+    width: 100%;
+    max-height: calc(100% - 24px);
+    padding: 22px 18px calc(22px + var(--safe-bottom));
+    border-radius: 24px 24px 0 0;
+  }
+  .goal-dialog__actions {
+    flex-direction: column-reverse;
+  }
+  .goal-dialog__actions button {
+    width: 100%;
+  }
+}
+</style>

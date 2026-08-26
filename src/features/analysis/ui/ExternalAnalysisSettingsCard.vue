@@ -76,3 +76,21 @@ const { copyCustomPrompt, copyPrompt, downloadCustomData, downloadData, end, isC
     </p>
   </article>
 </template>
+
+<style scoped>
+.settings-card--analysis {
+  --settings-accent: #7467e8;
+}
+.ai-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+
+@media (max-width: 720px) {
+  .ai-actions {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

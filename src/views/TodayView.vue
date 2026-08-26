@@ -826,3 +826,5 @@ function openEntryDatePicker() {
     />
   </section>
 </template>
+
+<style scoped src="./TodayView.css"></style>

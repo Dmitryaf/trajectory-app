@@ -64,3 +64,71 @@ function showAllTime() {
   <p class="archive-date-filter__state" aria-live="polite">{{ rangeLabel }}</p>
   <button class="archive-filter__all-time" type="button" :disabled="!hasRange" @click="showAllTime">За всё время</button>
 </template>
+
+<style scoped>
+.archive-date-filter {
+  display: grid;
+  grid-column: span 2;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.archive-date-filter__state {
+  display: flex;
+  grid-column: 1 / -2;
+  min-height: 34px;
+  align-items: center;
+  margin: 0;
+  padding: 0 4px;
+  color: #315f50;
+  font-size: 12px;
+  font-weight: 700;
+}
+.archive-filter__all-time {
+  min-height: 34px;
+  align-self: center;
+  justify-self: end;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #267057;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.archive-filter__all-time:hover:not(:disabled) {
+  background: rgba(38, 112, 87, 0.08);
+  color: #174f40;
+}
+.archive-filter__all-time:disabled {
+  color: #96a49f;
+  cursor: default;
+}
+
+@media (max-width: 720px) {
+  .archive-date-filter {
+    grid-column: 1 / -1;
+  }
+  .archive-date-filter__state {
+    grid-column: 1;
+  }
+  .archive-filter__all-time {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 520px) {
+  .archive-date-filter {
+    grid-template-columns: 1fr;
+  }
+  .archive-date-filter__state,
+  .archive-filter__all-time {
+    grid-column: auto;
+  }
+  .archive-filter__all-time {
+    justify-self: start;
+  }
+}
+</style>

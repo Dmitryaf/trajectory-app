@@ -345,8 +345,6 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-}
-.chart-legend span {
   padding: 6px 9px;
   border: 1px solid #e7ebf2;
   border-radius: 999px;

@@ -114,3 +114,32 @@ async function submit() {
     </div>
   </Teleport>
 </template>
+
+<style scoped>
+.feedback-dialog {
+  width: min(540px, 100%);
+  padding: 26px;
+}
+.feedback-dialog textarea {
+  min-height: 150px;
+}
+.feedback-dialog__hint {
+  margin: 10px 0 0;
+  color: #77827e;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.feedback-dialog__actions button {
+  min-width: 120px;
+}
+
+@media (max-width: 720px) {
+  .feedback-dialog__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .feedback-dialog__actions button {
+    min-width: 0;
+  }
+}
+</style>

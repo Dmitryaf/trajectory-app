@@ -58,3 +58,25 @@ onBeforeUnmount(() => resizeObserver?.disconnect());
     </button>
   </div>
 </template>
+
+<style scoped>
+.clamped-text--collapsed {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+.clamped-text__toggle {
+  margin-top: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #2c745e;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+.clamped-text__toggle:hover {
+  color: #174f40;
+}
+</style>

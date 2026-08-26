@@ -57,3 +57,76 @@ async function install() {
     </div>
   </aside>
 </template>
+
+<style scoped>
+.pwa-install-nudge {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 13px 14px;
+  border: 1px solid #cfe5dc;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #effaf6, rgba(255, 255, 255, 0.9));
+}
+.pwa-install-nudge__mark {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 12px;
+  background: #d9f3e8;
+  color: var(--accent-dark);
+  font-size: 18px;
+  font-weight: 900;
+}
+.pwa-install-nudge strong {
+  display: block;
+  color: var(--navy);
+  font-size: 14px;
+}
+.pwa-install-nudge p {
+  margin: 2px 0 0;
+  color: #66766f;
+  font-size: 12px;
+}
+.pwa-install-nudge__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pwa-install-nudge__actions .secondary-button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 11px;
+  text-align: center;
+  text-decoration: none;
+}
+.pwa-install-nudge__later {
+  min-height: 40px;
+  padding: 8px;
+  border: 0;
+  background: transparent;
+  color: #6d7d76;
+  font-weight: 750;
+}
+.pwa-install-nudge__later:hover {
+  color: var(--accent-dark);
+}
+
+@media (max-width: 720px) {
+  .pwa-install-nudge {
+    grid-template-columns: 38px minmax(0, 1fr);
+    align-items: start;
+  }
+  .pwa-install-nudge__actions {
+    grid-column: 1 / -1;
+  }
+  .pwa-install-nudge__actions .secondary-button {
+    flex: 1;
+  }
+}
+</style>
