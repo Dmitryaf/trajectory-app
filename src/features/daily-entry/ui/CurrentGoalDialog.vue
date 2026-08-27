@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, ref, toRef, watch } from 'vue';
 import AutoGrowTextarea from '@/shared/ui/forms/AutoGrowTextarea.vue';
+import FormFieldLabel from '@/shared/ui/forms/FormFieldLabel.vue';
 import DialogCloseButton from '@/shared/ui/overlays/DialogCloseButton.vue';
 import { useBodyScrollLock } from '@/shared/ui/overlays/useBodyScrollLock';
 import { useDialogBackdropClose } from '@/shared/ui/overlays/useDialogBackdropClose';
@@ -101,7 +102,7 @@ function remove() {
         </div>
 
         <form @submit.prevent="submit">
-          <label class="field-label" for="current-goal-title">Что хотите изменить или закончить</label>
+          <FormFieldLabel for="current-goal-title">Что хотите изменить или закончить</FormFieldLabel>
           <input
             id="current-goal-title"
             ref="titleInput"
@@ -112,7 +113,7 @@ function remove() {
             placeholder="Например: подготовиться к собеседованию"
           />
 
-          <label class="field-label" for="current-goal-outcome">Как понять, что получилось</label>
+          <FormFieldLabel for="current-goal-outcome">Как понять, что получилось</FormFieldLabel>
           <input
             id="current-goal-outcome"
             v-model="draftOutcomeCriterion"
@@ -121,10 +122,10 @@ function remove() {
             placeholder="Наблюдаемый результат — необязательно"
           />
 
-          <label class="field-label" for="current-goal-review-date">Когда вернуться к цели</label>
+          <FormFieldLabel for="current-goal-review-date">Когда вернуться к цели</FormFieldLabel>
           <input id="current-goal-review-date" v-model="draftReviewDate" type="date" />
 
-          <label class="field-label" for="current-goal-evidence">Что считать шагом к цели</label>
+          <FormFieldLabel for="current-goal-evidence">Что считать шагом к цели</FormFieldLabel>
           <AutoGrowTextarea
             id="current-goal-evidence"
             v-model="draftExternalEvidenceCriterion"

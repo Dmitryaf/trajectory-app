@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import AiAnalysisSteps from './AiAnalysisSteps.vue';
+import SettingsCard from '@/features/settings/ui/SettingsCard.vue';
+import FormCardHeading from '@/shared/ui/forms/FormCardHeading.vue';
+import FormDisclosure from '@/shared/ui/forms/FormDisclosure.vue';
+import FormFieldLabel from '@/shared/ui/forms/FormFieldLabel.vue';
+import FormRow from '@/shared/ui/forms/FormRow.vue';
 import { useExternalAnalysis } from '../useExternalAnalysis';
 
 const { copyCustomPrompt, copyPrompt, downloadCustomData, downloadData, end, isCopying, maxDate, start } = useExternalAnalysis();
 </script>
 
 <template>
-  <article id="analysis-settings" class="settings-card settings-card--analysis">
-    <div class="form-card__heading">
-      <span class="section-icon section-icon--green">↗</span>
+  <SettingsCard id="analysis-settings" class="settings-card--analysis" tone="purple">
+    <FormCardHeading icon="↗" tone="green">
       <div>
         <h2>Данные для внешнего анализа</h2>
         <p>
@@ -16,7 +20,7 @@ const { copyCustomPrompt, copyPrompt, downloadCustomData, downloadData, end, isC
           не отправляет.
         </p>
       </div>
-    </div>
+    </FormCardHeading>
     <AiAnalysisSteps />
     <div class="ai-actions">
       <button
@@ -40,47 +44,42 @@ const { copyCustomPrompt, copyPrompt, downloadCustomData, downloadData, end, isC
       <button class="secondary-button" type="button" @click="downloadData('week')">Данные недели</button>
       <button class="secondary-button" type="button" @click="downloadData('month')">Данные месяца</button>
     </div>
-    <details class="analysis-range">
-      <summary>Выбрать другой период</summary>
-      <div class="analysis-range__content">
-        <p>Например, можно захватить часть прошлого месяца и несколько дней текущего.</p>
-        <div class="form-row">
-          <div>
-            <label class="field-label" for="analysis-start">Начало периода</label>
-            <input id="analysis-start" v-model="start" type="date" :max="end" aria-label="Начало периода анализа" />
-          </div>
-          <div>
-            <label class="field-label" for="analysis-end">Конец периода</label>
-            <input id="analysis-end" v-model="end" type="date" :min="start" :max="maxDate" aria-label="Конец периода анализа" />
-          </div>
+    <FormDisclosure class="analysis-range">
+      <template #summary>Выбрать другой период</template>
+      <p>Например, можно захватить часть прошлого месяца и несколько дней текущего.</p>
+      <FormRow>
+        <div>
+          <FormFieldLabel for="analysis-start">Начало периода</FormFieldLabel>
+          <input id="analysis-start" v-model="start" type="date" :max="end" aria-label="Начало периода анализа" />
         </div>
-        <div class="ai-actions">
-          <button
-            class="secondary-button"
-            type="button"
-            :disabled="isCopying('analysis-range')"
-            :aria-busy="isCopying('analysis-range')"
-            @click="copyCustomPrompt"
-          >
-            Подготовить текст периода
-          </button>
-          <button class="secondary-button" type="button" @click="downloadCustomData">Скачать данные периода</button>
+        <div>
+          <FormFieldLabel for="analysis-end">Конец периода</FormFieldLabel>
+          <input id="analysis-end" v-model="end" type="date" :min="start" :max="maxDate" aria-label="Конец периода анализа" />
         </div>
-        <p class="data-note">
-          В текст входят записи по каждому дню выбранного периода, включая личные заметки. JSON остаётся полной копией без сокращений.
-        </p>
+      </FormRow>
+      <div class="ai-actions">
+        <button
+          class="secondary-button"
+          type="button"
+          :disabled="isCopying('analysis-range')"
+          :aria-busy="isCopying('analysis-range')"
+          @click="copyCustomPrompt"
+        >
+          Подготовить текст периода
+        </button>
+        <button class="secondary-button" type="button" @click="downloadCustomData">Скачать данные периода</button>
       </div>
-    </details>
+      <p class="data-note">
+        В текст входят записи по каждому дню выбранного периода, включая личные заметки. JSON остаётся полной копией без сокращений.
+      </p>
+    </FormDisclosure>
     <p class="data-note">
       В пакет входят личные заметки выбранного периода. Перед передачей внешнему сервису можно просмотреть скачанный JSON.
     </p>
-  </article>
+  </SettingsCard>
 </template>
 
 <style scoped>
-.settings-card--analysis {
-  --settings-accent: #7467e8;
-}
 .ai-actions {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

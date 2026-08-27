@@ -1,0 +1,138 @@
+<script setup lang="ts">
+import { careerStatesForEntry, specialDayLabel } from '@/services/analytics';
+import { formatDate, formatMinutes, todayKey } from '@/services/dates';
+import type { DailyEntry } from '@/types';
+
+type RhythmDay = { day: string; entry?: DailyEntry };
+
+defineProps<{ days: RhythmDay[] }>();
+
+function dayFacts(item: RhythmDay): string[] {
+  const { entry } = item;
+  if (!entry) {
+    return [];
+  }
+
+  const facts: string[] = [];
+  if (entry.sleepMinutes !== null) {
+    facts.push(`Сон ${formatMinutes(entry.sleepMinutes)}`);
+  }
+  if (entry.energy !== null) {
+    facts.push(`Энергия ${entry.energy}/5`);
+  }
+  if (careerStatesForEntry(entry).length) {
+    facts.push('Работа');
+  }
+  if (entry.actionDirection === 'external') {
+    facts.push('Шаг к цели');
+  }
+  if (entry.actionDirection === 'drift') {
+    facts.push('Другие дела');
+  }
+  if (entry.activities.some((activity) => activity !== 'recovery')) {
+    facts.push('Физическая активность');
+  }
+  if (entry.nutritionState === 'supports_goal') {
+    facts.push('Питание поддерживало');
+  }
+  if (entry.nutritionState === 'neutral') {
+    facts.push('Питание нейтрально');
+  }
+  if (entry.nutritionState === 'blocks_goal') {
+    facts.push('Питание мешало');
+  }
+  if (entry.specialDay) {
+    facts.push(specialDayLabel(entry.specialDay));
+  }
+  return facts;
+}
+</script>
+
+<template>
+  <article class="dashboard-card weekly-rhythm-card">
+    <div class="section-heading">
+      <div>
+        <span class="eyebrow">Факты по дням</span>
+        <h2>Как проходила неделя</h2>
+      </div>
+    </div>
+    <div class="week-story-list">
+      <article v-for="item in days" :key="item.day" class="week-story-day" :class="{ 'week-story-day--empty': !item.entry }">
+        <time>{{ formatDate(item.day, { weekday: 'short', day: 'numeric' }) }}</time>
+        <div>
+          <strong v-if="item.entry?.importantFact">{{ item.entry.importantFact }}</strong>
+          <span v-else>{{ item.entry ? 'Запись без заметки дня' : item.day > todayKey() ? 'День ещё не наступил' : 'Записи нет' }}</span>
+          <div v-if="dayFacts(item).length" class="week-story-day__facts">
+            <small v-for="fact in dayFacts(item)" :key="fact">{{ fact }}</small>
+          </div>
+        </div>
+      </article>
+    </div>
+  </article>
+</template>
+
+<style scoped>
+.weekly-rhythm-card {
+  position: relative;
+  margin-bottom: 16px;
+  border-color: #dde6e2;
+  box-shadow: 0 10px 28px rgba(16, 45, 44, 0.065);
+}
+.weekly-rhythm-card > .section-heading {
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e8eeeb;
+}
+.week-story-list {
+  display: grid;
+  gap: 8px;
+}
+.week-story-day {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px 14px;
+  border: 1px solid #e2eae6;
+  border-radius: 14px;
+  background: #fbfdfc;
+}
+.week-story-day--empty {
+  background: #f7f9f8;
+}
+.week-story-day time {
+  color: #66756f;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+.week-story-day strong,
+.week-story-day > div > span {
+  display: block;
+  color: #3f504a;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.week-story-day--empty > div > span {
+  color: var(--muted);
+}
+.week-story-day__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+.week-story-day__facts small {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #eaf3ef;
+  color: #41675b;
+  font-size: 10px;
+  font-weight: 750;
+}
+@media (max-width: 720px) {
+  .week-story-day {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+}
+</style>

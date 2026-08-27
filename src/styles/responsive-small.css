@@ -1,22 +1,4 @@
-@media (max-width: 520px) {
-  .archive-filters {
-    grid-template-columns: 1fr;
-  }
-  .archive-filters > input:first-child {
-    grid-column: auto;
-  }
-}
-
 @media (max-width: 390px) {
-  .form-card__heading p {
-    font-size: 12px;
-  }
-  .metrics-grid {
-    gap: 8px;
-  }
-  .heatmap {
-    grid-template-columns: 120px repeat(7, 38px);
-  }
   .beta-feedback-link {
     width: 36px;
     justify-content: center;

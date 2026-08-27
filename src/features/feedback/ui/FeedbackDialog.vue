@@ -3,6 +3,7 @@ import { nextTick, ref } from 'vue';
 import { sendFeedback } from '@/services/feedback';
 import { notifyError, notifySaved } from '@/services/notifications';
 import DialogCloseButton from '@/shared/ui/overlays/DialogCloseButton.vue';
+import FormFieldLabel from '@/shared/ui/forms/FormFieldLabel.vue';
 import { useBodyScrollLock } from '@/shared/ui/overlays/useBodyScrollLock';
 import { useDialogBackdropClose } from '@/shared/ui/overlays/useDialogBackdropClose';
 import { useDialogFocus } from '@/shared/ui/overlays/useDialogFocus';
@@ -88,7 +89,7 @@ async function submit() {
         </div>
 
         <form @submit.prevent="submit">
-          <label for="beta-feedback-message" class="field-label">Предложение, проблема или ошибка</label>
+          <FormFieldLabel for="beta-feedback-message">Предложение, проблема или ошибка</FormFieldLabel>
           <textarea
             id="beta-feedback-message"
             ref="messageInput"

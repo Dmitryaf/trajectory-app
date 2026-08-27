@@ -179,8 +179,16 @@
 .first-use-recovery__step > p {
   margin-bottom: 24px;
 }
-.first-use-recovery__step > .field-label {
+.first-use-recovery__step > :deep(.field-label) {
   margin-top: 18px;
+}
+.context-action {
+  min-height: 40px;
+  padding: 9px 13px;
+  border-radius: 12px;
+  box-shadow: none;
+  font-size: 13px;
+  line-height: 1.2;
 }
 .first-use-recovery__step textarea {
   width: 100%;

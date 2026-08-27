@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import PasswordField from '../shared/ui/forms/PasswordField.vue';
+import FormFieldLabel from '../shared/ui/forms/FormFieldLabel.vue';
 import BrandMark from '../shared/ui/branding/BrandMark.vue';
 import { useAuthStore } from '../stores/auth';
 
@@ -44,7 +45,7 @@ async function returnToSignIn() {
 <template>
   <main class="password-reset-shell">
     <article class="password-reset-card">
-      <div class="auth-card__brand">
+      <div class="password-reset-card__brand">
         <BrandMark />
         <div><strong>Траектория</strong></div>
       </div>
@@ -54,9 +55,9 @@ async function returnToSignIn() {
         <h1>Создай новый пароль</h1>
         <p class="password-reset-card__intro">После сохранения войди в аккаунт с новым паролем.</p>
 
-        <form class="auth-form" @submit.prevent="savePassword">
+        <form class="password-reset-form" @submit.prevent="savePassword">
           <div class="form-control">
-            <label class="field-label" for="reset-password">Новый пароль</label>
+            <FormFieldLabel for="reset-password">Новый пароль</FormFieldLabel>
             <PasswordField
               id="reset-password"
               v-model="password"
@@ -66,10 +67,10 @@ async function returnToSignIn() {
               aria-describedby="reset-password-hint"
               placeholder="Не меньше 8 символов"
             />
-            <small id="reset-password-hint" class="auth-field-hint">Не меньше 8 символов.</small>
+            <small id="reset-password-hint" class="password-reset-field-hint">Не меньше 8 символов.</small>
           </div>
           <div class="form-control">
-            <label class="field-label" for="reset-password-confirmation">Повтори пароль</label>
+            <FormFieldLabel for="reset-password-confirmation">Повтори пароль</FormFieldLabel>
             <PasswordField
               id="reset-password-confirmation"
               v-model="passwordConfirmation"
@@ -95,3 +96,5 @@ async function returnToSignIn() {
     </article>
   </main>
 </template>
+
+<style scoped src="./PasswordResetView.css"></style>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import ArchivePagination from '@/features/journal/ui/ArchivePagination.vue';
+import CountBadge from '@/shared/ui/data-display/CountBadge.vue';
 
 interface PeriodRecordItem {
   id: string | number;
@@ -54,7 +55,7 @@ watch(pageCount, (count) => {
         <span class="eyebrow">{{ eyebrow }}</span>
         <h2>{{ title }}</h2>
       </div>
-      <span class="count-badge">{{ items.length }}</span>
+      <CountBadge>{{ items.length }}</CountBadge>
     </div>
     <div v-if="breakdown.length" class="period-record-card__breakdown" :aria-label="breakdownLabel">
       <span v-for="item in breakdown" :key="item.id">{{ item.icon ?? '·' }} {{ item.label }} · {{ item.count }}</span>
@@ -72,6 +73,44 @@ watch(pageCount, (count) => {
 </template>
 
 <style scoped>
+.period-record-card {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid #dfe9e4;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.78);
+}
+.period-record-card__heading {
+  display: flex;
+  min-width: 0;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.period-record-card__heading h2,
+.period-record-card__heading strong {
+  display: block;
+  margin: 0;
+  color: var(--navy);
+  font-size: 16px;
+}
+.period-record-card__heading .eyebrow {
+  margin-bottom: 3px;
+}
+.period-record-card__breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.period-record-card__breakdown span {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #eef4f1;
+  color: #52645e;
+  font-size: 11px;
+  font-weight: 750;
+}
 .period-record-preview {
   display: grid;
   gap: 8px;
@@ -106,5 +145,17 @@ watch(pageCount, (count) => {
   margin-top: 2px;
   color: var(--muted);
   font-size: 11px;
+}
+@media (max-width: 720px) {
+  .period-record-card {
+    padding: 16px;
+  }
+  .period-record-card__heading {
+    align-items: flex-start;
+  }
+  .period-record-card__heading h2,
+  .period-record-card__heading strong {
+    font-size: 15px;
+  }
 }
 </style>

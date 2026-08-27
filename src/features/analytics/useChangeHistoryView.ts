@@ -28,12 +28,13 @@ import { useAppStore } from '@/stores/app';
 import { contextFactorOptions, externalCareerIdsForOptions, type ExperimentRecord } from '@/types';
 import { chartColors, chartStyles } from '@/shared/theme/colors';
 
-type RangeMonths = 3 | 6 | 12;
+export type RangeMonths = 3 | 6 | 12;
 type TrendMetricId = 'sleep' | 'energy' | 'weight';
+export type TimelineTone = 'event' | 'result' | 'decision' | 'outcome' | 'experiment';
 type DecisionTimelineItem = {
   date: string;
   type: string;
-  tone: 'event' | 'result' | 'decision' | 'outcome' | 'experiment';
+  tone: TimelineTone;
   title: string;
   detail: string;
 };
@@ -46,7 +47,6 @@ export function useChangeHistoryView() {
   const timelinePage = ref(1);
   const selectedEventKey = ref('');
   const selectedTrendMetric = ref<TrendMetricId>('sleep');
-  const eventPicker = ref<HTMLDetailsElement>();
   const rangeOptions: Array<{ value: RangeMonths; label: string }> = [
     { value: 3, label: '3 месяца' },
     { value: 6, label: '6 месяцев' },
@@ -296,13 +296,17 @@ export function useChangeHistoryView() {
   watch(timelinePageCount, (count) => {
     timelinePage.value = Math.min(timelinePage.value, count);
   });
-  const timelineSummary = computed(() =>
+  const timelineSummary = computed<Array<{ tone: TimelineTone; label: string; count: number }>>(() =>
     [
-      { tone: 'event', label: 'События', count: decisionTimeline.value.filter((item) => item.tone === 'event').length },
-      { tone: 'result', label: 'Итоги', count: decisionTimeline.value.filter((item) => item.tone === 'result').length },
-      { tone: 'decision', label: 'Решения', count: decisionTimeline.value.filter((item) => item.tone === 'decision').length },
-      { tone: 'outcome', label: 'Проверки', count: decisionTimeline.value.filter((item) => item.tone === 'outcome').length },
-      { tone: 'experiment', label: 'Эксперименты', count: decisionTimeline.value.filter((item) => item.tone === 'experiment').length },
+      { tone: 'event' as const, label: 'События', count: decisionTimeline.value.filter((item) => item.tone === 'event').length },
+      { tone: 'result' as const, label: 'Итоги', count: decisionTimeline.value.filter((item) => item.tone === 'result').length },
+      { tone: 'decision' as const, label: 'Решения', count: decisionTimeline.value.filter((item) => item.tone === 'decision').length },
+      { tone: 'outcome' as const, label: 'Проверки', count: decisionTimeline.value.filter((item) => item.tone === 'outcome').length },
+      {
+        tone: 'experiment' as const,
+        label: 'Эксперименты',
+        count: decisionTimeline.value.filter((item) => item.tone === 'experiment').length,
+      },
     ].filter((item) => item.count > 0),
   );
 
@@ -345,7 +349,6 @@ export function useChangeHistoryView() {
   }
   function selectEvent(event: (typeof store.lifeEvents)[number]) {
     selectedEventKey.value = eventKey(event);
-    eventPicker.value?.removeAttribute('open');
   }
   function createPackage() {
     return buildRangePackage(range.value, todayKey(), {
@@ -420,7 +423,6 @@ export function useChangeHistoryView() {
     timelinePageCount,
     selectedEventKey,
     selectedTrendMetric,
-    eventPicker,
     rangeOptions,
     summary,
     primaryCues,

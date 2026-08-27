@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import ArchiveDateRange from '../features/journal/ui/ArchiveDateRange.vue';
+import ArchiveItemActions from '../features/journal/ui/ArchiveItemActions.vue';
+import ArchivePage from '../features/journal/ui/ArchivePage.vue';
 import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
 import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
 import ChipGroup from '../shared/ui/forms/ChipGroup.vue';
+import FormCardHeading from '../shared/ui/forms/FormCardHeading.vue';
 import ClampedText from '../shared/ui/content/ClampedText.vue';
+import IconActionButton from '../shared/ui/actions/IconActionButton.vue';
 import { archiveRangeFromQuery } from '../features/journal/archiveQuery';
 import { useArchiveList } from '../features/journal/useArchiveList';
 import { formatDate, todayKey } from '../services/dates';
@@ -123,25 +127,26 @@ function eventKey(event: LifeEventRecord) {
 </script>
 
 <template>
-  <section class="page page--archive page--events">
-    <div class="page-heading">
-      <div>
-        <span class="eyebrow">Что произошло и что вы заметили</span>
-        <h1>События и наблюдения</h1>
-        <p>
-          Событие — ситуация, которую важно помнить. Мысль или наблюдение может быть обычной деталью дня, к которой захочется вернуться.
-        </p>
-      </div>
-    </div>
-
-    <article class="result-composer result-composer--events">
-      <div class="form-card__heading">
-        <span class="section-icon section-icon--amber">◆</span>
+  <ArchivePage
+    tone="events"
+    heading-eyebrow="Что произошло и что вы заметили"
+    heading-title="События и наблюдения"
+    heading-description="Событие — ситуация, которую важно помнить. Мысль или наблюдение может быть обычной деталью дня, к которой захочется вернуться."
+    archive-eyebrow="Хронология"
+    archive-title="События и важные мысли"
+    :count="filteredEvents.length"
+    :has-items="visibleEvents.length > 0"
+    empty-icon="◆"
+    :empty-title="recentEvents.length ? 'Ничего не найдено' : 'Записей пока нет'"
+    :empty-description="recentEvents.length ? 'Измените фильтры или диапазон дат.' : 'Добавьте первое важное событие или понимание.'"
+  >
+    <template #composer>
+      <FormCardHeading icon="◆" tone="amber">
         <div>
           <h2>{{ editingId === null ? 'Добавить запись' : 'Редактировать запись' }}</h2>
           <p>Выберите, что хотите записать: произошедшее событие или важную мысль.</p>
         </div>
-      </div>
+      </FormCardHeading>
       <ChipGroup v-model="type" :options="lifeEventTypeOptions" />
       <div class="event-composer__fields">
         <input v-model="title" type="text" maxlength="140" placeholder="Короткое название" @keyup.enter="saveEvent" />
@@ -154,64 +159,48 @@ function eventKey(event: LifeEventRecord) {
       <button v-if="editingId !== null" class="secondary-button composer-cancel" type="button" @click="resetForm">
         Отменить редактирование
       </button>
-    </article>
-
-    <section class="archive-panel">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">Хронология</span>
-          <h2>События и важные мысли</h2>
-        </div>
-        <span class="count-badge">{{ filteredEvents.length }}</span>
-      </div>
-      <div class="archive-filters">
-        <input v-model="filterText" type="search" placeholder="Поиск по событиям" aria-label="Поиск по событиям" />
-        <select v-model="filterType" aria-label="Тип события">
-          <option value="all">Все типы</option>
-          <option v-for="option in lifeEventTypeOptions" :key="option.id" :value="option.id">{{ option.label }}</option>
-        </select>
-        <ArchiveDateRange v-model:date-from="dateFrom" v-model:date-to="dateTo" context-label="событий" />
-      </div>
-      <div v-if="visibleEvents.length">
-        <TransitionGroup name="archive-list" tag="div" class="timeline-list">
-          <article v-for="event in visibleEvents" :key="eventKey(event)" class="timeline-item">
-            <span class="timeline-item__icon">{{ eventMeta(event.type).icon }}</span>
-            <div>
-              <strong>{{ event.title }}</strong>
-              <small
-                >{{ eventMeta(event.type).label }} ·
-                {{ formatDate(event.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</small
-              >
-              <ClampedText
-                v-if="event.note"
-                :text="event.note"
-                :content-id="`event-note-${eventKey(event)}`"
-                text-class="timeline-item__note"
-              />
-            </div>
-            <div class="item-actions">
-              <button class="ghost-button" type="button" aria-label="Редактировать событие" @click="edit(event)">✎</button>
-              <button
-                class="ghost-button ghost-button--danger"
-                type="button"
-                aria-label="Удалить событие"
-                :disabled="event.id !== undefined && removingIds.includes(event.id)"
-                @click="remove(event.id)"
-              >
-                ×
-              </button>
-            </div>
-          </article>
-        </TransitionGroup>
-        <ArchivePagination v-model:page="currentPage" :page-count="pageCount" context-label="событий" />
-      </div>
-      <div v-else class="empty-state">
-        <span>◆</span>
-        <h3>{{ recentEvents.length ? 'Ничего не найдено' : 'Записей пока нет' }}</h3>
-        <p>{{ recentEvents.length ? 'Измените фильтры или диапазон дат.' : 'Добавьте первое важное событие или понимание.' }}</p>
-      </div>
-    </section>
-  </section>
+    </template>
+    <template #filters>
+      <input v-model="filterText" type="search" placeholder="Поиск по событиям" aria-label="Поиск по событиям" />
+      <select v-model="filterType" aria-label="Тип события">
+        <option value="all">Все типы</option>
+        <option v-for="option in lifeEventTypeOptions" :key="option.id" :value="option.id">{{ option.label }}</option>
+      </select>
+      <ArchiveDateRange v-model:date-from="dateFrom" v-model:date-to="dateTo" context-label="событий" />
+    </template>
+    <div>
+      <TransitionGroup name="archive-list" tag="div" class="timeline-list">
+        <article v-for="event in visibleEvents" :key="eventKey(event)" class="timeline-item">
+          <span class="timeline-item__icon">{{ eventMeta(event.type).icon }}</span>
+          <div>
+            <strong>{{ event.title }}</strong>
+            <small
+              >{{ eventMeta(event.type).label }} · {{ formatDate(event.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</small
+            >
+            <ClampedText
+              v-if="event.note"
+              :text="event.note"
+              :content-id="`event-note-${eventKey(event)}`"
+              text-class="timeline-item__note"
+              tone="event"
+            />
+          </div>
+          <ArchiveItemActions>
+            <IconActionButton label="Редактировать событие" @click="edit(event)">✎</IconActionButton>
+            <IconActionButton
+              danger
+              label="Удалить событие"
+              :disabled="event.id !== undefined && removingIds.includes(event.id)"
+              @click="remove(event.id)"
+            >
+              ×
+            </IconActionButton>
+          </ArchiveItemActions>
+        </article>
+      </TransitionGroup>
+      <ArchivePagination v-model:page="currentPage" :page-count="pageCount" context-label="событий" />
+    </div>
+  </ArchivePage>
 </template>
 
 <style scoped src="./EventsView.css"></style>

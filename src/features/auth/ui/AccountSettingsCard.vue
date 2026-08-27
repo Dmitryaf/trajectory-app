@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import PasswordField from '@/shared/ui/forms/PasswordField.vue';
+import SettingsCard from '@/features/settings/ui/SettingsCard.vue';
+import FormCardHeading from '@/shared/ui/forms/FormCardHeading.vue';
+import FormFieldLabel from '@/shared/ui/forms/FormFieldLabel.vue';
 import { useAccountSettings } from '../useAccountSettings';
 
 defineProps<{
@@ -15,14 +18,13 @@ const { auth, changePassword, deleteAccount, newPassword, newPasswordConfirmatio
 </script>
 
 <template>
-  <article class="settings-card settings-card--account settings-card--career">
-    <div class="form-card__heading">
-      <span class="section-icon section-icon--blue">◉</span>
+  <SettingsCard class="settings-card--account settings-card--career" tone="career">
+    <FormCardHeading icon="◉" tone="blue">
       <div>
         <h2>Аккаунт и безопасность</h2>
         <p>Управляйте входом, паролем и удалением аккаунта отдельно от копий данных.</p>
       </div>
-    </div>
+    </FormCardHeading>
     <div v-if="!auth.configured" class="cloud-sync-note">
       <strong>Аккаунт недоступен</strong>
       <p>В этой сборке облачный вход не настроен.</p>
@@ -37,7 +39,7 @@ const { auth, changePassword, deleteAccount, newPassword, newPasswordConfirmatio
       <details class="account-security" :open="passwordRecoveryRequested">
         <summary>Изменить пароль</summary>
         <div class="settings-field-stack account-security__form">
-          <label class="field-label" for="new-password">Новый пароль</label>
+          <FormFieldLabel for="new-password">Новый пароль</FormFieldLabel>
           <PasswordField
             id="new-password"
             v-model="newPassword"
@@ -45,7 +47,7 @@ const { auth, changePassword, deleteAccount, newPassword, newPasswordConfirmatio
             minlength="8"
             placeholder="Не меньше 8 символов"
           />
-          <label class="field-label" for="new-password-confirmation">Повтори пароль</label>
+          <FormFieldLabel for="new-password-confirmation">Повтори пароль</FormFieldLabel>
           <PasswordField
             id="new-password-confirmation"
             v-model="newPasswordConfirmation"
@@ -73,7 +75,7 @@ const { auth, changePassword, deleteAccount, newPassword, newPasswordConfirmatio
       <strong>Сессия не найдена</strong>
       <p>Обновите страницу и войдите снова, чтобы управлять аккаунтом.</p>
     </div>
-  </article>
+  </SettingsCard>
 </template>
 
 <style scoped>
@@ -110,6 +112,51 @@ const { auth, changePassword, deleteAccount, newPassword, newPasswordConfirmatio
 }
 .account-security__form .secondary-button {
   width: fit-content;
+}
+.cloud-sync-note {
+  padding: 14px 16px;
+  border: 1px solid #dfe8f6;
+  border-radius: 15px;
+  background: #f5f8fd;
+}
+.cloud-sync-note strong {
+  color: var(--navy);
+}
+.cloud-sync-note p {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+.account-security {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.72);
+}
+.account-security summary {
+  cursor: pointer;
+  padding: 13px 14px;
+  color: #315b4e;
+  font-size: 13px;
+  font-weight: 800;
+}
+.settings-status {
+  margin: 12px 0 0;
+  color: var(--accent-dark);
+  font-size: 13px;
+  font-weight: 750;
+}
+.danger-zone {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #f0d6d1;
+}
+.danger-zone p {
+  margin: 3px 0 0;
+  font-size: 12px;
 }
 
 @media (max-width: 720px) {

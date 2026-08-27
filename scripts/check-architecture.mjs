@@ -12,10 +12,10 @@ const reportThresholds = new Map([
   ['.css', 500],
 ]);
 const hotspotContentBudgets = new Map([
-  ['src/views/TodayView.vue', 27566],
-  ['src/views/SettingsView.vue', 14200],
-  ['src/views/WeekView.vue', 25425],
-  ['src/views/MonthView.vue', 20419],
+  ['src/views/TodayView.vue', 27462],
+  ['src/views/SettingsView.vue', 14134],
+  ['src/views/WeekView.vue', 23777],
+  ['src/views/MonthView.vue', 20411],
   ['src/features/settings/useSettingsForm.ts', 12359],
 ]);
 const allowedDbOwners = new Set(['src/stores/app.ts', 'src/features/sync/base.ts']);
@@ -29,28 +29,18 @@ const styleOwnerRules = [
   { selector: 'section-heading', owner: 'src/styles/primitives.css' },
   { selector: 'form-card', owner: 'src/styles/primitives.css', overrides: /^src\/styles\/responsive-/ },
   {
-    selector: 'result-composer',
-    owner: 'src/styles/primitives.css',
-    allowedFiles: new Set(['src/styles/journal.css']),
-    overrides: /^src\/styles\/responsive-/,
-  },
-  {
     selector: 'dashboard-card',
     owner: 'src/styles/primitives.css',
-    allowedFiles: new Set(['src/styles/reviews.css']),
     overrides: /^src\/styles\/responsive-/,
   },
   {
     selector: 'review-card',
     owner: 'src/styles/primitives.css',
-    allowedFiles: new Set(['src/styles/reviews.css']),
     overrides: /^src\/styles\/responsive-/,
   },
   {
     selector: 'settings-card',
-    owner: 'src/styles/primitives.css',
-    allowedFiles: new Set(['src/styles/settings.css']),
-    overrides: /^src\/styles\/responsive-/,
+    owner: 'src/features/settings/ui/SettingsCard.css',
   },
 ];
 

@@ -194,14 +194,10 @@
 .auth-card__brand > div {
   min-width: 0;
 }
-.auth-card__brand .brand-mark {
+.auth-card__brand :deep(.brand-mark) {
   width: 52px;
   height: 52px;
   border-radius: 17px;
-}
-.auth-card__brand h1 {
-  margin: 0;
-  font-size: 38px;
 }
 .auth-card__brand .eyebrow {
   margin-bottom: 4px;
@@ -211,9 +207,6 @@
   color: var(--navy);
   font-size: 25px;
   line-height: 1.1;
-}
-.auth-card__brand p:last-child {
-  margin-bottom: 0;
 }
 .auth-form {
   display: grid;
@@ -346,6 +339,12 @@
 .auth-footnote {
   overflow-wrap: anywhere;
 }
+.auth-footnote {
+  margin: 14px 0 0;
+  color: #7a8497;
+  font-size: 12px;
+  line-height: 1.5;
+}
 @media (min-width: 880px) {
   .auth-layout {
     grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
@@ -354,60 +353,60 @@
     width: 100%;
   }
 }
-@media (min-width: 1000px) {
+@media (max-width: 720px) {
+  .auth-shell {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    min-height: calc(var(--viewport-height) - 170px);
+    padding-top: 8px;
+  }
   .auth-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
+    gap: 16px;
+  }
+  .auth-presentation {
+    border-radius: 20px;
+  }
+  .auth-presentation__intro {
+    padding: 24px 20px 22px;
+  }
+  .auth-presentation__intro h1 {
+    font-size: 37px;
+  }
+  .auth-presentation__intro > p:not(.eyebrow) {
+    font-size: 15px;
+  }
+  .auth-presentation__actions,
+  .auth-presentation__actions button {
+    width: 100%;
+  }
+  .auth-preview {
+    padding: 22px 20px 24px;
+  }
+  .auth-preview__tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .auth-preview__content {
+    min-height: 0;
+    padding: 17px;
+  }
+  .auth-preview__content li {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+  .auth-card {
+    width: 100%;
+    padding: 20px;
+    border-radius: 20px;
+  }
+  .auth-card__brand {
+    align-items: flex-start;
+    gap: 12px;
   }
 }
-.auth-footnote {
-  margin: 14px 0 0;
-  color: #7a8497;
-  font-size: 12px;
-  line-height: 1.5;
-}
-.password-reset-shell {
-  min-height: var(--viewport-height);
-  display: grid;
-  place-items: center;
-  padding: calc(28px + var(--safe-top)) calc(14px + var(--safe-right)) calc(28px + var(--safe-bottom)) calc(14px + var(--safe-left));
-  background: radial-gradient(circle at 20% 15%, rgba(73, 201, 155, 0.13), transparent 32%), var(--surface);
-}
-.password-reset-card {
-  position: relative;
-  width: min(460px, 100%);
-  overflow: hidden;
-  padding: 36px;
-  border: 1px solid rgba(213, 224, 217, 0.95);
-  border-radius: 30px;
-  background: rgba(255, 255, 255, 0.97);
-  box-shadow: 0 30px 80px rgba(16, 45, 44, 0.16);
-}
-.password-reset-card::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 8px;
-  background: linear-gradient(90deg, var(--accent) 0 58%, #ffd06e 58%);
-}
-.password-reset-card .auth-card__brand {
-  margin-bottom: 30px;
-}
-.password-reset-card .auth-card__brand strong {
-  color: var(--navy);
-  font-size: 18px;
-}
-.password-reset-card h1 {
-  margin: 5px 0 10px;
-  font-size: clamp(30px, 7vw, 42px);
-  line-height: 1.05;
-}
-.password-reset-card__intro {
-  margin: 0 0 24px;
-  color: var(--muted);
-  line-height: 1.6;
-}
-.password-reset-card > .primary-button {
-  width: 100%;
+.settings-status {
+  margin: 12px 0 0;
+  color: var(--accent-dark);
+  font-size: 13px;
+  font-weight: 750;
 }

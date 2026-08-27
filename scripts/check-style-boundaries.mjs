@@ -9,23 +9,13 @@ const styleEntry = 'src/style.css';
 const targetGlobalStyles = new Set(['src/styles/tokens.css', 'src/styles/reset.css', 'src/styles/base.css', 'src/styles/utilities.css']);
 const allowedUtilityClasses = new Set(['visually-hidden']);
 const legacyGlobalStyleBudgets = new Map([
-  ['src/styles/archive.css', { classes: 12, blocks: 11 }],
-  ['src/styles/auth.css', { classes: 81, blocks: 70 }],
   ['src/styles/base.css', { classes: 1, blocks: 18 }],
-  ['src/styles/daily-form.css', { classes: 28, blocks: 19 }],
-  ['src/styles/journal.css', { classes: 35, blocks: 23 }],
-  ['src/styles/month-layout.css', { classes: 8, blocks: 8 }],
-  ['src/styles/period-navigation.css', { classes: 11, blocks: 6 }],
-  ['src/styles/primitives.css', { classes: 26, blocks: 15 }],
+  ['src/styles/primitives.css', { classes: 26, blocks: 17 }],
   ['src/styles/responsive-desktop.css', { classes: 4, blocks: 5 }],
-  ['src/styles/responsive-mobile.css', { classes: 121, blocks: 97 }],
-  ['src/styles/responsive-small.css', { classes: 6, blocks: 10 }],
-  ['src/styles/reviews.css', { classes: 93, blocks: 68 }],
-  ['src/styles/settings.css', { classes: 35, blocks: 27 }],
+  ['src/styles/responsive-mobile.css', { classes: 18, blocks: 16 }],
+  ['src/styles/responsive-small.css', { classes: 1, blocks: 4 }],
   ['src/styles/shell.css', { classes: 43, blocks: 24 }],
   ['src/styles/today.css', { classes: 10, blocks: 8 }],
-  ['src/styles/trend-details.css', { classes: 78, blocks: 69 }],
-  ['src/styles/trends.css', { classes: 92, blocks: 75 }],
 ]);
 
 async function collectFiles(directory) {

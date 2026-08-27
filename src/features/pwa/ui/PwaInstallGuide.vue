@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import FormDisclosure from '@/shared/ui/forms/FormDisclosure.vue';
 import { initPwaInstallation, promptPwaInstallation, pwaInstalled, pwaInstallPromptAvailable, pwaPlatform } from '../installation';
 
 withDefaults(defineProps<{ open?: boolean }>(), { open: false });
@@ -34,51 +35,49 @@ async function install() {
 </script>
 
 <template>
-  <details v-if="pwaPlatform !== 'other'" class="analysis-range" :open="open">
-    <summary>{{ summary }}</summary>
-    <div class="analysis-range__content">
-      <div v-if="pwaInstalled" class="cloud-sync-note" role="status">
-        <strong>Открыто с домашнего экрана</strong>
-        <p>«Траектория» работает в отдельном окне без панели браузера.</p>
-      </div>
-      <template v-else>
-        <p>Установка добавит значок на домашний экран. Сначала откройте приложение онлайн и войдите в аккаунт.</p>
-        <button v-if="pwaInstallPromptAvailable" class="secondary-button" type="button" :disabled="installing" @click="install">
-          {{ installing ? 'Открываю установку…' : 'Установить через браузер' }}
-        </button>
-        <p v-if="installStatus" class="settings-status" role="status">{{ installStatus }}</p>
-
-        <div class="install-platforms">
-          <section class="install-platform" :class="{ 'install-platform--current': pwaPlatform === 'android' }">
-            <h3>Android</h3>
-            <ol>
-              <li>Откройте сайт в Chrome.</li>
-              <li>В меню браузера выберите «Установить приложение» или «Добавить на главный экран».</li>
-              <li>Подтвердите установку.</li>
-            </ol>
-          </section>
-
-          <section class="install-platform" :class="{ 'install-platform--current': pwaPlatform === 'ios' }">
-            <h3>iPhone и iPad</h3>
-            <ol>
-              <li>Откройте сайт в Safari.</li>
-              <li>Нажмите «Поделиться».</li>
-              <li>Выберите «На экран Домой» → «Открыть как веб-приложение» → «Добавить».</li>
-            </ol>
-          </section>
-        </div>
-      </template>
-
-      <p class="data-note">
-        После первого онлайн-запуска интерфейс и локальные записи могут открываться без сети. Облачная синхронизация требует вернуть сеть и
-        снова открыть приложение; фоновая синхронизация не гарантируется.
-      </p>
-      <p class="data-note">
-        Удаление значка не удаляет аккаунт, облачную копию и данные сайта. При необходимости сначала удалите их в разделе «Аккаунт и
-        безопасность».
-      </p>
+  <FormDisclosure v-if="pwaPlatform !== 'other'" class="analysis-range" :open="open">
+    <template #summary>{{ summary }}</template>
+    <div v-if="pwaInstalled" class="cloud-sync-note" role="status">
+      <strong>Открыто с домашнего экрана</strong>
+      <p>«Траектория» работает в отдельном окне без панели браузера.</p>
     </div>
-  </details>
+    <template v-else>
+      <p>Установка добавит значок на домашний экран. Сначала откройте приложение онлайн и войдите в аккаунт.</p>
+      <button v-if="pwaInstallPromptAvailable" class="secondary-button" type="button" :disabled="installing" @click="install">
+        {{ installing ? 'Открываю установку…' : 'Установить через браузер' }}
+      </button>
+      <p v-if="installStatus" class="settings-status" role="status">{{ installStatus }}</p>
+
+      <div class="install-platforms">
+        <section class="install-platform" :class="{ 'install-platform--current': pwaPlatform === 'android' }">
+          <h3>Android</h3>
+          <ol>
+            <li>Откройте сайт в Chrome.</li>
+            <li>В меню браузера выберите «Установить приложение» или «Добавить на главный экран».</li>
+            <li>Подтвердите установку.</li>
+          </ol>
+        </section>
+
+        <section class="install-platform" :class="{ 'install-platform--current': pwaPlatform === 'ios' }">
+          <h3>iPhone и iPad</h3>
+          <ol>
+            <li>Откройте сайт в Safari.</li>
+            <li>Нажмите «Поделиться».</li>
+            <li>Выберите «На экран Домой» → «Открыть как веб-приложение» → «Добавить».</li>
+          </ol>
+        </section>
+      </div>
+    </template>
+
+    <p class="data-note">
+      После первого онлайн-запуска интерфейс и локальные записи могут открываться без сети. Облачная синхронизация требует вернуть сеть и
+      снова открыть приложение; фоновая синхронизация не гарантируется.
+    </p>
+    <p class="data-note">
+      Удаление значка не удаляет аккаунт, облачную копию и данные сайта. При необходимости сначала удалите их в разделе «Аккаунт и
+      безопасность».
+    </p>
+  </FormDisclosure>
 </template>
 
 <style scoped>
@@ -87,6 +86,25 @@ async function install() {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin: 14px 0;
+}
+.cloud-sync-note {
+  padding: 14px 16px;
+  border: 1px solid #dfe8f6;
+  border-radius: 15px;
+  background: #f5f8fd;
+}
+.cloud-sync-note strong {
+  color: var(--navy);
+}
+.cloud-sync-note p {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+.settings-status {
+  margin: 12px 0 0;
+  color: var(--accent-dark);
+  font-size: 13px;
+  font-weight: 750;
 }
 .install-platform {
   min-width: 0;

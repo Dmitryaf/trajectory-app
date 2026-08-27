@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import ArchiveDateRange from '../features/journal/ui/ArchiveDateRange.vue';
+import ArchiveItemActions from '../features/journal/ui/ArchiveItemActions.vue';
+import ArchivePage from '../features/journal/ui/ArchivePage.vue';
 import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
 import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
 import ChipGroup from '../shared/ui/forms/ChipGroup.vue';
+import FormCardHeading from '../shared/ui/forms/FormCardHeading.vue';
 import ClampedText from '../shared/ui/content/ClampedText.vue';
+import IconActionButton from '../shared/ui/actions/IconActionButton.vue';
 import { archiveRangeFromQuery } from '../features/journal/archiveQuery';
 import { useArchiveList } from '../features/journal/useArchiveList';
 import { formatDate, todayKey } from '../services/dates';
@@ -125,23 +129,28 @@ function resultKey(result: ResultRecord) {
 </script>
 
 <template>
-  <section class="page page--archive page--results">
-    <div class="page-heading">
-      <div>
-        <span class="eyebrow">Конкретные результаты</span>
-        <h1>Итоги</h1>
-        <p>Итог — конкретное сделанное дело или полученный результат.</p>
-      </div>
-    </div>
-
-    <article class="result-composer result-composer--results">
-      <div class="form-card__heading">
-        <span class="section-icon section-icon--green">✓</span>
+  <ArchivePage
+    tone="results"
+    heading-eyebrow="Конкретные результаты"
+    heading-title="Итоги"
+    heading-description="Итог — конкретное сделанное дело или полученный результат."
+    archive-eyebrow="Архив"
+    archive-title="Итоги"
+    :count="filteredResults.length"
+    :has-items="visibleResults.length > 0"
+    empty-icon="✓"
+    :empty-title="recentResults.length ? 'Ничего не найдено' : 'Итогов пока нет'"
+    :empty-description="
+      recentResults.length ? 'Измените фильтры или диапазон дат.' : 'Добавьте первое сделанное дело или полученный результат.'
+    "
+  >
+    <template #composer>
+      <FormCardHeading icon="✓" tone="green">
         <div>
           <h2>{{ editingId === null ? 'Добавить итог' : 'Редактировать итог' }}</h2>
           <p>Запишите одним предложением, что вы сделали или какой результат получили.</p>
         </div>
-      </div>
+      </FormCardHeading>
       <ChipGroup v-model="area" :options="resultEntryOptions" />
       <div class="result-composer__fields">
         <input
@@ -165,66 +174,48 @@ function resultKey(result: ResultRecord) {
       <button v-if="editingId !== null" class="secondary-button composer-cancel" type="button" @click="resetForm">
         Отменить редактирование
       </button>
-    </article>
-
-    <section class="archive-panel">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">Архив</span>
-          <h2>Итоги</h2>
-        </div>
-        <span class="count-badge">{{ filteredResults.length }}</span>
-      </div>
-      <div class="archive-filters">
-        <input v-model="filterText" type="search" placeholder="Поиск по итогам" aria-label="Поиск по итогам" />
-        <select v-model="filterArea" aria-label="Область итога">
-          <option value="all">Все области</option>
-          <option v-for="option in resultOptions" :key="option.id" :value="option.id">{{ option.label }}</option>
-        </select>
-        <ArchiveDateRange v-model:date-from="dateFrom" v-model:date-to="dateTo" context-label="итогов" />
-      </div>
-      <div v-if="visibleResults.length">
-        <TransitionGroup name="archive-list" tag="div" class="results-list">
-          <article v-for="result in visibleResults" :key="result.id ?? result.createdAt" class="result-item">
-            <span class="result-item__icon">{{ areaMeta(result.area).icon }}</span>
-            <div class="result-item__content">
-              <strong>{{ result.title }}</strong
-              ><small
-                >{{ areaMeta(result.area).label }} ·
-                {{ formatDate(result.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</small
-              >
-              <ClampedText
-                v-if="result.note"
-                :text="result.note"
-                :content-id="`result-note-${resultKey(result)}`"
-                text-class="result-item__note"
-              />
-            </div>
-            <div class="item-actions">
-              <button class="ghost-button" type="button" aria-label="Редактировать итог" @click="edit(result)">✎</button>
-              <button
-                class="ghost-button ghost-button--danger"
-                type="button"
-                aria-label="Удалить итог"
-                :disabled="result.id !== undefined && removingIds.includes(result.id)"
-                @click="remove(result.id)"
-              >
-                ×
-              </button>
-            </div>
-          </article>
-        </TransitionGroup>
-        <ArchivePagination v-model:page="currentPage" :page-count="pageCount" context-label="итогов" />
-      </div>
-      <div v-else class="empty-state">
-        <span>✓</span>
-        <h3>{{ recentResults.length ? 'Ничего не найдено' : 'Итогов пока нет' }}</h3>
-        <p>
-          {{ recentResults.length ? 'Измените фильтры или диапазон дат.' : 'Добавьте первое сделанное дело или полученный результат.' }}
-        </p>
-      </div>
-    </section>
-  </section>
+    </template>
+    <template #filters>
+      <input v-model="filterText" type="search" placeholder="Поиск по итогам" aria-label="Поиск по итогам" />
+      <select v-model="filterArea" aria-label="Область итога">
+        <option value="all">Все области</option>
+        <option v-for="option in resultOptions" :key="option.id" :value="option.id">{{ option.label }}</option>
+      </select>
+      <ArchiveDateRange v-model:date-from="dateFrom" v-model:date-to="dateTo" context-label="итогов" />
+    </template>
+    <div>
+      <TransitionGroup name="archive-list" tag="div" class="results-list">
+        <article v-for="result in visibleResults" :key="result.id ?? result.createdAt" class="result-item">
+          <span class="result-item__icon">{{ areaMeta(result.area).icon }}</span>
+          <div class="result-item__content">
+            <strong>{{ result.title }}</strong
+            ><small
+              >{{ areaMeta(result.area).label }} · {{ formatDate(result.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</small
+            >
+            <ClampedText
+              v-if="result.note"
+              :text="result.note"
+              :content-id="`result-note-${resultKey(result)}`"
+              text-class="result-item__note"
+              tone="result"
+            />
+          </div>
+          <ArchiveItemActions>
+            <IconActionButton label="Редактировать итог" @click="edit(result)">✎</IconActionButton>
+            <IconActionButton
+              danger
+              label="Удалить итог"
+              :disabled="result.id !== undefined && removingIds.includes(result.id)"
+              @click="remove(result.id)"
+            >
+              ×
+            </IconActionButton>
+          </ArchiveItemActions>
+        </article>
+      </TransitionGroup>
+      <ArchivePagination v-model:page="currentPage" :page-count="pageCount" context-label="итогов" />
+    </div>
+  </ArchivePage>
 </template>
 
 <style scoped src="./ResultsView.css"></style>

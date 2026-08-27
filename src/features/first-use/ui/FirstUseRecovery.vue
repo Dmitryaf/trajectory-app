@@ -5,6 +5,7 @@ import { recordFirstUseEvent } from '../funnel';
 import { firstUsePeriodOptions, recommendedFirstUsePeriod, type FirstUsePeriodOption } from '../period';
 import WeeklyReviewJournalLinks from '@/features/reviews/ui/WeeklyReviewJournalLinks.vue';
 import WeeklyReviewOverview from '@/features/reviews/ui/WeeklyReviewOverview.vue';
+import FormFieldLabel from '@/shared/ui/forms/FormFieldLabel.vue';
 import { addDays, formatDate } from '@/services/dates';
 import { plainCopy } from '@/services/plain';
 import { useAppStore } from '@/stores/app';
@@ -393,21 +394,21 @@ async function completeRecovery() {
     <div v-if="currentStep === 'results'" class="first-use-recovery__step">
       <h2 id="first-use-step-title">Что вам удалось закончить или получить?</h2>
       <p>Подойдут и большие результаты, и небольшие сделанные дела.</p>
-      <label class="field-label" for="first-use-results">По одному пункту в строке</label>
+      <FormFieldLabel for="first-use-results">По одному пункту в строке</FormFieldLabel>
       <textarea id="first-use-results" v-model="resultsText" rows="5" placeholder="Например: закончил черновик презентации"></textarea>
     </div>
 
     <div v-else-if="currentStep === 'highlights'" class="first-use-recovery__step">
       <h2 id="first-use-step-title">Что важного произошло?</h2>
       <p>События, решения, мысли или разговоры, которые хочется помнить.</p>
-      <label class="field-label" for="first-use-highlights">По одному пункту в строке</label>
+      <FormFieldLabel for="first-use-highlights">По одному пункту в строке</FormFieldLabel>
       <textarea id="first-use-highlights" v-model="highlightsText" rows="5"></textarea>
     </div>
 
     <div v-else-if="currentStep === 'state_context'" class="first-use-recovery__step">
       <h2 id="first-use-step-title">Как вы себя чувствовали?</h2>
       <p>Можно коротко написать про силы, настроение и обстоятельства недели.</p>
-      <label class="field-label" for="first-use-state">Состояние и важные условия</label>
+      <FormFieldLabel for="first-use-state">Состояние и важные условия</FormFieldLabel>
       <textarea
         id="first-use-state"
         v-model="stateContext"
@@ -421,11 +422,11 @@ async function completeRecovery() {
       <p>Оба ответа необязательны.</p>
       <div class="first-use-recovery__paired-fields">
         <label>
-          <span class="field-label">Что помогало</span>
+          <FormFieldLabel tag="span">Что помогало</FormFieldLabel>
           <textarea v-model="support" rows="4" placeholder="Например: прогулки и свободный вечер"></textarea>
         </label>
         <label>
-          <span class="field-label">Что мешало</span>
+          <FormFieldLabel tag="span">Что мешало</FormFieldLabel>
           <textarea v-model="obstacle" rows="4" placeholder="Например: плохой сон"></textarea>
         </label>
       </div>
@@ -440,12 +441,12 @@ async function completeRecovery() {
         <button type="button" :aria-pressed="decision === 'later'" @click="decision = 'later'">Пока без решения</button>
       </div>
       <template v-if="decision === 'change'">
-        <label class="field-label" for="first-use-decision">Какое одно изменение хотите попробовать?</label>
+        <FormFieldLabel for="first-use-decision">Какое одно изменение хотите попробовать?</FormFieldLabel>
         <textarea id="first-use-decision" v-model="decisionText" rows="3"></textarea>
         <p class="first-use-recovery__field-note">
           В следующем обзоре этот ответ появится как ваше прошлое решение — так будет проще посмотреть, что получилось.
         </p>
-        <label class="field-label" for="first-use-plan">Необязательный план «если — то»</label>
+        <FormFieldLabel for="first-use-plan">Необязательный план «если — то»</FormFieldLabel>
         <textarea
           id="first-use-plan"
           v-model="ifThenPlan"

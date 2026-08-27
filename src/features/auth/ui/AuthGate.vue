@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, ref } from 'vue';
 import { recordFirstUseEvent } from '@/features/first-use/funnel';
 import PasswordField from '@/shared/ui/forms/PasswordField.vue';
+import FormFieldLabel from '@/shared/ui/forms/FormFieldLabel.vue';
 import PwaInstallGuide from '@/features/pwa/ui/PwaInstallGuide.vue';
 import { useAuthStore } from '@/stores/auth';
 import BrandMark from '@/shared/ui/branding/BrandMark.vue';
@@ -307,7 +308,7 @@ async function requestPasswordReset() {
             Будет создан аккаунт для облачной синхронизации записей. После регистрации нужно подтвердить email по ссылке из письма.
           </p>
           <label class="form-control">
-            <span class="field-label">Email</span>
+            <FormFieldLabel tag="span">Email</FormFieldLabel>
             <input
               ref="emailInput"
               v-model="email"
@@ -320,7 +321,7 @@ async function requestPasswordReset() {
             />
           </label>
           <div class="form-control">
-            <label class="field-label" for="auth-password">Пароль</label>
+            <FormFieldLabel for="auth-password">Пароль</FormFieldLabel>
             <PasswordField
               id="auth-password"
               v-model="password"
@@ -334,7 +335,7 @@ async function requestPasswordReset() {
           </div>
           <template v-if="mode === 'sign-up'">
             <div class="form-control">
-              <label class="field-label" for="auth-password-confirmation">Повтори пароль</label>
+              <FormFieldLabel for="auth-password-confirmation">Повтори пароль</FormFieldLabel>
               <PasswordField
                 id="auth-password-confirmation"
                 v-model="passwordConfirmation"
@@ -345,7 +346,7 @@ async function requestPasswordReset() {
               />
             </div>
             <label class="form-control">
-              <span class="field-label">Код приглашения</span>
+              <FormFieldLabel tag="span">Код приглашения</FormFieldLabel>
               <input
                 v-model="inviteCode"
                 type="text"
@@ -385,3 +386,5 @@ async function requestPasswordReset() {
     </div>
   </section>
 </template>
+
+<style scoped src="./AuthGate.css"></style>

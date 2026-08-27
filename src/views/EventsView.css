@@ -1,26 +1,8 @@
-.page--events > .page-heading {
-  border: 1px solid #eee0c5;
-  background: linear-gradient(135deg, #fffdf8, #fff0ce);
-}
-.page--events > .page-heading::after {
-  background: #ffd06e;
-}
-.result-composer--events::before {
-  background: var(--amber);
-}
 .event-composer__fields {
   display: grid;
   grid-template-columns: 1fr 155px;
   gap: 10px;
   margin: 18px 0 10px;
-}
-.page--events .archive-panel .count-badge {
-  background: #fff0ce;
-  color: #805614;
-}
-.page--events .archive-filters {
-  border-color: #eee5d2;
-  background: #fffcf6;
 }
 .timeline-list {
   position: relative;
@@ -72,7 +54,7 @@
 }
 
 @media (max-width: 520px) {
-  .timeline-item > .item-actions {
+  .timeline-item > .archive-item-actions {
     grid-column: 2;
   }
 }

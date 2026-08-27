@@ -3,18 +3,25 @@ import { computed, reactive, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
 import PeriodAnalysisCard from '../features/reviews/ui/PeriodAnalysisCard.vue';
+import PeriodDetails from '../features/reviews/ui/PeriodDetails.vue';
 import PeriodRecordCard from '../features/reviews/ui/PeriodRecordCard.vue';
+import Pill from '../features/reviews/ui/PeriodPill.vue';
+import ReviewHeading from '../features/reviews/ui/ReviewPageHeading.vue';
+import ReviewNotice from '../features/reviews/ui/ReviewNotice.vue';
 import WeeklyReviewJournalLinks from '../features/reviews/ui/WeeklyReviewJournalLinks.vue';
 import WeeklyReviewOverview from '../features/reviews/ui/WeeklyReviewOverview.vue';
+import WeeklyRhythmCard from '../features/reviews/ui/WeeklyRhythmCard.vue';
 import DecisionFollowUp from '../features/reviews/ui/DecisionFollowUp.vue';
 import { buildDecisionFollowUp } from '../features/reviews/decisionFollowUp';
 import { usePeriodReview } from '../features/reviews/usePeriodReview';
 import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
+import FormFieldLabel from '../shared/ui/forms/FormFieldLabel.vue';
+import FormHint from '../shared/ui/forms/FormHint.vue';
 import PeriodNavigator from '../shared/ui/navigation/PeriodNavigator.vue';
+import Badge from '../shared/ui/data-display/CountBadge.vue';
 import {
   actionDirectionLabel,
   buildReviewCues,
-  careerStatesForEntry,
   contextFactorLabel,
   entriesForWeek,
   hasArea,
@@ -23,7 +30,7 @@ import {
   summarize,
   weekSummaryText,
 } from '../services/analytics';
-import { addDays, dateRange, endOfWeek, formatDate, formatMinutes, fromDateKey, startOfWeek, todayKey, toDateKey } from '../services/dates';
+import { addDays, dateRange, endOfWeek, formatDate, fromDateKey, startOfWeek, todayKey, toDateKey } from '../services/dates';
 import { experimentDecisionLabel, experimentOverlapsRange } from '../features/experiments/model';
 import { experimentWeekStatusLabel, truncateExperimentText } from '../features/experiments/presentation';
 import { useAppStore } from '../stores/app';
@@ -317,56 +324,7 @@ const actionNotes = computed(() =>
   entries.value.filter((entry) => entry.actionDirection !== null).sort((a, b) => a.date.localeCompare(b.date)),
 );
 const specialDays = computed(() => entries.value.filter((entry) => entry.specialDay !== null).sort((a, b) => a.date.localeCompare(b.date)));
-const rhythmDays = computed(() =>
-  days.value.map((day) => {
-    const entry = entriesByDate.value.get(day);
-    return {
-      day,
-      entry,
-      hasCareer: entry ? careerStatesForEntry(entry).length > 0 : false,
-      hasExternalAction: entry?.actionDirection === 'external',
-      hasDrift: entry?.actionDirection === 'drift',
-      hasMovement: Boolean(entry?.activities.some((activity) => activity !== 'recovery')),
-      hasNutritionSupport: entry?.nutritionState === 'supports_goal',
-      hasNutritionNeutral: entry?.nutritionState === 'neutral',
-      hasNutritionBlock: entry?.nutritionState === 'blocks_goal',
-    };
-  }),
-);
-function weekDayFacts(item: (typeof rhythmDays.value)[number]): string[] {
-  const facts: string[] = [];
-  if (item.entry?.sleepMinutes !== null && item.entry?.sleepMinutes !== undefined) {
-    facts.push(`Сон ${formatMinutes(item.entry.sleepMinutes)}`);
-  }
-  if (item.entry?.energy !== null && item.entry?.energy !== undefined) {
-    facts.push(`Энергия ${item.entry.energy}/5`);
-  }
-  if (item.hasCareer) {
-    facts.push('Работа');
-  }
-  if (item.hasExternalAction) {
-    facts.push('Шаг к цели');
-  }
-  if (item.hasDrift) {
-    facts.push('Другие дела');
-  }
-  if (item.hasMovement) {
-    facts.push('Физическая активность');
-  }
-  if (item.hasNutritionSupport) {
-    facts.push('Питание поддержало');
-  }
-  if (item.hasNutritionNeutral) {
-    facts.push('Питание нейтрально');
-  }
-  if (item.hasNutritionBlock) {
-    facts.push('Питание мешало');
-  }
-  if (item.entry?.specialDay) {
-    facts.push(specialDayLabel(item.entry.specialDay));
-  }
-  return facts;
-}
+const rhythmDays = computed(() => days.value.map((day) => ({ day, entry: entriesByDate.value.get(day) })));
 watch(
   () => props.initialWeek,
   (value) => {
@@ -377,16 +335,13 @@ watch(
 
 <template>
   <section class="page page--review page--week">
-    <div class="page-heading">
-      <div>
-        <span class="eyebrow">Недельная сводка</span>
-        <h1>Неделя</h1>
-        <p>Посмотрите, чем была наполнена неделя, и решите, хотите ли что-то менять.</p>
-      </div>
-      <a v-if="hasPeriodData" class="review-jump" href="#week-review"
-        >{{ reviewAvailable ? 'К обзору' : 'Обзор позже' }} <span aria-hidden="true">↓</span></a
-      >
-    </div>
+    <ReviewHeading
+      label="Недельная сводка"
+      title="Неделя"
+      summary="Посмотрите, чем была наполнена неделя, и решите, хотите ли что-то менять."
+      :action="hasPeriodData ? (reviewAvailable ? 'К обзору' : 'Обзор позже') : undefined"
+      href="#week-review"
+    />
     <PeriodNavigator
       :title="`${formatDate(start, { day: 'numeric', month: 'short' })} — ${formatDate(end, { day: 'numeric', month: 'short' })}`"
       :subtitle="navigatorSubtitle"
@@ -395,7 +350,7 @@ watch(
       @current="anchor = todayKey()"
     />
 
-    <section v-if="recoveredReview && !hasSavedReview" class="period-review-note recovered-week-link">
+    <ReviewNotice v-if="recoveredReview && !hasSavedReview" tag="section" class="recovered-week-link">
       <div>
         <strong>Ваш первый обзор сохранён</strong>
         <p>
@@ -407,7 +362,7 @@ watch(
       <RouterLink class="secondary-button context-action" :to="`/week?week=${recoveredReview.weekStart}#first-use-overview`">
         Открыть обзор
       </RouterLink>
-    </section>
+    </ReviewNotice>
 
     <section v-if="!hasPeriodData" class="period-empty-guide">
       <strong>За эту неделю пока нет записей</strong>
@@ -416,13 +371,13 @@ watch(
     </section>
 
     <template v-else>
-      <section v-if="!hasDailyData" class="period-review-note period-data-guide">
+      <ReviewNotice v-if="!hasDailyData" tag="section" class="period-data-guide">
         <strong>{{ experimentCards.length ? 'Есть только отметки эксперимента' : 'За эту неделю нет дневных записей' }}</strong>
         <p>
           {{ experimentCards.length ? 'Отметки эксперимента показаны ниже.' : 'Итоги, события и сохранённый обзор показаны ниже.' }} Данных
           для сравнения сна, состояния и действий пока нет.
         </p>
-      </section>
+      </ReviewNotice>
 
       <article v-if="showRecoveredOverview && savedReview" id="first-use-overview" class="restored-week-overview">
         <div class="restored-week-overview__heading">
@@ -493,7 +448,7 @@ watch(
             <span class="eyebrow">Обзор недели</span>
             <h2>Короткий обзор</h2>
           </div>
-          <span class="period-pill">До {{ formatDate(end, { day: 'numeric', month: 'long', year: 'numeric' }) }}</span>
+          <Pill>До {{ formatDate(end, { day: 'numeric', month: 'long', year: 'numeric' }) }}</Pill>
         </div>
         <template v-if="previousReview?.nextLever || previousReview?.ifThenPlan">
           <div class="previous-plan">
@@ -501,43 +456,45 @@ watch(
             <p v-if="previousReview.nextLever"><strong>Вы решили:</strong> {{ previousReview.nextLever }}</p>
             <p v-if="previousReview.ifThenPlan"><strong>План:</strong> {{ previousReview.ifThenPlan }}</p>
           </div>
-          <label class="field-label">Что получилось с этим решением?</label
+          <FormFieldLabel>Что получилось с этим решением?</FormFieldLabel
           ><AutoGrowTextarea
             v-model="review.previousPlanOutcome"
             :rows="2"
             placeholder="Сработало, не сработало или данных пока недостаточно — и почему"
           />
         </template>
-        <details class="period-details review-context-details" :open="reviewContextOpen" @toggle="updateReviewContextOpen">
-          <summary>{{ reviewHasContext ? 'Итоги и контекст' : 'Добавить итоги и контекст' }}</summary>
-          <div class="period-details__content">
-            <label class="field-label">До трёх итогов или сделанных дел</label>
-            <input
-              v-for="(_, index) in review.results"
-              :key="index"
-              v-model="review.results[index]"
-              type="text"
-              :placeholder="`${index + 1}. Итог или важный факт`"
-            />
-            <label class="field-label">До трёх событий, решений или мыслей</label>
-            <input
-              v-for="(_, index) in review.highlights"
-              :key="`highlight-${index}`"
-              v-model="review.highlights[index]"
-              type="text"
-              :placeholder="`${index + 1}. Что важно запомнить`"
-            />
-            <label class="field-label">Как вы себя чувствовали и что влияло на неделю?</label>
-            <AutoGrowTextarea v-model="review.stateContext" :rows="2" placeholder="Силы, настроение и важные обстоятельства" />
-            <label class="field-label">Что помогало?</label
-            ><AutoGrowTextarea v-model="review.support" :rows="2" placeholder="Люди, режим, место, привычка или решение" />
-            <label class="field-label">Что мешало сильнее всего?</label
-            ><AutoGrowTextarea v-model="review.obstacle" :rows="2" placeholder="Один главный фактор" />
-          </div>
-        </details>
-        <label class="field-label">Что продолжить или изменить на следующей неделе?</label
+        <PeriodDetails
+          class="review-context-details"
+          :title="reviewHasContext ? 'Итоги и контекст' : 'Добавить итоги и контекст'"
+          :open="reviewContextOpen"
+          @toggle="updateReviewContextOpen"
+        >
+          <FormFieldLabel>До трёх итогов или сделанных дел</FormFieldLabel>
+          <input
+            v-for="(_, index) in review.results"
+            :key="index"
+            v-model="review.results[index]"
+            type="text"
+            :placeholder="`${index + 1}. Итог или важный факт`"
+          />
+          <FormFieldLabel>До трёх событий, решений или мыслей</FormFieldLabel>
+          <input
+            v-for="(_, index) in review.highlights"
+            :key="`highlight-${index}`"
+            v-model="review.highlights[index]"
+            type="text"
+            :placeholder="`${index + 1}. Что важно запомнить`"
+          />
+          <FormFieldLabel>Как вы себя чувствовали и что влияло на неделю?</FormFieldLabel>
+          <AutoGrowTextarea v-model="review.stateContext" :rows="2" placeholder="Силы, настроение и важные обстоятельства" />
+          <FormFieldLabel>Что помогало?</FormFieldLabel
+          ><AutoGrowTextarea v-model="review.support" :rows="2" placeholder="Люди, режим, место, привычка или решение" />
+          <FormFieldLabel>Что мешало сильнее всего?</FormFieldLabel
+          ><AutoGrowTextarea v-model="review.obstacle" :rows="2" placeholder="Один главный фактор" />
+        </PeriodDetails>
+        <FormFieldLabel>Что продолжить или изменить на следующей неделе?</FormFieldLabel
         ><AutoGrowTextarea v-model="review.nextLever" :rows="2" placeholder="Можно продолжить как есть или пока ничего не решать" />
-        <label class="field-label">План если-то</label
+        <FormFieldLabel>План если-то</FormFieldLabel
         ><AutoGrowTextarea
           v-model="review.ifThenPlan"
           class="review-plan-field"
@@ -548,215 +505,194 @@ watch(
           {{ reviewSaving ? 'Сохраняю…' : 'Сохранить обзор' }}
         </button>
       </article>
-      <section v-else id="week-review" class="period-review-note">
+      <ReviewNotice v-else id="week-review" tag="section">
         <strong>Короткий обзор появится в конце недели</strong>
         <p>Его можно пропустить — дневные записи и сводка недели останутся на месте.</p>
-      </section>
+      </ReviewNotice>
 
-      <details
+      <PeriodDetails
         v-if="hasDailyData || hasJournalData || experimentCards.length"
-        class="period-details week-data-details"
+        class="week-data-details"
+        :title="hasDailyData ? 'Показать дни и дополнительный контекст' : 'Записи недели'"
         :open="!hasDailyData"
       >
-        <summary>{{ hasDailyData ? 'Показать дни и дополнительный контекст' : 'Записи недели' }}</summary>
-        <div class="period-details__content">
-          <article v-if="hasDailyData" class="dashboard-card">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Факты по дням</span>
-                <h2>Как проходила неделя</h2>
-              </div>
-            </div>
-            <div class="week-story-list">
-              <article v-for="item in rhythmDays" :key="item.day" class="week-story-day" :class="{ 'week-story-day--empty': !item.entry }">
-                <time>{{ formatDate(item.day, { weekday: 'short', day: 'numeric' }) }}</time>
-                <div>
-                  <strong v-if="item.entry?.importantFact">{{ item.entry.importantFact }}</strong>
-                  <span v-else>{{
-                    item.entry ? 'Запись без заметки дня' : item.day > todayKey() ? 'День ещё не наступил' : 'Записи нет'
-                  }}</span>
-                  <div v-if="weekDayFacts(item).length" class="week-story-day__facts">
-                    <small v-for="fact in weekDayFacts(item)" :key="fact">{{ fact }}</small>
-                  </div>
-                </div>
-              </article>
-            </div>
-          </article>
+        <WeeklyRhythmCard v-if="hasDailyData" :days="rhythmDays" />
 
-          <article v-if="experimentCards.length" class="dashboard-card">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Личные проверки</span>
-                <h2>Эксперименты в эту неделю</h2>
-              </div>
-              <span class="count-badge">{{ experimentCards.length }}</span>
+        <article v-if="experimentCards.length" class="dashboard-card">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">Личные проверки</span>
+              <h2>Эксперименты в эту неделю</h2>
             </div>
-            <div class="period-records__content">
-              <details
-                v-for="(experiment, index) in experimentCards"
-                :key="experiment.id"
-                class="period-record-card period-record-card--disclosure experiment-period-card"
-                :open="openExperimentId === experiment.id"
-                @toggle="handleExperimentToggle($event, experiment.id)"
-              >
-                <summary>
-                  <span class="period-record-card__heading">
-                    <span
-                      ><span class="eyebrow">{{ experiment.statusLabel }}</span
-                      ><strong>{{ experiment.titlePreview }}</strong
-                      ><span class="eyebrow">Период: {{ experiment.periodLabel }}</span></span
-                    >
-                    <span v-if="experiment.notes.length" class="count-badge" :aria-label="`Заметок: ${experiment.notes.length}`">
-                      {{ experiment.notes.length }}
-                    </span>
-                  </span>
-                  <span class="period-record-card__breakdown" aria-label="Отметки эксперимента за эту неделю">
-                    <span>За неделю: получилось · {{ experiment.completedDays }}</span>
-                    <span>Не получилось · {{ experiment.notCompletedDays }}</span>
-                    <span>Без отметки · {{ experiment.unmarkedDays }} из {{ experiment.plannedDays }}</span>
-                  </span>
-                </summary>
-                <div class="period-record-card__details">
-                  <div class="previous-plan">
-                    <span class="eyebrow">Условие</span>
-                    <p>
-                      <strong>{{ experiment.title }}</strong>
-                    </p>
-                    <p v-if="experiment.hypothesis">Что хотите узнать: {{ experiment.hypothesis }}</p>
-                    <p v-if="experiment.conclusion">
-                      <strong>{{ experiment.active ? 'Промежуточное наблюдение:' : 'Что заметили:' }}</strong
-                      ><br />{{ experiment.conclusion }}
-                    </p>
-                    <p v-if="experiment.decision">Дальше: {{ experimentDecisionLabel(experiment.decision).toLocaleLowerCase('ru-RU') }}</p>
-                    <p v-if="experiment.totalPlannedDays !== experiment.plannedDays">
-                      За весь период: получилось {{ experiment.totalCompletedDays }}, не получилось {{ experiment.totalNotCompletedDays }},
-                      без отметки {{ experiment.totalUnmarkedDays }} из {{ experiment.totalPlannedDays }}.
-                    </p>
-                  </div>
-                  <button
-                    v-if="experiment.notes.length"
-                    class="secondary-button"
-                    type="button"
-                    :aria-expanded="openExperimentNotesId === experiment.id"
-                    :aria-controls="`experiment-notes-${index}`"
-                    @click="toggleExperimentNotes(experiment.id)"
+            <Badge>{{ experimentCards.length }}</Badge>
+          </div>
+          <div class="period-records__content">
+            <details
+              v-for="(experiment, index) in experimentCards"
+              :key="experiment.id"
+              class="period-record-card period-record-card--disclosure experiment-period-card"
+              :open="openExperimentId === experiment.id"
+              @toggle="handleExperimentToggle($event, experiment.id)"
+            >
+              <summary>
+                <span class="period-record-card__heading">
+                  <span
+                    ><span class="eyebrow">{{ experiment.statusLabel }}</span
+                    ><strong>{{ experiment.titlePreview }}</strong
+                    ><span class="eyebrow">Период: {{ experiment.periodLabel }}</span></span
                   >
-                    {{ openExperimentNotesId === experiment.id ? 'Скрыть заметки' : `Заметки этой недели · ${experiment.notes.length}` }}
-                  </button>
-                  <p v-else class="field-hint">Заметок за эту неделю нет.</p>
-                  <div
-                    v-if="openExperimentNotesId === experiment.id && visibleExperimentNote(experiment)"
-                    :id="`experiment-notes-${index}`"
-                    class="period-record-card__details experiment-note-page"
-                  >
-                    <article class="note-item">
-                      <time>{{ formatDate(visibleExperimentNote(experiment)!.date, { weekday: 'short', day: 'numeric' }) }}</time>
-                      <p>
-                        <strong>{{ experimentNoteStatus(visibleExperimentNote(experiment)!) }}</strong
-                        ><br />{{ visibleExperimentNote(experiment)!.experimentNote }}
-                      </p>
-                    </article>
-                    <ArchivePagination
-                      :page="experimentNotePage(experiment.id)"
-                      :page-count="experiment.notes.length"
-                      context-label="заметок эксперимента"
-                      @update:page="setExperimentNotePage(experiment.id, $event)"
-                    />
-                  </div>
+                  <Badge v-if="experiment.notes.length" :aria-label="`Заметок: ${experiment.notes.length}`">
+                    {{ experiment.notes.length }}
+                  </Badge>
+                </span>
+                <span class="period-record-card__breakdown" aria-label="Отметки эксперимента за эту неделю">
+                  <span>За неделю: получилось · {{ experiment.completedDays }}</span>
+                  <span>Не получилось · {{ experiment.notCompletedDays }}</span>
+                  <span>Без отметки · {{ experiment.unmarkedDays }} из {{ experiment.plannedDays }}</span>
+                </span>
+              </summary>
+              <div class="period-record-card__details">
+                <div class="previous-plan">
+                  <span class="eyebrow">Условие</span>
+                  <p>
+                    <strong>{{ experiment.title }}</strong>
+                  </p>
+                  <p v-if="experiment.hypothesis">Что хотите узнать: {{ experiment.hypothesis }}</p>
+                  <p v-if="experiment.conclusion">
+                    <strong>{{ experiment.active ? 'Промежуточное наблюдение:' : 'Что заметили:' }}</strong
+                    ><br />{{ experiment.conclusion }}
+                  </p>
+                  <p v-if="experiment.decision">Дальше: {{ experimentDecisionLabel(experiment.decision).toLocaleLowerCase('ru-RU') }}</p>
+                  <p v-if="experiment.totalPlannedDays !== experiment.plannedDays">
+                    За весь период: получилось {{ experiment.totalCompletedDays }}, не получилось {{ experiment.totalNotCompletedDays }},
+                    без отметки {{ experiment.totalUnmarkedDays }} из {{ experiment.totalPlannedDays }}.
+                  </p>
                 </div>
-              </details>
-            </div>
-          </article>
-
-          <article v-if="hasDailyData && actionNotes.length" class="dashboard-card">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Действия по цели</span>
-                <h2>Конкретные действия и подготовка</h2>
-              </div>
-              <span class="count-badge">{{ actionNotes.length }}</span>
-            </div>
-            <div class="note-list">
-              <article v-for="entry in actionNotes" :key="entry.date" class="note-item">
-                <time>{{ formatDate(entry.date, { weekday: 'short', day: 'numeric' }) }}</time>
-                <p>
-                  <strong>{{ actionDirectionLabel(entry.actionDirection) }}</strong
-                  ><span v-if="entry.focusTitle"><br />Цель: {{ entry.focusTitle }}</span
-                  ><span v-if="entry.actionNote"><br />{{ entry.actionNote }}</span>
-                </p>
-              </article>
-            </div>
-          </article>
-
-          <article v-if="hasDailyData && specialDays.length" class="dashboard-card">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Поправка на контекст</span>
-                <h2>Особые дни</h2>
-              </div>
-              <span class="count-badge">{{ specialDays.length }}</span>
-            </div>
-            <div class="special-day-list">
-              <article v-for="entry in specialDays" :key="entry.date" class="special-day-item">
-                <time>{{ formatDate(entry.date, { weekday: 'short', day: 'numeric' }) }}</time>
-                <strong>{{ specialDayLabel(entry.specialDay) }}</strong>
-                <p v-if="entry.specialDayNote">{{ entry.specialDayNote }}</p>
-              </article>
-            </div>
-          </article>
-
-          <article v-if="hasDailyData && contextNotes.length" class="dashboard-card">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Условия дня</span>
-                <h2>Повторяющиеся условия и заметки</h2>
-              </div>
-              <span class="count-badge">{{ contextNotes.length }}</span>
-            </div>
-            <div class="factor-note-list">
-              <article v-for="entry in contextNotes" :key="entry.date" class="factor-note-item">
-                <time>{{ formatDate(entry.date, { weekday: 'short', day: 'numeric' }) }}</time>
-                <div>
-                  <span v-for="factor in entry.contextFactors" :key="factor" class="mini-pill">{{
-                    contextFactorLabel(factor, contextFactorItems)
-                  }}</span>
-                  <p v-if="entry.contextNote">{{ entry.contextNote }}</p>
-                </div>
-              </article>
-            </div>
-          </article>
-
-          <article v-if="hasDailyData" class="dashboard-card">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Присутствие областей</span>
-                <h2>Карта недели</h2>
-              </div>
-            </div>
-            <div class="heatmap" :style="{ '--day-count': days.length }">
-              <div class="heatmap__corner"></div>
-              <div v-for="day in days" :key="day" class="heatmap__day">
-                <strong>{{ formatDate(day, { weekday: 'short' }) }}</strong
-                ><small>{{ formatDate(day, { day: '2-digit' }) }}</small>
-              </div>
-              <template v-for="row in rows" :key="row.id">
-                <div class="heatmap__label">
-                  <span>{{ row.icon }}</span
-                  >{{ row.label }}
-                </div>
-                <div
-                  v-for="day in days"
-                  :key="`${row.id}-${day}`"
-                  class="heatmap__cell"
-                  :class="{ active: hasArea(entriesByDate.get(day), row.id) }"
+                <button
+                  v-if="experiment.notes.length"
+                  class="secondary-button"
+                  type="button"
+                  :aria-expanded="openExperimentNotesId === experiment.id"
+                  :aria-controls="`experiment-notes-${index}`"
+                  @click="toggleExperimentNotes(experiment.id)"
                 >
-                  <span></span>
+                  {{ openExperimentNotesId === experiment.id ? 'Скрыть заметки' : `Заметки этой недели · ${experiment.notes.length}` }}
+                </button>
+                <FormHint v-else>Заметок за эту неделю нет.</FormHint>
+                <div
+                  v-if="openExperimentNotesId === experiment.id && visibleExperimentNote(experiment)"
+                  :id="`experiment-notes-${index}`"
+                  class="period-record-card__details experiment-note-page"
+                >
+                  <article class="note-item">
+                    <time>{{ formatDate(visibleExperimentNote(experiment)!.date, { weekday: 'short', day: 'numeric' }) }}</time>
+                    <p>
+                      <strong>{{ experimentNoteStatus(visibleExperimentNote(experiment)!) }}</strong
+                      ><br />{{ visibleExperimentNote(experiment)!.experimentNote }}
+                    </p>
+                  </article>
+                  <ArchivePagination
+                    :page="experimentNotePage(experiment.id)"
+                    :page-count="experiment.notes.length"
+                    context-label="заметок эксперимента"
+                    @update:page="setExperimentNotePage(experiment.id, $event)"
+                  />
                 </div>
-              </template>
+              </div>
+            </details>
+          </div>
+        </article>
+
+        <article v-if="hasDailyData && actionNotes.length" class="dashboard-card">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">Действия по цели</span>
+              <h2>Конкретные действия и подготовка</h2>
             </div>
-          </article>
-        </div>
-      </details>
+            <Badge>{{ actionNotes.length }}</Badge>
+          </div>
+          <div class="note-list">
+            <article v-for="entry in actionNotes" :key="entry.date" class="note-item">
+              <time>{{ formatDate(entry.date, { weekday: 'short', day: 'numeric' }) }}</time>
+              <p>
+                <strong>{{ actionDirectionLabel(entry.actionDirection) }}</strong
+                ><span v-if="entry.focusTitle"><br />Цель: {{ entry.focusTitle }}</span
+                ><span v-if="entry.actionNote"><br />{{ entry.actionNote }}</span>
+              </p>
+            </article>
+          </div>
+        </article>
+
+        <article v-if="hasDailyData && specialDays.length" class="dashboard-card">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">Поправка на контекст</span>
+              <h2>Особые дни</h2>
+            </div>
+            <Badge>{{ specialDays.length }}</Badge>
+          </div>
+          <div class="special-day-list">
+            <article v-for="entry in specialDays" :key="entry.date" class="special-day-item">
+              <time>{{ formatDate(entry.date, { weekday: 'short', day: 'numeric' }) }}</time>
+              <strong>{{ specialDayLabel(entry.specialDay) }}</strong>
+              <p v-if="entry.specialDayNote">{{ entry.specialDayNote }}</p>
+            </article>
+          </div>
+        </article>
+
+        <article v-if="hasDailyData && contextNotes.length" class="dashboard-card">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">Условия дня</span>
+              <h2>Повторяющиеся условия и заметки</h2>
+            </div>
+            <Badge>{{ contextNotes.length }}</Badge>
+          </div>
+          <div class="factor-note-list">
+            <article v-for="entry in contextNotes" :key="entry.date" class="factor-note-item">
+              <time>{{ formatDate(entry.date, { weekday: 'short', day: 'numeric' }) }}</time>
+              <div>
+                <span v-for="factor in entry.contextFactors" :key="factor" class="mini-pill">{{
+                  contextFactorLabel(factor, contextFactorItems)
+                }}</span>
+                <p v-if="entry.contextNote">{{ entry.contextNote }}</p>
+              </div>
+            </article>
+          </div>
+        </article>
+
+        <article v-if="hasDailyData" class="dashboard-card">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">Присутствие областей</span>
+              <h2>Карта недели</h2>
+            </div>
+          </div>
+          <div class="heatmap" :style="{ '--day-count': days.length }">
+            <div class="heatmap__corner"></div>
+            <div v-for="day in days" :key="day" class="heatmap__day">
+              <strong>{{ formatDate(day, { weekday: 'short' }) }}</strong
+              ><small>{{ formatDate(day, { day: '2-digit' }) }}</small>
+            </div>
+            <template v-for="row in rows" :key="row.id">
+              <div class="heatmap__label">
+                <span>{{ row.icon }}</span
+                >{{ row.label }}
+              </div>
+              <div
+                v-for="day in days"
+                :key="`${row.id}-${day}`"
+                class="heatmap__cell"
+                :class="{ active: hasArea(entriesByDate.get(day), row.id) }"
+              >
+                <span></span>
+              </div>
+            </template>
+          </div>
+        </article>
+      </PeriodDetails>
     </template>
   </section>
 </template>
+
+<style scoped src="./WeekView.css"></style>

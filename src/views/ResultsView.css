@@ -1,10 +1,3 @@
-.page--results > .page-heading {
-  border: 1px solid #d2e9df;
-  background: linear-gradient(135deg, #fafffd, #dff5ec);
-}
-.page--results > .page-heading::after {
-  background: var(--mint);
-}
 .result-composer__fields {
   display: grid;
   grid-template-columns: 1fr 155px auto;

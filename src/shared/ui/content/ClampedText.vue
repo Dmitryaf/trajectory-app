@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
-const props = defineProps<{ text: string; contentId: string; textClass?: string }>();
+const props = defineProps<{ text: string; contentId: string; textClass?: string; tone?: 'default' | 'result' | 'event' }>();
 const content = ref<HTMLElement>();
 const expanded = ref(false);
 const overflows = ref(false);
@@ -43,7 +43,12 @@ onBeforeUnmount(() => resizeObserver?.disconnect());
 
 <template>
   <div>
-    <p :id="contentId" ref="content" class="clamped-text" :class="[textClass, { 'clamped-text--collapsed': !expanded }]">
+    <p
+      :id="contentId"
+      ref="content"
+      class="clamped-text"
+      :class="[textClass, `clamped-text--${tone ?? 'default'}`, { 'clamped-text--collapsed': !expanded }]"
+    >
       {{ text }}
     </p>
     <button
@@ -60,6 +65,16 @@ onBeforeUnmount(() => resizeObserver?.disconnect());
 </template>
 
 <style scoped>
+.clamped-text--result,
+.clamped-text--event {
+  margin: 8px 0 0;
+  color: #4e5a70;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.clamped-text--result {
+  white-space: pre-wrap;
+}
 .clamped-text--collapsed {
   display: -webkit-box;
   overflow: hidden;
