@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import RangeTabs from '@/shared/ui/navigation/RangeTabs.vue';
 import type { RangeMonths } from '@/features/analytics/useChangeHistoryView';
 
 defineProps<{
@@ -9,7 +10,7 @@ defineEmits<{ 'update:modelValue': [value: RangeMonths] }>();
 </script>
 
 <template>
-  <div class="range-tabs history-range-tabs" aria-label="Период истории">
+  <RangeTabs class="history-range-tabs" aria-label="Период истории">
     <button
       v-for="option in options"
       :key="option.value"
@@ -19,7 +20,7 @@ defineEmits<{ 'update:modelValue': [value: RangeMonths] }>();
     >
       {{ option.label }}
     </button>
-  </div>
+  </RangeTabs>
 </template>
 
 <style scoped>

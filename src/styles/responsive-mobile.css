@@ -1,30 +1,4 @@
 @media (max-width: 720px) {
-  .beta-feedback-link {
-    min-height: 36px;
-    padding: 7px 10px;
-  }
-  .beta-feedback-link strong {
-    display: none;
-  }
-  .help-link {
-    width: 36px;
-    min-height: 36px;
-    justify-content: center;
-    padding: 0;
-  }
-  .help-link strong {
-    display: none;
-  }
-  .feedback-backdrop,
-  .help-backdrop {
-    align-items: end;
-    padding: calc(10px + var(--safe-top)) calc(10px + var(--safe-right)) calc(10px + var(--safe-bottom)) calc(10px + var(--safe-left));
-  }
-  .feedback-dialog,
-  .help-dialog {
-    padding: 20px;
-    border-radius: 22px;
-  }
   input[type='date'],
   input[type='time'] {
     width: 100% !important;
@@ -36,37 +10,7 @@
     appearance: none;
     -webkit-appearance: none;
   }
-  .page-heading {
-    align-items: flex-start;
-    margin: 10px 2px 22px;
-  }
   h1 {
     font-size: 36px;
-  }
-  .review-nudge {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 15px;
-  }
-  .form-card,
-  .dashboard-card,
-  .review-card {
-    padding: 18px;
-    border-radius: 18px;
-  }
-  .not-found-card {
-    margin-top: 24px;
-  }
-  .not-found-card .primary-button {
-    width: 100%;
-  }
-  .range-tabs {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .range-tabs button {
-    min-width: 0;
-    padding: 10px 6px;
-    font-size: 12px;
   }
 }

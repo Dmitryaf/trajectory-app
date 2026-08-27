@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
+import DataNote from '@/shared/ui/content/DataNote.vue';
 import { computed, ref } from 'vue';
 import FormDisclosure from '@/shared/ui/forms/FormDisclosure.vue';
 import { initPwaInstallation, promptPwaInstallation, pwaInstalled, pwaInstallPromptAvailable, pwaPlatform } from '../installation';
@@ -43,9 +45,9 @@ async function install() {
     </div>
     <template v-else>
       <p>Установка добавит значок на домашний экран. Сначала откройте приложение онлайн и войдите в аккаунт.</p>
-      <button v-if="pwaInstallPromptAvailable" class="secondary-button" type="button" :disabled="installing" @click="install">
+      <ActionButton v-if="pwaInstallPromptAvailable" variant="secondary" type="button" :disabled="installing" @click="install">
         {{ installing ? 'Открываю установку…' : 'Установить через браузер' }}
-      </button>
+      </ActionButton>
       <p v-if="installStatus" class="settings-status" role="status">{{ installStatus }}</p>
 
       <div class="install-platforms">
@@ -69,14 +71,14 @@ async function install() {
       </div>
     </template>
 
-    <p class="data-note">
+    <DataNote>
       После первого онлайн-запуска интерфейс и локальные записи могут открываться без сети. Облачная синхронизация требует вернуть сеть и
       снова открыть приложение; фоновая синхронизация не гарантируется.
-    </p>
-    <p class="data-note">
+    </DataNote>
+    <DataNote>
       Удаление значка не удаляет аккаунт, облачную копию и данные сайта. При необходимости сначала удалите их в разделе «Аккаунт и
       безопасность».
-    </p>
+    </DataNote>
   </FormDisclosure>
 </template>
 

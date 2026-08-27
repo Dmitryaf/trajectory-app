@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import SurfaceCard from '@/shared/ui/layout/SurfaceCard.vue';
+import SectionHeading from '@/shared/ui/layout/SectionHeading.vue';
+import PageHeading from '@/shared/ui/layout/PageHeading.vue';
+import PageShell from '@/shared/ui/layout/PageShell.vue';
+import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
 defineProps<{
   tone: 'results' | 'events';
   headingEyebrow: string;
@@ -15,27 +20,27 @@ defineProps<{
 </script>
 
 <template>
-  <section class="page page--archive" :class="`page--${tone}`">
-    <div class="page-heading">
+  <PageShell class="page--archive" :class="`page--${tone}`">
+    <PageHeading>
       <div>
-        <span class="eyebrow">{{ headingEyebrow }}</span>
+        <EyebrowText>{{ headingEyebrow }}</EyebrowText>
         <h1>{{ headingTitle }}</h1>
         <p>{{ headingDescription }}</p>
       </div>
-    </div>
+    </PageHeading>
 
-    <article class="form-card result-composer archive-composer" :class="`archive-composer--${tone}`">
+    <SurfaceCard kind="form" class="result-composer archive-composer" :class="`archive-composer--${tone}`">
       <slot name="composer"></slot>
-    </article>
+    </SurfaceCard>
 
     <section class="archive-panel">
-      <div class="section-heading">
+      <SectionHeading>
         <div>
-          <span class="eyebrow">{{ archiveEyebrow }}</span>
+          <EyebrowText>{{ archiveEyebrow }}</EyebrowText>
           <h2>{{ archiveTitle }}</h2>
         </div>
         <span class="archive-count">{{ count }}</span>
-      </div>
+      </SectionHeading>
       <div class="archive-filters">
         <slot name="filters"></slot>
       </div>
@@ -46,7 +51,7 @@ defineProps<{
         <p>{{ emptyDescription }}</p>
       </div>
     </section>
-  </section>
+  </PageShell>
 </template>
 
 <style scoped>

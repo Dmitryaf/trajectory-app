@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import SurfaceCard from '@/shared/ui/layout/SurfaceCard.vue';
+import SectionHeading from '@/shared/ui/layout/SectionHeading.vue';
+import DataNote from '@/shared/ui/content/DataNote.vue';
+import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
 import type { EChartsCoreOption } from 'echarts/core';
 import PeriodDetails from '@/features/reviews/ui/PeriodDetails.vue';
 import MetricSwitcher from '@/features/reviews/ui/MetricSwitcher.vue';
@@ -18,14 +22,14 @@ defineEmits<{ 'update:modelValue': [value: string] }>();
 
 <template>
   <PeriodDetails class="trends-metric-details" title="Показать один показатель по месяцам">
-    <article v-if="options.length" class="dashboard-card trend-metric-card">
-      <div class="section-heading">
+    <SurfaceCard v-if="options.length" kind="dashboard" class="trend-metric-card">
+      <SectionHeading>
         <div>
-          <span class="eyebrow">Динамика периода</span>
+          <EyebrowText>Динамика периода</EyebrowText>
           <h2>{{ selectedLabel }}</h2>
         </div>
         <small>{{ selectedSamples }} наблюдений · минимум два месяца</small>
-      </div>
+      </SectionHeading>
       <MetricSwitcher
         :model-value="modelValue"
         :options="options"
@@ -33,11 +37,11 @@ defineEmits<{ 'update:modelValue': [value: string] }>();
         @update:model-value="$emit('update:modelValue', $event)"
       />
       <EChartPanel :option="chartOption" :height="300" :aria-label="`Динамика: ${selectedLabel}`" :description="description" />
-      <p class="data-note trend-chart-description">
+      <DataNote class="trend-chart-description">
         Показаны месячные средние и важные события. Совпадение изменений во времени не доказывает причину; текущий месяц может быть
         неполным.
-      </p>
-    </article>
+      </DataNote>
+    </SurfaceCard>
     <ReviewNotice v-else class="trends-chart-guide">
       <strong>Для графика пока мало сопоставимых данных</strong>
       <p>Нужны наблюдения хотя бы в двух месяцах: 6 для сна или энергии либо 3 измерения веса.</p>

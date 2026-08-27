@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 const props = defineProps<{
   page: number;
   pageCount: number;
@@ -16,9 +17,9 @@ function changePage(nextPage: number) {
 
 <template>
   <nav v-if="pageCount > 1" class="archive-pagination" :aria-label="`Страницы ${contextLabel}`">
-    <button class="secondary-button" type="button" :disabled="page === 1" @click="changePage(page - 1)">Назад</button>
+    <ActionButton variant="secondary" type="button" :disabled="page === 1" @click="changePage(page - 1)">Назад</ActionButton>
     <span>{{ page }} из {{ pageCount }}</span>
-    <button class="secondary-button" type="button" :disabled="page === pageCount" @click="changePage(page + 1)">Дальше</button>
+    <ActionButton variant="secondary" type="button" :disabled="page === pageCount" @click="changePage(page + 1)">Дальше</ActionButton>
   </nav>
 </template>
 

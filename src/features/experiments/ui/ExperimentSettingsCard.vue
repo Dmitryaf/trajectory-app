@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
+import DataNote from '@/shared/ui/content/DataNote.vue';
 import AutoGrowTextarea from '@/shared/ui/forms/AutoGrowTextarea.vue';
 import ChipGroup from '@/shared/ui/forms/ChipGroup.vue';
 import SettingsCard from '@/features/settings/ui/SettingsCard.vue';
@@ -87,13 +89,13 @@ defineEmits<{
     <FormHint v-else-if="experiment.endDate">
       После последнего дня здесь можно записать, что вы заметили. Завершённый эксперимент появится в разделе «История».
     </FormHint>
-    <button class="primary-button" type="button" :disabled="saving" @click="$emit('save')">
+    <ActionButton variant="primary" type="button" :disabled="saving" @click="$emit('save')">
       {{ saveLabel }}
-    </button>
-    <button v-if="canConclude" class="secondary-button" type="button" :disabled="saving" @click="$emit('complete')">
+    </ActionButton>
+    <ActionButton v-if="canConclude" variant="secondary" type="button" :disabled="saving" @click="$emit('complete')">
       Завершить эксперимент
-    </button>
-    <p v-if="historyCount" class="data-note">Завершённые эксперименты можно посмотреть в разделе «История»: {{ historyCount }}.</p>
+    </ActionButton>
+    <DataNote v-if="historyCount">Завершённые эксперименты можно посмотреть в разделе «История»: {{ historyCount }}.</DataNote>
   </SettingsCard>
 </template>
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import PasswordField from '@/shared/ui/forms/PasswordField.vue';
 import SettingsCard from '@/features/settings/ui/SettingsCard.vue';
 import FormCardHeading from '@/shared/ui/forms/FormCardHeading.vue';
@@ -34,7 +35,9 @@ const { auth, changePassword, deleteAccount, newPassword, newPasswordConfirmatio
         <div>
           <strong>{{ userEmail }}</strong>
         </div>
-        <button class="secondary-button cloud-session__logout" type="button" :disabled="auth.loading" @click="signOut">Выйти</button>
+        <ActionButton variant="secondary" class="cloud-session__logout" type="button" :disabled="auth.loading" @click="signOut"
+          >Выйти</ActionButton
+        >
       </div>
       <details class="account-security" :open="passwordRecoveryRequested">
         <summary>Изменить пароль</summary>
@@ -55,9 +58,9 @@ const { auth, changePassword, deleteAccount, newPassword, newPasswordConfirmatio
             minlength="8"
             placeholder="Повтори пароль"
           />
-          <button class="secondary-button" type="button" :disabled="auth.loading || !newPassword" @click="changePassword">
+          <ActionButton variant="secondary" type="button" :disabled="auth.loading || !newPassword" @click="changePassword">
             Сохранить новый пароль
-          </button>
+          </ActionButton>
           <p v-if="passwordUpdateStatus" class="settings-status" role="status" aria-live="polite">
             {{ passwordUpdateStatus }}
           </p>
@@ -68,7 +71,7 @@ const { auth, changePassword, deleteAccount, newPassword, newPasswordConfirmatio
           <strong>Удалить аккаунт</strong>
           <p>Аккаунт, облачная копия и данные на этом устройстве будут удалены.</p>
         </div>
-        <button class="danger-button" type="button" :disabled="auth.loading" @click="deleteAccount">Удалить аккаунт</button>
+        <ActionButton variant="danger" type="button" :disabled="auth.loading" @click="deleteAccount">Удалить аккаунт</ActionButton>
       </div>
     </template>
     <div v-else class="cloud-sync-note">

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import { computed, getCurrentInstance, onMounted, reactive, ref, watch } from 'vue';
 import type { Router } from 'vue-router';
 import { recordFirstUseEvent } from '../funnel';
@@ -6,6 +7,7 @@ import { firstUsePeriodOptions, recommendedFirstUsePeriod, type FirstUsePeriodOp
 import WeeklyReviewJournalLinks from '@/features/reviews/ui/WeeklyReviewJournalLinks.vue';
 import WeeklyReviewOverview from '@/features/reviews/ui/WeeklyReviewOverview.vue';
 import FormFieldLabel from '@/shared/ui/forms/FormFieldLabel.vue';
+import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
 import { addDays, formatDate } from '@/services/dates';
 import { plainCopy } from '@/services/plain';
 import { useAppStore } from '@/stores/app';
@@ -308,19 +310,19 @@ async function completeRecovery() {
     aria-labelledby="first-use-edit-title"
   >
     <div>
-      <p class="eyebrow">Сохранённые ответы</p>
+      <EyebrowText tag="p">Сохранённые ответы</EyebrowText>
       <h2 id="first-use-edit-title">Открываем сохранённые ответы</h2>
       <p>Вы сможете пройти по тем же вопросам и исправить нужные пункты.</p>
     </div>
     <div v-if="saveError" class="first-use-card__actions">
-      <button class="primary-button" type="button" :disabled="saving" @click="reopenRecovery">Попробовать ещё раз</button>
+      <ActionButton variant="primary" type="button" :disabled="saving" @click="reopenRecovery">Попробовать ещё раз</ActionButton>
     </div>
     <p v-if="saveError" class="first-use-card__error" role="alert">{{ saveError }}</p>
   </section>
 
   <section v-else-if="isChoice" class="first-use-card first-use-card--choice" aria-labelledby="first-use-choice-title">
     <div>
-      <p class="eyebrow">Первый обзор</p>
+      <EyebrowText tag="p">Первый обзор</EyebrowText>
       <h2 id="first-use-choice-title">Соберите недавнюю неделю</h2>
       <p>Выберите период, который сейчас проще вспомнить. Будущие дни в обзор не попадут.</p>
       <div class="first-use-periods" role="radiogroup" aria-label="Период первого обзора">
@@ -343,10 +345,10 @@ async function completeRecovery() {
       <p class="first-use-card__note">Точные цифры и записи за каждый день не нужны.</p>
     </div>
     <div class="first-use-card__actions">
-      <button class="primary-button" type="button" :disabled="saving" @click="beginRecovery">
+      <ActionButton variant="primary" type="button" :disabled="saving" @click="beginRecovery">
         {{ firstUse.status === 'in_progress' ? 'Продолжить' : 'Начать обзор' }}
-      </button>
-      <button class="secondary-button" type="button" :disabled="saving" @click="continueWithToday">Начать с сегодняшнего дня</button>
+      </ActionButton>
+      <ActionButton variant="secondary" type="button" :disabled="saving" @click="continueWithToday">Начать с сегодняшнего дня</ActionButton>
     </div>
     <p v-if="saveError" class="first-use-card__error" role="alert">{{ saveError }}</p>
   </section>
@@ -373,7 +375,9 @@ async function completeRecovery() {
       </div>
     </div>
     <div class="first-use-card__actions">
-      <button class="secondary-button context-action" type="button" :disabled="saving" @click="beginRecovery">Открыть обзор</button>
+      <ActionButton variant="secondary" class="context-action" type="button" :disabled="saving" @click="beginRecovery"
+        >Открыть обзор</ActionButton
+      >
       <button class="first-use-card__text-button" type="button" @click="hiddenForNow = true">Не сейчас</button>
       <button class="first-use-card__text-button" type="button" :disabled="saving" @click="dismiss">Больше не показывать</button>
     </div>
@@ -383,7 +387,7 @@ async function completeRecovery() {
   <section v-else-if="isRecovery" class="first-use-card first-use-recovery" aria-labelledby="first-use-step-title">
     <header class="first-use-recovery__header">
       <div>
-        <p class="eyebrow">{{ currentStep === 'overview' ? 'Ваш обзор' : `Шаг ${currentStepIndex + 1} из ${steps.length}` }}</p>
+        <EyebrowText tag="p">{{ currentStep === 'overview' ? 'Ваш обзор' : `Шаг ${currentStepIndex + 1} из ${steps.length}` }}</EyebrowText>
         <span>{{ weekLabel }}{{ periodIsIncomplete ? ' · до сегодняшнего дня' : '' }}</span>
       </div>
       <div v-if="currentStep !== 'overview'" class="first-use-recovery__progress" aria-hidden="true">
@@ -472,22 +476,22 @@ async function completeRecovery() {
     </div>
 
     <footer class="first-use-recovery__footer">
-      <button class="secondary-button" type="button" :disabled="saving" @click="moveTo(previousStep(), currentStep !== 'overview')">
+      <ActionButton variant="secondary" type="button" :disabled="saving" @click="moveTo(previousStep(), currentStep !== 'overview')">
         {{ currentStep === 'overview' ? 'Исправить ответы' : 'Назад' }}
-      </button>
+      </ActionButton>
       <div v-if="currentStep !== 'overview'">
         <button class="first-use-card__text-button" type="button" :disabled="saving" @click="moveTo(nextStep(), false)">Пропустить</button>
-        <button class="primary-button" type="button" :disabled="saving || !currentAnswerIsValid" @click="moveTo(nextStep(), true)">
+        <ActionButton variant="primary" type="button" :disabled="saving || !currentAnswerIsValid" @click="moveTo(nextStep(), true)">
           Продолжить
-        </button>
+        </ActionButton>
       </div>
       <div v-else>
         <button class="first-use-card__text-button" type="button" :disabled="saving" @click="continueWithToday">
           Вернуться к сегодняшнему дню
         </button>
-        <button class="primary-button" type="button" :disabled="saving || meaningfulAnswerCount < 2" @click="completeRecovery">
+        <ActionButton variant="primary" type="button" :disabled="saving || meaningfulAnswerCount < 2" @click="completeRecovery">
           Готово
-        </button>
+        </ActionButton>
       </div>
     </footer>
     <p v-if="saveError" class="first-use-card__error" role="alert">{{ saveError }}</p>

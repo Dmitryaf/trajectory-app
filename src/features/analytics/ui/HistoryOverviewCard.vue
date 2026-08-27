@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import SurfaceCard from '@/shared/ui/layout/SurfaceCard.vue';
+import SectionHeading from '@/shared/ui/layout/SectionHeading.vue';
+import DataNote from '@/shared/ui/content/DataNote.vue';
+import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
 import AiAnalysisSteps from '@/features/analysis/ui/AiAnalysisSteps.vue';
 import type { ReviewCue } from '@/features/analytics/reviewCues';
 import PeriodActions from '@/features/reviews/ui/PeriodActions.vue';
@@ -9,20 +13,20 @@ defineEmits<{ copy: []; download: [] }>();
 </script>
 
 <template>
-  <article class="dashboard-card dashboard-card--insights history-overview-card">
-    <div class="section-heading">
+  <SurfaceCard kind="dashboard" class="dashboard-card--insights history-overview-card">
+    <SectionHeading>
       <div>
-        <span class="eyebrow">Главное за период</span>
+        <EyebrowText>Главное за период</EyebrowText>
         <h2>Что стоит заметить</h2>
       </div>
       <PeriodActions @copy="$emit('copy')" @download="$emit('download')" />
-    </div>
+    </SectionHeading>
     <AiAnalysisSteps />
     <ReviewCueGrid :cues="cues" />
-    <p class="data-note history-coverage-note">
+    <DataNote class="history-coverage-note">
       Основа разбора: {{ coveredEntries }} дней с записями, {{ ordinaryEntries }} обычных дней с основными полями. Пропуски не заполняются.
-    </p>
-  </article>
+    </DataNote>
+  </SurfaceCard>
 </template>
 
 <style scoped>

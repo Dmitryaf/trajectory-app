@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite';
 import ChipGroup from '../shared/ui/forms/ChipGroup.vue';
 import DurationInput from '../shared/ui/forms/DurationInput.vue';
 import ScalePicker from '../shared/ui/forms/ScalePicker.vue';
+import DataNote from '../shared/ui/content/DataNote.vue';
 
 const meta = {
   title: 'Формы/Основные поля',
@@ -30,13 +31,13 @@ export const MultipleChoice: Story = {
 
 export const Duration: Story = {
   render: () => ({
-    components: { DurationInput },
+    components: { DataNote, DurationInput },
     setup() {
       const value = ref(452);
       return { value };
     },
     template:
-      '<div style="max-width: 380px"><DurationInput id="story-duration" v-model="value" :max-hours="18" /><p class="data-note">Внутреннее значение: {{ value }} минут</p></div>',
+      '<div style="max-width: 380px"><DurationInput id="story-duration" v-model="value" :max-hours="18" /><DataNote>Внутреннее значение: {{ value }} минут</DataNote></div>',
   }),
 };
 

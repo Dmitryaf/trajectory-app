@@ -10,12 +10,9 @@ const targetGlobalStyles = new Set(['src/styles/tokens.css', 'src/styles/reset.c
 const allowedUtilityClasses = new Set(['visually-hidden']);
 const legacyGlobalStyleBudgets = new Map([
   ['src/styles/base.css', { classes: 1, blocks: 18 }],
-  ['src/styles/primitives.css', { classes: 26, blocks: 17 }],
-  ['src/styles/responsive-desktop.css', { classes: 4, blocks: 5 }],
-  ['src/styles/responsive-mobile.css', { classes: 18, blocks: 16 }],
-  ['src/styles/responsive-small.css', { classes: 1, blocks: 4 }],
-  ['src/styles/shell.css', { classes: 43, blocks: 24 }],
-  ['src/styles/today.css', { classes: 10, blocks: 8 }],
+  ['src/styles/responsive-desktop.css', { classes: 0, blocks: 0 }],
+  ['src/styles/responsive-mobile.css', { classes: 0, blocks: 3 }],
+  ['src/styles/responsive-small.css', { classes: 0, blocks: 2 }],
 ]);
 
 async function collectFiles(directory) {

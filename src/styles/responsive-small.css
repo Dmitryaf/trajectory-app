@@ -1,11 +1,3 @@
-@media (max-width: 390px) {
-  .beta-feedback-link {
-    width: 36px;
-    justify-content: center;
-    padding: 0;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

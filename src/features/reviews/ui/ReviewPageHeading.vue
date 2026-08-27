@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import PageHeading from '@/shared/ui/layout/PageHeading.vue';
+import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
 defineProps<{
   label: string;
   title: string;
@@ -9,14 +11,14 @@ defineProps<{
 </script>
 
 <template>
-  <div class="page-heading">
+  <PageHeading>
     <div>
-      <span class="eyebrow">{{ label }}</span>
+      <EyebrowText>{{ label }}</EyebrowText>
       <h1>{{ title }}</h1>
       <p>{{ summary }}</p>
     </div>
     <a v-if="action && href" class="review-jump" :href="href">{{ action }} <span aria-hidden="true">↓</span></a>
-  </div>
+  </PageHeading>
 </template>
 
 <style scoped>

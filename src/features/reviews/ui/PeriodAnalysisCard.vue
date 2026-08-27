@@ -1,9 +1,14 @@
 <script setup lang="ts">
+import SurfaceCard from '@/shared/ui/layout/SurfaceCard.vue';
+import SectionHeading from '@/shared/ui/layout/SectionHeading.vue';
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import { RouterLink } from 'vue-router';
 import AiAnalysisSteps from '@/features/analysis/ui/AiAnalysisSteps.vue';
 import PeriodActions from '@/features/reviews/ui/PeriodActions.vue';
 import ReviewCueGrid from '@/features/reviews/ui/ReviewCueGrid.vue';
 import type { ReviewCue } from '@/features/analytics/reviewCues';
+import ReviewNudge from '@/shared/ui/content/ReviewNudge.vue';
+import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
 
 defineProps<{
   title: string;
@@ -19,24 +24,24 @@ defineEmits<{
 </script>
 
 <template>
-  <article :id="sectionId" class="dashboard-card period-analysis-card">
-    <div class="section-heading">
+  <SurfaceCard :id="sectionId" kind="dashboard" class="period-analysis-card">
+    <SectionHeading>
       <div>
-        <span class="eyebrow">Короткий разбор</span>
+        <EyebrowText>Короткий разбор</EyebrowText>
         <h2>{{ title }}</h2>
       </div>
       <PeriodActions :copying="copying" @copy="$emit('copy')" @download="$emit('download')" />
-    </div>
+    </SectionHeading>
     <AiAnalysisSteps />
-    <div class="review-nudge range-custom-action period-analysis-card__range">
+    <ReviewNudge class="range-custom-action period-analysis-card__range">
       <div>
         <strong>Нужен другой период?</strong>
         <p>Выберите точные даты и подготовьте текст в настройках.</p>
       </div>
-      <RouterLink class="secondary-button" to="/settings#analysis-settings">Выбрать даты</RouterLink>
-    </div>
+      <ActionButton :as="RouterLink" variant="secondary" to="/settings#analysis-settings">Выбрать даты</ActionButton>
+    </ReviewNudge>
     <ReviewCueGrid :cues="cues" />
-  </article>
+  </SurfaceCard>
 </template>
 
 <style scoped>

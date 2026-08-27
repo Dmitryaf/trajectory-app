@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import SurfaceCard from '@/shared/ui/layout/SurfaceCard.vue';
+import SectionHeading from '@/shared/ui/layout/SectionHeading.vue';
+import DataNote from '@/shared/ui/content/DataNote.vue';
+import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
 import { ref } from 'vue';
 import type { EventComparison, EventComparisonMetric } from '@/services/analytics';
 import { formatDate } from '@/services/dates';
@@ -27,10 +31,10 @@ function select(event: LifeEventRecord) {
 
 <template>
   <PeriodDetails class="trends-event-details" title="Показать сравнение рядом с важным событием">
-    <article class="dashboard-card event-comparison-card">
-      <div class="section-heading">
+    <SurfaceCard kind="dashboard" class="event-comparison-card">
+      <SectionHeading>
         <div>
-          <span class="eyebrow">До и после</span>
+          <EyebrowText>До и после</EyebrowText>
           <h2>Что менялось рядом с событием</h2>
         </div>
         <details ref="picker" class="event-picker">
@@ -65,7 +69,7 @@ function select(event: LifeEventRecord) {
             </button>
           </div>
         </details>
-      </div>
+      </SectionHeading>
       <template v-if="comparison">
         <div class="comparison-periods">
           <span
@@ -94,13 +98,13 @@ function select(event: LifeEventRecord) {
           </div>
         </div>
         <ReviewNotice v-else tag="p">Для сравнения показателей нужно минимум по три наблюдения до и после события.</ReviewNotice>
-        <p class="data-note">
+        <DataNote>
           День события исключён. Показываются только показатели с достаточным числом наблюдений; совпадение во времени не означает причинный
           эффект.
-        </p>
+        </DataNote>
       </template>
       <p v-else class="empty-copy">После события пока не прошло ни одного полного дня для сравнения.</p>
-    </article>
+    </SurfaceCard>
   </PeriodDetails>
 </template>
 

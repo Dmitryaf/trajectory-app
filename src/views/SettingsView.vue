@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import RangeTabs from '@/shared/ui/navigation/RangeTabs.vue';
+import DataNote from '@/shared/ui/content/DataNote.vue';
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import AccountSettingsCard from '../features/auth/ui/AccountSettingsCard.vue';
 import ExternalAnalysisSettingsCard from '../features/analysis/ui/ExternalAnalysisSettingsCard.vue';
@@ -6,6 +9,9 @@ import ExperimentSettingsCard from '../features/experiments/ui/ExperimentSetting
 import ChipGroup from '../shared/ui/forms/ChipGroup.vue';
 import FormCardHeading from '../shared/ui/forms/FormCardHeading.vue';
 import FormFieldLabel from '../shared/ui/forms/FormFieldLabel.vue';
+import PageHeading from '../shared/ui/layout/PageHeading.vue';
+import PageShell from '../shared/ui/layout/PageShell.vue';
+import EyebrowText from '../shared/ui/typography/EyebrowText.vue';
 import IconButton from '../shared/ui/actions/IconActionButton.vue';
 import PwaInstallGuide from '../features/pwa/ui/PwaInstallGuide.vue';
 import { pwaPlatform } from '../features/pwa/installation';
@@ -94,16 +100,16 @@ const {
 </script>
 
 <template>
-  <section class="page page--settings">
-    <div class="page-heading">
+  <PageShell class="page--settings">
+    <PageHeading>
       <div>
-        <span class="eyebrow">Настройка приложения</span>
+        <EyebrowText>Настройка приложения</EyebrowText>
         <h1>Настройки</h1>
         <p>Выбери, что отмечать каждый день, и управляй экспериментом и копиями данных.</p>
       </div>
-    </div>
+    </PageHeading>
 
-    <nav class="range-tabs" aria-label="Разделы настроек">
+    <RangeTabs as="nav" aria-label="Разделы настроек">
       <button
         v-for="group in settingsGroups"
         :key="group.id"
@@ -114,7 +120,7 @@ const {
       >
         {{ group.label }}
       </button>
-    </nav>
+    </RangeTabs>
 
     <section
       v-show="activeSettingsGroup === 'daily'"
@@ -131,17 +137,17 @@ const {
           </div>
         </FormCardHeading>
         <ChipGroup v-model="settings.activeDailyBlocks as DailyBlockId[]" :options="dailyBlockOptions" multiple />
-        <p v-if="!settings.activeDailyBlocks.length" class="data-note">
+        <DataNote v-if="!settings.activeDailyBlocks.length">
           Останутся общие блоки: действия по текущей цели, области жизни и заметка дня.
-        </p>
-        <button
-          class="primary-button"
+        </DataNote>
+        <ActionButton
+          variant="primary"
           type="button"
           :disabled="isSaving('daily-blocks')"
           @click="save('Блоки ежедневной записи сохранены', 'daily-blocks')"
         >
           {{ isSaving('daily-blocks') ? 'Сохраняю…' : 'Сохранить блоки' }}
-        </button>
+        </ActionButton>
       </SettingsCard>
 
       <SettingsCard id="movement-options" class="settings-card--movement">
@@ -180,14 +186,14 @@ const {
               placeholder="Например: плавание"
               @keyup.enter="addActivityOption"
             />
-            <button
-              class="secondary-button"
+            <ActionButton
+              variant="secondary"
               type="button"
               :disabled="!newActivityLabel.trim() || isSaving('activity')"
               @click="addActivityOption"
             >
               Добавить
-            </button>
+            </ActionButton>
           </div>
           <div v-if="hiddenActivityOptions.length" class="hidden-options">
             <FormFieldLabel tag="span">Убраны из ежедневной записи</FormFieldLabel>
@@ -205,7 +211,7 @@ const {
               </button>
             </div>
           </div>
-          <p class="data-note">Убранные варианты не предлагаются в новых записях. Прежние отметки сохраняются в истории и выгрузке.</p>
+          <DataNote>Убранные варианты не предлагаются в новых записях. Прежние отметки сохраняются в истории и выгрузке.</DataNote>
         </div>
       </SettingsCard>
 
@@ -228,14 +234,14 @@ const {
               placeholder="Учёба"
               @keyup.enter="addLifeArea"
             />
-            <button
-              class="secondary-button"
+            <ActionButton
+              variant="secondary"
               type="button"
               :disabled="!newLifeAreaLabel.trim() || isSaving('life-areas')"
               @click="addLifeArea"
             >
               Добавить
-            </button>
+            </ActionButton>
           </div>
           <div v-if="settings.customLifeAreaOptions.some((option) => !option.archived)" class="custom-list">
             <div
@@ -253,9 +259,9 @@ const {
             </div>
           </div>
         </div>
-        <button class="primary-button" type="button" :disabled="isSaving('life-areas')" @click="save('Области сохранены', 'life-areas')">
+        <ActionButton variant="primary" type="button" :disabled="isSaving('life-areas')" @click="save('Области сохранены', 'life-areas')">
           {{ isSaving('life-areas') ? 'Сохраняю…' : 'Сохранить области' }}
-        </button>
+        </ActionButton>
       </SettingsCard>
 
       <SettingsCard id="context-options" class="settings-card--context">
@@ -294,14 +300,14 @@ const {
               placeholder="Например: долгая дорога"
               @keyup.enter="addContextFactor"
             />
-            <button
-              class="secondary-button"
+            <ActionButton
+              variant="secondary"
               type="button"
               :disabled="!newContextFactorLabel.trim() || isSaving('context')"
               @click="addContextFactor"
             >
               Добавить
-            </button>
+            </ActionButton>
           </div>
           <div v-if="hiddenContextFactorOptions.length" class="hidden-options">
             <FormFieldLabel tag="span">Убраны из ежедневной записи</FormFieldLabel>
@@ -319,7 +325,7 @@ const {
               </button>
             </div>
           </div>
-          <p class="data-note">Минус убирает вариант из ежедневной записи. Прежние отметки остаются в истории, графиках и выгрузке.</p>
+          <DataNote>Минус убирает вариант из ежедневной записи. Прежние отметки остаются в истории, графиках и выгрузке.</DataNote>
         </div>
       </SettingsCard>
 
@@ -348,14 +354,14 @@ const {
               placeholder="Например: урок, смена, заказ или собеседование"
               @keyup.enter="addCareerOption"
             />
-            <button
-              class="secondary-button"
+            <ActionButton
+              variant="secondary"
               type="button"
               :disabled="!newCareerLabel.trim() || isSaving('career')"
               @click="addCareerOption"
             >
               Добавить
-            </button>
+            </ActionButton>
           </div>
           <div v-if="settings.customCareerOptions.some((option) => !option.archived)" class="custom-list">
             <div v-for="option in settings.customCareerOptions.filter((item) => !item.archived)" :key="option.id" class="custom-list__item">
@@ -386,14 +392,14 @@ const {
           maxlength="280"
           placeholder="Например: ел по плану, был нормальный ужин, не было незапланированных вечерних перекусов"
         ></textarea>
-        <button
-          class="primary-button"
+        <ActionButton
+          variant="primary"
           type="button"
           :disabled="isSaving('nutrition')"
           @click="save('Критерий питания сохранён', 'nutrition')"
         >
           {{ isSaving('nutrition') ? 'Сохраняю…' : 'Сохранить настройки' }}
-        </button>
+        </ActionButton>
       </SettingsCard>
     </section>
 
@@ -446,10 +452,10 @@ const {
           <p>{{ storageProtectionText }}</p>
         </div>
         <div class="data-actions">
-          <button class="secondary-button" type="button" @click="exportData">Скачать копию</button>
-          <button class="secondary-button" type="button" :disabled="isSaving('import')" @click="importInput?.click()">
+          <ActionButton variant="secondary" type="button" @click="exportData">Скачать копию</ActionButton>
+          <ActionButton variant="secondary" type="button" :disabled="isSaving('import')" @click="importInput?.click()">
             {{ isSaving('import') ? 'Восстанавливаю…' : 'Восстановить из копии' }}
-          </button>
+          </ActionButton>
           <input
             ref="importInput"
             class="visually-hidden"
@@ -464,9 +470,9 @@ const {
             <strong>Удалить все данные</strong>
             <p>Записи, итоги, обзоры и настройки будут очищены.</p>
           </div>
-          <button class="danger-button" type="button" :disabled="isSaving('clear-data')" @click="clearAll">
+          <ActionButton variant="danger" type="button" :disabled="isSaving('clear-data')" @click="clearAll">
             {{ isSaving('clear-data') ? 'Удаляю…' : 'Удалить' }}
-          </button>
+          </ActionButton>
         </div>
       </SettingsCard>
 
@@ -510,7 +516,7 @@ const {
     >
       <AccountSettingsCard :password-recovery-requested="passwordRecoveryRequested" @local-data-reset="replaceSettingsFromStore" />
     </section>
-  </section>
+  </PageShell>
 </template>
 
 <style scoped src="./SettingsView.css"></style>

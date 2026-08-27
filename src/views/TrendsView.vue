@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import { RouterLink } from 'vue-router';
 import EventComparisonDetails from '@/features/analytics/ui/EventComparisonDetails.vue';
 import HistoryOverviewCard from '@/features/analytics/ui/HistoryOverviewCard.vue';
@@ -7,6 +8,9 @@ import HistoryTimeline from '@/features/analytics/ui/HistoryTimeline.vue';
 import TrendMetricDetails from '@/features/analytics/ui/TrendMetricDetails.vue';
 import { useChangeHistoryView } from '@/features/analytics/useChangeHistoryView';
 import ReviewHeading from '@/features/reviews/ui/ReviewPageHeading.vue';
+import PageShell from '@/shared/ui/layout/PageShell.vue';
+import ReviewNudge from '@/shared/ui/content/ReviewNudge.vue';
+import PeriodEmptyGuide from '@/shared/ui/content/PeriodEmptyGuide.vue';
 
 const {
   range,
@@ -38,7 +42,7 @@ const {
 </script>
 
 <template>
-  <section class="page page--review page--trends">
+  <PageShell class="page--review page--trends">
     <ReviewHeading
       label="3–12 месяцев"
       title="История изменений"
@@ -46,19 +50,19 @@ const {
     />
 
     <HistoryRangeTabs v-model="range" :options="rangeOptions" />
-    <div class="review-nudge range-custom-action">
+    <ReviewNudge class="range-custom-action">
       <div>
         <strong>Нужен другой период?</strong>
         <p>Выберите точные даты и подготовьте текст в настройках.</p>
       </div>
-      <RouterLink class="secondary-button" to="/settings#analysis-settings">Выбрать даты</RouterLink>
-    </div>
+      <ActionButton :as="RouterLink" variant="secondary" to="/settings#analysis-settings">Выбрать даты</ActionButton>
+    </ReviewNudge>
 
-    <section v-if="summary.coveredEntriesCount === 0 && decisionTimeline.length === 0" class="period-empty-guide">
+    <PeriodEmptyGuide v-if="summary.coveredEntriesCount === 0 && decisionTimeline.length === 0">
       <strong>Для истории пока нет записей</strong>
       <p>Здесь появятся важные события, итоги и сохранённые решения.</p>
-      <RouterLink class="secondary-button" to="/">Перейти к записи за день</RouterLink>
-    </section>
+      <ActionButton :as="RouterLink" variant="secondary" to="/">Перейти к записи за день</ActionButton>
+    </PeriodEmptyGuide>
 
     <template v-else>
       <HistoryOverviewCard
@@ -99,7 +103,7 @@ const {
         @select="selectEvent"
       />
     </template>
-  </section>
+  </PageShell>
 </template>
 
 <style scoped>

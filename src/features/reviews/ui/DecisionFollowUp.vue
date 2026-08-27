@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import SurfaceCard from '@/shared/ui/layout/SurfaceCard.vue';
+import SectionHeading from '@/shared/ui/layout/SectionHeading.vue';
+import DataNote from '@/shared/ui/content/DataNote.vue';
+import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
 import { formatDate } from '@/services/dates';
 import type { DecisionFollowUp } from '../decisionFollowUp';
 
@@ -6,13 +10,13 @@ defineProps<{ followUp: DecisionFollowUp }>();
 </script>
 
 <template>
-  <article class="dashboard-card decision-follow-up" aria-labelledby="decision-follow-up-title">
-    <div class="section-heading">
+  <SurfaceCard kind="dashboard" class="decision-follow-up" aria-labelledby="decision-follow-up-title">
+    <SectionHeading>
       <div>
-        <span class="eyebrow">Две последовательные недели</span>
+        <EyebrowText>Две последовательные недели</EyebrowText>
         <h2 id="decision-follow-up-title">Решение и что было дальше</h2>
       </div>
-    </div>
+    </SectionHeading>
 
     <div class="decision-follow-up__step">
       <span>1</span>
@@ -35,7 +39,7 @@ defineProps<{ followUp: DecisionFollowUp }>();
           </li>
         </ul>
         <p v-else class="decision-follow-up__missing">Отдельных итогов, событий или важных условий за неделю не сохранено.</p>
-        <p class="data-note">Это записи, которые шли после решения. Они сами по себе не доказывают причину.</p>
+        <DataNote>Это записи, которые шли после решения. Они сами по себе не доказывают причину.</DataNote>
       </div>
     </div>
 
@@ -58,7 +62,7 @@ defineProps<{ followUp: DecisionFollowUp }>();
         </p>
       </div>
     </div>
-  </article>
+  </SurfaceCard>
 </template>
 
 <style scoped>

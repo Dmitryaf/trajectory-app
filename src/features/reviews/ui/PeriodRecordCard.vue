@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
 import { computed, ref, watch } from 'vue';
 import ArchivePagination from '@/features/journal/ui/ArchivePagination.vue';
 import CountBadge from '@/shared/ui/data-display/CountBadge.vue';
@@ -52,7 +53,7 @@ watch(pageCount, (count) => {
   <article class="period-record-card">
     <div class="period-record-card__heading">
       <div>
-        <span class="eyebrow">{{ eyebrow }}</span>
+        <EyebrowText>{{ eyebrow }}</EyebrowText>
         <h2>{{ title }}</h2>
       </div>
       <CountBadge>{{ items.length }}</CountBadge>

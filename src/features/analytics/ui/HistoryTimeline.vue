@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import SurfaceCard from '@/shared/ui/layout/SurfaceCard.vue';
+import SectionHeading from '@/shared/ui/layout/SectionHeading.vue';
+import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
 import ArchivePagination from '@/features/journal/ui/ArchivePagination.vue';
 import CountBadge from '@/shared/ui/data-display/CountBadge.vue';
 import { formatDate } from '@/services/dates';
@@ -12,14 +15,14 @@ defineEmits<{ 'update:page': [value: number] }>();
 </script>
 
 <template>
-  <article class="dashboard-card history-timeline history-timeline--featured">
-    <div class="section-heading">
+  <SurfaceCard kind="dashboard" class="history-timeline history-timeline--featured">
+    <SectionHeading>
       <div>
-        <span class="eyebrow">Основа истории</span>
+        <EyebrowText>Основа истории</EyebrowText>
         <h2>События, решения и итоги</h2>
       </div>
       <CountBadge>{{ total }}</CountBadge>
-    </div>
+    </SectionHeading>
     <div class="history-timeline__summary" aria-label="Состав истории">
       <span v-for="item in summary" :key="item.tone" :class="`history-timeline__summary-item--${item.tone}`">
         <i></i>{{ item.label }} <strong>{{ item.count }}</strong>
@@ -41,7 +44,7 @@ defineEmits<{ 'update:page': [value: number] }>();
       </article>
     </TransitionGroup>
     <ArchivePagination :page="page" :page-count="pageCount" context-label="истории изменений" @update:page="$emit('update:page', $event)" />
-  </article>
+  </SurfaceCard>
 </template>
 
 <style scoped>

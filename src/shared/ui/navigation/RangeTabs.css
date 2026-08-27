@@ -1,0 +1,35 @@
+.range-tabs {
+  display: flex;
+  min-width: 0;
+  gap: 8px;
+  margin: -8px 0 18px;
+}
+
+.range-tabs :deep(button) {
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--surface);
+  padding: 10px 14px;
+  color: #667189;
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.range-tabs :deep(button.active) {
+  color: #145e49;
+  border-color: rgba(75, 205, 160, 0.65);
+  background: #e5f8f1;
+}
+
+@media (max-width: 720px) {
+  .range-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .range-tabs :deep(button) {
+    min-width: 0;
+    padding: 10px 6px;
+    font-size: 12px;
+  }
+}

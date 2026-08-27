@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite';
+import ActionButton from '../shared/ui/actions/ActionButton.vue';
 
 const meta = {
   title: 'Основы/Кнопки и состояния',
@@ -9,12 +10,13 @@ type Story = StoryObj<typeof meta>;
 
 export const Buttons: Story = {
   render: () => ({
+    components: { ActionButton },
     template: `
       <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
-        <button class="primary-button" type="button">Сохранить</button>
-        <button class="secondary-button" type="button">Скачать данные</button>
+        <ActionButton variant="primary">Сохранить</ActionButton>
+        <ActionButton variant="secondary">Скачать данные</ActionButton>
         <button class="ghost-button" type="button" aria-label="Редактировать">✎</button>
-        <button class="primary-button" type="button" disabled>Сохраняю…</button>
+        <ActionButton variant="primary" disabled>Сохраняю…</ActionButton>
       </div>
     `,
   }),
@@ -34,6 +36,7 @@ export const EmptyState: Story = {
 
 export const ErrorState: Story = {
   render: () => ({
+    components: { ActionButton },
     template: `
       <section class="storage-error" role="alert" style="max-width: 760px">
         <span class="storage-error__mark" aria-hidden="true">!</span>
@@ -41,7 +44,7 @@ export const ErrorState: Story = {
           <p class="eyebrow">Локальное хранилище недоступно</p>
           <h1>Записи пока не открылись</h1>
           <p>Попробуй открыть данные ещё раз.</p>
-          <button class="primary-button" type="button">Повторить</button>
+          <ActionButton variant="primary">Повторить</ActionButton>
         </div>
       </section>
     `,

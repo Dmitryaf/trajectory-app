@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
+import SurfaceCard from '@/shared/ui/layout/SurfaceCard.vue';
+import SectionHeading from '@/shared/ui/layout/SectionHeading.vue';
 import { computed, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import type { EChartsCoreOption } from 'echarts/core';
@@ -15,6 +18,9 @@ import AutoGrowTextarea from '@/shared/ui/forms/AutoGrowTextarea.vue';
 import FormFieldLabel from '@/shared/ui/forms/FormFieldLabel.vue';
 import PeriodNavigator from '@/shared/ui/navigation/PeriodNavigator.vue';
 import Badge from '@/shared/ui/data-display/CountBadge.vue';
+import PageShell from '@/shared/ui/layout/PageShell.vue';
+import PeriodEmptyGuide from '@/shared/ui/content/PeriodEmptyGuide.vue';
+import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
 import { chartColors as c, chartStyles as s } from '@/shared/theme/colors';
 import {
   actionDirectionLabel,
@@ -351,7 +357,7 @@ function shiftMonth(offset: number) {
 </script>
 
 <template>
-  <section class="page page--review page--month">
+  <PageShell class="page--review page--month">
     <ReviewHeading
       label="Месячная сводка"
       title="Месяц"
@@ -367,11 +373,11 @@ function shiftMonth(offset: number) {
       @current="anchor = todayKey()"
     />
 
-    <section v-if="!hasPeriodData" class="period-empty-guide">
+    <PeriodEmptyGuide v-if="!hasPeriodData">
       <strong>За этот месяц пока нет записей</strong>
       <p>Данные появятся здесь после ежедневных записей. Итоги и важные события из Журнала тоже войдут в обзор месяца.</p>
-      <RouterLink class="secondary-button" to="/">Перейти к записи за день</RouterLink>
-    </section>
+      <ActionButton :as="RouterLink" variant="secondary" to="/">Перейти к записи за день</ActionButton>
+    </PeriodEmptyGuide>
 
     <template v-else>
       <ReviewNotice v-if="!hasDailyData" tag="section" class="period-data-guide">
@@ -379,14 +385,14 @@ function shiftMonth(offset: number) {
         <p>Итоги, события и сохранённый обзор показаны ниже. Данных для сравнения дней и построения графиков пока нет.</p>
       </ReviewNotice>
 
-      <article v-if="hasDailyData" class="dashboard-card month-week-overview">
-        <div class="section-heading">
+      <SurfaceCard v-if="hasDailyData" kind="dashboard" class="month-week-overview">
+        <SectionHeading>
           <div>
-            <span class="eyebrow">Недели месяца</span>
+            <EyebrowText>Недели месяца</EyebrowText>
             <h2>Как менялись записи</h2>
           </div>
           <Badge>{{ summary.coveredEntriesCount }} дн.</Badge>
-        </div>
+        </SectionHeading>
         <div v-if="monthWeekSummaries.length >= 2" class="month-week-story">
           <article v-for="week in monthWeekSummaries" :key="week.rangeStart">
             <strong>
@@ -404,7 +410,7 @@ function shiftMonth(offset: number) {
           <strong>Для сравнения нужны записи хотя бы за две недели</strong>
           <p>Сейчас данные есть только в одной части месяца. Подробности уже доступны ниже.</p>
         </ReviewNotice>
-      </article>
+      </SurfaceCard>
 
       <section v-if="hasJournalData" class="period-records period-records--featured">
         <PeriodRecordCard
@@ -427,14 +433,14 @@ function shiftMonth(offset: number) {
         />
       </section>
 
-      <article v-if="reviewAvailable" id="month-review" class="review-card">
-        <div class="section-heading">
+      <SurfaceCard v-if="reviewAvailable" id="month-review" kind="review">
+        <SectionHeading>
           <div>
-            <span class="eyebrow">Сохранить вывод</span>
+            <EyebrowText>Сохранить вывод</EyebrowText>
             <h2>Итог месяца</h2>
           </div>
           <small>{{ formatDate(end, { day: 'numeric', month: 'long' }) }}</small>
-        </div>
+        </SectionHeading>
         <PeriodDetails
           class="month-review-context"
           :title="reviewHasContext ? 'Разбор месяца' : 'Добавить разбор месяца'"
@@ -456,10 +462,10 @@ function shiftMonth(offset: number) {
         </PeriodDetails>
         <FormFieldLabel>Главное направление следующего месяца</FormFieldLabel
         ><AutoGrowTextarea v-model="review.nextFocus" :rows="2" placeholder="Что стоит продолжить, изменить или проверить" />
-        <button class="primary-button" type="button" :disabled="reviewSaving" @click="saveReview">
+        <ActionButton variant="primary" type="button" :disabled="reviewSaving" @click="saveReview">
           {{ reviewSaving ? 'Сохраняю…' : 'Сохранить итог месяца' }}
-        </button>
-      </article>
+        </ActionButton>
+      </SurfaceCard>
       <ReviewNotice v-else id="month-review" tag="section">
         <strong>Итог появится ближе к концу месяца</strong>
         <p>Его можно пропустить — дневные записи и сводка месяца останутся на месте.</p>
@@ -475,29 +481,29 @@ function shiftMonth(offset: number) {
       />
 
       <PeriodDetails v-if="hasDailyData" class="month-analysis-details" title="Показать выбранный показатель и подробный разбор">
-        <article v-if="additionalObservations.length" class="dashboard-card">
-          <div class="section-heading">
+        <SurfaceCard v-if="additionalObservations.length" kind="dashboard">
+          <SectionHeading>
             <div>
-              <span class="eyebrow">Сопоставление записей</span>
+              <EyebrowText>Сопоставление записей</EyebrowText>
               <h2>Что ещё видно по данным</h2>
             </div>
-          </div>
+          </SectionHeading>
           <div class="observation-grid">
             <article v-for="observation in additionalObservations" :key="observation.id" class="observation-card">
               <strong>{{ observation.title }}</strong>
               <p>{{ observation.text }}</p>
             </article>
           </div>
-        </article>
+        </SurfaceCard>
 
-        <article v-if="monthMetricOptions.length" class="dashboard-card month-metric-card">
-          <div class="section-heading">
+        <SurfaceCard v-if="monthMetricOptions.length" kind="dashboard" class="month-metric-card">
+          <SectionHeading>
             <div>
-              <span class="eyebrow">Один показатель за раз</span>
+              <EyebrowText>Один показатель за раз</EyebrowText>
               <h2>{{ selectedMonthMetricInfo?.label }}</h2>
             </div>
             <small>{{ selectedMonthMetricInfo?.samples }} изм. · особые дни исключены</small>
-          </div>
+          </SectionHeading>
           <MetricSwitcher v-model="selectedMonthMetric" :options="monthMetricOptions" label="Показатель графика" />
           <EChartPanel
             :option="monthMetricOption"
@@ -505,7 +511,7 @@ function shiftMonth(offset: number) {
             :aria-label="`Динамика: ${selectedMonthMetricInfo?.label}`"
             :description="monthMetricDescription"
           />
-        </article>
+        </SurfaceCard>
         <ReviewNotice v-else class="month-chart-guide">
           <strong>Для графика пока мало данных</strong>
           <p>
@@ -514,13 +520,13 @@ function shiftMonth(offset: number) {
           </p>
         </ReviewNotice>
 
-        <article class="dashboard-card">
-          <div class="section-heading">
+        <SurfaceCard kind="dashboard">
+          <SectionHeading>
             <div>
-              <span class="eyebrow">Сколько дней появлялось</span>
+              <EyebrowText>Сколько дней появлялось</EyebrowText>
               <h2>Области жизни</h2>
             </div>
-          </div>
+          </SectionHeading>
           <div class="coverage-list">
             <div v-for="area in activeAreas" :key="area.id" class="coverage-row">
               <span class="coverage-row__label"
@@ -537,7 +543,7 @@ function shiftMonth(offset: number) {
               <strong>{{ summary.areaCounts[area.id] ?? 0 }}/{{ summary.lifeAreaSamples }}</strong>
             </div>
           </div>
-        </article>
+        </SurfaceCard>
       </PeriodDetails>
 
       <PeriodDetails
@@ -549,7 +555,7 @@ function shiftMonth(offset: number) {
           <details v-if="actionNotes.length" class="period-record-card period-record-card--disclosure">
             <summary>
               <span class="period-record-card__heading">
-                <span><span class="eyebrow">Действия по цели</span><strong>Конкретные действия и подготовка</strong></span>
+                <span><EyebrowText>Действия по цели</EyebrowText><strong>Конкретные действия и подготовка</strong></span>
                 <Badge>{{ actionNotes.length }}</Badge>
               </span>
               <span class="period-record-card__breakdown" aria-label="Действия по направлению">
@@ -576,7 +582,7 @@ function shiftMonth(offset: number) {
           <details v-if="contextEntries.length" class="period-record-card period-record-card--disclosure">
             <summary>
               <span class="period-record-card__heading">
-                <span><span class="eyebrow">Условия и исключения</span><strong>Контекст месяца</strong></span>
+                <span><EyebrowText>Условия и исключения</EyebrowText><strong>Контекст месяца</strong></span>
                 <Badge>{{ contextEntries.length }}</Badge>
               </span>
               <span class="period-record-card__breakdown">
@@ -601,7 +607,7 @@ function shiftMonth(offset: number) {
         </div>
       </PeriodDetails>
     </template>
-  </section>
+  </PageShell>
 </template>
 
 <style scoped src="./MonthView.css"></style>

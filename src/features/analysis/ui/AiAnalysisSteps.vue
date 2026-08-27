@@ -1,12 +1,16 @@
+<script setup lang="ts">
+import DataNote from '@/shared/ui/content/DataNote.vue';
+</script>
+
 <template>
-  <div class="data-note ai-analysis-steps">
+  <DataNote as="div" class="ai-analysis-steps">
     <p><strong>Текст остаётся у вас:</strong> приложение ничего не отправляет и не выбирает внешний сервис.</p>
     <ol>
       <li>Подготовьте текст</li>
       <li>Откройте выбранную нейросеть</li>
       <li>Вставьте текст и получите разбор</li>
     </ol>
-  </div>
+  </DataNote>
 </template>
 
 <style scoped>

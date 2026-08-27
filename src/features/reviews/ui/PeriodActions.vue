@@ -1,14 +1,15 @@
 <script setup lang="ts">
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 withDefaults(defineProps<{ copying?: boolean }>(), { copying: false });
 defineEmits<{ copy: []; download: [] }>();
 </script>
 
 <template>
   <div class="period-actions">
-    <button class="secondary-button" type="button" :disabled="copying" :aria-busy="copying" @click="$emit('copy')">
+    <ActionButton variant="secondary" type="button" :disabled="copying" :aria-busy="copying" @click="$emit('copy')">
       Подготовить текст для нейросети
-    </button>
-    <button class="secondary-button" type="button" @click="$emit('download')">Скачать данные</button>
+    </ActionButton>
+    <ActionButton variant="secondary" type="button" @click="$emit('download')">Скачать данные</ActionButton>
   </div>
 </template>
 

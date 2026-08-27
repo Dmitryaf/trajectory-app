@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import { computed, ref } from 'vue';
 import ArchiveDateRange from '../features/journal/ui/ArchiveDateRange.vue';
 import ArchiveItemActions from '../features/journal/ui/ArchiveItemActions.vue';
@@ -7,6 +8,7 @@ import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
 import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
 import ChipGroup from '../shared/ui/forms/ChipGroup.vue';
 import FormCardHeading from '../shared/ui/forms/FormCardHeading.vue';
+import DateInput from '../shared/ui/forms/DateInput.vue';
 import ClampedText from '../shared/ui/content/ClampedText.vue';
 import IconActionButton from '../shared/ui/actions/IconActionButton.vue';
 import { archiveRangeFromQuery } from '../features/journal/archiveQuery';
@@ -160,10 +162,10 @@ function resultKey(result: ResultRecord) {
           placeholder="Что вы сделали или какой результат получили"
           @keyup.enter="saveResult"
         />
-        <input v-model="date" class="date-input" type="date" required aria-label="Дата итога" />
-        <button class="primary-button" type="button" :disabled="!title.trim() || !date || saving" @click="saveResult">
+        <DateInput v-model="date" required aria-label="Дата итога" />
+        <ActionButton variant="primary" type="button" :disabled="!title.trim() || !date || saving" @click="saveResult">
           {{ editingId === null ? 'Добавить итог' : 'Сохранить итог' }}
-        </button>
+        </ActionButton>
       </div>
       <AutoGrowTextarea
         v-model="note"
@@ -171,9 +173,9 @@ function resultKey(result: ResultRecord) {
         :max-length="2000"
         placeholder="Что произошло, почему это важно или какой контекст стоит сохранить"
       />
-      <button v-if="editingId !== null" class="secondary-button composer-cancel" type="button" @click="resetForm">
+      <ActionButton v-if="editingId !== null" variant="secondary" class="composer-cancel" type="button" @click="resetForm">
         Отменить редактирование
-      </button>
+      </ActionButton>
     </template>
     <template #filters>
       <input v-model="filterText" type="search" placeholder="Поиск по итогам" aria-label="Поиск по итогам" />

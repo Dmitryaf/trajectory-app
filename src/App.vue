@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterLink, RouterView, useRouter } from 'vue-router';
 import { Toaster } from 'vue-sonner';
@@ -8,6 +9,7 @@ import AccountMenu from './features/auth/ui/AccountMenu.vue';
 import AuthGate from './features/auth/ui/AuthGate.vue';
 import HowItWorksDialog from './features/first-use/ui/HowItWorksDialog.vue';
 import PasswordResetView from './views/PasswordResetView.vue';
+import EyebrowText from './shared/ui/typography/EyebrowText.vue';
 import { recordFirstUseReturnEvents } from './features/first-use/funnel';
 import { createResumeCloudRefresh } from './features/sync/resume';
 import { prepareLocalCacheOwner, reconcileCloudSnapshotAfterResume, reconcileCloudSnapshotOnStartup } from './features/sync/startup';
@@ -260,10 +262,10 @@ const navItems = [
       <section v-else-if="effectiveLoadError" class="storage-error" role="alert">
         <span class="storage-error__mark" aria-hidden="true">!</span>
         <div>
-          <p class="eyebrow">Локальное хранилище недоступно</p>
+          <EyebrowText tag="p">Локальное хранилище недоступно</EyebrowText>
           <h1>Записи пока не открылись</h1>
           <p>{{ effectiveLoadError }}</p>
-          <button class="primary-button" type="button" @click="retryLoadAppData">Повторить</button>
+          <ActionButton variant="primary" type="button" @click="retryLoadAppData">Повторить</ActionButton>
         </div>
       </section>
       <template v-else>
@@ -277,7 +279,7 @@ const navItems = [
             <strong>Облако не обновлено</strong>
             <p>{{ store.cloudSyncMessage }}</p>
           </div>
-          <RouterLink class="secondary-button" to="/settings#cloud-settings">Настройки синхронизации</RouterLink>
+          <ActionButton :as="RouterLink" variant="secondary" to="/settings#cloud-settings">Настройки синхронизации</ActionButton>
         </section>
         <RouterView />
       </template>

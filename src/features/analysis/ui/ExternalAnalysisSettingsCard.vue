@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
+import DataNote from '@/shared/ui/content/DataNote.vue';
 import AiAnalysisSteps from './AiAnalysisSteps.vue';
 import SettingsCard from '@/features/settings/ui/SettingsCard.vue';
 import FormCardHeading from '@/shared/ui/forms/FormCardHeading.vue';
@@ -23,26 +25,26 @@ const { copyCustomPrompt, copyPrompt, downloadCustomData, downloadData, end, isC
     </FormCardHeading>
     <AiAnalysisSteps />
     <div class="ai-actions">
-      <button
-        class="secondary-button"
+      <ActionButton
+        variant="secondary"
         type="button"
         :disabled="isCopying('analysis-week')"
         :aria-busy="isCopying('analysis-week')"
         @click="copyPrompt('week')"
       >
         Подготовить текст недели
-      </button>
-      <button
-        class="secondary-button"
+      </ActionButton>
+      <ActionButton
+        variant="secondary"
         type="button"
         :disabled="isCopying('analysis-month')"
         :aria-busy="isCopying('analysis-month')"
         @click="copyPrompt('month')"
       >
         Подготовить текст месяца
-      </button>
-      <button class="secondary-button" type="button" @click="downloadData('week')">Данные недели</button>
-      <button class="secondary-button" type="button" @click="downloadData('month')">Данные месяца</button>
+      </ActionButton>
+      <ActionButton variant="secondary" type="button" @click="downloadData('week')">Данные недели</ActionButton>
+      <ActionButton variant="secondary" type="button" @click="downloadData('month')">Данные месяца</ActionButton>
     </div>
     <FormDisclosure class="analysis-range">
       <template #summary>Выбрать другой период</template>
@@ -58,24 +60,24 @@ const { copyCustomPrompt, copyPrompt, downloadCustomData, downloadData, end, isC
         </div>
       </FormRow>
       <div class="ai-actions">
-        <button
-          class="secondary-button"
+        <ActionButton
+          variant="secondary"
           type="button"
           :disabled="isCopying('analysis-range')"
           :aria-busy="isCopying('analysis-range')"
           @click="copyCustomPrompt"
         >
           Подготовить текст периода
-        </button>
-        <button class="secondary-button" type="button" @click="downloadCustomData">Скачать данные периода</button>
+        </ActionButton>
+        <ActionButton variant="secondary" type="button" @click="downloadCustomData">Скачать данные периода</ActionButton>
       </div>
-      <p class="data-note">
+      <DataNote>
         В текст входят записи по каждому дню выбранного периода, включая личные заметки. JSON остаётся полной копией без сокращений.
-      </p>
+      </DataNote>
     </FormDisclosure>
-    <p class="data-note">
+    <DataNote>
       В пакет входят личные заметки выбранного периода. Перед передачей внешнему сервису можно просмотреть скачанный JSON.
-    </p>
+    </DataNote>
   </SettingsCard>
 </template>
 

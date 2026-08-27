@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import SurfaceCard from '@/shared/ui/layout/SurfaceCard.vue';
+import SectionHeading from '@/shared/ui/layout/SectionHeading.vue';
+import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
 import { careerStatesForEntry, specialDayLabel } from '@/services/analytics';
 import { formatDate, formatMinutes, todayKey } from '@/services/dates';
 import type { DailyEntry } from '@/types';
@@ -49,13 +52,13 @@ function dayFacts(item: RhythmDay): string[] {
 </script>
 
 <template>
-  <article class="dashboard-card weekly-rhythm-card">
-    <div class="section-heading">
+  <SurfaceCard kind="dashboard" class="weekly-rhythm-card">
+    <SectionHeading>
       <div>
-        <span class="eyebrow">Факты по дням</span>
+        <EyebrowText>Факты по дням</EyebrowText>
         <h2>Как проходила неделя</h2>
       </div>
-    </div>
+    </SectionHeading>
     <div class="week-story-list">
       <article v-for="item in days" :key="item.day" class="week-story-day" :class="{ 'week-story-day--empty': !item.entry }">
         <time>{{ formatDate(item.day, { weekday: 'short', day: 'numeric' }) }}</time>
@@ -68,7 +71,7 @@ function dayFacts(item: RhythmDay): string[] {
         </div>
       </article>
     </div>
-  </article>
+  </SurfaceCard>
 </template>
 
 <style scoped>

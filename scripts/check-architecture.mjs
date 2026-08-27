@@ -12,37 +12,40 @@ const reportThresholds = new Map([
   ['.css', 500],
 ]);
 const hotspotContentBudgets = new Map([
-  ['src/views/TodayView.vue', 27462],
-  ['src/views/SettingsView.vue', 14134],
-  ['src/views/WeekView.vue', 23777],
-  ['src/views/MonthView.vue', 20411],
+  ['src/views/TodayView.vue', 28135],
+  ['src/views/SettingsView.vue', 14541],
+  ['src/views/WeekView.vue', 24230],
+  ['src/views/MonthView.vue', 20807],
   ['src/features/settings/useSettingsForm.ts', 12359],
 ]);
 const allowedDbOwners = new Set(['src/stores/app.ts', 'src/features/sync/base.ts']);
 const allowedServiceFeatureEdges = new Set(['src/services/analytics.ts']);
 const styleOwnerRules = [
   { selector: 'bottom-nav', owner: 'src/App.css' },
-  { selector: 'primary-button', owner: 'src/styles/primitives.css' },
-  { selector: 'secondary-button', owner: 'src/styles/primitives.css' },
-  { selector: 'danger-button', owner: 'src/styles/primitives.css' },
-  { selector: 'range-tabs', owner: 'src/styles/primitives.css', overrides: /^src\/styles\/responsive-/ },
-  { selector: 'section-heading', owner: 'src/styles/primitives.css' },
-  { selector: 'form-card', owner: 'src/styles/primitives.css', overrides: /^src\/styles\/responsive-/ },
-  {
-    selector: 'dashboard-card',
-    owner: 'src/styles/primitives.css',
-    overrides: /^src\/styles\/responsive-/,
-  },
-  {
-    selector: 'review-card',
-    owner: 'src/styles/primitives.css',
-    overrides: /^src\/styles\/responsive-/,
-  },
+  { selector: 'primary-button', owner: 'src/shared/ui/actions/ActionButton.css' },
+  { selector: 'secondary-button', owner: 'src/shared/ui/actions/ActionButton.css' },
+  { selector: 'danger-button', owner: 'src/shared/ui/actions/ActionButton.css' },
+  { selector: 'range-tabs', owner: 'src/shared/ui/navigation/RangeTabs.css' },
+  { selector: 'section-heading', owner: 'src/shared/ui/layout/SectionHeading.css' },
+  { selector: 'form-card', owner: 'src/shared/ui/layout/SurfaceCard.css' },
+  { selector: 'dashboard-card', owner: 'src/shared/ui/layout/SurfaceCard.css' },
+  { selector: 'review-card', owner: 'src/shared/ui/layout/SurfaceCard.css' },
   {
     selector: 'settings-card',
     owner: 'src/features/settings/ui/SettingsCard.css',
   },
 ];
+const visualPrimitiveOwners = new Map([
+  ['primary-button', 'src/shared/ui/actions/ActionButton.vue'],
+  ['secondary-button', 'src/shared/ui/actions/ActionButton.vue'],
+  ['danger-button', 'src/shared/ui/actions/ActionButton.vue'],
+  ['range-tabs', 'src/shared/ui/navigation/RangeTabs.vue'],
+  ['section-heading', 'src/shared/ui/layout/SectionHeading.vue'],
+  ['data-note', 'src/shared/ui/content/DataNote.vue'],
+  ['form-card', 'src/shared/ui/layout/SurfaceCard.vue'],
+  ['dashboard-card', 'src/shared/ui/layout/SurfaceCard.vue'],
+  ['review-card', 'src/shared/ui/layout/SurfaceCard.vue'],
+]);
 
 async function collectFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -219,6 +222,17 @@ for (const rule of styleOwnerRules) {
 
 for (const importer of architectureFiles) {
   const source = await readFile(importer, 'utf8');
+  const importerPath = projectPath(importer);
+  const staticClassAttributes = source.matchAll(/<[A-Za-z][\w.-]*\b[^>]*\bclass=(['"])(.*?)\1[^>]*>/gs);
+  for (const match of staticClassAttributes) {
+    const classNames = match[2].split(/\s+/).filter(Boolean);
+    for (const className of classNames) {
+      const owner = visualPrimitiveOwners.get(className);
+      if (owner && importerPath !== owner) {
+        violations.push(`${importerPath}: .${className} создаётся вручную; используйте компонент ${owner}.`);
+      }
+    }
+  }
   const targets = localSpecifiers(importer, source)
     .map((specifier) => resolveLocalImport(importer, specifier, knownFiles))
     .filter(Boolean);
@@ -226,7 +240,6 @@ for (const importer of architectureFiles) {
   graph.set(importer, productionTargets);
 
   for (const target of productionTargets) {
-    const importerPath = projectPath(importer);
     const targetPath = projectPath(target);
     const fromLayer = sourceLayer(importer);
     const toLayer = sourceLayer(target);

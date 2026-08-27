@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { postponePwaInstallNudge, readPwaInstallNudgeDismissedUntil, shouldShowPwaInstallNudge } from '../installNudge';
@@ -49,10 +50,10 @@ async function install() {
       <p>Добавьте приложение на домашний экран телефона.</p>
     </div>
     <div class="pwa-install-nudge__actions">
-      <button v-if="canPrompt" class="secondary-button" type="button" :disabled="installing" @click="install">
+      <ActionButton v-if="canPrompt" variant="secondary" type="button" :disabled="installing" @click="install">
         {{ installing ? 'Открываю…' : 'Установить' }}
-      </button>
-      <RouterLink v-else class="secondary-button" to="/settings#install-settings">{{ guideLabel }}</RouterLink>
+      </ActionButton>
+      <ActionButton v-else :as="RouterLink" variant="secondary" to="/settings#install-settings">{{ guideLabel }}</ActionButton>
       <button class="pwa-install-nudge__later" type="button" @click="postpone">Позже</button>
     </div>
   </aside>

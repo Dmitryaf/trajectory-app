@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import { computed, reactive, ref, watch } from 'vue';
 import { recordFirstUseEvent } from '@/features/first-use/funnel';
 import { addDays, formatDate } from '@/services/dates';
@@ -161,15 +162,15 @@ async function saveToJournal(item: JournalItem) {
                 </option>
               </select>
             </label>
-            <button
-              class="secondary-button"
+            <ActionButton
+              variant="secondary"
               type="button"
               :disabled="!canSave(item)"
               :aria-label="`Сохранить в Журнале: ${item.title}`"
               @click="saveToJournal(item)"
             >
               {{ savingKey === item.key ? 'Сохраняем…' : 'Сохранить' }}
-            </button>
+            </ActionButton>
           </div>
           <p v-if="isAlreadySaved(item)" class="weekly-review-journal__status">Уже есть в Журнале</p>
           <p v-else-if="saveErrors[item.key]" class="weekly-review-journal__error" role="alert">{{ saveErrors[item.key] }}</p>

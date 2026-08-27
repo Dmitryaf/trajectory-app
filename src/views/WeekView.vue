@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
+import SurfaceCard from '@/shared/ui/layout/SurfaceCard.vue';
+import SectionHeading from '@/shared/ui/layout/SectionHeading.vue';
 import { computed, reactive, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
@@ -19,6 +22,9 @@ import FormFieldLabel from '../shared/ui/forms/FormFieldLabel.vue';
 import FormHint from '../shared/ui/forms/FormHint.vue';
 import PeriodNavigator from '../shared/ui/navigation/PeriodNavigator.vue';
 import Badge from '../shared/ui/data-display/CountBadge.vue';
+import PageShell from '../shared/ui/layout/PageShell.vue';
+import PeriodEmptyGuide from '../shared/ui/content/PeriodEmptyGuide.vue';
+import EyebrowText from '../shared/ui/typography/EyebrowText.vue';
 import {
   actionDirectionLabel,
   buildReviewCues,
@@ -334,7 +340,7 @@ watch(
 </script>
 
 <template>
-  <section class="page page--review page--week">
+  <PageShell class="page--review page--week">
     <ReviewHeading
       label="Недельная сводка"
       title="Неделя"
@@ -359,16 +365,21 @@ watch(
           {{ formatDate(recoveredWeekEnd, { day: 'numeric', month: 'long', year: 'numeric' }) }}.
         </p>
       </div>
-      <RouterLink class="secondary-button context-action" :to="`/week?week=${recoveredReview.weekStart}#first-use-overview`">
+      <ActionButton
+        :as="RouterLink"
+        variant="secondary"
+        class="context-action"
+        :to="`/week?week=${recoveredReview.weekStart}#first-use-overview`"
+      >
         Открыть обзор
-      </RouterLink>
+      </ActionButton>
     </ReviewNotice>
 
-    <section v-if="!hasPeriodData" class="period-empty-guide">
+    <PeriodEmptyGuide v-if="!hasPeriodData">
       <strong>За эту неделю пока нет записей</strong>
       <p>Заполняйте на главной несколько важных пунктов. Здесь они соберутся по дням и помогут сравнить сон, состояние и действия.</p>
-      <RouterLink class="secondary-button" to="/">Перейти к записи за день</RouterLink>
-    </section>
+      <ActionButton :as="RouterLink" variant="secondary" to="/">Перейти к записи за день</ActionButton>
+    </PeriodEmptyGuide>
 
     <template v-else>
       <ReviewNotice v-if="!hasDailyData" tag="section" class="period-data-guide">
@@ -382,7 +393,7 @@ watch(
       <article v-if="showRecoveredOverview && savedReview" id="first-use-overview" class="restored-week-overview">
         <div class="restored-week-overview__heading">
           <div>
-            <p class="eyebrow">Восстановлено по вашим ответам</p>
+            <EyebrowText tag="p">Восстановлено по вашим ответам</EyebrowText>
             <h2>Вот чем была наполнена ваша неделя</h2>
             <p>Здесь собраны ваши факты, важные события и условия недели. Это не оценка и не автоматический вывод.</p>
             <p v-if="recoveredPeriodIsIncomplete" class="restored-week-overview__coverage">
@@ -394,8 +405,8 @@ watch(
         <WeeklyReviewOverview :review="savedReview" />
         <WeeklyReviewJournalLinks :review="savedReview" />
         <div class="restored-week-overview__actions">
-          <RouterLink class="primary-button" to="/">Записать сегодняшний день</RouterLink>
-          <RouterLink class="secondary-button" to="/?first-use=edit">Исправить ответы</RouterLink>
+          <ActionButton :as="RouterLink" variant="primary" to="/">Записать сегодняшний день</ActionButton>
+          <ActionButton :as="RouterLink" variant="secondary" to="/?first-use=edit">Исправить ответы</ActionButton>
         </div>
       </article>
 
@@ -442,17 +453,17 @@ watch(
 
       <DecisionFollowUp v-if="decisionFollowUp" :follow-up="decisionFollowUp" />
 
-      <article v-if="reviewAvailable" id="week-review" class="review-card">
-        <div class="section-heading">
+      <SurfaceCard v-if="reviewAvailable" id="week-review" kind="review">
+        <SectionHeading>
           <div>
-            <span class="eyebrow">Обзор недели</span>
+            <EyebrowText>Обзор недели</EyebrowText>
             <h2>Короткий обзор</h2>
           </div>
           <Pill>До {{ formatDate(end, { day: 'numeric', month: 'long', year: 'numeric' }) }}</Pill>
-        </div>
+        </SectionHeading>
         <template v-if="previousReview?.nextLever || previousReview?.ifThenPlan">
           <div class="previous-plan">
-            <span class="eyebrow">Решение из прошлого обзора</span>
+            <EyebrowText>Решение из прошлого обзора</EyebrowText>
             <p v-if="previousReview.nextLever"><strong>Вы решили:</strong> {{ previousReview.nextLever }}</p>
             <p v-if="previousReview.ifThenPlan"><strong>План:</strong> {{ previousReview.ifThenPlan }}</p>
           </div>
@@ -501,10 +512,10 @@ watch(
           :rows="2"
           placeholder="Если снова появится главное препятствие, то я сделаю конкретное действие"
         />
-        <button class="primary-button" type="button" :disabled="reviewSaving" @click="saveReview">
+        <ActionButton variant="primary" type="button" :disabled="reviewSaving" @click="saveReview">
           {{ reviewSaving ? 'Сохраняю…' : 'Сохранить обзор' }}
-        </button>
-      </article>
+        </ActionButton>
+      </SurfaceCard>
       <ReviewNotice v-else id="week-review" tag="section">
         <strong>Короткий обзор появится в конце недели</strong>
         <p>Его можно пропустить — дневные записи и сводка недели останутся на месте.</p>
@@ -518,14 +529,14 @@ watch(
       >
         <WeeklyRhythmCard v-if="hasDailyData" :days="rhythmDays" />
 
-        <article v-if="experimentCards.length" class="dashboard-card">
-          <div class="section-heading">
+        <SurfaceCard v-if="experimentCards.length" kind="dashboard">
+          <SectionHeading>
             <div>
-              <span class="eyebrow">Личные проверки</span>
+              <EyebrowText>Личные проверки</EyebrowText>
               <h2>Эксперименты в эту неделю</h2>
             </div>
             <Badge>{{ experimentCards.length }}</Badge>
-          </div>
+          </SectionHeading>
           <div class="period-records__content">
             <details
               v-for="(experiment, index) in experimentCards"
@@ -537,9 +548,9 @@ watch(
               <summary>
                 <span class="period-record-card__heading">
                   <span
-                    ><span class="eyebrow">{{ experiment.statusLabel }}</span
+                    ><EyebrowText>{{ experiment.statusLabel }}</EyebrowText
                     ><strong>{{ experiment.titlePreview }}</strong
-                    ><span class="eyebrow">Период: {{ experiment.periodLabel }}</span></span
+                    ><EyebrowText>Период: {{ experiment.periodLabel }}</EyebrowText></span
                   >
                   <Badge v-if="experiment.notes.length" :aria-label="`Заметок: ${experiment.notes.length}`">
                     {{ experiment.notes.length }}
@@ -553,7 +564,7 @@ watch(
               </summary>
               <div class="period-record-card__details">
                 <div class="previous-plan">
-                  <span class="eyebrow">Условие</span>
+                  <EyebrowText>Условие</EyebrowText>
                   <p>
                     <strong>{{ experiment.title }}</strong>
                   </p>
@@ -568,16 +579,16 @@ watch(
                     без отметки {{ experiment.totalUnmarkedDays }} из {{ experiment.totalPlannedDays }}.
                   </p>
                 </div>
-                <button
+                <ActionButton
                   v-if="experiment.notes.length"
-                  class="secondary-button"
+                  variant="secondary"
                   type="button"
                   :aria-expanded="openExperimentNotesId === experiment.id"
                   :aria-controls="`experiment-notes-${index}`"
                   @click="toggleExperimentNotes(experiment.id)"
                 >
                   {{ openExperimentNotesId === experiment.id ? 'Скрыть заметки' : `Заметки этой недели · ${experiment.notes.length}` }}
-                </button>
+                </ActionButton>
                 <FormHint v-else>Заметок за эту неделю нет.</FormHint>
                 <div
                   v-if="openExperimentNotesId === experiment.id && visibleExperimentNote(experiment)"
@@ -601,16 +612,16 @@ watch(
               </div>
             </details>
           </div>
-        </article>
+        </SurfaceCard>
 
-        <article v-if="hasDailyData && actionNotes.length" class="dashboard-card">
-          <div class="section-heading">
+        <SurfaceCard v-if="hasDailyData && actionNotes.length" kind="dashboard">
+          <SectionHeading>
             <div>
-              <span class="eyebrow">Действия по цели</span>
+              <EyebrowText>Действия по цели</EyebrowText>
               <h2>Конкретные действия и подготовка</h2>
             </div>
             <Badge>{{ actionNotes.length }}</Badge>
-          </div>
+          </SectionHeading>
           <div class="note-list">
             <article v-for="entry in actionNotes" :key="entry.date" class="note-item">
               <time>{{ formatDate(entry.date, { weekday: 'short', day: 'numeric' }) }}</time>
@@ -621,16 +632,16 @@ watch(
               </p>
             </article>
           </div>
-        </article>
+        </SurfaceCard>
 
-        <article v-if="hasDailyData && specialDays.length" class="dashboard-card">
-          <div class="section-heading">
+        <SurfaceCard v-if="hasDailyData && specialDays.length" kind="dashboard">
+          <SectionHeading>
             <div>
-              <span class="eyebrow">Поправка на контекст</span>
+              <EyebrowText>Поправка на контекст</EyebrowText>
               <h2>Особые дни</h2>
             </div>
             <Badge>{{ specialDays.length }}</Badge>
-          </div>
+          </SectionHeading>
           <div class="special-day-list">
             <article v-for="entry in specialDays" :key="entry.date" class="special-day-item">
               <time>{{ formatDate(entry.date, { weekday: 'short', day: 'numeric' }) }}</time>
@@ -638,16 +649,16 @@ watch(
               <p v-if="entry.specialDayNote">{{ entry.specialDayNote }}</p>
             </article>
           </div>
-        </article>
+        </SurfaceCard>
 
-        <article v-if="hasDailyData && contextNotes.length" class="dashboard-card">
-          <div class="section-heading">
+        <SurfaceCard v-if="hasDailyData && contextNotes.length" kind="dashboard">
+          <SectionHeading>
             <div>
-              <span class="eyebrow">Условия дня</span>
+              <EyebrowText>Условия дня</EyebrowText>
               <h2>Повторяющиеся условия и заметки</h2>
             </div>
             <Badge>{{ contextNotes.length }}</Badge>
-          </div>
+          </SectionHeading>
           <div class="factor-note-list">
             <article v-for="entry in contextNotes" :key="entry.date" class="factor-note-item">
               <time>{{ formatDate(entry.date, { weekday: 'short', day: 'numeric' }) }}</time>
@@ -659,15 +670,15 @@ watch(
               </div>
             </article>
           </div>
-        </article>
+        </SurfaceCard>
 
-        <article v-if="hasDailyData" class="dashboard-card">
-          <div class="section-heading">
+        <SurfaceCard v-if="hasDailyData" kind="dashboard">
+          <SectionHeading>
             <div>
-              <span class="eyebrow">Присутствие областей</span>
+              <EyebrowText>Присутствие областей</EyebrowText>
               <h2>Карта недели</h2>
             </div>
-          </div>
+          </SectionHeading>
           <div class="heatmap" :style="{ '--day-count': days.length }">
             <div class="heatmap__corner"></div>
             <div v-for="day in days" :key="day" class="heatmap__day">
@@ -689,10 +700,10 @@ watch(
               </div>
             </template>
           </div>
-        </article>
+        </SurfaceCard>
       </PeriodDetails>
     </template>
-  </section>
+  </PageShell>
 </template>
 
 <style scoped src="./WeekView.css"></style>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import { computed, ref } from 'vue';
 import ArchiveDateRange from '../features/journal/ui/ArchiveDateRange.vue';
 import ArchiveItemActions from '../features/journal/ui/ArchiveItemActions.vue';
@@ -7,6 +8,7 @@ import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
 import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
 import ChipGroup from '../shared/ui/forms/ChipGroup.vue';
 import FormCardHeading from '../shared/ui/forms/FormCardHeading.vue';
+import DateInput from '../shared/ui/forms/DateInput.vue';
 import ClampedText from '../shared/ui/content/ClampedText.vue';
 import IconActionButton from '../shared/ui/actions/IconActionButton.vue';
 import { archiveRangeFromQuery } from '../features/journal/archiveQuery';
@@ -150,15 +152,15 @@ function eventKey(event: LifeEventRecord) {
       <ChipGroup v-model="type" :options="lifeEventTypeOptions" />
       <div class="event-composer__fields">
         <input v-model="title" type="text" maxlength="140" placeholder="Короткое название" @keyup.enter="saveEvent" />
-        <input v-model="date" class="date-input" type="date" required aria-label="Дата события" />
+        <DateInput v-model="date" required aria-label="Дата события" />
       </div>
       <AutoGrowTextarea v-model="note" :rows="4" :max-length="2000" placeholder="Что произошло или что вы поняли и почему это важно" />
-      <button class="primary-button" type="button" :disabled="!title.trim() || !date || saving" @click="saveEvent">
+      <ActionButton variant="primary" type="button" :disabled="!title.trim() || !date || saving" @click="saveEvent">
         {{ editingId === null ? 'Добавить запись' : 'Сохранить запись' }}
-      </button>
-      <button v-if="editingId !== null" class="secondary-button composer-cancel" type="button" @click="resetForm">
+      </ActionButton>
+      <ActionButton v-if="editingId !== null" variant="secondary" class="composer-cancel" type="button" @click="resetForm">
         Отменить редактирование
-      </button>
+      </ActionButton>
     </template>
     <template #filters>
       <input v-model="filterText" type="search" placeholder="Поиск по событиям" aria-label="Поиск по событиям" />
