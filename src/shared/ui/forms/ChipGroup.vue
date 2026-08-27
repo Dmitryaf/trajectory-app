@@ -52,7 +52,7 @@ function toggle(id: T) {
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--surface-soft);
-  color: #53625d;
+  color: var(--chip-text);
   cursor: pointer;
   font-size: 13px;
   font-weight: 700;
@@ -66,15 +66,15 @@ function toggle(id: T) {
   transform: scale(0.98);
 }
 .chip:hover {
-  border-color: #c1c9d9;
+  border-color: var(--chip-border);
   background: var(--surface);
-  box-shadow: 0 3px 10px rgba(39, 50, 75, 0.06);
+  box-shadow: 0 3px 10px var(--chip-shadow);
 }
 .chip--selected {
-  border-color: rgba(73, 201, 155, 0.7);
-  background: #dff7ee;
-  color: #0f6048;
-  box-shadow: 0 5px 14px rgba(73, 201, 155, 0.16);
+  border-color: var(--chip-selected-border);
+  background: var(--chip-selected-surface);
+  color: var(--chip-selected-text);
+  box-shadow: 0 5px 14px var(--chip-selected-shadow);
 }
 .chip__icon {
   margin-right: 6px;

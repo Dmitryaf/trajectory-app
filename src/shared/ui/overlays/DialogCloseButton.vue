@@ -44,7 +44,7 @@ defineExpose({
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface-soft);
-  color: #5f6d68;
+  color: var(--dialog-close-text);
   cursor: pointer;
 }
 .dialog-close-button:disabled {

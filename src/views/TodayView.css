@@ -549,6 +549,17 @@
 }
 
 @media (max-width: 720px) {
+  .form-card input[type='time'] {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    inline-size: 100% !important;
+    min-inline-size: 0 !important;
+    max-inline-size: 100% !important;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
   .first-entry-guide {
     align-items: stretch;
     flex-direction: column;

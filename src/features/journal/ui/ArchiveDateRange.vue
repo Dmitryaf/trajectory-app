@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { formatDate } from '@/services/dates';
+import DateInput from '@/shared/ui/forms/DateInput.vue';
 
 const props = defineProps<{
   dateFrom: string;
@@ -44,20 +45,18 @@ function showAllTime() {
   <div class="archive-date-filter">
     <label>
       <span>С</span>
-      <input
-        :value="dateFrom"
-        type="date"
+      <DateInput
+        :model-value="dateFrom"
         :aria-label="`Начальная дата ${contextLabel}`"
-        @input="emit('update:dateFrom', ($event.target as HTMLInputElement).value)"
+        @update:model-value="emit('update:dateFrom', $event ?? '')"
       />
     </label>
     <label>
       <span>По</span>
-      <input
-        :value="dateTo"
-        type="date"
+      <DateInput
+        :model-value="dateTo"
         :aria-label="`Конечная дата ${contextLabel}`"
-        @input="emit('update:dateTo', ($event.target as HTMLInputElement).value)"
+        @update:model-value="emit('update:dateTo', $event ?? '')"
       />
     </label>
   </div>

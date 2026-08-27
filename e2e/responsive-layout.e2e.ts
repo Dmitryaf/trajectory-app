@@ -1,7 +1,18 @@
 import { expect, test } from './fixtures';
+import type { Locator } from '@playwright/test';
 import { demoAnchor, demoFilePath, emptyPeriodDate } from './demo-data';
 
 const routes = ['/', '/week', '/month', '/trends', '/more', '/results', '/events', '/settings'];
+
+async function expectPeriodDetailsChrome(details: Locator) {
+  await expect(details).toHaveCSS('border-top-style', 'solid');
+  await expect(details).toHaveCSS('border-top-color', 'rgb(220, 229, 225)');
+  await expect(details).toHaveCSS('border-radius', '16px');
+  await expect(details).toHaveCSS('background-color', 'rgba(255, 255, 255, 0.72)');
+  const summary = details.locator(':scope > summary');
+  await expect(summary).toHaveCSS('padding-top', '16px');
+  await expect(summary).toHaveCSS('padding-right', '18px');
+}
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/settings');
@@ -393,6 +404,7 @@ test('keeps monthly results before the review and secondary context behind a dis
   await expect(page.locator('.month-featured-events')).toHaveCount(0);
   await expect(page.locator('.month-facts-details')).toHaveCount(0);
   await expect(page.locator('.month-analysis-details')).not.toHaveAttribute('open', '');
+  await expectPeriodDetailsChrome(page.locator('.month-analysis-details'));
 
   const records = page.locator('.period-records--featured');
   await expect(records.getByText('Итоги месяца', { exact: true })).toBeVisible();
@@ -411,6 +423,7 @@ test('keeps monthly results before the review and secondary context behind a dis
   await records.getByRole('navigation', { name: 'Страницы итогов месяца' }).getByRole('button', { name: 'Дальше' }).click();
   await expect(records.getByRole('navigation', { name: 'Страницы итогов месяца' })).toContainText('2 из');
   const secondaryRecords = page.locator('details.period-records');
+  await expectPeriodDetailsChrome(secondaryRecords);
   await secondaryRecords.getByText('Показать действия и дополнительный контекст', { exact: true }).click();
   await secondaryRecords.getByText('Конкретные действия и подготовка', { exact: true }).click();
   await expect(secondaryRecords.getByRole('navigation', { name: 'Страницы действий месяца' })).toBeVisible();
@@ -425,6 +438,7 @@ test('keeps weekly results and events visible before detailed daily context', as
   await expect(records.getByRole('link', { name: 'Открыть все итоги' })).toHaveCount(0);
   await expect(records.getByRole('link', { name: 'Открыть все события' })).toHaveCount(0);
   await expect(page.locator('.week-data-details')).not.toHaveAttribute('open', '');
+  await expectPeriodDetailsChrome(page.locator('.week-data-details'));
 });
 
 test('keeps desktop navigation visible while the page scrolls', async ({ page }) => {

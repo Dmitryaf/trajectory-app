@@ -34,9 +34,23 @@ async function restoreControlledValue() {
 
 <style scoped>
 .date-input {
-  width: auto;
-  min-width: 145px;
-  background: rgba(255, 255, 255, 0.72);
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  background: var(--period-details-surface);
   font-weight: 650;
+}
+
+@media (max-width: 720px) {
+  .date-input {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    inline-size: 100% !important;
+    min-inline-size: 0 !important;
+    max-inline-size: 100% !important;
+    appearance: none;
+    -webkit-appearance: none;
+  }
 }
 </style>

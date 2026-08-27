@@ -10,14 +10,14 @@ defineOptions({ inheritAttrs: false });
 .period-empty-guide {
   margin-bottom: 18px;
   padding: 18px 20px;
-  border: 1px solid #d9e5df;
+  border: 1px solid var(--empty-guide-border);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.86);
+  background: var(--empty-guide-surface);
   box-shadow: var(--shadow-soft);
 }
 .period-empty-guide :deep(p) {
   margin: 6px 0 0;
-  color: #65736e;
+  color: var(--empty-guide-text);
   font-size: 13px;
   line-height: 1.55;
 }

@@ -50,10 +50,10 @@ defineExpose({ element });
   padding: var(--dialog-padding);
   overflow-y: auto;
   overscroll-behavior: contain;
-  border: 1px solid rgba(213, 224, 217, 0.95);
+  border: 1px solid var(--dialog-border);
   border-radius: 26px;
   background: var(--surface);
-  box-shadow: 0 30px 80px rgba(8, 28, 25, 0.24);
+  box-shadow: 0 30px 80px var(--dialog-shadow);
 }
 .dialog-surface :deep(.dialog-heading) {
   display: flex;

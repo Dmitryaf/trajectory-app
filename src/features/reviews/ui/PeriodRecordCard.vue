@@ -77,9 +77,9 @@ watch(pageCount, (count) => {
 .period-record-card {
   min-width: 0;
   padding: 20px;
-  border: 1px solid #dfe9e4;
+  border: 1px solid var(--period-record-border);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--period-record-surface);
 }
 .period-record-card__heading {
   display: flex;
@@ -107,8 +107,8 @@ watch(pageCount, (count) => {
 .period-record-card__breakdown span {
   padding: 5px 8px;
   border-radius: 999px;
-  background: #eef4f1;
-  color: #52645e;
+  background: var(--period-record-meta-surface);
+  color: var(--period-record-meta-text);
   font-size: 11px;
   font-weight: 750;
 }
@@ -125,15 +125,15 @@ watch(pageCount, (count) => {
   align-items: start;
   gap: 8px;
   padding: 9px 10px;
-  border: 1px solid #e1ebe6;
+  border: 1px solid var(--period-record-note-border);
   border-radius: 11px;
-  background: rgba(255, 255, 255, 0.72);
-  color: #38564d;
+  background: var(--period-details-surface);
+  color: var(--period-record-note-text);
   font-size: 13px;
   line-height: 1.4;
 }
 .period-record-preview li > span {
-  color: #298564;
+  color: var(--period-record-action);
   font-weight: 850;
   text-align: center;
 }

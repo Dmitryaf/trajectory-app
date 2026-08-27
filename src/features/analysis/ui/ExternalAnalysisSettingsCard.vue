@@ -4,6 +4,7 @@ import DataNote from '@/shared/ui/content/DataNote.vue';
 import AiAnalysisSteps from './AiAnalysisSteps.vue';
 import SettingsCard from '@/features/settings/ui/SettingsCard.vue';
 import FormCardHeading from '@/shared/ui/forms/FormCardHeading.vue';
+import DateInput from '@/shared/ui/forms/DateInput.vue';
 import FormDisclosure from '@/shared/ui/forms/FormDisclosure.vue';
 import FormFieldLabel from '@/shared/ui/forms/FormFieldLabel.vue';
 import FormRow from '@/shared/ui/forms/FormRow.vue';
@@ -52,11 +53,11 @@ const { copyCustomPrompt, copyPrompt, downloadCustomData, downloadData, end, isC
       <FormRow>
         <div>
           <FormFieldLabel for="analysis-start">Начало периода</FormFieldLabel>
-          <input id="analysis-start" v-model="start" type="date" :max="end" aria-label="Начало периода анализа" />
+          <DateInput id="analysis-start" v-model="start" :max="end" aria-label="Начало периода анализа" />
         </div>
         <div>
           <FormFieldLabel for="analysis-end">Конец периода</FormFieldLabel>
-          <input id="analysis-end" v-model="end" type="date" :min="start" :max="maxDate" aria-label="Конец периода анализа" />
+          <DateInput id="analysis-end" v-model="end" :min="start" :max="maxDate" aria-label="Конец периода анализа" />
         </div>
       </FormRow>
       <div class="ai-actions">

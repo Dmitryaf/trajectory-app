@@ -72,15 +72,15 @@ defineProps<{ followUp: DecisionFollowUp }>();
   gap: 12px;
   padding: 14px;
   border-radius: 16px;
-  background: #f3f7f5;
+  background: var(--decision-follow-up-surface);
 }
 .decision-follow-up__step > span {
   display: grid;
   width: 28px;
   height: 28px;
   place-items: center;
-  background: #dcefe7;
-  color: #175c49;
+  background: var(--decision-follow-up-status-surface);
+  color: var(--decision-follow-up-status-text);
   font-weight: 850;
 }
 .decision-follow-up__step p {
@@ -91,7 +91,7 @@ defineProps<{ followUp: DecisionFollowUp }>();
   font-size: 12px;
 }
 .decision-follow-up__step--outcome {
-  border: 1px solid #bfe0d2;
+  border: 1px solid var(--decision-follow-up-border);
   background: var(--surface-success);
 }
 .decision-follow-up__missing {

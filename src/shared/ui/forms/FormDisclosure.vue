@@ -10,12 +10,12 @@
   margin-top: 12px;
   border: 1px solid var(--line);
   border-radius: 15px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--period-details-surface);
 }
 .form-disclosure summary {
   cursor: pointer;
   padding: 13px 14px;
-  color: #315b4e;
+  color: var(--form-disclosure-text);
   font-size: 13px;
   font-weight: 800;
 }

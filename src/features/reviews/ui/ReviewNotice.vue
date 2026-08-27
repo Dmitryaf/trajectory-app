@@ -13,7 +13,7 @@ withDefaults(defineProps<{ tag?: 'div' | 'p' | 'section' }>(), { tag: 'div' });
   border: 1px solid var(--line-success);
   border-radius: 14px;
   background: var(--surface-success);
-  color: #315d50;
+  color: var(--review-notice-text);
   font-size: 13px;
 }
 .period-review-note :deep(p) {

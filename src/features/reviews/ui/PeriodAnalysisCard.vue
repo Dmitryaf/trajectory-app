@@ -52,7 +52,7 @@ defineEmits<{
 }
 .period-analysis-card > .section-heading {
   padding-bottom: 15px;
-  border-bottom: 1px solid #e8eeeb;
+  border-bottom: 1px solid var(--review-section-divider);
 }
 .period-analysis-card__range {
   margin-top: 16px;

@@ -22,11 +22,11 @@ defineExpose({ element });
   align-items: center;
   gap: 8px;
   padding: 10px 15px;
-  border: 1px solid #c9ded5;
+  border: 1px solid var(--utility-action-border);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.96);
-  color: #245f4d;
-  box-shadow: 0 12px 30px rgba(16, 45, 44, 0.14);
+  background: var(--utility-action-surface);
+  color: var(--utility-action-text);
+  box-shadow: 0 12px 30px var(--utility-action-shadow);
   font-size: 12px;
   text-decoration: none;
   cursor: pointer;
@@ -59,8 +59,8 @@ defineExpose({ element });
   background: var(--surface);
 }
 .utility-trigger:hover {
-  border-color: #8fcdb5;
-  box-shadow: 0 15px 34px rgba(16, 45, 44, 0.18);
+  border-color: var(--utility-action-hover-border);
+  box-shadow: 0 15px 34px var(--utility-action-hover-shadow);
   transform: translateY(-2px);
 }
 @media (min-width: 980px) {

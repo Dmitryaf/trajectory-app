@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ActionButton from '@/shared/ui/actions/ActionButton.vue';
+import DateInput from '@/shared/ui/forms/DateInput.vue';
 import { computed, reactive, ref, watch } from 'vue';
 import { recordFirstUseEvent } from '@/features/first-use/funnel';
 import { addDays, formatDate } from '@/services/dates';
@@ -145,13 +146,7 @@ async function saveToJournal(item: JournalItem) {
           <div class="weekly-review-journal__fields">
             <label>
               <span>Точная дата</span>
-              <input
-                v-model="drafts[item.key]!.date"
-                type="date"
-                :min="review.weekStart"
-                :max="weekEnd"
-                :aria-label="`Дата: ${item.title}`"
-              />
+              <DateInput v-model="drafts[item.key]!.date" :min="review.weekStart" :max="weekEnd" :aria-label="`Дата: ${item.title}`" />
             </label>
             <label>
               <span>{{ item.kind === 'result' ? 'Область' : 'Тип записи' }}</span>
@@ -183,9 +178,9 @@ async function saveToJournal(item: JournalItem) {
 <style scoped>
 .weekly-review-journal {
   margin-top: 14px;
-  border: 1px solid #d9e5e0;
+  border: 1px solid var(--journal-links-border);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--period-details-surface);
 }
 .weekly-review-journal > summary {
   padding: 14px 16px;
@@ -208,7 +203,7 @@ async function saveToJournal(item: JournalItem) {
 }
 .weekly-review-journal__item {
   padding: 13px;
-  border: 1px solid #e2e9e6;
+  border: 1px solid var(--journal-link-border);
   border-radius: 14px;
   background: var(--surface);
 }
@@ -252,10 +247,10 @@ async function saveToJournal(item: JournalItem) {
   font-weight: 750;
 }
 .weekly-review-journal__status {
-  color: #16715e;
+  color: var(--journal-link-success);
 }
 .weekly-review-journal__error {
-  color: #a44343;
+  color: var(--journal-link-danger);
 }
 
 @media (max-width: 720px) {

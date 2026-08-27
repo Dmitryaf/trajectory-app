@@ -16,31 +16,31 @@
 .primary-button {
   color: white;
   background: linear-gradient(135deg, var(--navy), var(--brand-strong));
-  box-shadow: 0 10px 24px rgba(16, 45, 44, 0.2);
+  box-shadow: 0 10px 24px var(--action-primary-shadow);
 }
 
 .primary-button:hover {
-  box-shadow: 0 13px 28px rgba(16, 45, 44, 0.26);
+  box-shadow: 0 13px 28px var(--action-primary-hover-shadow);
 }
 
 .secondary-button {
   color: var(--navy);
-  background: #e9eeea;
+  background: var(--action-secondary-surface);
   text-decoration: none;
 }
 
 .secondary-button:hover {
-  background: #e4e8f0;
+  background: var(--action-neutral-surface);
 }
 
 .danger-button {
-  color: #a6392c;
-  background: #fdebe8;
+  color: var(--action-danger-text);
+  background: var(--action-danger-surface);
 }
 
 .primary-button:disabled,
 .secondary-button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
-  box-shadow: 0 8px 18px rgba(17, 24, 43, 0.1);
+  box-shadow: 0 8px 18px var(--action-disabled-shadow);
 }

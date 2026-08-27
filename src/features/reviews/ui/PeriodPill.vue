@@ -8,10 +8,10 @@
   align-items: center;
   min-height: 32px;
   padding: 7px 11px;
-  border: 1px solid #cce4da;
+  border: 1px solid var(--period-pill-border);
   border-radius: 999px;
-  background: #e4f5ee;
-  color: #26654f;
+  background: var(--period-pill-surface);
+  color: var(--period-pill-text);
   font-size: 12px;
   font-weight: 800;
   white-space: nowrap;

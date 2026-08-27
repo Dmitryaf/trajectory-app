@@ -9,8 +9,8 @@
   display: grid;
   place-items: center;
   border-radius: 999px;
-  background: #e9edf4;
-  color: #5b6579;
+  background: var(--count-badge-surface);
+  color: var(--count-badge-text);
   font-weight: 750;
 }
 </style>

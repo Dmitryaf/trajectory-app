@@ -15,9 +15,9 @@ withDefaults(defineProps<{ tag?: 'aside' | 'section' | 'div' }>(), { tag: 'div' 
   gap: 16px;
   margin-bottom: 14px;
   padding: 16px 18px;
-  border: 1px solid #dbe8fb;
+  border: 1px solid var(--review-nudge-border);
   border-radius: 18px;
-  background: #f4f8ff;
+  background: var(--review-nudge-surface);
 }
 .review-nudge :deep(.secondary-button) {
   text-decoration: none;
@@ -25,11 +25,11 @@ withDefaults(defineProps<{ tag?: 'aside' | 'section' | 'div' }>(), { tag: 'div' 
 }
 .review-nudge :deep(strong) {
   display: block;
-  color: #274b7c;
+  color: var(--review-nudge-title);
 }
 .review-nudge :deep(p) {
   margin: 3px 0 0;
-  color: #61718a;
+  color: var(--review-nudge-text);
   font-size: 13px;
 }
 @media (max-width: 720px) {

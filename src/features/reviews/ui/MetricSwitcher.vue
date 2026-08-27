@@ -30,17 +30,17 @@ defineEmits<{ 'update:modelValue': [value: string] }>();
 .metric-switcher button {
   min-height: 38px;
   padding: 8px 12px;
-  border: 1px solid #dfe6f0;
+  border: 1px solid var(--metric-switcher-border);
   border-radius: 12px;
-  background: #f8fafc;
-  color: #687287;
+  background: var(--metric-switcher-surface);
+  color: var(--metric-switcher-text);
   cursor: pointer;
   font-size: 12px;
   font-weight: 800;
 }
 .metric-switcher button.active {
   border-color: var(--accent);
-  background: #eaf7f2;
-  color: #235f4c;
+  background: var(--metric-switcher-active-surface);
+  color: var(--metric-switcher-active-text);
 }
 </style>

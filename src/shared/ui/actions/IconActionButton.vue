@@ -28,11 +28,11 @@ defineEmits<{ click: [event: MouseEvent] }>();
 .icon-action-button {
   border: 0;
   background: transparent;
-  color: #8b94a4;
+  color: var(--icon-action-muted);
   cursor: pointer;
   font-size: 22px;
 }
 .icon-action-button--danger:hover {
-  color: #b84032;
+  color: var(--icon-action-danger);
 }
 </style>

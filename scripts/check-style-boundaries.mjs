@@ -6,14 +6,10 @@ import stylelint from 'stylelint';
 const root = process.cwd();
 const sourceRoot = path.join(root, 'src');
 const styleEntry = 'src/style.css';
-const targetGlobalStyles = new Set(['src/styles/tokens.css', 'src/styles/reset.css', 'src/styles/base.css', 'src/styles/utilities.css']);
+const targetGlobalStyleOrder = ['src/styles/tokens.css', 'src/styles/reset.css', 'src/styles/base.css', 'src/styles/utilities.css'];
+const targetGlobalStyles = new Set(targetGlobalStyleOrder);
 const allowedUtilityClasses = new Set(['visually-hidden']);
-const legacyGlobalStyleBudgets = new Map([
-  ['src/styles/base.css', { classes: 1, blocks: 18 }],
-  ['src/styles/responsive-desktop.css', { classes: 0, blocks: 0 }],
-  ['src/styles/responsive-mobile.css', { classes: 0, blocks: 3 }],
-  ['src/styles/responsive-small.css', { classes: 0, blocks: 2 }],
-]);
+const legacyGlobalStyleBudgets = new Map();
 
 async function collectFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -43,7 +39,7 @@ function classNames(source) {
 }
 
 function validateStyleEntry(source, violations) {
-  const imports = new Set();
+  const imports = [];
   const withoutComments = source.replace(/\/\*[\s\S]*?\*\//g, '');
 
   for (const [index, line] of withoutComments.split(/\r?\n/).entries()) {
@@ -59,10 +55,14 @@ function validateStyleEntry(source, violations) {
     if (!targetGlobalStyles.has(importedFile) && !legacyGlobalStyleBudgets.has(importedFile)) {
       violations.push(`${styleEntry}:${index + 1}: ${importedFile} is outside the target and legacy global style lists.`);
     }
-    if (imports.has(importedFile)) {
+    if (imports.includes(importedFile)) {
       violations.push(`${styleEntry}:${index + 1}: duplicate global style import ${importedFile}.`);
     }
-    imports.add(importedFile);
+    imports.push(importedFile);
+  }
+
+  if (imports.join('\n') !== targetGlobalStyleOrder.join('\n')) {
+    violations.push(`${styleEntry}: imports must be exactly ${targetGlobalStyleOrder.join(', ')} in this order.`);
   }
 }
 
@@ -120,6 +120,12 @@ for (const filePath of files.filter((file) => file.endsWith('.css'))) {
 for (const file of legacyGlobalStyleBudgets.keys()) {
   if (!observedGlobalStyles.has(file)) {
     violations.push(`${file}: file from the global style boundary budget was not found.`);
+  }
+}
+
+for (const file of targetGlobalStyles) {
+  if (!observedGlobalStyles.has(file)) {
+    violations.push(`${file}: required global foundation file was not found.`);
   }
 }
 

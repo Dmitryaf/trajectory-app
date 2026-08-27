@@ -23,48 +23,48 @@ defineProps<{ cues: ReviewCue[] }>();
   position: relative;
   overflow: hidden;
   padding: 16px 16px 16px 19px;
-  border: 1px solid #e5eaf2;
+  border: 1px solid var(--review-cue-border);
   border-radius: 16px;
-  background: #f9fbfd;
+  background: var(--review-cue-surface);
 }
 .review-cue::before {
   content: '';
   position: absolute;
   inset: 0 auto 0 0;
   width: 4px;
-  background: #aab5c4;
+  background: var(--review-cue-marker);
 }
 .review-cue strong {
   display: block;
   margin-bottom: 6px;
-  color: #344055;
+  color: var(--review-cue-title);
   font-size: 13px;
 }
 .review-cue p {
   margin: 0;
-  color: #5c687a;
+  color: var(--review-cue-text);
   font-size: 13px;
   line-height: 1.45;
 }
 .review-cue--good {
-  border-color: #d9eee5;
-  background: #f4fbf8;
+  border-color: var(--review-cue-positive-border);
+  background: var(--review-cue-positive-surface);
 }
 .review-cue--good::before {
-  background: #42b98f;
+  background: var(--review-cue-positive-marker);
 }
 .review-cue--good strong {
-  color: #2f604e;
+  color: var(--review-cue-positive-text);
 }
 .review-cue--warning {
-  border-color: #f2dfc6;
+  border-color: var(--review-cue-warning-border);
   background: var(--surface-warning);
 }
 .review-cue--warning::before {
-  background: #dfa646;
+  background: var(--review-cue-warning-marker);
 }
 .review-cue--warning strong {
-  color: #71502a;
+  color: var(--review-cue-warning-text);
 }
 @media (max-width: 720px) {
   .review-cue-grid {

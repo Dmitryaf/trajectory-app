@@ -14,12 +14,12 @@ withDefaults(defineProps<{ tag?: 'label' | 'span'; optional?: boolean }>(), { ta
 .field-label {
   display: block;
   margin: 16px 0 8px;
-  color: #5d687e;
+  color: var(--form-field-label);
   font-size: 12px;
   font-weight: 750;
 }
 .field-optional {
-  color: #8993a5;
+  color: var(--form-field-hint);
   font-size: 11px;
   font-weight: 650;
   text-transform: none;

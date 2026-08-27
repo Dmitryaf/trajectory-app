@@ -40,30 +40,30 @@ withDefaults(
   flex: 0 0 auto;
   place-items: center;
   border-radius: 13px;
-  background: #edf0ed;
-  color: #52645e;
+  background: var(--form-heading-neutral-surface);
+  color: var(--form-heading-neutral-text);
   font-weight: 850;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+  box-shadow: inset 0 0 0 1px var(--form-heading-highlight);
 }
 .section-icon--purple {
-  background: #eeeafd;
-  color: #6257dc;
+  background: var(--form-heading-purple-surface);
+  color: var(--form-heading-purple-text);
 }
 .section-icon--blue {
-  background: #e9f2fd;
-  color: #2f79d8;
+  background: var(--form-heading-blue-surface);
+  color: var(--form-heading-blue-text);
 }
 .section-icon--green {
-  background: #e6f7f1;
-  color: #258c68;
+  background: var(--form-heading-green-surface);
+  color: var(--form-heading-green-text);
 }
 .section-icon--amber {
-  background: #fff3d9;
-  color: #a66c10;
+  background: var(--form-heading-amber-surface);
+  color: var(--form-heading-amber-text);
 }
 .section-icon--orange {
-  background: #ffede7;
-  color: #ba4d37;
+  background: var(--form-heading-orange-surface);
+  color: var(--form-heading-orange-text);
 }
 @media (max-width: 390px) {
   .form-card__heading :deep(p) {

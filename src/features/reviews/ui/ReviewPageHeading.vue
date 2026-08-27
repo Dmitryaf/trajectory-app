@@ -29,9 +29,9 @@ defineProps<{
   overflow: hidden;
   margin: 10px 0 16px;
   padding: 26px 30px;
-  border: 1px solid #d8e7e0;
+  border: 1px solid var(--review-heading-border);
   border-radius: 28px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(227, 246, 238, 0.9));
+  background: linear-gradient(135deg, var(--review-heading-surface-start), var(--review-heading-surface-end));
   box-shadow: var(--shadow-soft);
 }
 .page-heading::after {
@@ -41,7 +41,7 @@ defineProps<{
   height: 210px;
   right: -62px;
   top: -118px;
-  border: 36px solid rgba(75, 205, 160, 0.16);
+  border: 36px solid var(--review-heading-decoration);
   border-radius: 50%;
 }
 .page-heading > * {
@@ -63,16 +63,16 @@ defineProps<{
   gap: 9px;
   min-height: 42px;
   padding: 10px 14px;
-  border: 1px solid #c7e1d6;
+  border: 1px solid var(--review-heading-chip-border);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.78);
-  color: #21654f;
+  background: var(--review-heading-chip-surface);
+  color: var(--review-heading-chip-text);
   font-size: 13px;
   font-weight: 800;
   text-decoration: none;
 }
 .review-jump span {
-  color: #2a9a74;
+  color: var(--review-heading-accent);
   font-size: 16px;
 }
 @media (max-width: 720px) {

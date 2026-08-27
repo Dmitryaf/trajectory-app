@@ -68,7 +68,7 @@ onBeforeUnmount(() => resizeObserver?.disconnect());
 .clamped-text--result,
 .clamped-text--event {
   margin: 8px 0 0;
-  color: #4e5a70;
+  color: var(--clamped-text);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -86,12 +86,12 @@ onBeforeUnmount(() => resizeObserver?.disconnect());
   padding: 0;
   border: 0;
   background: transparent;
-  color: #2c745e;
+  color: var(--clamped-text-action);
   cursor: pointer;
   font-size: 12px;
   font-weight: 800;
 }
 .clamped-text__toggle:hover {
-  color: #174f40;
+  color: var(--clamped-text-action-hover);
 }
 </style>

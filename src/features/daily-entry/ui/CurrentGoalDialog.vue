@@ -2,6 +2,7 @@
 import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import { computed, nextTick, ref, toRef, watch } from 'vue';
 import AutoGrowTextarea from '@/shared/ui/forms/AutoGrowTextarea.vue';
+import DateInput from '@/shared/ui/forms/DateInput.vue';
 import FormFieldLabel from '@/shared/ui/forms/FormFieldLabel.vue';
 import DialogCloseButton from '@/shared/ui/overlays/DialogCloseButton.vue';
 import DialogSurface from '@/shared/ui/overlays/DialogSurface.vue';
@@ -125,7 +126,7 @@ function remove() {
         />
 
         <FormFieldLabel for="current-goal-review-date">Когда вернуться к цели</FormFieldLabel>
-        <input id="current-goal-review-date" v-model="draftReviewDate" type="date" />
+        <DateInput id="current-goal-review-date" v-model="draftReviewDate" />
 
         <FormFieldLabel for="current-goal-evidence">Что считать шагом к цели</FormFieldLabel>
         <AutoGrowTextarea

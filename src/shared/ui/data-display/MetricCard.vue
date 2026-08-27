@@ -20,10 +20,10 @@ defineProps<{ label: string; value: string | number; accent?: string; hint?: str
   justify-content: center;
   overflow: hidden;
   padding: 20px;
-  border: 1px solid #dde7e2;
+  border: 1px solid var(--metric-card-border);
   border-radius: 20px;
-  background: linear-gradient(155deg, var(--surface) 60%, #f5f9f6);
-  box-shadow: 0 9px 24px rgba(16, 45, 44, 0.06);
+  background: linear-gradient(155deg, var(--surface) 60%, var(--metric-card-gradient));
+  box-shadow: 0 9px 24px var(--metric-card-shadow);
 }
 .metric-card::before {
   position: absolute;
@@ -63,7 +63,7 @@ defineProps<{ label: string; value: string | number; accent?: string; hint?: str
 }
 .metric-card__hint {
   margin-top: 7px;
-  color: #798296;
+  color: var(--metric-card-meta);
   font-size: 11px;
 }
 .metric-card__label,

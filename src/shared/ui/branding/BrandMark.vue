@@ -12,7 +12,7 @@
   place-items: center;
   border-radius: 15px;
   background: linear-gradient(145deg, var(--brand-deep), var(--brand-strong));
-  box-shadow: 0 10px 24px rgba(16, 45, 44, 0.24);
+  box-shadow: 0 10px 24px var(--brand-mark-shadow);
 }
 
 .brand-mark::before {
@@ -33,7 +33,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #ffd06e;
-  box-shadow: 0 0 0 4px rgba(255, 208, 110, 0.12);
+  background: var(--brand-mark-highlight);
+  box-shadow: 0 0 0 4px var(--brand-mark-highlight-ring);
 }
 </style>

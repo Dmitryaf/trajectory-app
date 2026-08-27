@@ -10,15 +10,15 @@
   border-radius: 13px;
   background: var(--surface);
   padding: 10px 14px;
-  color: #667189;
+  color: var(--range-tab-text);
   cursor: pointer;
   font-weight: 750;
 }
 
 .range-tabs :deep(button.active) {
-  color: #145e49;
-  border-color: rgba(75, 205, 160, 0.65);
-  background: #e5f8f1;
+  color: var(--range-tab-active-text);
+  border-color: var(--range-tab-active-border);
+  background: var(--range-tab-active-surface);
 }
 
 @media (max-width: 720px) {

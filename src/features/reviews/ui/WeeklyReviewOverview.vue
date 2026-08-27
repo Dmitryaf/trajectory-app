@@ -51,9 +51,9 @@ const highlights = computed(() => props.review.highlights.filter((item) => item.
 }
 .weekly-review-overview__group {
   padding: 13px 15px;
-  border: 1px solid #e0ebe6;
+  border: 1px solid var(--weekly-overview-border);
   border-radius: 14px;
-  background: #f3f7f4;
+  background: var(--weekly-overview-surface);
 }
 .weekly-review-overview__group > strong {
   display: block;
@@ -64,7 +64,7 @@ const highlights = computed(() => props.review.highlights.filter((item) => item.
 .weekly-review-overview__group p,
 .weekly-review-overview__group ul {
   margin: 0;
-  color: #45554f;
+  color: var(--weekly-overview-text);
   font-size: 13px;
   line-height: 1.5;
 }

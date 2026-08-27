@@ -13,19 +13,23 @@ defineEmits<{ toggle: [event: Event] }>();
 <style scoped>
 .period-details {
   margin-bottom: 16px;
-  font-weight: 750;
+  border: 1px solid var(--period-details-border);
+  border-radius: 16px;
+  background: var(--period-details-surface);
 }
+
 .period-details > summary {
-  padding: 13px 15px;
-  color: #315d50;
+  padding: 16px 18px;
+  color: var(--navy);
+  font-weight: 750;
   cursor: pointer;
-  font-size: 13px;
 }
+
 .period-details[open] > summary {
-  margin-bottom: 10px;
+  border-bottom: 1px solid var(--line-soft);
 }
+
 .period-details__content {
-  display: grid;
-  gap: 14px;
+  padding: 16px 16px 0;
 }
 </style>

@@ -2,6 +2,7 @@
 import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import DataNote from '@/shared/ui/content/DataNote.vue';
 import AutoGrowTextarea from '@/shared/ui/forms/AutoGrowTextarea.vue';
+import DateInput from '@/shared/ui/forms/DateInput.vue';
 import ChipGroup from '@/shared/ui/forms/ChipGroup.vue';
 import SettingsCard from '@/features/settings/ui/SettingsCard.vue';
 import FormCardHeading from '@/shared/ui/forms/FormCardHeading.vue';
@@ -62,12 +63,11 @@ defineEmits<{
     />
     <FormRow>
       <label class="form-control"
-        ><FormFieldLabel tag="span">С какого дня</FormFieldLabel
-        ><input v-model="experiment.startDate" type="date" :disabled="identityLocked"
+        ><FormFieldLabel tag="span">С какого дня</FormFieldLabel><DateInput v-model="experiment.startDate" :disabled="identityLocked"
       /></label>
       <label class="form-control"
         ><FormFieldLabel tag="span">До какого дня</FormFieldLabel
-        ><input v-model="experiment.endDate" type="date" :min="identityLocked ? savedEndDate : undefined"
+        ><DateInput v-model="experiment.endDate" :min="identityLocked ? savedEndDate : undefined"
       /></label>
     </FormRow>
     <template v-if="canConclude || experiment.conclusion.trim()">

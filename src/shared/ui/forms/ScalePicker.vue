@@ -34,8 +34,8 @@ defineEmits<{ 'update:modelValue': [value: number] }>();
   height: 42px;
   border: 1px solid var(--line);
   border-radius: 11px;
-  background: #f8f9fc;
-  color: #6c7689;
+  background: var(--scale-option-surface);
+  color: var(--scale-option-text);
   cursor: pointer;
   font-weight: 750;
 }
@@ -43,13 +43,13 @@ defineEmits<{ 'update:modelValue': [value: number] }>();
   border-color: var(--navy-soft);
   background: var(--navy-soft);
   color: white;
-  box-shadow: 0 5px 12px rgba(34, 43, 67, 0.16);
+  box-shadow: 0 5px 12px var(--scale-option-shadow);
 }
 .scale-picker__labels {
   display: flex;
   justify-content: space-between;
   margin-top: 6px;
-  color: #98a0af;
+  color: var(--scale-option-muted);
   font-size: 10px;
 }
 </style>

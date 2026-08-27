@@ -25,14 +25,14 @@ defineEmits<{ previous: []; next: []; current: [] }>();
   padding: 7px;
   border-radius: 20px;
   background: var(--navy);
-  box-shadow: 0 14px 32px rgba(16, 45, 44, 0.18);
+  box-shadow: 0 14px 32px var(--period-navigator-shadow);
 }
 .icon-button {
   height: 46px;
   border: 0;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.09);
-  color: #bfe9d9;
+  background: var(--period-navigator-control-surface);
+  color: var(--period-navigator-control-text);
   cursor: pointer;
   font-size: 18px;
   transition:
@@ -40,7 +40,7 @@ defineEmits<{ previous: []; next: []; current: [] }>();
     color 0.15s;
 }
 .icon-button:hover {
-  background: rgba(140, 225, 191, 0.18);
+  background: var(--period-navigator-control-hover);
   color: var(--text-inverse);
 }
 .period-nav__label {

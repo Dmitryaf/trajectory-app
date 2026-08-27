@@ -78,12 +78,12 @@ function dayFacts(item: RhythmDay): string[] {
 .weekly-rhythm-card {
   position: relative;
   margin-bottom: 16px;
-  border-color: #dde6e2;
-  box-shadow: 0 10px 28px rgba(16, 45, 44, 0.065);
+  border-color: var(--weekly-rhythm-border);
+  box-shadow: 0 10px 28px var(--weekly-rhythm-shadow);
 }
 .weekly-rhythm-card > .section-heading {
   padding-bottom: 15px;
-  border-bottom: 1px solid #e8eeeb;
+  border-bottom: 1px solid var(--review-section-divider);
 }
 .week-story-list {
   display: grid;
@@ -95,15 +95,15 @@ function dayFacts(item: RhythmDay): string[] {
   gap: 12px;
   align-items: start;
   padding: 12px 14px;
-  border: 1px solid #e2eae6;
+  border: 1px solid var(--weekly-rhythm-item-border);
   border-radius: 14px;
-  background: #fbfdfc;
+  background: var(--weekly-rhythm-item-surface);
 }
 .week-story-day--empty {
-  background: #f7f9f8;
+  background: var(--weekly-rhythm-item-alt-surface);
 }
 .week-story-day time {
-  color: #66756f;
+  color: var(--weekly-rhythm-meta);
   font-size: 12px;
   font-weight: 800;
   text-transform: capitalize;
@@ -111,7 +111,7 @@ function dayFacts(item: RhythmDay): string[] {
 .week-story-day strong,
 .week-story-day > div > span {
   display: block;
-  color: #3f504a;
+  color: var(--weekly-rhythm-text);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -127,8 +127,8 @@ function dayFacts(item: RhythmDay): string[] {
 .week-story-day__facts small {
   padding: 4px 7px;
   border-radius: 999px;
-  background: #eaf3ef;
-  color: #41675b;
+  background: var(--weekly-rhythm-pill-surface);
+  color: var(--weekly-rhythm-pill-text);
   font-size: 10px;
   font-weight: 750;
 }
