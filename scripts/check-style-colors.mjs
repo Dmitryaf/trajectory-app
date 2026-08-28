@@ -4,39 +4,8 @@ import process from 'node:process';
 
 const root = process.cwd();
 const sourceRoot = path.join(root, 'src');
-const rawColorPattern = /#[0-9a-f]{3,8}\b|(?:rgb|hsl)a?\([^)]*\)/gi;
+const rawColorPattern = /#[0-9a-f]{3,8}\b|(?:rgb|hsl)a?\([^)]*\)|(?<![-\w])(?:white|black)(?![-\w])/gi;
 const rawColorOwnerFiles = new Set(['src/styles/tokens.css']);
-const colorBudgets = new Map([
-  ['src/App.css', 37],
-  ['src/features/analytics/ui/EventComparisonDetails.css', 29],
-  ['src/features/analytics/ui/HistoryOverviewCard.vue', 3],
-  ['src/features/analytics/ui/HistoryRangeTabs.vue', 3],
-  ['src/features/analytics/ui/HistoryTimeline.vue', 13],
-  ['src/features/analytics/ui/TrendMetricDetails.vue', 2],
-  ['src/features/analysis/ui/ExternalAnalysisSettingsCard.vue', 0],
-  ['src/features/auth/ui/AccountMenu.vue', 15],
-  ['src/features/auth/ui/AccountSettingsCard.vue', 7],
-  ['src/features/auth/ui/AuthGate.css', 33],
-  ['src/features/daily-entry/ui/CurrentGoalDialog.vue', 1],
-  ['src/features/feedback/ui/FeedbackDialog.vue', 1],
-  ['src/features/first-use/ui/FirstUseRecovery.css', 32],
-  ['src/features/first-use/ui/HowItWorksDialog.vue', 8],
-  ['src/features/experiments/ui/ExperimentSettingsCard.vue', 2],
-  ['src/features/journal/ui/ArchiveDateRange.vue', 5],
-  ['src/features/journal/ui/ArchivePage.vue', 21],
-  ['src/features/journal/ui/ArchivePagination.vue', 1],
-  ['src/features/pwa/ui/PwaInstallGuide.vue', 7],
-  ['src/features/settings/ui/SettingsCard.css', 8],
-  ['src/features/pwa/ui/PwaInstallNudge.vue', 6],
-  ['src/views/SettingsView.css', 21],
-  ['src/views/TodayView.css', 77],
-  ['src/views/EventsView.css', 6],
-  ['src/views/MonthView.css', 25],
-  ['src/views/MoreView.css', 15],
-  ['src/views/PasswordResetView.css', 5],
-  ['src/views/ResultsView.css', 6],
-  ['src/views/WeekView.css', 46],
-]);
 
 async function collectFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -70,7 +39,7 @@ const observedFiles = new Set();
 
 for (const file of files) {
   const source = styleSource(file, await readFile(path.join(root, file), 'utf8'));
-  if (!source && !colorBudgets.has(file)) {
+  if (!source) {
     continue;
   }
   observedFiles.add(file);
@@ -78,18 +47,8 @@ for (const file of files) {
   if (rawColorOwnerFiles.has(file)) {
     continue;
   }
-  const budget = colorBudgets.get(file) ?? 0;
-
-  if (rawColorCount > budget) {
-    violations.push(`${file}: raw color count grew from ${budget} to ${rawColorCount}; use a semantic token instead.`);
-  } else if (rawColorCount < budget) {
-    violations.push(`${file}: raw color count fell from ${budget} to ${rawColorCount}; lower its budget.`);
-  }
-}
-
-for (const file of colorBudgets.keys()) {
-  if (!observedFiles.has(file)) {
-    violations.push(`${file}: file from the style color budget was not found.`);
+  if (rawColorCount > 0) {
+    violations.push(`${file}: found ${rawColorCount} raw colors; use semantic tokens instead.`);
   }
 }
 

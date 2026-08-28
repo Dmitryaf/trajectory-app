@@ -66,7 +66,7 @@ defineEmits<{ 'update:page': [value: number] }>();
 }
 .history-timeline > .section-heading {
   padding-bottom: 15px;
-  border-bottom: 1px solid #e8eeeb;
+  border-bottom: 1px solid var(--review-section-divider);
 }
 .history-timeline__list {
   display: grid;
@@ -82,10 +82,10 @@ defineEmits<{ 'update:page': [value: number] }>();
   align-items: center;
   gap: 6px;
   padding: 7px 10px;
-  border: 1px solid #e0e8e4;
+  border: 1px solid var(--history-timeline-border);
   border-radius: 999px;
-  background: #f8fbf9;
-  color: #65736e;
+  background: var(--history-timeline-surface);
+  color: var(--empty-guide-text);
   font-size: 11px;
   font-weight: 750;
 }
@@ -93,7 +93,7 @@ defineEmits<{ 'update:page': [value: number] }>();
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #7f8ba1;
+  background: var(--history-timeline-marker);
 }
 .history-timeline__summary strong {
   color: var(--navy);
@@ -126,8 +126,8 @@ defineEmits<{ 'update:page': [value: number] }>();
   align-items: start;
   margin-left: 5px;
   padding: 14px 16px 14px 20px;
-  border: 1px solid #e6ece9;
-  border-left: 2px solid #dce7e2;
+  border: 1px solid var(--history-timeline-item-border);
+  border-left: 2px solid var(--history-timeline-line);
   border-radius: 0 14px 14px 0;
   background: var(--surface);
 }
@@ -143,28 +143,28 @@ defineEmits<{ 'update:page': [value: number] }>();
   height: 10px;
   border: 2px solid var(--line-inverse);
   border-radius: 50%;
-  background: #7f8ba1;
-  box-shadow: 0 0 0 1px #dfe4ed;
+  background: var(--history-timeline-marker);
+  box-shadow: 0 0 0 1px var(--history-timeline-marker-ring);
 }
 .history-timeline__list time {
-  color: #7b8598;
+  color: var(--history-timeline-meta);
   font-size: 11px;
   font-weight: 750;
 }
 .history-timeline__list article > span {
-  color: #697489;
+  color: var(--history-timeline-text);
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
 }
 .history-timeline__list strong {
   display: block;
-  color: #344055;
+  color: var(--review-cue-title);
   font-size: 13px;
 }
 .history-timeline__list p {
   margin: 4px 0 0;
-  color: #697489;
+  color: var(--history-timeline-text);
   font-size: 12px;
   line-height: 1.45;
 }

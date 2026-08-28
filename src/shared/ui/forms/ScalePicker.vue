@@ -42,7 +42,7 @@ defineEmits<{ 'update:modelValue': [value: number] }>();
 .scale-picker__item--selected {
   border-color: var(--navy-soft);
   background: var(--navy-soft);
-  color: white;
+  color: var(--text-inverse);
   box-shadow: 0 5px 12px var(--scale-option-shadow);
 }
 .scale-picker__labels {

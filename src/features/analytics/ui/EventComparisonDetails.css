@@ -16,7 +16,7 @@
 }
 .event-comparison-card > .section-heading {
   padding-bottom: 15px;
-  border-bottom: 1px solid #e8eeeb;
+  border-bottom: 1px solid var(--review-section-divider);
 }
 .event-picker {
   position: relative;
@@ -29,9 +29,9 @@
   align-items: center;
   min-height: 58px;
   padding: 9px 11px;
-  border: 1px solid #e6d9d4;
+  border: 1px solid var(--event-comparison-border);
   border-radius: 14px;
-  background: #fff9f6;
+  background: var(--event-comparison-surface);
   cursor: pointer;
   list-style: none;
 }
@@ -39,11 +39,11 @@
   display: none;
 }
 .event-picker summary:hover {
-  border-color: #c7d0df;
+  border-color: var(--event-comparison-control-border);
   background: var(--surface);
 }
 .event-picker[open] summary {
-  border-color: #aebbd0;
+  border-color: var(--event-comparison-control-hover-border);
   background: var(--surface);
 }
 .event-picker__icon {
@@ -52,8 +52,8 @@
   display: grid;
   place-items: center;
   border-radius: 9px;
-  background: #fff0ec;
-  color: #ba5742;
+  background: var(--event-comparison-accent-surface);
+  color: var(--event-comparison-accent-text);
   font-size: 12px;
 }
 .event-picker__current {
@@ -65,7 +65,7 @@
 }
 .event-picker__current small {
   margin-bottom: 3px;
-  color: #8a94a7;
+  color: var(--event-comparison-muted);
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
@@ -73,14 +73,14 @@
 .event-picker__current strong {
   display: -webkit-box;
   overflow: hidden;
-  color: #344055;
+  color: var(--review-cue-title);
   font-size: 12px;
   line-height: 1.35;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 .event-picker__chevron {
-  color: #7f899c;
+  color: var(--event-comparison-secondary);
   font-size: 18px;
   transition: transform 0.15s;
 }
@@ -96,10 +96,10 @@
   max-height: 310px;
   overflow-y: auto;
   padding: 6px;
-  border: 1px solid #dfe5ef;
+  border: 1px solid var(--event-comparison-dialog-border);
   border-radius: 14px;
   background: var(--surface);
-  box-shadow: 0 18px 44px rgba(28, 38, 64, 0.18);
+  box-shadow: 0 18px 44px var(--event-comparison-dialog-shadow);
 }
 .event-picker__option {
   width: 100%;
@@ -111,19 +111,19 @@
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: #4e5a70;
+  color: var(--clamped-text);
   cursor: pointer;
   text-align: left;
 }
 .event-picker__option:hover {
-  background: #f4f7fb;
+  background: var(--event-comparison-panel-surface);
 }
 .event-picker__option.active {
-  background: #eaf7f2;
-  color: #245f4d;
+  background: var(--metric-switcher-active-surface);
+  color: var(--utility-action-text);
 }
 .event-picker__option time {
-  color: #7b8598;
+  color: var(--history-timeline-meta);
   font-size: 11px;
   font-weight: 800;
   text-transform: capitalize;
@@ -141,14 +141,14 @@
 .event-picker__option small {
   margin-top: 3px;
   overflow: hidden;
-  color: #818b9d;
+  color: var(--event-comparison-label);
   font-size: 11px;
   line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .event-picker__option i {
-  color: #258869;
+  color: var(--event-comparison-action);
   font-style: normal;
   font-weight: 850;
 }
@@ -157,15 +157,15 @@
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   margin-bottom: 14px;
-  color: #667187;
+  color: var(--event-comparison-detail);
   font-size: 12px;
 }
 .comparison-periods span {
   padding: 13px 15px;
-  border: 1px solid #e1e7e4;
-  border-left: 4px solid #aebbb6;
+  border: 1px solid var(--event-comparison-note-border);
+  border-left: 4px solid var(--event-comparison-note-accent);
   border-radius: 13px;
-  background: #f8fbf9;
+  background: var(--event-comparison-note-surface);
 }
 .comparison-periods span:last-child {
   border-left-color: var(--accent);
@@ -183,7 +183,7 @@
 }
 .comparison-table__head {
   padding: 0 12px;
-  color: #8b94a5;
+  color: var(--event-comparison-hint);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -194,27 +194,27 @@
   padding: 11px 12px;
   border: 1px solid var(--line-soft);
   border-radius: 13px;
-  background: #fbfdfc;
-  color: #4f5b70;
+  background: var(--weekly-rhythm-item-surface);
+  color: var(--event-comparison-summary-text);
   font-size: 13px;
 }
 .comparison-table__row strong {
   color: var(--navy);
 }
 .comparison-table__row > span {
-  color: #3f4b60;
+  color: var(--event-comparison-summary-strong);
   font-weight: 700;
 }
 .comparison-table__row small {
   display: block;
   margin-top: 3px;
-  color: #929bad;
+  color: var(--event-comparison-summary-muted);
   font-size: 10px;
   font-weight: 650;
 }
 .data-note {
   margin: 10px 0 0;
-  color: #7a8497;
+  color: var(--data-note-text);
   font-size: 12px;
   line-height: 1.5;
 }

@@ -163,7 +163,7 @@ function remove() {
 }
 .goal-dialog__hint {
   margin: 0;
-  color: #77827e;
+  color: var(--dialog-helper-text);
   font-size: 12px;
   line-height: 1.5;
 }

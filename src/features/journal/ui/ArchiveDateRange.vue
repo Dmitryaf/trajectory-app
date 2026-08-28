@@ -78,7 +78,7 @@ function showAllTime() {
   align-items: center;
   margin: 0;
   padding: 0 4px;
-  color: #315f50;
+  color: var(--archive-date-label);
   font-size: 12px;
   font-weight: 700;
 }
@@ -90,7 +90,7 @@ function showAllTime() {
   border: 0;
   border-radius: 9px;
   background: transparent;
-  color: #267057;
+  color: var(--archive-date-action);
   cursor: pointer;
   font: inherit;
   font-size: 12px;
@@ -98,11 +98,11 @@ function showAllTime() {
   white-space: nowrap;
 }
 .archive-filter__all-time:hover:not(:disabled) {
-  background: rgba(38, 112, 87, 0.08);
-  color: #174f40;
+  background: var(--archive-date-action-surface);
+  color: var(--archive-date-action-hover);
 }
 .archive-filter__all-time:disabled {
-  color: #96a49f;
+  color: var(--archive-date-disabled);
   cursor: default;
 }
 

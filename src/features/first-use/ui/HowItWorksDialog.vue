@@ -178,7 +178,7 @@ const { startBackdropClose, finishBackdropClose, cancelBackdropClose } = useDial
 }
 .help-dialog__lead {
   margin: 14px 0 20px;
-  color: #51625d;
+  color: var(--how-it-works-text);
   line-height: 1.55;
 }
 .help-steps {
@@ -194,7 +194,7 @@ const { startBackdropClose, finishBackdropClose, cancelBackdropClose } = useDial
   gap: 12px;
   padding: 12px;
   border-radius: 16px;
-  background: #f5f7f4;
+  background: var(--how-it-works-step-surface);
 }
 .help-steps li > span {
   display: grid;
@@ -202,8 +202,8 @@ const { startBackdropClose, finishBackdropClose, cancelBackdropClose } = useDial
   height: 32px;
   place-items: center;
   border-radius: 11px;
-  background: #ddf4ea;
-  color: #17634e;
+  background: var(--how-it-works-number-surface);
+  color: var(--how-it-works-number-text);
   font-weight: 850;
 }
 .help-steps strong,
@@ -212,17 +212,17 @@ const { startBackdropClose, finishBackdropClose, cancelBackdropClose } = useDial
 }
 .help-steps p {
   margin: 3px 0 0;
-  color: #687570;
+  color: var(--how-it-works-muted);
   font-size: 13px;
   line-height: 1.45;
 }
 .help-dialog__note {
   margin: 18px 0 0;
   padding: 13px 15px;
-  border-left: 3px solid #79cfad;
+  border-left: 3px solid var(--how-it-works-note-border);
   border-radius: 0 12px 12px 0;
-  background: #f0faf6;
-  color: #315b4e;
+  background: var(--how-it-works-note-surface);
+  color: var(--form-disclosure-text);
   font-size: 13px;
   line-height: 1.5;
 }

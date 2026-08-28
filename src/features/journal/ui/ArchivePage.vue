@@ -85,24 +85,24 @@ defineProps<{
   letter-spacing: -0.045em;
 }
 .page--results > .page-heading {
-  border: 1px solid #d2e9df;
-  background: linear-gradient(135deg, #fafffd, #dff5ec);
+  border: 1px solid var(--archive-result-border);
+  background: linear-gradient(135deg, var(--archive-result-surface-start), var(--archive-result-surface-end));
 }
 .page--results > .page-heading::after {
   background: var(--mint);
 }
 .page--events > .page-heading {
-  border: 1px solid #eee0c5;
-  background: linear-gradient(135deg, #fffdf8, #fff0ce);
+  border: 1px solid var(--archive-event-border);
+  background: linear-gradient(135deg, var(--archive-event-surface-start), var(--archive-event-surface-end));
 }
 .page--events > .page-heading::after {
-  background: #ffd06e;
+  background: var(--brand-mark-highlight);
 }
 .archive-composer {
   position: relative;
   margin-bottom: 20px;
   overflow: hidden;
-  box-shadow: 0 12px 30px rgba(16, 45, 44, 0.075);
+  box-shadow: 0 12px 30px var(--archive-card-shadow);
 }
 .archive-composer::before {
   content: '';
@@ -119,14 +119,14 @@ defineProps<{
 }
 .archive-panel {
   padding: 24px;
-  border: 1px solid #dce6e1;
+  border: 1px solid var(--archive-group-border);
   border-radius: 26px;
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 12px 34px rgba(16, 45, 44, 0.07);
+  background: var(--archive-group-surface);
+  box-shadow: 0 12px 34px var(--archive-group-shadow);
 }
 .archive-panel > .section-heading {
   padding-bottom: 15px;
-  border-bottom: 1px solid #e7eeea;
+  border-bottom: 1px solid var(--archive-group-divider);
 }
 .archive-count {
   min-width: 32px;
@@ -134,13 +134,13 @@ defineProps<{
   display: grid;
   place-items: center;
   border-radius: 999px;
-  background: #e3f4ed;
-  color: #24634e;
+  background: var(--archive-result-badge-surface);
+  color: var(--archive-result-badge-text);
   font-weight: 750;
 }
 .page--events .archive-count {
-  background: #fff0ce;
-  color: #805614;
+  background: var(--archive-event-surface-end);
+  color: var(--archive-event-badge-text);
 }
 .archive-filters {
   display: grid;
@@ -148,13 +148,13 @@ defineProps<{
   gap: 10px;
   margin-bottom: 18px;
   padding: 12px;
-  border: 1px solid #e4ebe7;
+  border: 1px solid var(--archive-entry-border);
   border-radius: 17px;
-  background: #f5f9f7;
+  background: var(--archive-entry-surface);
 }
 .page--events .archive-filters {
-  border-color: #eee5d2;
-  background: #fffcf6;
+  border-color: var(--archive-event-entry-border);
+  background: var(--archive-event-entry-surface);
 }
 :deep(.archive-filters > input),
 :deep(.archive-filters > select) {
@@ -163,7 +163,7 @@ defineProps<{
 }
 .archive-empty {
   padding: 45px 24px;
-  border: 1px dashed #ced5e2;
+  border: 1px dashed var(--archive-empty-border);
   border-radius: 20px;
   color: var(--muted);
   text-align: center;

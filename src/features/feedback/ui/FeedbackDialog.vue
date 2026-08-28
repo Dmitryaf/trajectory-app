@@ -131,7 +131,7 @@ async function submit() {
 }
 .feedback-dialog__hint {
   margin: 10px 0 0;
-  color: #77827e;
+  color: var(--dialog-helper-text);
   font-size: 12px;
   line-height: 1.5;
 }

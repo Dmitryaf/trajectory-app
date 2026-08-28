@@ -35,7 +35,7 @@ defineEmits<{ copy: []; download: [] }>();
   position: relative;
   margin-bottom: 16px;
   border-color: var(--line-success);
-  background: linear-gradient(145deg, var(--surface), #f1faf6);
+  background: linear-gradient(145deg, var(--surface), var(--history-overview-gradient));
 }
 .history-overview-card::before {
   content: '';
@@ -49,11 +49,11 @@ defineEmits<{ copy: []; download: [] }>();
 }
 .history-overview-card > .section-heading {
   padding-bottom: 15px;
-  border-bottom: 1px solid #e8eeeb;
+  border-bottom: 1px solid var(--review-section-divider);
 }
 .data-note {
   margin: 10px 0 0;
-  color: #7a8497;
+  color: var(--data-note-text);
   font-size: 12px;
   line-height: 1.5;
 }

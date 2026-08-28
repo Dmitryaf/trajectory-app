@@ -14,7 +14,7 @@
 }
 
 .primary-button {
-  color: white;
+  color: var(--text-inverse);
   background: linear-gradient(135deg, var(--navy), var(--brand-strong));
   box-shadow: 0 10px 24px var(--action-primary-shadow);
 }

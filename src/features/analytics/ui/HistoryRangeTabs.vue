@@ -32,7 +32,7 @@ defineEmits<{ 'update:modelValue': [value: RangeMonths] }>();
   padding: 6px;
   border-radius: 18px;
   background: var(--navy);
-  box-shadow: 0 12px 28px rgba(16, 45, 44, 0.16);
+  box-shadow: 0 12px 28px var(--history-range-shadow);
 }
 .history-range-tabs button {
   min-width: 112px;
@@ -46,13 +46,13 @@ defineEmits<{ 'update:modelValue': [value: RangeMonths] }>();
   font-weight: 750;
 }
 .history-range-tabs button:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--history-range-control-surface);
   color: var(--text-inverse);
 }
 .history-range-tabs button.active {
   background: var(--mint);
   color: var(--navy);
-  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 5px 14px var(--history-range-control-shadow);
 }
 @media (max-width: 720px) {
   .history-range-tabs {

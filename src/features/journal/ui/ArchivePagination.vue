@@ -31,7 +31,7 @@ function changePage(nextPage: number) {
   gap: 10px;
   margin-top: 14px;
   padding-top: 14px;
-  border-top: 1px solid #e7edea;
+  border-top: 1px solid var(--archive-pagination-divider);
 }
 .archive-pagination span {
   color: var(--muted);

@@ -106,8 +106,8 @@ defineEmits<{
   align-items: center;
   gap: 20px;
   padding: 14px 0;
-  border-top: 1px solid #edf0f4;
-  border-bottom: 1px solid #edf0f4;
+  border-top: 1px solid var(--experiment-section-divider);
+  border-bottom: 1px solid var(--experiment-section-divider);
 }
 .toggle-row strong,
 .toggle-row small {

@@ -101,9 +101,9 @@ const { auth, changePassword, deleteAccount, newPassword, newPasswordConfirmatio
   gap: 14px;
   margin-bottom: 14px;
   padding: 14px 16px;
-  border: 1px solid #d9eee5;
+  border: 1px solid var(--review-cue-positive-border);
   border-radius: 15px;
-  background: #f4fbf8;
+  background: var(--review-cue-positive-surface);
 }
 .cloud-session__logout {
   flex: 0 0 auto;
@@ -118,9 +118,9 @@ const { auth, changePassword, deleteAccount, newPassword, newPasswordConfirmatio
 }
 .cloud-sync-note {
   padding: 14px 16px;
-  border: 1px solid #dfe8f6;
+  border: 1px solid var(--account-settings-info-border);
   border-radius: 15px;
-  background: #f5f8fd;
+  background: var(--account-settings-info-surface);
 }
 .cloud-sync-note strong {
   color: var(--navy);
@@ -133,12 +133,12 @@ const { auth, changePassword, deleteAccount, newPassword, newPasswordConfirmatio
   margin-top: 12px;
   border: 1px solid var(--line);
   border-radius: 15px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--period-details-surface);
 }
 .account-security summary {
   cursor: pointer;
   padding: 13px 14px;
-  color: #315b4e;
+  color: var(--form-disclosure-text);
   font-size: 13px;
   font-weight: 800;
 }
@@ -155,7 +155,7 @@ const { auth, changePassword, deleteAccount, newPassword, newPasswordConfirmatio
   gap: 20px;
   margin-top: 24px;
   padding-top: 18px;
-  border-top: 1px solid #f0d6d1;
+  border-top: 1px solid var(--account-settings-danger-divider);
 }
 .danger-zone p {
   margin: 3px 0 0;

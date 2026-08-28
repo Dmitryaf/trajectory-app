@@ -68,11 +68,11 @@ defineEmits<{ 'update:modelValue': [value: string] }>();
 }
 .trend-metric-card > .section-heading {
   padding-bottom: 15px;
-  border-bottom: 1px solid #e8eeeb;
+  border-bottom: 1px solid var(--review-section-divider);
 }
 .data-note {
   margin: 10px 0 0;
-  color: #7a8497;
+  color: var(--data-note-text);
   font-size: 12px;
   line-height: 1.5;
 }

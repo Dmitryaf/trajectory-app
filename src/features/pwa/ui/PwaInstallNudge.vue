@@ -67,9 +67,9 @@ async function install() {
   gap: 12px;
   margin-bottom: 14px;
   padding: 13px 14px;
-  border: 1px solid #cfe5dc;
+  border: 1px solid var(--pwa-nudge-border);
   border-radius: 16px;
-  background: linear-gradient(135deg, #effaf6, rgba(255, 255, 255, 0.9));
+  background: linear-gradient(135deg, var(--pwa-nudge-gradient-start), var(--pwa-nudge-gradient-end));
 }
 .pwa-install-nudge__mark {
   display: grid;
@@ -77,7 +77,7 @@ async function install() {
   height: 38px;
   place-items: center;
   border-radius: 12px;
-  background: #d9f3e8;
+  background: var(--pwa-nudge-icon-surface);
   color: var(--accent-dark);
   font-size: 18px;
   font-weight: 900;
@@ -89,7 +89,7 @@ async function install() {
 }
 .pwa-install-nudge p {
   margin: 2px 0 0;
-  color: #66766f;
+  color: var(--pwa-nudge-text);
   font-size: 12px;
 }
 .pwa-install-nudge__actions {
@@ -111,7 +111,7 @@ async function install() {
   padding: 8px;
   border: 0;
   background: transparent;
-  color: #6d7d76;
+  color: var(--pwa-nudge-action);
   font-weight: 750;
 }
 .pwa-install-nudge__later:hover {

@@ -91,9 +91,9 @@ async function install() {
 }
 .cloud-sync-note {
   padding: 14px 16px;
-  border: 1px solid #dfe8f6;
+  border: 1px solid var(--pwa-guide-info-border);
   border-radius: 15px;
-  background: #f5f8fd;
+  background: var(--pwa-guide-info-surface);
 }
 .cloud-sync-note strong {
   color: var(--navy);
@@ -111,13 +111,13 @@ async function install() {
 .install-platform {
   min-width: 0;
   padding: 14px;
-  border: 1px solid #dfe8e4;
+  border: 1px solid var(--pwa-guide-step-border);
   border-radius: 14px;
-  background: #f8faf9;
+  background: var(--pwa-guide-step-surface);
 }
 .install-platform--current {
-  border-color: #9ed8c1;
-  background: #edf9f4;
+  border-color: var(--pwa-guide-step-active-border);
+  background: var(--pwa-guide-step-active-surface);
 }
 .install-platform h3 {
   margin-bottom: 9px;
@@ -127,7 +127,7 @@ async function install() {
 .install-platform ol {
   margin: 0;
   padding-left: 20px;
-  color: #53645f;
+  color: var(--pwa-guide-text);
   font-size: 13px;
   line-height: 1.45;
 }

@@ -9,7 +9,6 @@ const styleEntry = 'src/style.css';
 const targetGlobalStyleOrder = ['src/styles/tokens.css', 'src/styles/reset.css', 'src/styles/base.css', 'src/styles/utilities.css'];
 const targetGlobalStyles = new Set(targetGlobalStyleOrder);
 const allowedUtilityClasses = new Set(['visually-hidden']);
-const legacyGlobalStyleBudgets = new Map();
 
 async function collectFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -24,14 +23,6 @@ async function collectFiles(directory) {
 
 function projectPath(filePath) {
   return path.relative(root, filePath).replaceAll(path.sep, '/');
-}
-
-function countGlobalStructure(source) {
-  const withoutComments = source.replace(/\/\*[\s\S]*?\*\//g, '');
-  return {
-    classes: withoutComments.match(/\.[_a-z][\w-]*/gi)?.length ?? 0,
-    blocks: withoutComments.match(/\{/g)?.length ?? 0,
-  };
 }
 
 function classNames(source) {
@@ -52,8 +43,8 @@ function validateStyleEntry(source, violations) {
       continue;
     }
     const importedFile = `src/styles/${match[1]}`;
-    if (!targetGlobalStyles.has(importedFile) && !legacyGlobalStyleBudgets.has(importedFile)) {
-      violations.push(`${styleEntry}:${index + 1}: ${importedFile} is outside the target and legacy global style lists.`);
+    if (!targetGlobalStyles.has(importedFile)) {
+      violations.push(`${styleEntry}:${index + 1}: ${importedFile} is outside the global foundation.`);
     }
     if (imports.includes(importedFile)) {
       violations.push(`${styleEntry}:${index + 1}: duplicate global style import ${importedFile}.`);
@@ -93,34 +84,13 @@ for (const filePath of files.filter((file) => file.endsWith('.css'))) {
   }
   observedGlobalStyles.add(relative);
   const source = await readFile(filePath, 'utf8');
-  const current = countGlobalStructure(source);
-  const budget = legacyGlobalStyleBudgets.get(relative);
 
-  if (!targetGlobalStyles.has(relative) && !budget) {
-    violations.push(`${relative}: global file is outside the target and legacy style lists; move it next to its scoped owner.`);
+  if (!targetGlobalStyles.has(relative)) {
+    violations.push(`${relative}: global file is outside the foundation; move it next to its scoped owner.`);
     continue;
   }
 
-  if (!budget) {
-    validateTargetGlobalStyle(relative, source, violations);
-    continue;
-  }
-
-  for (const metric of ['classes', 'blocks']) {
-    if (current[metric] > budget[metric]) {
-      violations.push(
-        `${relative}: global ${metric} count grew from ${budget[metric]} to ${current[metric]}; move the rule to a scoped owner.`,
-      );
-    } else if (current[metric] < budget[metric]) {
-      violations.push(`${relative}: global ${metric} count fell from ${budget[metric]} to ${current[metric]}; lower its boundary budget.`);
-    }
-  }
-}
-
-for (const file of legacyGlobalStyleBudgets.keys()) {
-  if (!observedGlobalStyles.has(file)) {
-    violations.push(`${file}: file from the global style boundary budget was not found.`);
-  }
+  validateTargetGlobalStyle(relative, source, violations);
 }
 
 for (const file of targetGlobalStyles) {

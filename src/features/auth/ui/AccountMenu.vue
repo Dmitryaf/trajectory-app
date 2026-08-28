@@ -58,10 +58,10 @@ function signOut() {
   align-items: center;
   gap: 9px;
   padding: 5px 9px 5px 5px;
-  border: 1px solid #d5e2dc;
+  border: 1px solid var(--account-menu-border);
   border-radius: 15px;
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 6px 18px rgba(16, 45, 44, 0.06);
+  background: var(--account-menu-surface);
+  box-shadow: 0 6px 18px var(--account-menu-shadow);
   cursor: pointer;
   list-style: none;
   transition:
@@ -73,7 +73,7 @@ function signOut() {
 }
 .account-menu > summary:hover,
 .account-menu[open] > summary {
-  border-color: #bcd8cc;
+  border-color: var(--account-menu-hover-border);
   background: var(--surface);
 }
 .account-menu__avatar {
@@ -83,15 +83,15 @@ function signOut() {
   flex: 0 0 auto;
   place-items: center;
   border-radius: 10px;
-  background: #dff5ec;
-  color: #145e49;
+  background: var(--account-menu-avatar-surface);
+  color: var(--range-tab-active-text);
   font-size: 12px;
   font-weight: 850;
 }
 .account-menu__email {
   max-width: 180px;
   overflow: hidden;
-  color: #52635e;
+  color: var(--account-menu-name);
   font-size: 12px;
   font-weight: 750;
   text-overflow: ellipsis;
@@ -101,7 +101,7 @@ function signOut() {
   width: 16px;
   height: 16px;
   flex: 0 0 auto;
-  color: #83908b;
+  color: var(--account-menu-meta);
   transition: transform var(--motion-fast);
 }
 .account-menu[open] .account-menu__chevron {
@@ -115,10 +115,10 @@ function signOut() {
   width: 220px;
   gap: 4px;
   padding: 7px;
-  border: 1px solid #d5e2dc;
+  border: 1px solid var(--account-menu-border);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 18px 44px rgba(16, 45, 44, 0.16);
+  background: var(--account-menu-popover-surface);
+  box-shadow: 0 18px 44px var(--history-range-shadow);
 }
 .account-menu__action {
   display: flex;
@@ -130,7 +130,7 @@ function signOut() {
   border: 0;
   border-radius: 11px;
   background: transparent;
-  color: #315b4e;
+  color: var(--form-disclosure-text);
   cursor: pointer;
   font-size: 13px;
   text-align: left;
@@ -138,8 +138,8 @@ function signOut() {
 }
 .account-menu__action:hover,
 .account-menu__action.router-link-active {
-  background: #eaf7f1;
-  color: #145e49;
+  background: var(--account-menu-status-surface);
+  color: var(--range-tab-active-text);
 }
 .account-menu__action span {
   width: 18px;
@@ -149,7 +149,7 @@ function signOut() {
   font-weight: 800;
 }
 .account-menu__logout {
-  color: #65716d;
+  color: var(--account-menu-action);
 }
 .account-menu__logout:disabled {
   opacity: 0.58;
