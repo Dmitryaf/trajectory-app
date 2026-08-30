@@ -7,6 +7,7 @@ import { computed, ref } from 'vue';
 import AiAnalysisNudge from '../features/analysis/ui/AiAnalysisNudge.vue';
 import { shouldShowAiAnalysisNudge } from '../features/analysis/discovery';
 import CurrentGoalDialog from '../features/daily-entry/ui/CurrentGoalDialog.vue';
+import DailyLayoutSettings from '../features/daily-entry/ui/DailyLayoutSettings.vue';
 import FirstUseRecovery from '../features/first-use/ui/FirstUseRecovery.vue';
 import HowItWorksDialog from '../features/first-use/ui/HowItWorksDialog.vue';
 import PwaInstallNudge from '../features/pwa/ui/PwaInstallNudge.vue';
@@ -406,10 +407,7 @@ function openEntryDatePicker() {
       </div>
     </section>
 
-    <div v-else-if="!firstUseTakesPriority && !isFirstEntry" class="daily-layout-settings">
-      <span>Хотите добавить или убрать разделы?</span>
-      <RouterLink to="/settings#daily-blocks">Настроить главную →</RouterLink>
-    </div>
+    <DailyLayoutSettings v-else-if="!firstUseTakesPriority && !isFirstEntry" />
 
     <PwaInstallNudge v-if="!firstUseTakesPriority && isToday" :saved-entry-count="store.dailyEntries.length" />
 

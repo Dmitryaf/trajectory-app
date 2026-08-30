@@ -7,7 +7,7 @@ import CountBadge from '@/shared/ui/data-display/CountBadge.vue';
 import { formatDate } from '@/services/dates';
 import type { TimelineTone } from '@/features/analytics/useChangeHistoryView';
 
-type TimelineItem = { date: string; type: string; tone: TimelineTone; title: string; detail: string };
+type TimelineItem = { key: string; date: string; type: string; tone: TimelineTone; title: string; detail: string };
 type TimelineSummary = { tone: TimelineTone; label: string; count: number };
 
 defineProps<{ items: TimelineItem[]; summary: TimelineSummary[]; total: number; page: number; pageCount: number }>();
@@ -29,12 +29,7 @@ defineEmits<{ 'update:page': [value: number] }>();
       </span>
     </div>
     <TransitionGroup name="reveal-list" tag="div" class="history-timeline__list">
-      <article
-        v-for="(item, index) in items"
-        :key="`${item.date}-${item.type}-${item.title}-${index}`"
-        class="decision-timeline__item"
-        :class="`history-timeline__item--${item.tone}`"
-      >
+      <article v-for="item in items" :key="item.key" class="decision-timeline__item" :class="`history-timeline__item--${item.tone}`">
         <time>{{ formatDate(item.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</time>
         <span>{{ item.type }}</span>
         <div>
@@ -69,6 +64,7 @@ defineEmits<{ 'update:page': [value: number] }>();
   border-bottom: 1px solid var(--review-section-divider);
 }
 .history-timeline__list {
+  position: relative;
   display: grid;
 }
 .history-timeline__summary {
@@ -173,6 +169,10 @@ defineEmits<{ 'update:page': [value: number] }>();
   transition:
     opacity var(--motion-base) var(--motion-ease),
     transform var(--motion-base) var(--motion-ease);
+}
+.history-timeline__list > .reveal-list-leave-active {
+  position: absolute;
+  width: calc(100% - 5px);
 }
 .reveal-list-enter-from,
 .reveal-list-leave-to {
