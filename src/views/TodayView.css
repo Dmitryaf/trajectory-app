@@ -296,6 +296,15 @@
   background: var(--entry-change-surface);
 }
 
+.page--today:has(input:is([type='date'], [type='time']):focus) .entry-change-notice {
+  display: none;
+}
+
+:global(body:has(.page--today input:is([type='date'], [type='time']):focus) .floating-save-button) {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .recovery-nudge strong,
 .entry-change-notice strong {
   display: block;

@@ -32,6 +32,7 @@ export type RangeMonths = 3 | 6 | 12;
 type TrendMetricId = 'sleep' | 'energy' | 'weight';
 export type TimelineTone = 'event' | 'result' | 'decision' | 'outcome' | 'experiment';
 type DecisionTimelineItem = {
+  key: string;
   date: string;
   type: string;
   tone: TimelineTone;
@@ -253,13 +254,28 @@ export function useChangeHistoryView() {
   const decisionTimeline = computed<DecisionTimelineItem[]>(() =>
     (
       [
-        ...lifeEvents.value.map((event) => ({ date: event.date, type: 'Событие', tone: 'event', title: event.title, detail: event.note })),
-        ...results.value.map((result) => ({ date: result.date, type: 'Итог', tone: 'result', title: result.title, detail: result.note })),
+        ...lifeEvents.value.map((event) => ({
+          key: `event:${event.createdAt}`,
+          date: event.date,
+          type: 'Событие',
+          tone: 'event',
+          title: event.title,
+          detail: event.note,
+        })),
+        ...results.value.map((result) => ({
+          key: `result:${result.createdAt}`,
+          date: result.date,
+          type: 'Итог',
+          tone: 'result',
+          title: result.title,
+          detail: result.note,
+        })),
         ...store.weeklyReviews.flatMap((review) => {
           const date = savedDate(review.updatedAt, endOfWeek(review.weekStart));
           const items = [];
           if (review.nextLever || review.ifThenPlan) {
             items.push({
+              key: `week:${review.weekStart}:decision`,
               date,
               type: 'Решение недели',
               tone: 'decision',
@@ -268,11 +284,19 @@ export function useChangeHistoryView() {
             });
           }
           if (review.previousPlanOutcome) {
-            items.push({ date, type: 'Проверка решения', tone: 'outcome', title: review.previousPlanOutcome, detail: '' });
+            items.push({
+              key: `week:${review.weekStart}:outcome`,
+              date,
+              type: 'Проверка решения',
+              tone: 'outcome',
+              title: review.previousPlanOutcome,
+              detail: '',
+            });
           }
           return items;
         }),
         ...store.monthlyReviews.map((review) => ({
+          key: `month:${review.monthStart}:decision`,
           date: savedDate(review.updatedAt, endOfMonth(review.monthStart)),
           type: 'Решение месяца',
           tone: 'decision',
@@ -280,6 +304,7 @@ export function useChangeHistoryView() {
           detail: review.ifThenPlan,
         })),
         ...store.settings.experimentHistory.map((record) => ({
+          key: `experiment:${record.id}`,
           date: record.endDate,
           type: 'Эксперимент',
           tone: 'experiment',

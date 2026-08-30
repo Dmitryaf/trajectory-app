@@ -185,9 +185,29 @@ test('keeps change history visible and one metric behind a compact mobile disclo
   await expect(metric.locator('.metric-switcher')).toBeVisible();
   await expect(page.locator('.trend-table')).toHaveCount(0);
 
+  const list = history.locator('.history-timeline__list');
+  const initialListHeight = await list.evaluate((element) => element.getBoundingClientRect().height);
   await history.locator('.archive-pagination button', { hasText: 'Дальше' }).click();
+  const transitionHeights = await list.evaluate(
+    (element) =>
+      new Promise<number[]>((resolve) => {
+        const heights: number[] = [];
+        const startedAt = performance.now();
+        const sample = () => {
+          heights.push(element.getBoundingClientRect().height);
+          if (performance.now() - startedAt >= 400) {
+            resolve(heights);
+            return;
+          }
+          requestAnimationFrame(sample);
+        };
+        sample();
+      }),
+  );
   await expect(history.locator('.decision-timeline__item')).toHaveCount(10);
   await expect(history.locator('.archive-pagination span')).toHaveText(/^2 из \d+$/);
+  const finalListHeight = transitionHeights.at(-1)!;
+  expect(Math.max(...transitionHeights)).toBeLessThanOrEqual(Math.max(initialListHeight, finalListHeight) + 2);
 
   const widths = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,

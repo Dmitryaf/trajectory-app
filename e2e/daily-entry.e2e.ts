@@ -82,6 +82,30 @@ test('keeps native mobile date and time inputs inside their cards', async ({ pag
   expect(dateOverflow).toBe(0);
 });
 
+test('does not move the daily form while a native time picker is active', async ({ page }) => {
+  await openDailyEntry(page);
+
+  const timeInput = page.getByLabel('Лёг спать');
+  const sleepCard = page.locator('.form-card--sleep');
+  await timeInput.focus();
+  const initialTop = (await sleepCard.boundingBox())?.y;
+  expect(initialTop).toBeDefined();
+
+  await timeInput.evaluate((input) => {
+    const field = input as HTMLInputElement;
+    field.value = '23:00';
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+
+  await expect(page.locator('.entry-change-notice')).toBeHidden();
+  await expect(page.locator('.floating-save-button')).toBeHidden();
+  expect((await sleepCard.boundingBox())?.y).toBeCloseTo(initialTop!, 0);
+
+  await timeInput.blur();
+  await expect(page.locator('.entry-change-notice')).toBeVisible();
+  await expect(page.locator('.floating-save-button')).toBeVisible();
+});
+
 test('keeps iPhone text and the current-goal placeholder inside their blocks', async ({ page }) => {
   await openDailyEntry(page);
   await page.getByRole('button', { name: 'Выбрать цель' }).first().click();
