@@ -1,13 +1,13 @@
 import { resolve } from 'node:path';
 import { expect, test, type Page } from './fixtures';
-import { demoAnchor, demoFilePath } from './demo-data';
+import { visualDemoAnchor, visualDemoFilePath } from './demo-data';
 
 const visualStylePath = resolve(process.cwd(), 'e2e/visual-regression.css');
 
 test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/settings');
-  await page.locator('input[type="file"]').setInputFiles(demoFilePath);
+  await page.locator('input[type="file"]').setInputFiles(visualDemoFilePath);
   await page.getByText('Резервная копия восстановлена', { exact: true }).waitFor();
 });
 
@@ -32,9 +32,9 @@ async function stabilizePeriodDates(page: Page, title: string, subtitle: string)
 }
 
 test('keeps the polished period views visually stable on mobile', async ({ page }) => {
-  await page.goto(`/week?week=${demoAnchor()}`);
+  await page.goto(`/week?week=${visualDemoAnchor}`);
   await page.locator('.page--week').waitFor();
-  await stabilizePeriodDates(page, '18 — 24 авг.', 'Выбранная неделя');
+  await stabilizePeriodDates(page, '24 — 30 авг.', 'Выбранная неделя');
   await expectInterfaceScreenshot(page, 'period-week-mobile.png');
 
   await page.goto('/month');
