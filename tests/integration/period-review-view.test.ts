@@ -2,23 +2,23 @@
 
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import { copyAiPrompt } from '../../src/features/export/browser';
-import { notifyUnknownError } from '../../src/services/notifications';
-import { emptyDailyEntry, emptyMonthlyReview, emptyWeeklyReview } from '../../src/types';
-import MonthView from '../../src/views/MonthView.vue';
-import TrendsView from '../../src/views/TrendsView.vue';
-import WeekView from '../../src/views/WeekView.vue';
+import { copyAiPrompt } from '@/features/export/browser';
+import { notifyUnknownError } from '@/services/notifications';
+import { emptyDailyEntry, emptyMonthlyReview, emptyWeeklyReview } from '@/types';
+import MonthView from '@/views/MonthView.vue';
+import TrendsView from '@/views/TrendsView.vue';
+import WeekView from '@/views/WeekView.vue';
 import { createStore, routerLinkStub } from '../helpers/viewScenario';
 
-vi.mock('../../src/services/notifications', () => ({
+vi.mock('@/services/notifications', () => ({
   notifyError: vi.fn(),
   notifyInfo: vi.fn(),
   notifySaved: vi.fn(),
   notifyUnknownError: vi.fn(),
 }));
 
-vi.mock('../../src/features/export/browser', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../src/features/export/browser')>()),
+vi.mock('@/features/export/browser', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/export/browser')>()),
   copyAiPrompt: vi.fn(),
 }));
 

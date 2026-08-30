@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { emptyDailyEntry, defaultSettings } from '../../../types';
-import { BACKUP_VERSION } from '../../backup/version';
-import type { ExportPayload } from '../../backup/snapshot';
+import { emptyDailyEntry, defaultSettings } from '@/types';
+import { BACKUP_VERSION } from '@/features/backup/version';
+import type { ExportPayload } from '@/features/backup/snapshot';
 import { mergeCloudSnapshots } from '../merge';
 
 function emptyPayload(): ExportPayload {

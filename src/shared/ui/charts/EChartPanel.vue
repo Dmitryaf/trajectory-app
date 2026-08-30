@@ -90,3 +90,19 @@ onBeforeUnmount(() => {
   ></div>
   <p :id="descriptionId" class="visually-hidden">{{ description }}</p>
 </template>
+
+<style scoped>
+.echart-panel {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 240px;
+  overflow: hidden;
+  border: 1px solid var(--chart-panel-border);
+  border-radius: 18px;
+  background: linear-gradient(180deg, var(--surface), var(--chart-panel-gradient));
+  box-shadow:
+    inset 0 1px 0 var(--chart-panel-highlight),
+    0 8px 20px var(--chart-panel-shadow);
+}
+</style>

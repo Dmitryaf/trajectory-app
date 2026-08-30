@@ -20,44 +20,17 @@ function updateValue(event: Event): void {
 </script>
 
 <template>
-  <div class="password-field" style="position: relative">
-    <input
-      :id="id"
-      v-bind="$attrs"
-      :value="modelValue"
-      :type="visible ? 'text' : 'password'"
-      style="padding-right: 52px"
-      @input="updateValue"
-    />
+  <div class="password-field">
+    <input :id="id" v-bind="$attrs" :value="modelValue" :type="visible ? 'text' : 'password'" @input="updateValue" />
     <button
       class="password-field__toggle"
       type="button"
       :aria-label="visible ? 'Скрыть пароль' : 'Показать пароль'"
       :aria-pressed="visible"
       :aria-controls="id"
-      style="
-        position: absolute;
-        top: 50%;
-        right: 5px;
-        display: grid;
-        width: 40px;
-        height: 40px;
-        padding: 0;
-        border: 0;
-        border-radius: 10px;
-        background: transparent;
-        color: var(--muted);
-        cursor: pointer;
-        place-items: center;
-        transform: translateY(-50%);
-      "
       @click="visible = !visible"
     >
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 24 24"
-        style="width: 21px; fill: none; stroke: currentcolor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8"
-      >
+      <svg aria-hidden="true" viewBox="0 0 24 24">
         <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
         <circle cx="12" cy="12" r="2.75" />
         <path v-if="visible" d="m4 4 16 16" />
@@ -65,3 +38,36 @@ function updateValue(event: Event): void {
     </button>
   </div>
 </template>
+
+<style scoped>
+.password-field {
+  position: relative;
+}
+.password-field input {
+  padding-right: 52px;
+}
+.password-field__toggle {
+  position: absolute;
+  top: 50%;
+  right: 5px;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+.password-field__toggle svg {
+  width: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+</style>

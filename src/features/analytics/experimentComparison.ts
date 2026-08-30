@@ -1,5 +1,5 @@
-import { addDays, dateRange } from '../../services/dates';
-import { experimentMetricOptions, type DailyEntry, type ExperimentMetricId } from '../../types';
+import { addDays, dateRange } from '@/services/dates';
+import { experimentMetricOptions, type DailyEntry, type ExperimentMetricId } from '@/types';
 
 type ExperimentPeriod = {
   id?: string;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { contextFactorLabel } from '../../src/services/analytics';
-import { contextFactorOptions, normalizeDailyEntry, normalizeSettings, normalizeWeeklyReview } from '../../src/types';
-import { SETTINGS_VERSION } from '../../src/model/dataVersions';
+import { contextFactorLabel } from '@/services/analytics';
+import { contextFactorOptions, normalizeDailyEntry, normalizeSettings, normalizeWeeklyReview } from '@/types';
+import { SETTINGS_VERSION } from '@/model/dataVersions';
 
 describe('settings migrations', () => {
   it('removes obsolete demo options while preserving old response entries', () => {

@@ -1,8 +1,9 @@
 import { createServer } from 'vite';
 import { writeDemoFile } from '../scripts/generate-test-user-data.mjs';
+import { visualDemoAnchor, visualDemoFilePath } from './demo-data';
 
 export default async function globalSetup() {
-  await writeDemoFile();
+  await Promise.all([writeDemoFile(), writeDemoFile({ anchor: visualDemoAnchor, output: visualDemoFilePath })]);
   process.env.VITE_FEEDBACK_ENABLED ||= 'true';
   const server = await createServer({
     logLevel: 'error',

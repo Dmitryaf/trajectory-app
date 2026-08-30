@@ -32,6 +32,7 @@
 - [MANUAL_REGRESSION.md](./operations/MANUAL_REGRESSION.md) — сквозной ручной regression-чеклист для компьютера, мобильных браузеров и установленной PWA.
 - [BACKEND_AUTH_CI.md](./operations/BACKEND_AUTH_CI.md) — настройка backend, авторизации и CI.
 - [DATA_GOVERNANCE.md](./operations/DATA_GOVERNANCE.md) — работа с пользовательскими данными.
+- [INCIDENT_RESPONSE.md](./operations/INCIDENT_RESPONSE.md) — безопасное наблюдение ошибок и порядок реакции на инциденты.
 - [HOSTING_MIGRATION.md](./operations/HOSTING_MIGRATION.md) — перенос хостинга.
 - [PUBLIC_REPOSITORY.md](./operations/PUBLIC_REPOSITORY.md) — граница между внутренними и публичными материалами.
 

@@ -1,6 +1,6 @@
-import type { ContextFactorId, DailyEntry, Option } from '../../types';
-import { contextFactorOptions, dailyFieldWasRecorded } from '../../types';
-import { formatMinutes } from '../../services/dates';
+import type { ContextFactorId, DailyEntry, Option } from '@/types';
+import { contextFactorOptions, dailyFieldWasRecorded } from '@/types';
+import { formatMinutes } from '@/services/dates';
 import { hasMovement } from './periodSummary';
 
 export type Observation = {

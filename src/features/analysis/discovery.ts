@@ -1,5 +1,5 @@
-import { summarize } from '../../services/analytics';
-import type { DailyEntry } from '../../types';
+import { summarize } from '@/services/analytics';
+import type { DailyEntry } from '@/types';
 
 export const aiAnalysisNudgeEntryThreshold = 3;
 

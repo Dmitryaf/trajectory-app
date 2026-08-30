@@ -5,6 +5,11 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import readableAsyncCondition from './scripts/eslint-rules/readable-async-condition.mjs';
 
+const deepSourceImportPattern = {
+  group: ['../../**'],
+  message: 'Для импорта из другого верхнеуровневого модуля src используйте алиас @/.',
+};
+
 export default tseslint.config(
   {
     ignores: [
@@ -50,6 +55,17 @@ export default tseslint.config(
       'max-depth': ['error', 4],
       'no-nested-ternary': 'error',
       'trajectory/readable-async-condition': 'error',
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../../src/**'],
+              message: 'Для импорта исходного кода из теста используйте алиас @/.',
+            },
+          ],
+        },
+      ],
     },
   },
   {
@@ -82,8 +98,15 @@ export default tseslint.config(
             { name: '@supabase/supabase-js', message: 'Сеть находится вне модели данных.' },
           ],
           patterns: [
+            deepSourceImportPattern,
             {
               group: [
+                '@/views/**',
+                '@/components/**',
+                '@/features/**',
+                '@/services/**',
+                '@/stores/**',
+                '@/db',
                 '../views/**',
                 '../../views/**',
                 '../components/**',
@@ -111,8 +134,9 @@ export default tseslint.config(
         'error',
         {
           patterns: [
+            deepSourceImportPattern,
             {
-              group: ['../views/**', '../../views/**', '../../../views/**'],
+              group: ['@/views/**', '../views/**', '../../views/**', '../../../views/**'],
               message: 'Пользовательский сценарий не должен зависеть от страницы.',
             },
           ],
@@ -127,8 +151,19 @@ export default tseslint.config(
         'error',
         {
           patterns: [
+            deepSourceImportPattern,
             {
-              group: ['../views/**', '../../views/**', '../components/**', '../../components/**', '../stores/**', '../../stores/**'],
+              group: [
+                '@/views/**',
+                '@/components/**',
+                '@/stores/**',
+                '../views/**',
+                '../../views/**',
+                '../components/**',
+                '../../components/**',
+                '../stores/**',
+                '../../stores/**',
+              ],
               message: 'Общий сервис не должен зависеть от UI или состояния страницы.',
             },
           ],
@@ -143,8 +178,9 @@ export default tseslint.config(
         'error',
         {
           patterns: [
+            deepSourceImportPattern,
             {
-              group: ['../views/**', '../../views/**', '../components/**', '../../components/**'],
+              group: ['@/views/**', '@/components/**', '../views/**', '../../views/**', '../components/**', '../../components/**'],
               message: 'Store не должен зависеть от UI.',
             },
           ],
@@ -159,6 +195,7 @@ export default tseslint.config(
         'error',
         {
           patterns: [
+            deepSourceImportPattern,
             {
               group: ['**/features/**', '**/views/**', '**/stores/**'],
               message: 'Общий модуль не должен зависеть от пользовательского сценария, страницы или store.',

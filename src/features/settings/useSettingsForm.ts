@@ -1,10 +1,10 @@
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
-import { useAppStore } from '../../stores/app';
-import { useAuthStore } from '../../stores/auth';
+import { useAppStore } from '@/stores/app';
+import { useAuthStore } from '@/stores/auth';
 import { downloadJson } from '../export/browser';
 import { useExperimentSettings } from '../experiments/useExperimentSettings';
-import { notifyInfo, notifySaved, notifyUnknownError } from '../../services/notifications';
-import { plainCopy } from '../../services/plain';
+import { notifyInfo, notifySaved, notifyUnknownError } from '@/services/notifications';
+import { plainCopy } from '@/services/plain';
 import { setSyncEditorDirty } from '../sync/editing';
 import {
   activityOptions,
@@ -21,7 +21,7 @@ import {
   type ContextFactorId,
   type LifeAreaId,
   type Option,
-} from '../../types';
+} from '@/types';
 
 export function useSettingsForm() {
   const store = useAppStore();

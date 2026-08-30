@@ -1,5 +1,5 @@
-import { markCloudSyncSynced, type CloudSnapshot } from '../../services/cloudSync';
-import type { useAppStore } from '../../stores/app';
+import { markCloudSyncSynced, type CloudSnapshot } from '@/services/cloudSync';
+import type { useAppStore } from '@/stores/app';
 import { saveCloudSyncBase } from './base';
 
 type AppStore = ReturnType<typeof useAppStore>;

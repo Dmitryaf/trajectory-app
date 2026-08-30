@@ -1,7 +1,7 @@
-import type { useAppStore } from '../../stores/app';
-import { defaultSettings } from '../../types';
+import type { useAppStore } from '@/stores/app';
+import { defaultSettings } from '@/types';
 import { normalizeSnapshot } from '../backup/snapshot';
-import { getCloudSyncMeta, loadCloudSnapshot, markCloudSyncSynced, type CloudSnapshot, type CloudSyncMeta } from '../../services/cloudSync';
+import { getCloudSyncMeta, loadCloudSnapshot, markCloudSyncSynced, type CloudSnapshot, type CloudSyncMeta } from '@/services/cloudSync';
 import { applyCloudSnapshot, formatCloudUpdatedAt } from './snapshot';
 import { saveCloudSyncBase } from './base';
 
@@ -73,7 +73,7 @@ async function reconcileCloudSnapshot(store: AppStore, userId: string | null | u
       markSynced: services.markSynced,
     });
   } catch (error) {
-    console.warn('Не удалось загрузить облачную копию', error);
+    console.warn('Не удалось загрузить облачную копию');
     store.setCloudSyncState('pending', 'Локальные данные доступны. Облако пока не проверено.', {
       error: error instanceof Error ? error.message : 'Не удалось проверить облако',
     });

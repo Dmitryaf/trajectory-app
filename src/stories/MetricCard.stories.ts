@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite';
 import MetricCard from '../shared/ui/data-display/MetricCard.vue';
+import { chartColors } from '@/shared/theme/colors';
 
 const meta = {
   title: 'Карточки/Показатель',
@@ -9,7 +10,7 @@ const meta = {
     label: 'Средний сон',
     value: '7 ч 32 мин',
     hint: '6 дней с данными',
-    accent: '#7467e8',
+    accent: chartColors.sleep,
   },
   decorators: [() => ({ template: '<div style="max-width: 320px"><story /></div>' })],
 } satisfies Meta<typeof MetricCard>;

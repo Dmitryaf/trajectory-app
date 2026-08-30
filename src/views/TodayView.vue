@@ -1,12 +1,27 @@
 <script setup lang="ts">
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
+import { RouterLink } from 'vue-router';
+import SurfaceCard from '@/shared/ui/layout/SurfaceCard.vue';
+import DataNote from '@/shared/ui/content/DataNote.vue';
 import { computed, ref } from 'vue';
 import AiAnalysisNudge from '../features/analysis/ui/AiAnalysisNudge.vue';
 import { shouldShowAiAnalysisNudge } from '../features/analysis/discovery';
 import CurrentGoalDialog from '../features/daily-entry/ui/CurrentGoalDialog.vue';
+import DailyLayoutSettings from '../features/daily-entry/ui/DailyLayoutSettings.vue';
 import FirstUseRecovery from '../features/first-use/ui/FirstUseRecovery.vue';
 import HowItWorksDialog from '../features/first-use/ui/HowItWorksDialog.vue';
 import PwaInstallNudge from '../features/pwa/ui/PwaInstallNudge.vue';
 import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
+import FormCardHeading from '../shared/ui/forms/FormCardHeading.vue';
+import FormFieldLabel from '../shared/ui/forms/FormFieldLabel.vue';
+import FormDisclosure from '../shared/ui/forms/FormDisclosure.vue';
+import FormHint from '../shared/ui/forms/FormHint.vue';
+import FormRow from '../shared/ui/forms/FormRow.vue';
+import DateInput from '../shared/ui/forms/DateInput.vue';
+import PageHeading from '../shared/ui/layout/PageHeading.vue';
+import PageShell from '../shared/ui/layout/PageShell.vue';
+import ReviewNudge from '../shared/ui/content/ReviewNudge.vue';
+import EyebrowText from '../shared/ui/typography/EyebrowText.vue';
 import ChipGroup from '../shared/ui/forms/ChipGroup.vue';
 import DurationInput from '../shared/ui/forms/DurationInput.vue';
 import ScalePicker from '../shared/ui/forms/ScalePicker.vue';
@@ -39,7 +54,7 @@ import {
 } from '../types';
 
 const store = useAppStore();
-const entryDateInput = ref<HTMLInputElement>();
+const entryDateInput = ref<InstanceType<typeof DateInput>>();
 const goalDialogOpen = ref(false);
 const goalSaving = ref(false);
 const {
@@ -319,7 +334,7 @@ async function removeCurrentGoal() {
 }
 
 function openEntryDatePicker() {
-  const input = entryDateInput.value;
+  const input = entryDateInput.value?.element;
   if (!input) {
     return;
   }
@@ -332,10 +347,10 @@ function openEntryDatePicker() {
 </script>
 
 <template>
-  <section class="page page--today">
-    <div class="page-heading">
+  <PageShell class="page--today">
+    <PageHeading>
       <div>
-        <span class="eyebrow">Ежедневная запись</span>
+        <EyebrowText>Ежедневная запись</EyebrowText>
         <h1>{{ isToday ? 'Сегодня' : formatDate(selectedDate, { day: 'numeric', month: 'long', weekday: 'long' }) }}</h1>
       </div>
       <div class="entry-date-picker">
@@ -347,11 +362,9 @@ function openEntryDatePicker() {
               <path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
             </svg>
           </button>
-          <input
+          <DateInput
             ref="entryDateInput"
-            :value="selectedDate"
-            class="date-input"
-            type="date"
+            :display-value="selectedDate"
             :max="todayKey()"
             tabindex="-1"
             aria-hidden="true"
@@ -362,7 +375,7 @@ function openEntryDatePicker() {
         </span>
         <small>Можно выбрать любой прошедший день</small>
       </div>
-    </div>
+    </PageHeading>
 
     <FirstUseRecovery v-if="isToday" />
 
@@ -373,31 +386,28 @@ function openEntryDatePicker() {
 
     <section v-if="!firstUseTakesPriority && isToday" class="current-goal-summary" aria-label="Текущая цель">
       <div>
-        <span class="eyebrow">Текущая цель</span>
+        <EyebrowText>Текущая цель</EyebrowText>
         <strong>{{ currentGoalTitle || 'Пока не выбрана' }}</strong>
         <p v-if="!currentGoalTitle">Можно продолжать заполнять день без цели.</p>
       </div>
-      <button class="secondary-button context-action" type="button" aria-haspopup="dialog" @click="goalDialogOpen = true">
+      <ActionButton variant="secondary" class="context-action" type="button" aria-haspopup="dialog" @click="goalDialogOpen = true">
         {{ currentGoalTitle ? 'Изменить' : 'Выбрать цель' }}
-      </button>
+      </ActionButton>
     </section>
 
     <section v-if="isFirstEntry && !firstUseTakesPriority" class="first-entry-guide" aria-label="Первая запись">
       <div>
-        <span class="eyebrow">С чего начать</span>
+        <EyebrowText>С чего начать</EyebrowText>
         <h2>Отметьте несколько деталей сегодняшнего дня</h2>
         <p>Не нужно заполнять всё. Разделы на главной можно добавить или убрать в настройках — уже сохранённые записи не пропадут.</p>
       </div>
       <div class="first-entry-guide__actions">
-        <RouterLink class="secondary-button context-action" to="/settings#daily-blocks">Настроить блоки</RouterLink>
+        <ActionButton :as="RouterLink" variant="secondary" class="context-action" to="/settings#daily-blocks">Настроить блоки</ActionButton>
         <HowItWorksDialog button-label="Зачем это заполнять?" inline />
       </div>
     </section>
 
-    <div v-else-if="!firstUseTakesPriority && !isFirstEntry" class="daily-layout-settings">
-      <span>Хотите добавить или убрать разделы?</span>
-      <RouterLink to="/settings#daily-blocks">Настроить главную →</RouterLink>
-    </div>
+    <DailyLayoutSettings v-else-if="!firstUseTakesPriority && !isFirstEntry" />
 
     <PwaInstallNudge v-if="!firstUseTakesPriority && isToday" :saved-entry-count="store.dailyEntries.length" />
 
@@ -407,8 +417,8 @@ function openEntryDatePicker() {
         <p>Выберите локальный черновик или другую сохранённую версию. До выбора запись нельзя сохранить.</p>
       </div>
       <div class="goal-dialog__actions">
-        <button class="secondary-button" type="button" @click="resolveDraftConflict(false)">Оставить сохранённую</button>
-        <button class="primary-button" type="button" @click="resolveDraftConflict(true)">Продолжить с черновиком</button>
+        <ActionButton variant="secondary" type="button" @click="resolveDraftConflict(false)">Оставить сохранённую</ActionButton>
+        <ActionButton variant="primary" type="button" @click="resolveDraftConflict(true)">Продолжить с черновиком</ActionButton>
       </div>
     </section>
 
@@ -419,25 +429,27 @@ function openEntryDatePicker() {
       </div>
     </section>
 
-    <section v-else-if="!firstUseTakesPriority && activeReviewReminder" class="review-nudge" aria-label="Период готов к обзору">
+    <ReviewNudge v-else-if="!firstUseTakesPriority && activeReviewReminder" tag="section" aria-label="Период готов к обзору">
       <div>
         <strong>{{ activeReviewReminder.title }}</strong>
         <p>{{ activeReviewReminder.text }}</p>
       </div>
-      <RouterLink class="secondary-button context-action" :to="activeReviewReminder.to">{{ activeReviewReminder.label }}</RouterLink>
-    </section>
+      <ActionButton :as="RouterLink" variant="secondary" class="context-action" :to="activeReviewReminder.to">{{
+        activeReviewReminder.label
+      }}</ActionButton>
+    </ReviewNudge>
 
     <section v-else-if="!firstUseTakesPriority && yesterdayMissing" class="recovery-nudge" aria-label="Вчера без записи">
       <div>
         <strong>Вчера без записи</strong>
         <p>Можно заполнить коротко сейчас или спокойно продолжить с сегодняшнего дня.</p>
       </div>
-      <button class="secondary-button context-action" type="button" @click="fillYesterday">Добавить запись</button>
+      <ActionButton variant="secondary" class="context-action" type="button" @click="fillYesterday">Добавить запись</ActionButton>
     </section>
 
     <section v-else-if="!firstUseTakesPriority && isToday && currentWeeklyPlan" class="today-pulse" aria-label="Текущий план недели">
       <div>
-        <span class="eyebrow">План недели</span>
+        <EyebrowText>План недели</EyebrowText>
         <p>{{ currentWeeklyPlan }}</p>
       </div>
     </section>
@@ -454,7 +466,7 @@ function openEntryDatePicker() {
       aria-label="Пульс недели"
     >
       <div>
-        <span class="eyebrow">Пульс недели</span>
+        <EyebrowText>Пульс недели</EyebrowText>
         <p>
           {{ currentWeekSummary.coveredEntriesCount }}
           {{ currentWeekSummary.coveredEntriesCount === 1 ? 'заполненный день' : 'заполненных дней' }} · сон
@@ -469,57 +481,54 @@ function openEntryDatePicker() {
       <div v-if="blockIsActive('sleep') || blockIsActive('context')" class="checkin-group-heading">
         <span>Состояние и условия</span>
       </div>
-      <article v-if="blockIsActive('sleep')" id="sleep" class="form-card form-card--sleep form-card--wide">
-        <div class="form-card__heading">
-          <span class="section-icon section-icon--purple">◒</span>
+      <SurfaceCard v-if="blockIsActive('sleep')" id="sleep" kind="form" class="form-card--sleep form-card--wide">
+        <FormCardHeading icon="◒" tone="purple">
           <div>
             <h2>Сон и состояние</h2>
             <p v-if="isFirstEntry">Сон перед этой датой и сколько сил было в этот день.</p>
           </div>
           <RouterLink class="card-settings-link" to="/settings#daily-blocks">Настроить</RouterLink>
-        </div>
-        <p class="field-hint">Время в кровати посчитается по времени отбоя и подъёма. «Примерно спал» — ваша оценка самого сна.</p>
+        </FormCardHeading>
+        <FormHint>Время в кровати посчитается по времени отбоя и подъёма. «Примерно спал» — ваша оценка самого сна.</FormHint>
         <div class="sleep-field-grid">
           <div>
-            <label class="field-label" for="bedtime">Лёг спать</label>
+            <FormFieldLabel for="bedtime">Лёг спать</FormFieldLabel>
             <input id="bedtime" v-model="form.bedtime" type="time" />
           </div>
           <div>
-            <label class="field-label" for="wake-time">Встал</label>
+            <FormFieldLabel for="wake-time">Встал</FormFieldLabel>
             <input id="wake-time" v-model="form.wakeTime" type="time" />
           </div>
           <div>
-            <label class="field-label" for="sleep-hours">Примерно спал</label>
+            <FormFieldLabel for="sleep-hours">Примерно спал</FormFieldLabel>
             <DurationInput id="sleep-hours" v-model="sleepDurationMinutes" :max-hours="16" />
           </div>
           <div>
-            <label class="field-label" for="time-in-bed-hours">В кровати</label>
+            <FormFieldLabel for="time-in-bed-hours">В кровати</FormFieldLabel>
             <DurationInput id="time-in-bed-hours" v-model="timeInBedDurationMinutes" :max-hours="18" />
           </div>
         </div>
-        <div class="form-row">
+        <FormRow>
           <div class="form-control">
-            <label class="field-label">Качество сна</label><ScalePicker v-model="form.sleepQuality" low-label="плохо" high-label="хорошо" />
+            <FormFieldLabel>Качество сна</FormFieldLabel><ScalePicker v-model="form.sleepQuality" low-label="плохо" high-label="хорошо" />
           </div>
           <div class="form-control">
-            <label class="field-label">Энергия за день</label
-            ><ScalePicker v-model="form.energy" low-label="нет сил" high-label="много сил" />
+            <FormFieldLabel>Энергия за день</FormFieldLabel><ScalePicker v-model="form.energy" low-label="нет сил" high-label="много сил" />
           </div>
-        </div>
+        </FormRow>
         <p v-if="validationMessage" class="field-error" role="alert">{{ validationMessage }}</p>
-      </article>
+      </SurfaceCard>
 
-      <article v-if="blockIsActive('context')" id="day-conditions" class="form-card form-card--context form-card--wide">
-        <div class="form-card__heading">
-          <span class="section-icon section-icon--orange">⌁</span>
+      <SurfaceCard v-if="blockIsActive('context')" id="day-conditions" kind="form" class="form-card--context form-card--wide">
+        <FormCardHeading icon="⌁" tone="orange">
           <div>
             <h2>Что могло повлиять на день</h2>
             <p v-if="isFirstEntry">Отметьте условия, которые стоит сравнить с другими днями.</p>
           </div>
           <RouterLink class="card-settings-link" to="/settings#context-options">Настроить</RouterLink>
-        </div>
+        </FormCardHeading>
         <div class="factor-block">
-          <label class="field-label">Повторяющиеся условия</label>
+          <FormFieldLabel>Повторяющиеся условия</FormFieldLabel>
           <ChipGroup :model-value="form.contextFactors" :options="contextFactorItems" multiple @update:model-value="setContextFactors" />
           <button
             class="none-option"
@@ -530,7 +539,7 @@ function openEntryDatePicker() {
             Ничего из списка
           </button>
         </div>
-        <label class="field-label" for="context-note">Короткое пояснение</label>
+        <FormFieldLabel for="context-note">Короткое пояснение</FormFieldLabel>
         <textarea
           id="context-note"
           v-model="form.contextNote"
@@ -539,11 +548,11 @@ function openEntryDatePicker() {
           placeholder="Например: поздний кофе, тревога, шум, перегруз или частые пробуждения"
         ></textarea>
         <div class="context-special-day">
-          <label class="field-label">Необычный день</label>
-          <p class="field-hint">Эта отметка помогает не смешивать особые обстоятельства с обычными днями.</p>
+          <FormFieldLabel>Необычный день</FormFieldLabel>
+          <FormHint>Эта отметка помогает не смешивать особые обстоятельства с обычными днями.</FormHint>
           <ChipGroup v-model="form.specialDay" :options="specialDayOptions" allow-clear />
           <template v-if="form.specialDay">
-            <label class="field-label" for="special-day-note">Короткое уточнение</label>
+            <FormFieldLabel for="special-day-note">Короткое уточнение</FormFieldLabel>
             <input
               id="special-day-note"
               v-model="form.specialDayNote"
@@ -553,14 +562,13 @@ function openEntryDatePicker() {
             />
           </template>
         </div>
-      </article>
+      </SurfaceCard>
 
       <div class="checkin-group-heading">
         <span>Текущая цель</span>
       </div>
-      <article id="goal-actions" class="form-card form-card--direction form-card--wide">
-        <div class="form-card__heading">
-          <span class="section-icon section-icon--blue">⌁</span>
+      <SurfaceCard id="goal-actions" kind="form" class="form-card--direction form-card--wide">
+        <FormCardHeading icon="⌁" tone="blue">
           <div>
             <h2>Шаг по текущей цели</h2>
             <p>
@@ -582,9 +590,9 @@ function openEntryDatePicker() {
           >
             Настроить
           </button>
-        </div>
+        </FormCardHeading>
         <template v-if="showGoalActionChoices">
-          <p class="field-hint">Что лучше всего описывает этот день относительно выбранной цели?</p>
+          <FormHint>Что лучше всего описывает этот день относительно выбранной цели?</FormHint>
           <ChipGroup
             :model-value="form.actionDirection"
             :options="actionDirectionItems"
@@ -599,11 +607,11 @@ function openEntryDatePicker() {
           >
             Шага по цели не было
           </button>
-          <p v-if="form.actionDirection === 'recovery'" class="data-note">
+          <DataNote v-if="form.actionDirection === 'recovery'">
             Это значение сохранено из старой записи. Для новых дней восстановление отмечается в активности или условиях дня.
-          </p>
+          </DataNote>
           <template v-if="form.actionDirection">
-            <label class="field-label" for="goal-action-note">Что именно произошло?</label>
+            <FormFieldLabel for="goal-action-note">Что именно произошло?</FormFieldLabel>
             <textarea
               id="goal-action-note"
               v-model="form.actionNote"
@@ -612,52 +620,50 @@ function openEntryDatePicker() {
               placeholder="Коротко опишите одно действие или полученный результат"
             ></textarea>
           </template>
-          <details
+          <FormDisclosure
             v-if="displayedFocusOutcomeCriterion || displayedFocusReviewDate || displayedExternalEvidenceCriterion"
             class="analysis-range goal-context-details"
           >
-            <summary>Показать критерии цели</summary>
-            <div class="analysis-range__content">
-              <p v-if="displayedFocusOutcomeCriterion" class="form-context">
-                Как понять, что получилось: {{ displayedFocusOutcomeCriterion }}
-              </p>
-              <p v-if="displayedFocusReviewDate" class="form-context">
-                Проверить цель:
-                {{ formatDate(displayedFocusReviewDate, { day: 'numeric', month: 'long', year: 'numeric' }) }}
-              </p>
-              <p v-if="displayedExternalEvidenceCriterion" class="form-context">
-                Что считать шагом: {{ displayedExternalEvidenceCriterion }}
-              </p>
-            </div>
-          </details>
+            <template #summary>Показать критерии цели</template>
+            <p v-if="displayedFocusOutcomeCriterion" class="form-context">
+              Как понять, что получилось: {{ displayedFocusOutcomeCriterion }}
+            </p>
+            <p v-if="displayedFocusReviewDate" class="form-context">
+              Проверить цель:
+              {{ formatDate(displayedFocusReviewDate, { day: 'numeric', month: 'long', year: 'numeric' }) }}
+            </p>
+            <p v-if="displayedExternalEvidenceCriterion" class="form-context">
+              Что считать шагом: {{ displayedExternalEvidenceCriterion }}
+            </p>
+          </FormDisclosure>
         </template>
         <div v-else class="empty-block-note">
           <p v-if="hasSavedEntry">Для этой даты цель не была сохранена. Текущие настройки не изменяют историю.</p>
           <p v-else>После выбора цели здесь можно будет отмечать конкретные шаги, подготовку или дни, занятые другими делами.</p>
-          <button
+          <ActionButton
             v-if="!hasSavedEntry"
-            class="secondary-button context-action"
+            variant="secondary"
+            class="context-action"
             type="button"
             aria-haspopup="dialog"
             @click="goalDialogOpen = true"
           >
             Выбрать цель
-          </button>
+          </ActionButton>
         </div>
-      </article>
+      </SurfaceCard>
 
       <div v-if="hasAdditionalDayBlocks" class="checkin-group-heading">
         <span>Остальные части дня</span>
       </div>
-      <article v-if="blockIsActive('career')" id="career" class="form-card">
-        <div class="form-card__heading">
-          <span class="section-icon section-icon--blue">↗</span>
+      <SurfaceCard v-if="blockIsActive('career')" id="career" kind="form">
+        <FormCardHeading icon="↗" tone="blue">
           <div>
             <h2>Рабочий контекст</h2>
             <p>Что было частью рабочего дня. Эта отметка сама по себе не считается шагом по текущей цели.</p>
           </div>
           <RouterLink class="card-settings-link" to="/settings#work-settings">Настроить</RouterLink>
-        </div>
+        </FormCardHeading>
         <ChipGroup
           :model-value="form.careerStates as CareerState[]"
           :options="careerItems"
@@ -672,18 +678,17 @@ function openEntryDatePicker() {
         >
           Ничего из списка
         </button>
-        <p class="data-note">Конкретное действие по выбранной цели записывается только в блоке выше.</p>
-      </article>
+        <DataNote>Конкретное действие по выбранной цели записывается только в блоке выше.</DataNote>
+      </SurfaceCard>
 
-      <article v-if="blockIsActive('movement')" id="movement" class="form-card">
-        <div class="form-card__heading">
-          <span class="section-icon section-icon--green">△</span>
+      <SurfaceCard v-if="blockIsActive('movement')" id="movement" kind="form">
+        <FormCardHeading icon="△" tone="green">
           <div>
             <h2>Физическая активность</h2>
             <p v-if="isFirstEntry">Отметьте, была ли сегодня активность и какая.</p>
           </div>
           <RouterLink class="card-settings-link" to="/settings#movement-options">Настроить</RouterLink>
-        </div>
+        </FormCardHeading>
         <ChipGroup :model-value="form.activities as ActivityId[]" :options="activityItems" multiple @update:model-value="setActivities" />
         <button
           class="none-option"
@@ -693,11 +698,10 @@ function openEntryDatePicker() {
         >
           Без активности
         </button>
-      </article>
+      </SurfaceCard>
 
-      <article v-if="blockIsActive('nutrition')" id="nutrition" class="form-card form-card--nutrition">
-        <div class="form-card__heading">
-          <span class="section-icon section-icon--green">◐</span>
+      <SurfaceCard v-if="blockIsActive('nutrition')" id="nutrition" kind="form" class="form-card--nutrition">
+        <FormCardHeading icon="◐" tone="green">
           <div>
             <h2>Питание</h2>
             <p>
@@ -705,11 +709,11 @@ function openEntryDatePicker() {
             </p>
           </div>
           <RouterLink class="card-settings-link" to="/settings#nutrition-settings">Настроить</RouterLink>
-        </div>
+        </FormCardHeading>
         <ChipGroup :model-value="form.nutritionState" :options="nutritionOptions" allow-clear @update:model-value="setNutritionState" />
         <div class="sleep-field-grid">
           <div>
-            <label class="field-label" for="weight-kg">Вес</label>
+            <FormFieldLabel for="weight-kg">Вес</FormFieldLabel>
             <div class="number-field">
               <input id="weight-kg" v-model="weightKg" type="text" inputmode="decimal" autocomplete="off" placeholder="82.4" />
               <span>кг</span>
@@ -722,17 +726,16 @@ function openEntryDatePicker() {
           maxlength="180"
           placeholder="Например: много перекусов вечером, ел по плану, пропустил нормальный ужин"
         ></textarea>
-      </article>
+      </SurfaceCard>
 
-      <article v-if="showLifeAreas" id="life-areas" class="form-card">
-        <div class="form-card__heading">
-          <span class="section-icon section-icon--amber">✦</span>
+      <SurfaceCard v-if="showLifeAreas" id="life-areas" kind="form">
+        <FormCardHeading icon="✦" tone="amber">
           <div>
             <h2>Области жизни</h2>
             <p v-if="isFirstEntry">Что было заметной частью этого дня. Это не оценка успешности.</p>
           </div>
           <RouterLink class="card-settings-link" to="/settings#life-areas">Настроить</RouterLink>
-        </div>
+        </FormCardHeading>
         <ChipGroup
           :model-value="form.lifeAreas as LifeAreaId[]"
           :options="dailyLifeAreaItems"
@@ -747,22 +750,21 @@ function openEntryDatePicker() {
         >
           Ничего не отмечаю
         </button>
-      </article>
+      </SurfaceCard>
 
-      <article v-if="experimentAppliesToSelectedDate" id="experiment" class="form-card form-card--experiment">
-        <div class="form-card__heading">
-          <span class="section-icon section-icon--orange">⌁</span>
+      <SurfaceCard v-if="experimentAppliesToSelectedDate" id="experiment" kind="form" class="form-card--experiment">
+        <FormCardHeading icon="⌁" tone="orange">
           <div>
             <h2>Эксперимент</h2>
             <p>{{ store.settings.experiment.title }}</p>
           </div>
           <RouterLink class="card-settings-link" to="/settings#experiment-settings">Настроить</RouterLink>
-        </div>
+        </FormCardHeading>
         <p class="form-context experiment-period">Период: {{ experimentPeriodLabel }}</p>
         <p v-if="store.settings.experiment.hypothesis" class="form-context">
           Что хотите узнать: {{ store.settings.experiment.hypothesis }}
         </p>
-        <label class="field-label">Сегодня получилось это сделать?</label>
+        <FormFieldLabel>Сегодня получилось это сделать?</FormFieldLabel>
         <div class="binary-choice">
           <button type="button" :class="{ selected: form.experimentCompleted === true }" @click="form.experimentCompleted = true">
             Да
@@ -774,7 +776,7 @@ function openEntryDatePicker() {
             Нет отметки
           </button>
         </div>
-        <label class="field-label" for="experiment-note">Что помогло или помешало? <span class="field-optional">необязательно</span></label>
+        <FormFieldLabel for="experiment-note" optional>Что помогло или помешало?</FormFieldLabel>
         <AutoGrowTextarea
           id="experiment-note"
           v-model="form.experimentNote"
@@ -782,34 +784,40 @@ function openEntryDatePicker() {
           :max-length="experimentTextLimits.dailyNote"
           placeholder="Например: заранее убрал телефон; поздний звонок сбил план"
         />
-      </article>
+      </SurfaceCard>
 
       <div class="checkin-group-heading">
         <span>Короткий итог дня</span>
       </div>
-      <article class="form-card form-card--daily-summary form-card--wide">
-        <div class="form-card__heading">
-          <span class="section-icon">·</span>
+      <SurfaceCard kind="form" class="form-card--daily-summary form-card--wide">
+        <FormCardHeading icon="·">
           <div>
             <h2>Заметка дня</h2>
             <p v-if="isFirstEntry">Что сегодня произошло или что вы заметили — даже если день был обычным.</p>
           </div>
-        </div>
+        </FormCardHeading>
         <textarea
           v-model="form.importantFact"
           rows="2"
           maxlength="240"
           placeholder="Например: после прогулки стало легче собраться с мыслями"
         ></textarea>
-      </article>
+      </SurfaceCard>
     </form>
 
     <Teleport to="body">
       <Transition name="floating-save">
-        <button v-if="isDirty" class="primary-button floating-save-button" type="button" :disabled="saveButtonDisabled" @click="save">
+        <ActionButton
+          v-if="isDirty"
+          variant="primary"
+          class="floating-save-button"
+          type="button"
+          :disabled="saveButtonDisabled"
+          @click="save"
+        >
           <span>{{ saveButtonText }}</span
           ><span aria-hidden="true">→</span>
-        </button>
+        </ActionButton>
       </Transition>
     </Teleport>
 
@@ -824,5 +832,7 @@ function openEntryDatePicker() {
       @remove="removeCurrentGoal"
       @save="saveCurrentGoal"
     />
-  </section>
+  </PageShell>
 </template>
+
+<style scoped src="./TodayView.css"></style>

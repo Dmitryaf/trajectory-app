@@ -1,17 +1,21 @@
 <script setup lang="ts">
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterLink, RouterView, useRouter } from 'vue-router';
 import { Toaster } from 'vue-sonner';
+import BrandMark from './shared/ui/branding/BrandMark.vue';
 import 'vue-sonner/style.css';
 import AccountMenu from './features/auth/ui/AccountMenu.vue';
 import AuthGate from './features/auth/ui/AuthGate.vue';
 import HowItWorksDialog from './features/first-use/ui/HowItWorksDialog.vue';
 import PasswordResetView from './views/PasswordResetView.vue';
+import EyebrowText from './shared/ui/typography/EyebrowText.vue';
 import { recordFirstUseReturnEvents } from './features/first-use/funnel';
 import { createResumeCloudRefresh } from './features/sync/resume';
 import { prepareLocalCacheOwner, reconcileCloudSnapshotAfterResume, reconcileCloudSnapshotOnStartup } from './features/sync/startup';
 import { hasUnsavedSyncEditors, onUnsavedSyncEditorsChange } from './features/sync/editing';
 import { subscribeToCloudSnapshot } from './services/cloudSync';
+import { configureErrorMonitoring, reportClientError } from './services/errorMonitoring';
 import { notifyInfo, notifyUnknownError } from './services/notifications';
 import { useAppStore } from './stores/app';
 import { useAuthStore } from './stores/auth';
@@ -31,6 +35,10 @@ let stopCloudSubscription: (() => void) | undefined;
 let stopEditingSubscription: (() => void) | undefined;
 let cloudRefreshTimer: number | undefined;
 let cloudRefreshDeferred = false;
+const stopErrorMonitoring = configureErrorMonitoring(
+  () => auth.session?.access_token ?? '',
+  import.meta.env.VITE_ERROR_MONITORING_ENABLED === 'true',
+);
 const refreshCloudAfterResume = createResumeCloudRefresh(async () => {
   await reconcileCloudSnapshotAfterResume(store, auth.requiresAuth ? auth.session?.user.id : null);
 });
@@ -117,6 +125,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('focus', handleWindowFocus);
   window.removeEventListener('online', handleOnline);
   document.removeEventListener('visibilitychange', handleVisibilityChange);
+  stopErrorMonitoring();
   stopCloudSubscription?.();
   stopEditingSubscription?.();
   if (cloudRefreshTimer !== undefined) {
@@ -172,7 +181,8 @@ async function loadAppData() {
       await reconcileCloudSnapshotOnStartup(store, userId);
       recordFirstUseReturnEvents();
     } catch (error) {
-      console.error('Не удалось подготовить записи', error);
+      console.error('Не удалось подготовить записи');
+      reportClientError('APP_DATA_LOAD_FAILED');
       appDataLoadError.value = error instanceof Error ? error.message : 'Не удалось подготовить записи';
     } finally {
       appDataReady.value = true;
@@ -219,7 +229,7 @@ const navItems = [
   <div v-else class="app-shell">
     <header class="app-header">
       <RouterLink to="/" class="brand" aria-label="Траектория — главная">
-        <span class="brand__mark"><i></i></span>
+        <BrandMark />
         <span><strong>Траектория</strong><small>факты, а не оценка</small></span>
       </RouterLink>
       <div v-if="canOpenApp && appDataReady && store.loaded && !effectiveLoadError" class="header-actions">
@@ -252,10 +262,10 @@ const navItems = [
       <section v-else-if="effectiveLoadError" class="storage-error" role="alert">
         <span class="storage-error__mark" aria-hidden="true">!</span>
         <div>
-          <p class="eyebrow">Локальное хранилище недоступно</p>
+          <EyebrowText tag="p">Локальное хранилище недоступно</EyebrowText>
           <h1>Записи пока не открылись</h1>
           <p>{{ effectiveLoadError }}</p>
-          <button class="primary-button" type="button" @click="retryLoadAppData">Повторить</button>
+          <ActionButton variant="primary" type="button" @click="retryLoadAppData">Повторить</ActionButton>
         </div>
       </section>
       <template v-else>
@@ -269,7 +279,7 @@ const navItems = [
             <strong>Облако не обновлено</strong>
             <p>{{ store.cloudSyncMessage }}</p>
           </div>
-          <RouterLink class="secondary-button" to="/settings#cloud-settings">Настройки синхронизации</RouterLink>
+          <ActionButton :as="RouterLink" variant="secondary" to="/settings#cloud-settings">Настройки синхронизации</ActionButton>
         </section>
         <RouterView />
       </template>
@@ -291,3 +301,5 @@ const navItems = [
     <Toaster position="top-right" rich-colors close-button />
   </div>
 </template>
+
+<style scoped src="./App.css"></style>

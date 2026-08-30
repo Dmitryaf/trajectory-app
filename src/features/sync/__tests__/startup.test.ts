@@ -1,9 +1,9 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { hasLocalUserData, prepareLocalCacheOwner, reconcileCloudSnapshotAfterResume, reconcileCloudSnapshotOnStartup } from '../startup';
-import type { CloudSnapshot, CloudSyncMeta } from '../../../services/cloudSync';
-import { useAppStore } from '../../../stores/app';
-import { defaultSettings, emptyDailyEntry } from '../../../types';
+import type { CloudSnapshot, CloudSyncMeta } from '@/services/cloudSync';
+import { useAppStore } from '@/stores/app';
+import { defaultSettings, emptyDailyEntry } from '@/types';
 
 vi.mock('../base', () => ({ saveCloudSyncBase: vi.fn() }));
 

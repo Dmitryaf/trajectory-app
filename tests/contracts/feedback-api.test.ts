@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { POST } from '../../api/feedback';
-import { sendFeedback } from '../../src/services/feedback';
+import { sendFeedback } from '@/services/feedback';
 
 const originalEnvironment = { ...process.env };
 

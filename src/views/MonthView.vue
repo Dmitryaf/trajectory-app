@@ -1,14 +1,27 @@
 <script setup lang="ts">
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
+import SurfaceCard from '@/shared/ui/layout/SurfaceCard.vue';
+import SectionHeading from '@/shared/ui/layout/SectionHeading.vue';
 import { computed, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import type { EChartsCoreOption } from 'echarts/core';
-import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
-import PeriodRecordCard from '../features/reviews/ui/PeriodRecordCard.vue';
-import PeriodAnalysisCard from '../features/reviews/ui/PeriodAnalysisCard.vue';
-import { usePeriodReview } from '../features/reviews/usePeriodReview';
-import EChartPanel from '../shared/ui/charts/EChartPanel.vue';
-import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
-import PeriodNavigator from '../shared/ui/navigation/PeriodNavigator.vue';
+import ArchivePagination from '@/features/journal/ui/ArchivePagination.vue';
+import PeriodRecordCard from '@/features/reviews/ui/PeriodRecordCard.vue';
+import PeriodAnalysisCard from '@/features/reviews/ui/PeriodAnalysisCard.vue';
+import PeriodDetails from '@/features/reviews/ui/PeriodDetails.vue';
+import ReviewHeading from '@/features/reviews/ui/ReviewPageHeading.vue';
+import ReviewNotice from '@/features/reviews/ui/ReviewNotice.vue';
+import MetricSwitcher from '@/features/reviews/ui/MetricSwitcher.vue';
+import { usePeriodReview } from '@/features/reviews/usePeriodReview';
+import EChartPanel from '@/shared/ui/charts/EChartPanel.vue';
+import AutoGrowTextarea from '@/shared/ui/forms/AutoGrowTextarea.vue';
+import FormFieldLabel from '@/shared/ui/forms/FormFieldLabel.vue';
+import PeriodNavigator from '@/shared/ui/navigation/PeriodNavigator.vue';
+import Badge from '@/shared/ui/data-display/CountBadge.vue';
+import PageShell from '@/shared/ui/layout/PageShell.vue';
+import PeriodEmptyGuide from '@/shared/ui/content/PeriodEmptyGuide.vue';
+import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
+import { chartColors as c, chartStyles as s } from '@/shared/theme/colors';
 import {
   actionDirectionLabel,
   buildObservations,
@@ -17,11 +30,11 @@ import {
   resultsForPeriod,
   specialDayLabel,
   summarize,
-} from '../services/analytics';
-import { addDays, dateRange, endOfMonth, formatDate, fromDateKey, startOfMonth, startOfWeek, todayKey, toDateKey } from '../services/dates';
-import { buildWeightSeries } from '../features/analytics/weightSeries';
-import { pageCount, pageItems } from '../services/pagination';
-import { useAppStore } from '../stores/app';
+} from '@/services/analytics';
+import { addDays, dateRange, endOfMonth, formatDate, fromDateKey, startOfMonth, startOfWeek, todayKey, toDateKey } from '@/services/dates';
+import { buildWeightSeries } from '@/features/analytics/weightSeries';
+import { pageCount, pageItems } from '@/services/pagination';
+import { useAppStore } from '@/stores/app';
 import {
   actionDirectionOptions,
   contextFactorOptions,
@@ -31,7 +44,7 @@ import {
   lifeEventTypeOptions,
   resultAreaOptions,
   type MonthlyReview,
-} from '../types';
+} from '@/types';
 
 const store = useAppStore();
 const anchor = ref(todayKey());
@@ -115,23 +128,23 @@ const sleepOption = computed<EChartsCoreOption>(() => {
     return { date, entry: entry?.specialDay === null ? entry : undefined };
   });
   return {
-    color: ['#7467e8'],
+    color: [c.sleep],
     tooltip: { trigger: 'axis', valueFormatter: (value: number) => `${value} ч` },
     grid: { left: 46, right: 24, top: 20, bottom: 34 },
     xAxis: {
       type: 'category',
       data: rows.map((row) => formatDate(row.date, { day: 'numeric' })),
       axisTick: { show: false },
-      axisLine: { lineStyle: { color: '#dfe4ed' } },
-      axisLabel: { color: '#7d8798' },
+      axisLine: { lineStyle: s.axisLine },
+      axisLabel: s.axisLabel,
     },
     yAxis: {
       type: 'value',
       min: 0,
       max: 12,
       interval: 3,
-      axisLabel: { formatter: '{value}ч', color: '#7d8798' },
-      splitLine: { lineStyle: { color: '#edf1f6' } },
+      axisLabel: { formatter: '{value}ч', color: c.axis },
+      splitLine: { lineStyle: s.splitLine },
     },
     series: [
       {
@@ -146,23 +159,23 @@ const sleepOption = computed<EChartsCoreOption>(() => {
   };
 });
 const energyOption = computed<EChartsCoreOption>(() => ({
-  color: ['#2eaa7f'],
+  color: [c.energy],
   tooltip: { trigger: 'axis', valueFormatter: (value: number) => `${value}/5` },
   grid: { left: 42, right: 24, top: 20, bottom: 34 },
   xAxis: {
     type: 'category',
     data: chartDates.value.map((date) => formatDate(date, { day: 'numeric' })),
     axisTick: { show: false },
-    axisLine: { lineStyle: { color: '#dfe4ed' } },
-    axisLabel: { color: '#7d8798' },
+    axisLine: { lineStyle: s.axisLine },
+    axisLabel: s.axisLabel,
   },
   yAxis: {
     type: 'value',
     min: 1,
     max: 5,
     interval: 1,
-    axisLabel: { color: '#7d8798' },
-    splitLine: { lineStyle: { color: '#edf1f6' } },
+    axisLabel: s.axisLabel,
+    splitLine: { lineStyle: s.splitLine },
   },
   series: [
     {
@@ -193,22 +206,22 @@ const weightOption = computed<EChartsCoreOption>(() => {
       ]
     : [];
   return {
-    color: ['#d9952f', '#1d5148'],
+    color: [c.weight, c.deepGreen],
     tooltip: { trigger: 'axis' },
-    legend: { top: 0, right: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: '#657085', fontSize: 12 } },
+    legend: { top: 0, right: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: c.legend, fontSize: 12 } },
     grid: { left: 52, right: 24, top: 42, bottom: 34 },
     xAxis: {
       type: 'category',
       data: rows.map((row) => formatDate(row.date, { day: 'numeric' })),
       axisTick: { show: false },
-      axisLine: { lineStyle: { color: '#dfe4ed' } },
-      axisLabel: { color: '#7d8798' },
+      axisLine: { lineStyle: s.axisLine },
+      axisLabel: s.axisLabel,
     },
     yAxis: {
       type: 'value',
       scale: true,
-      axisLabel: { formatter: '{value}кг', color: '#7d8798' },
-      splitLine: { lineStyle: { color: '#edf1f6' } },
+      axisLabel: { formatter: '{value}кг', color: c.axis },
+      splitLine: { lineStyle: s.splitLine },
     },
     series: [
       { name: 'измерение', type: 'line', symbolSize: 7, data: rows.map((row) => row.weight), lineStyle: { width: 1, opacity: 0.4 } },
@@ -344,17 +357,14 @@ function shiftMonth(offset: number) {
 </script>
 
 <template>
-  <section class="page page--review page--month">
-    <div class="page-heading">
-      <div>
-        <span class="eyebrow">Месячная сводка</span>
-        <h1>Месяц</h1>
-        <p>Сравните недели, важные события и результаты. Решите, что продолжить или изменить.</p>
-      </div>
-      <a v-if="hasPeriodData" class="review-jump" href="#month-review"
-        >{{ reviewAvailable ? 'К итогу' : 'Итог позже' }} <span aria-hidden="true">↓</span></a
-      >
-    </div>
+  <PageShell class="page--review page--month">
+    <ReviewHeading
+      label="Месячная сводка"
+      title="Месяц"
+      summary="Сравните недели, важные события и результаты. Решите, что продолжить или изменить."
+      :action="hasPeriodData ? (reviewAvailable ? 'К итогу' : 'Итог позже') : undefined"
+      href="#month-review"
+    />
     <PeriodNavigator
       :title="formatDate(start, { month: 'long', year: 'numeric' })"
       :subtitle="start === startOfMonth(todayKey()) ? 'Текущий месяц' : ''"
@@ -363,26 +373,26 @@ function shiftMonth(offset: number) {
       @current="anchor = todayKey()"
     />
 
-    <section v-if="!hasPeriodData" class="period-empty-guide">
+    <PeriodEmptyGuide v-if="!hasPeriodData">
       <strong>За этот месяц пока нет записей</strong>
       <p>Данные появятся здесь после ежедневных записей. Итоги и важные события из Журнала тоже войдут в обзор месяца.</p>
-      <RouterLink class="secondary-button" to="/">Перейти к записи за день</RouterLink>
-    </section>
+      <ActionButton :as="RouterLink" variant="secondary" to="/">Перейти к записи за день</ActionButton>
+    </PeriodEmptyGuide>
 
     <template v-else>
-      <section v-if="!hasDailyData" class="period-review-note period-data-guide">
+      <ReviewNotice v-if="!hasDailyData" tag="section" class="period-data-guide">
         <strong>За этот месяц нет дневных записей</strong>
         <p>Итоги, события и сохранённый обзор показаны ниже. Данных для сравнения дней и построения графиков пока нет.</p>
-      </section>
+      </ReviewNotice>
 
-      <article v-if="hasDailyData" class="dashboard-card month-week-overview">
-        <div class="section-heading">
+      <SurfaceCard v-if="hasDailyData" kind="dashboard" class="month-week-overview">
+        <SectionHeading>
           <div>
-            <span class="eyebrow">Недели месяца</span>
+            <EyebrowText>Недели месяца</EyebrowText>
             <h2>Как менялись записи</h2>
           </div>
-          <span class="count-badge">{{ summary.coveredEntriesCount }} дн.</span>
-        </div>
+          <Badge>{{ summary.coveredEntriesCount }} дн.</Badge>
+        </SectionHeading>
         <div v-if="monthWeekSummaries.length >= 2" class="month-week-story">
           <article v-for="week in monthWeekSummaries" :key="week.rangeStart">
             <strong>
@@ -396,11 +406,11 @@ function shiftMonth(offset: number) {
             <span v-if="week.summary.specialDays">Особых дней: {{ week.summary.specialDays }}</span>
           </article>
         </div>
-        <div v-else class="period-review-note">
+        <ReviewNotice v-else>
           <strong>Для сравнения нужны записи хотя бы за две недели</strong>
           <p>Сейчас данные есть только в одной части месяца. Подробности уже доступны ниже.</p>
-        </div>
-      </article>
+        </ReviewNotice>
+      </SurfaceCard>
 
       <section v-if="hasJournalData" class="period-records period-records--featured">
         <PeriodRecordCard
@@ -423,41 +433,43 @@ function shiftMonth(offset: number) {
         />
       </section>
 
-      <article v-if="reviewAvailable" id="month-review" class="review-card">
-        <div class="section-heading">
+      <SurfaceCard v-if="reviewAvailable" id="month-review" kind="review">
+        <SectionHeading>
           <div>
-            <span class="eyebrow">Сохранить вывод</span>
+            <EyebrowText>Сохранить вывод</EyebrowText>
             <h2>Итог месяца</h2>
           </div>
           <small>{{ formatDate(end, { day: 'numeric', month: 'long' }) }}</small>
-        </div>
-        <details class="period-details month-review-context" :open="reviewContextOpen" @toggle="updateReviewContextOpen">
-          <summary>{{ reviewHasContext ? 'Разбор месяца' : 'Добавить разбор месяца' }}</summary>
-          <div class="period-details__content">
-            <label class="field-label">Что чаще всего повторялось?</label
-            ><AutoGrowTextarea v-model="review.mainPattern" :rows="2" placeholder="Повторяющееся действие, состояние или условие" />
-            <label class="field-label">Что поддерживало?</label
-            ><AutoGrowTextarea v-model="review.support" :rows="2" placeholder="Условия, решения или люди, которые помогали" />
-            <label class="field-label">Что мешало сильнее всего?</label
-            ><AutoGrowTextarea v-model="review.obstacle" :rows="2" placeholder="Один главный повторяющийся фактор" />
-            <label class="field-label">Что изменило месяц?</label
-            ><AutoGrowTextarea
-              v-model="review.courseChange"
-              :rows="2"
-              placeholder="Событие, решение или итог, после которого данные стали выглядеть иначе"
-            />
-          </div>
-        </details>
-        <label class="field-label">Главное направление следующего месяца</label
+        </SectionHeading>
+        <PeriodDetails
+          class="month-review-context"
+          :title="reviewHasContext ? 'Разбор месяца' : 'Добавить разбор месяца'"
+          :open="reviewContextOpen"
+          @toggle="updateReviewContextOpen"
+        >
+          <FormFieldLabel>Что чаще всего повторялось?</FormFieldLabel
+          ><AutoGrowTextarea v-model="review.mainPattern" :rows="2" placeholder="Повторяющееся действие, состояние или условие" />
+          <FormFieldLabel>Что поддерживало?</FormFieldLabel
+          ><AutoGrowTextarea v-model="review.support" :rows="2" placeholder="Условия, решения или люди, которые помогали" />
+          <FormFieldLabel>Что мешало сильнее всего?</FormFieldLabel
+          ><AutoGrowTextarea v-model="review.obstacle" :rows="2" placeholder="Один главный повторяющийся фактор" />
+          <FormFieldLabel>Что изменило месяц?</FormFieldLabel
+          ><AutoGrowTextarea
+            v-model="review.courseChange"
+            :rows="2"
+            placeholder="Событие, решение или итог, после которого данные стали выглядеть иначе"
+          />
+        </PeriodDetails>
+        <FormFieldLabel>Главное направление следующего месяца</FormFieldLabel
         ><AutoGrowTextarea v-model="review.nextFocus" :rows="2" placeholder="Что стоит продолжить, изменить или проверить" />
-        <button class="primary-button" type="button" :disabled="reviewSaving" @click="saveReview">
+        <ActionButton variant="primary" type="button" :disabled="reviewSaving" @click="saveReview">
           {{ reviewSaving ? 'Сохраняю…' : 'Сохранить итог месяца' }}
-        </button>
-      </article>
-      <section v-else id="month-review" class="period-review-note">
+        </ActionButton>
+      </SurfaceCard>
+      <ReviewNotice v-else id="month-review" tag="section">
         <strong>Итог появится ближе к концу месяца</strong>
         <p>Его можно пропустить — дневные записи и сводка месяца останутся на месте.</p>
-      </section>
+      </ReviewNotice>
 
       <PeriodAnalysisCard
         v-if="hasDailyData || hasJournalData"
@@ -468,93 +480,83 @@ function shiftMonth(offset: number) {
         @download="downloadJson"
       />
 
-      <details v-if="hasDailyData" class="period-details month-analysis-details">
-        <summary>Показать выбранный показатель и подробный разбор</summary>
-        <div class="period-details__content">
-          <article v-if="additionalObservations.length" class="dashboard-card">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Сопоставление записей</span>
-                <h2>Что ещё видно по данным</h2>
-              </div>
+      <PeriodDetails v-if="hasDailyData" class="month-analysis-details" title="Показать выбранный показатель и подробный разбор">
+        <SurfaceCard v-if="additionalObservations.length" kind="dashboard">
+          <SectionHeading>
+            <div>
+              <EyebrowText>Сопоставление записей</EyebrowText>
+              <h2>Что ещё видно по данным</h2>
             </div>
-            <div class="observation-grid">
-              <article v-for="observation in additionalObservations" :key="observation.id" class="observation-card">
-                <strong>{{ observation.title }}</strong>
-                <p>{{ observation.text }}</p>
-              </article>
-            </div>
-          </article>
-
-          <article v-if="monthMetricOptions.length" class="dashboard-card month-metric-card">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Один показатель за раз</span>
-                <h2>{{ selectedMonthMetricInfo?.label }}</h2>
-              </div>
-              <small>{{ selectedMonthMetricInfo?.samples }} изм. · особые дни исключены</small>
-            </div>
-            <div class="metric-switcher" aria-label="Показатель графика">
-              <button
-                v-for="option in monthMetricOptions"
-                :key="option.id"
-                type="button"
-                :class="{ active: selectedMonthMetric === option.id }"
-                @click="selectedMonthMetric = option.id"
-              >
-                {{ option.label }}
-              </button>
-            </div>
-            <EChartPanel
-              :option="monthMetricOption"
-              :height="280"
-              :aria-label="`Динамика: ${selectedMonthMetricInfo?.label}`"
-              :description="monthMetricDescription"
-            />
-          </article>
-          <div v-else class="period-review-note month-chart-guide">
-            <strong>Для графика пока мало данных</strong>
-            <p>
-              Нужны 4 обычных дня со сном или энергией либо 1 измерение веса. Сейчас: сон — {{ sleepEntries.length }}, энергия —
-              {{ energyEntries.length }}, вес — {{ weightEntries.length }}.
-            </p>
+          </SectionHeading>
+          <div class="observation-grid">
+            <article v-for="observation in additionalObservations" :key="observation.id" class="observation-card">
+              <strong>{{ observation.title }}</strong>
+              <p>{{ observation.text }}</p>
+            </article>
           </div>
+        </SurfaceCard>
 
-          <article class="dashboard-card">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Сколько дней появлялось</span>
-                <h2>Области жизни</h2>
-              </div>
+        <SurfaceCard v-if="monthMetricOptions.length" kind="dashboard" class="month-metric-card">
+          <SectionHeading>
+            <div>
+              <EyebrowText>Один показатель за раз</EyebrowText>
+              <h2>{{ selectedMonthMetricInfo?.label }}</h2>
             </div>
-            <div class="coverage-list">
-              <div v-for="area in activeAreas" :key="area.id" class="coverage-row">
-                <span class="coverage-row__label"
-                  ><i>{{ area.icon }}</i
-                  >{{ area.label }}</span
-                >
-                <div class="coverage-row__track">
-                  <span
-                    :style="{
-                      width: `${summary.lifeAreaSamples ? ((summary.areaCounts[area.id] ?? 0) / summary.lifeAreaSamples) * 100 : 0}%`,
-                    }"
-                  ></span>
-                </div>
-                <strong>{{ summary.areaCounts[area.id] ?? 0 }}/{{ summary.lifeAreaSamples }}</strong>
-              </div>
-            </div>
-          </article>
-        </div>
-      </details>
+            <small>{{ selectedMonthMetricInfo?.samples }} изм. · особые дни исключены</small>
+          </SectionHeading>
+          <MetricSwitcher v-model="selectedMonthMetric" :options="monthMetricOptions" label="Показатель графика" />
+          <EChartPanel
+            :option="monthMetricOption"
+            :height="280"
+            :aria-label="`Динамика: ${selectedMonthMetricInfo?.label}`"
+            :description="monthMetricDescription"
+          />
+        </SurfaceCard>
+        <ReviewNotice v-else class="month-chart-guide">
+          <strong>Для графика пока мало данных</strong>
+          <p>
+            Нужны 4 обычных дня со сном или энергией либо 1 измерение веса. Сейчас: сон — {{ sleepEntries.length }}, энергия —
+            {{ energyEntries.length }}, вес — {{ weightEntries.length }}.
+          </p>
+        </ReviewNotice>
 
-      <details v-if="actionNotes.length || contextEntries.length" class="period-details period-records">
-        <summary>Показать действия и дополнительный контекст</summary>
-        <div class="period-details__content period-records__content">
+        <SurfaceCard kind="dashboard">
+          <SectionHeading>
+            <div>
+              <EyebrowText>Сколько дней появлялось</EyebrowText>
+              <h2>Области жизни</h2>
+            </div>
+          </SectionHeading>
+          <div class="coverage-list">
+            <div v-for="area in activeAreas" :key="area.id" class="coverage-row">
+              <span class="coverage-row__label"
+                ><i>{{ area.icon }}</i
+                >{{ area.label }}</span
+              >
+              <div class="coverage-row__track">
+                <span
+                  :style="{
+                    width: `${summary.lifeAreaSamples ? ((summary.areaCounts[area.id] ?? 0) / summary.lifeAreaSamples) * 100 : 0}%`,
+                  }"
+                ></span>
+              </div>
+              <strong>{{ summary.areaCounts[area.id] ?? 0 }}/{{ summary.lifeAreaSamples }}</strong>
+            </div>
+          </div>
+        </SurfaceCard>
+      </PeriodDetails>
+
+      <PeriodDetails
+        v-if="actionNotes.length || contextEntries.length"
+        class="period-records"
+        title="Показать действия и дополнительный контекст"
+      >
+        <div class="period-records__content">
           <details v-if="actionNotes.length" class="period-record-card period-record-card--disclosure">
             <summary>
               <span class="period-record-card__heading">
-                <span><span class="eyebrow">Действия по цели</span><strong>Конкретные действия и подготовка</strong></span>
-                <span class="count-badge">{{ actionNotes.length }}</span>
+                <span><EyebrowText>Действия по цели</EyebrowText><strong>Конкретные действия и подготовка</strong></span>
+                <Badge>{{ actionNotes.length }}</Badge>
               </span>
               <span class="period-record-card__breakdown" aria-label="Действия по направлению">
                 <span v-for="direction in actionDirectionSummary" :key="direction.id"
@@ -580,8 +582,8 @@ function shiftMonth(offset: number) {
           <details v-if="contextEntries.length" class="period-record-card period-record-card--disclosure">
             <summary>
               <span class="period-record-card__heading">
-                <span><span class="eyebrow">Условия и исключения</span><strong>Контекст месяца</strong></span>
-                <span class="count-badge">{{ contextEntries.length }}</span>
+                <span><EyebrowText>Условия и исключения</EyebrowText><strong>Контекст месяца</strong></span>
+                <Badge>{{ contextEntries.length }}</Badge>
               </span>
               <span class="period-record-card__breakdown">
                 <span>Заметок: {{ contextNotes.length }}</span
@@ -603,7 +605,9 @@ function shiftMonth(offset: number) {
             </div>
           </details>
         </div>
-      </details>
+      </PeriodDetails>
     </template>
-  </section>
+  </PageShell>
 </template>
+
+<style scoped src="./MonthView.css"></style>

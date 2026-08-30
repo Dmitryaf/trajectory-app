@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { formatDate } from '../../../services/dates';
+import { formatDate } from '@/services/dates';
+import DateInput from '@/shared/ui/forms/DateInput.vue';
 
 const props = defineProps<{
   dateFrom: string;
@@ -44,23 +45,89 @@ function showAllTime() {
   <div class="archive-date-filter">
     <label>
       <span>С</span>
-      <input
-        :value="dateFrom"
-        type="date"
+      <DateInput
+        :model-value="dateFrom"
         :aria-label="`Начальная дата ${contextLabel}`"
-        @input="emit('update:dateFrom', ($event.target as HTMLInputElement).value)"
+        @update:model-value="emit('update:dateFrom', $event ?? '')"
       />
     </label>
     <label>
       <span>По</span>
-      <input
-        :value="dateTo"
-        type="date"
+      <DateInput
+        :model-value="dateTo"
         :aria-label="`Конечная дата ${contextLabel}`"
-        @input="emit('update:dateTo', ($event.target as HTMLInputElement).value)"
+        @update:model-value="emit('update:dateTo', $event ?? '')"
       />
     </label>
   </div>
   <p class="archive-date-filter__state" aria-live="polite">{{ rangeLabel }}</p>
   <button class="archive-filter__all-time" type="button" :disabled="!hasRange" @click="showAllTime">За всё время</button>
 </template>
+
+<style scoped>
+.archive-date-filter {
+  display: grid;
+  grid-column: span 2;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.archive-date-filter__state {
+  display: flex;
+  grid-column: 1 / -2;
+  min-height: 34px;
+  align-items: center;
+  margin: 0;
+  padding: 0 4px;
+  color: var(--archive-date-label);
+  font-size: 12px;
+  font-weight: 700;
+}
+.archive-filter__all-time {
+  min-height: 34px;
+  align-self: center;
+  justify-self: end;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--archive-date-action);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.archive-filter__all-time:hover:not(:disabled) {
+  background: var(--archive-date-action-surface);
+  color: var(--archive-date-action-hover);
+}
+.archive-filter__all-time:disabled {
+  color: var(--archive-date-disabled);
+  cursor: default;
+}
+
+@media (max-width: 720px) {
+  .archive-date-filter {
+    grid-column: 1 / -1;
+  }
+  .archive-date-filter__state {
+    grid-column: 1;
+  }
+  .archive-filter__all-time {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 520px) {
+  .archive-date-filter {
+    grid-template-columns: 1fr;
+  }
+  .archive-date-filter__state,
+  .archive-filter__all-time {
+    grid-column: auto;
+  }
+  .archive-filter__all-time {
+    justify-self: start;
+  }
+}
+</style>

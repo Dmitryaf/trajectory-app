@@ -16,6 +16,8 @@ type RoundResult = {
   monthLoadedCharts: boolean;
 };
 
+const analyticsChunkPatternSource = String.raw`/assets/analytics-charts-[^/]+\.js(?:$|\?)`;
+
 async function throttleLikeMidRangeMobile(page: Page) {
   const session = await page.context().newCDPSession(page);
   await session.send('Network.enable');
@@ -48,8 +50,9 @@ async function runRound(browser: Browser): Promise<RoundResult> {
     await page.goto('/');
     await page.locator('.page--today').waitFor();
   });
-  const todayLoadedCharts = await page.evaluate(() =>
-    performance.getEntriesByType('resource').some((entry) => /EChartPanel|echarts/i.test(entry.name)),
+  const todayLoadedCharts = await page.evaluate(
+    (pattern) => performance.getEntriesByType('resource').some((entry) => new RegExp(pattern, 'i').test(entry.name)),
+    analyticsChunkPatternSource,
   );
   const repeatOpenMs = await elapsed(async () => {
     await page.reload();
@@ -66,8 +69,9 @@ async function runRound(browser: Browser): Promise<RoundResult> {
     await page.locator('.month-analysis-details > summary').click();
     await page.locator('.echart-panel').first().waitFor();
   });
-  const monthLoadedCharts = await page.evaluate(() =>
-    performance.getEntriesByType('resource').some((entry) => /EChartPanel|echarts/i.test(entry.name)),
+  const monthLoadedCharts = await page.evaluate(
+    (pattern) => performance.getEntriesByType('resource').some((entry) => new RegExp(pattern, 'i').test(entry.name)),
+    analyticsChunkPatternSource,
   );
 
   await context.close();
@@ -97,11 +101,11 @@ test('measures production PWA entry and the analytics route on a mid-range mobil
 
   expect(
     results.every((result) => !result.todayLoadedCharts),
-    'Today must not download ECharts',
+    `Today must not download ${analyticsChunkPatternSource}`,
   ).toBe(true);
   expect(
     results.every((result) => result.monthLoadedCharts),
-    'Month must lazy-load ECharts when needed',
+    `Month must lazy-load ${analyticsChunkPatternSource} when needed`,
   ).toBe(true);
   expect(medians.firstOpenMs).toBeLessThanOrEqual(budgets.firstOpenMs);
   expect(medians.repeatOpenMs).toBeLessThanOrEqual(budgets.repeatOpenMs);

@@ -7,7 +7,7 @@ import {
   resultsForPeriod,
   summarize,
   type EventComparisonMetric,
-} from '../../services/analytics';
+} from '@/services/analytics';
 import {
   addMonths,
   endOfMonth,
@@ -18,21 +18,24 @@ import {
   startOfMonth,
   toDateKey,
   todayKey,
-} from '../../services/dates';
+} from '@/services/dates';
 import { buildRangePackage, copyAiPrompt as copyPackagePrompt, downloadAiPackage } from '../export/browser';
 import { buildExperimentSummary } from './experimentComparison';
 import { experimentDecisionLabel } from '../experiments/model';
-import { notifyInfo, notifySaved, notifyUnknownError } from '../../services/notifications';
-import { pageCount, pageItems } from '../../services/pagination';
-import { useAppStore } from '../../stores/app';
-import { contextFactorOptions, externalCareerIdsForOptions, type ExperimentRecord } from '../../types';
+import { notifyInfo, notifySaved, notifyUnknownError } from '@/services/notifications';
+import { pageCount, pageItems } from '@/services/pagination';
+import { useAppStore } from '@/stores/app';
+import { contextFactorOptions, externalCareerIdsForOptions, type ExperimentRecord } from '@/types';
+import { chartColors, chartStyles } from '@/shared/theme/colors';
 
-type RangeMonths = 3 | 6 | 12;
+export type RangeMonths = 3 | 6 | 12;
 type TrendMetricId = 'sleep' | 'energy' | 'weight';
+export type TimelineTone = 'event' | 'result' | 'decision' | 'outcome' | 'experiment';
 type DecisionTimelineItem = {
+  key: string;
   date: string;
   type: string;
-  tone: 'event' | 'result' | 'decision' | 'outcome' | 'experiment';
+  tone: TimelineTone;
   title: string;
   detail: string;
 };
@@ -45,7 +48,6 @@ export function useChangeHistoryView() {
   const timelinePage = ref(1);
   const selectedEventKey = ref('');
   const selectedTrendMetric = ref<TrendMetricId>('sleep');
-  const eventPicker = ref<HTMLDetailsElement>();
   const rangeOptions: Array<{ value: RangeMonths; label: string }> = [
     { value: 3, label: '3 месяца' },
     { value: 6, label: '6 месяцев' },
@@ -151,13 +153,13 @@ export function useChangeHistoryView() {
   const trendMetricOption = computed<EChartsCoreOption>(() => {
     const metric = selectedTrendMetric.value;
     let axis: Record<string, unknown> = { scale: true, formatter: '{value}кг' };
-    let color = '#d9952f';
+    let color: string = chartColors.weight;
     if (metric === 'sleep') {
       axis = { min: 0, max: 12, formatter: '{value}ч' };
-      color = '#7467e8';
+      color = chartColors.sleep;
     } else if (metric === 'energy') {
       axis = { min: 1, max: 5, formatter: '{value}' };
-      color = '#2eaa7f';
+      color = chartColors.energy;
     }
     return {
       color: [color],
@@ -167,14 +169,14 @@ export function useChangeHistoryView() {
         type: 'category',
         data: monthRows.value.map((row) => row.label),
         axisTick: { show: false },
-        axisLine: { lineStyle: { color: '#dfe4ed' } },
-        axisLabel: { color: '#7d8798' },
+        axisLine: { lineStyle: chartStyles.axisLine },
+        axisLabel: chartStyles.axisLabel,
       },
       yAxis: {
         type: 'value',
         ...axis,
-        axisLabel: { formatter: axis.formatter, color: '#7d8798' },
-        splitLine: { lineStyle: { color: '#edf1f6' } },
+        axisLabel: { formatter: axis.formatter, color: chartColors.axis },
+        splitLine: { lineStyle: chartStyles.splitLine },
       },
       series: [
         {
@@ -189,7 +191,7 @@ export function useChangeHistoryView() {
           },
           markLine: {
             symbol: ['none', 'none'],
-            lineStyle: { color: '#eb7458', type: 'dashed', width: 1.5 },
+            lineStyle: { color: chartColors.event, type: 'dashed', width: 1.5 },
             label: { show: false },
             tooltip: { formatter: (params: { data?: { name?: string } }) => params.data?.name ?? 'Важное событие' },
             data: eventLines.value,
@@ -252,13 +254,28 @@ export function useChangeHistoryView() {
   const decisionTimeline = computed<DecisionTimelineItem[]>(() =>
     (
       [
-        ...lifeEvents.value.map((event) => ({ date: event.date, type: 'Событие', tone: 'event', title: event.title, detail: event.note })),
-        ...results.value.map((result) => ({ date: result.date, type: 'Итог', tone: 'result', title: result.title, detail: result.note })),
+        ...lifeEvents.value.map((event) => ({
+          key: `event:${event.createdAt}`,
+          date: event.date,
+          type: 'Событие',
+          tone: 'event',
+          title: event.title,
+          detail: event.note,
+        })),
+        ...results.value.map((result) => ({
+          key: `result:${result.createdAt}`,
+          date: result.date,
+          type: 'Итог',
+          tone: 'result',
+          title: result.title,
+          detail: result.note,
+        })),
         ...store.weeklyReviews.flatMap((review) => {
           const date = savedDate(review.updatedAt, endOfWeek(review.weekStart));
           const items = [];
           if (review.nextLever || review.ifThenPlan) {
             items.push({
+              key: `week:${review.weekStart}:decision`,
               date,
               type: 'Решение недели',
               tone: 'decision',
@@ -267,11 +284,19 @@ export function useChangeHistoryView() {
             });
           }
           if (review.previousPlanOutcome) {
-            items.push({ date, type: 'Проверка решения', tone: 'outcome', title: review.previousPlanOutcome, detail: '' });
+            items.push({
+              key: `week:${review.weekStart}:outcome`,
+              date,
+              type: 'Проверка решения',
+              tone: 'outcome',
+              title: review.previousPlanOutcome,
+              detail: '',
+            });
           }
           return items;
         }),
         ...store.monthlyReviews.map((review) => ({
+          key: `month:${review.monthStart}:decision`,
           date: savedDate(review.updatedAt, endOfMonth(review.monthStart)),
           type: 'Решение месяца',
           tone: 'decision',
@@ -279,6 +304,7 @@ export function useChangeHistoryView() {
           detail: review.ifThenPlan,
         })),
         ...store.settings.experimentHistory.map((record) => ({
+          key: `experiment:${record.id}`,
           date: record.endDate,
           type: 'Эксперимент',
           tone: 'experiment',
@@ -295,13 +321,17 @@ export function useChangeHistoryView() {
   watch(timelinePageCount, (count) => {
     timelinePage.value = Math.min(timelinePage.value, count);
   });
-  const timelineSummary = computed(() =>
+  const timelineSummary = computed<Array<{ tone: TimelineTone; label: string; count: number }>>(() =>
     [
-      { tone: 'event', label: 'События', count: decisionTimeline.value.filter((item) => item.tone === 'event').length },
-      { tone: 'result', label: 'Итоги', count: decisionTimeline.value.filter((item) => item.tone === 'result').length },
-      { tone: 'decision', label: 'Решения', count: decisionTimeline.value.filter((item) => item.tone === 'decision').length },
-      { tone: 'outcome', label: 'Проверки', count: decisionTimeline.value.filter((item) => item.tone === 'outcome').length },
-      { tone: 'experiment', label: 'Эксперименты', count: decisionTimeline.value.filter((item) => item.tone === 'experiment').length },
+      { tone: 'event' as const, label: 'События', count: decisionTimeline.value.filter((item) => item.tone === 'event').length },
+      { tone: 'result' as const, label: 'Итоги', count: decisionTimeline.value.filter((item) => item.tone === 'result').length },
+      { tone: 'decision' as const, label: 'Решения', count: decisionTimeline.value.filter((item) => item.tone === 'decision').length },
+      { tone: 'outcome' as const, label: 'Проверки', count: decisionTimeline.value.filter((item) => item.tone === 'outcome').length },
+      {
+        tone: 'experiment' as const,
+        label: 'Эксперименты',
+        count: decisionTimeline.value.filter((item) => item.tone === 'experiment').length,
+      },
     ].filter((item) => item.count > 0),
   );
 
@@ -344,7 +374,6 @@ export function useChangeHistoryView() {
   }
   function selectEvent(event: (typeof store.lifeEvents)[number]) {
     selectedEventKey.value = eventKey(event);
-    eventPicker.value?.removeAttribute('open');
   }
   function createPackage() {
     return buildRangePackage(range.value, todayKey(), {
@@ -419,7 +448,6 @@ export function useChangeHistoryView() {
     timelinePageCount,
     selectedEventKey,
     selectedTrendMetric,
-    eventPicker,
     rangeOptions,
     summary,
     primaryCues,

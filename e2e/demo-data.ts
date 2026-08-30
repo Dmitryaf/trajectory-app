@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 export const demoFilePath = 'demo/generated/trajectory-full.json';
+export const visualDemoAnchor = '2026-08-26';
+export const visualDemoFilePath = 'demo/generated/trajectory-visual.json';
 
 type DemoPayload = {
   exportedAt: string;

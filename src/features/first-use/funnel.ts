@@ -1,4 +1,4 @@
-import { FIRST_USE_FUNNEL_VERSION } from '../../model/dataVersions';
+import { FIRST_USE_FUNNEL_VERSION } from '@/model/dataVersions';
 
 export const firstUseFunnelEventNames = [
   'first_use_presentation_viewed',

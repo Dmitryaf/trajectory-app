@@ -12,10 +12,10 @@ import {
   type MonthlyReview,
   type ResultRecord,
   type WeeklyReview,
-} from '../../types';
-import { BACKUP_VERSION, MIN_SUPPORTED_BACKUP_VERSION } from '../../model/dataVersions';
+} from '@/types';
+import { BACKUP_VERSION, MIN_SUPPORTED_BACKUP_VERSION } from '@/model/dataVersions';
 import { experimentEntryLinkError, experimentIntegrityError, linkLegacyExperimentEntries } from '../experiments/model';
-import { startOfMonth, startOfWeek } from '../../services/dates';
+import { startOfMonth, startOfWeek } from '@/services/dates';
 
 export type ExportPayload = {
   version: number;

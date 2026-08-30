@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
+import DateInput from '@/shared/ui/forms/DateInput.vue';
 import { computed, reactive, ref, watch } from 'vue';
-import { recordFirstUseEvent } from '../../first-use/funnel';
-import { addDays, formatDate } from '../../../services/dates';
-import { useAppStore } from '../../../stores/app';
-import { lifeEventTypeOptions, resultAreaOptions, type LifeEventType, type ResultRecord, type WeeklyReview } from '../../../types';
+import { recordFirstUseEvent } from '@/features/first-use/funnel';
+import { addDays, formatDate } from '@/services/dates';
+import { useAppStore } from '@/stores/app';
+import { lifeEventTypeOptions, resultAreaOptions, type LifeEventType, type ResultRecord, type WeeklyReview } from '@/types';
 
 type JournalItem = {
   key: string;
@@ -144,13 +146,7 @@ async function saveToJournal(item: JournalItem) {
           <div class="weekly-review-journal__fields">
             <label>
               <span>Точная дата</span>
-              <input
-                v-model="drafts[item.key]!.date"
-                type="date"
-                :min="review.weekStart"
-                :max="weekEnd"
-                :aria-label="`Дата: ${item.title}`"
-              />
+              <DateInput v-model="drafts[item.key]!.date" :min="review.weekStart" :max="weekEnd" :aria-label="`Дата: ${item.title}`" />
             </label>
             <label>
               <span>{{ item.kind === 'result' ? 'Область' : 'Тип записи' }}</span>
@@ -161,15 +157,15 @@ async function saveToJournal(item: JournalItem) {
                 </option>
               </select>
             </label>
-            <button
-              class="secondary-button"
+            <ActionButton
+              variant="secondary"
               type="button"
               :disabled="!canSave(item)"
               :aria-label="`Сохранить в Журнале: ${item.title}`"
               @click="saveToJournal(item)"
             >
               {{ savingKey === item.key ? 'Сохраняем…' : 'Сохранить' }}
-            </button>
+            </ActionButton>
           </div>
           <p v-if="isAlreadySaved(item)" class="weekly-review-journal__status">Уже есть в Журнале</p>
           <p v-else-if="saveErrors[item.key]" class="weekly-review-journal__error" role="alert">{{ saveErrors[item.key] }}</p>
@@ -178,3 +174,91 @@ async function saveToJournal(item: JournalItem) {
     </div>
   </details>
 </template>
+
+<style scoped>
+.weekly-review-journal {
+  margin-top: 14px;
+  border: 1px solid var(--journal-links-border);
+  border-radius: 16px;
+  background: var(--period-details-surface);
+}
+.weekly-review-journal > summary {
+  padding: 14px 16px;
+  color: var(--navy);
+  font-weight: 800;
+  cursor: pointer;
+}
+.weekly-review-journal__content {
+  padding: 0 16px 16px;
+}
+.weekly-review-journal__content > p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.weekly-review-journal__list {
+  display: grid;
+  gap: 10px;
+}
+.weekly-review-journal__item {
+  padding: 13px;
+  border: 1px solid var(--journal-link-border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.weekly-review-journal__item-heading {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+.weekly-review-journal__item-heading span,
+.weekly-review-journal__fields label > span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+.weekly-review-journal__item-heading strong {
+  color: var(--navy);
+  font-size: 14px;
+}
+.weekly-review-journal__fields {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.7fr) minmax(180px, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+.weekly-review-journal__fields label {
+  display: grid;
+  gap: 5px;
+}
+.weekly-review-journal__fields input,
+.weekly-review-journal__fields select {
+  width: 100%;
+  min-width: 0;
+}
+.weekly-review-journal__fields .secondary-button {
+  min-height: 44px;
+}
+.weekly-review-journal__status,
+.weekly-review-journal__error {
+  margin: 8px 0 0;
+  font-size: 12px;
+  font-weight: 750;
+}
+.weekly-review-journal__status {
+  color: var(--journal-link-success);
+}
+.weekly-review-journal__error {
+  color: var(--journal-link-danger);
+}
+
+@media (max-width: 720px) {
+  .weekly-review-journal__fields {
+    grid-template-columns: 1fr;
+  }
+  .weekly-review-journal__fields .secondary-button {
+    width: 100%;
+  }
+}
+</style>

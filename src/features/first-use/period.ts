@@ -1,4 +1,4 @@
-import { addDays, endOfWeek, startOfWeek, todayKey } from '../../services/dates';
+import { addDays, endOfWeek, startOfWeek, todayKey } from '@/services/dates';
 
 export type FirstUsePeriodOption = {
   id: 'current' | 'previous';

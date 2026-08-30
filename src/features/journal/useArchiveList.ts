@@ -1,6 +1,6 @@
 import { computed, ref, watch, type ComputedRef } from 'vue';
-import { todayKey } from '../../services/dates';
-import { pageCount as countPages, pageItems } from '../../services/pagination';
+import { todayKey } from '@/services/dates';
+import { pageCount as countPages, pageItems } from '@/services/pagination';
 
 interface DatedArchiveItem {
   date: string;

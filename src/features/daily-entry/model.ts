@@ -1,5 +1,5 @@
-import { currentDailyEntrySchemaVersion, type DailyBlockId, type DailyEntry } from '../../types';
-import { plainCopy } from '../../services/plain';
+import { currentDailyEntrySchemaVersion, type DailyBlockId, type DailyEntry } from '@/types';
+import { plainCopy } from '@/services/plain';
 import { experimentTextLimits } from '../experiments/model';
 
 export type DailyEntryMetrics = {

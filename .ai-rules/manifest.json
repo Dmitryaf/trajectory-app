@@ -2,7 +2,7 @@
   "schemaVersion": "0.2",
   "source": {
     "repository": "ai-rules-hub",
-    "revision": "ef27daa7f059b70397ba5cf4e3d9285163e88c3d"
+    "revision": "121c1872ef3069a0c8d43a80eb950b25b4ee004b"
   },
   "topics": ["ai-collaboration"],
   "profiles": ["data-sensitive", "research-driven", "standard-product"]

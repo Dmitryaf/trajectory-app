@@ -4,9 +4,9 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import { describe, expect, it, vi } from 'vitest';
-import App from '../../src/App.vue';
-import { useAppStore } from '../../src/stores/app';
-import { useAuthStore } from '../../src/stores/auth';
+import App from '@/App.vue';
+import { useAppStore } from '@/stores/app';
+import { useAuthStore } from '@/stores/auth';
 
 const sync = vi.hoisted(() => ({
   prepareLocalCacheOwner: vi.fn(),
@@ -27,19 +27,19 @@ const cloud = vi.hoisted(() => ({
   }),
 }));
 
-vi.mock('../../src/features/sync/startup', () => sync);
-vi.mock('../../src/features/first-use/funnel', () => funnel);
-vi.mock('../../src/services/cloudSync', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../src/services/cloudSync')>()),
+vi.mock('@/features/sync/startup', () => sync);
+vi.mock('@/features/first-use/funnel', () => funnel);
+vi.mock('@/services/cloudSync', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/services/cloudSync')>()),
   subscribeToCloudSnapshot: cloud.subscribe,
 }));
-vi.mock('../../src/features/sync/resume', () => ({
+vi.mock('@/features/sync/resume', () => ({
   createResumeCloudRefresh: (refresh: () => Promise<void>) => {
     resume.refresh = refresh;
     return resume.request;
   },
 }));
-vi.mock('../../src/services/notifications', () => ({
+vi.mock('@/services/notifications', () => ({
   notifyInfo: vi.fn(),
   notifySaved: vi.fn(),
   notifyUnknownError: vi.fn(),

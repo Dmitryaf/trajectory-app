@@ -2,6 +2,9 @@
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useAppStore } from '../stores/app';
+import PageHeading from '../shared/ui/layout/PageHeading.vue';
+import PageShell from '../shared/ui/layout/PageShell.vue';
+import EyebrowText from '../shared/ui/typography/EyebrowText.vue';
 
 const store = useAppStore();
 const sections = computed(() => [
@@ -25,14 +28,14 @@ const sections = computed(() => [
 </script>
 
 <template>
-  <section class="page page--journal">
-    <div class="page-heading">
+  <PageShell class="page--journal">
+    <PageHeading>
       <div>
-        <span class="eyebrow">Важное отдельно</span>
+        <EyebrowText>Важное отдельно</EyebrowText>
         <h1>Журнал</h1>
         <p>Здесь отдельно хранятся конкретные итоги, события, мысли и наблюдения.</p>
       </div>
-    </div>
+    </PageHeading>
     <article class="journal-guide-card">
       <strong>Что записывать в Журнал</strong>
       <p>
@@ -60,5 +63,7 @@ const sections = computed(() => [
       </div>
       <i>→</i>
     </RouterLink>
-  </section>
+  </PageShell>
 </template>
+
+<style scoped src="./MoreView.css"></style>

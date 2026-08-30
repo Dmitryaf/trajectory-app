@@ -12,47 +12,40 @@ const reportThresholds = new Map([
   ['.css', 500],
 ]);
 const hotspotContentBudgets = new Map([
-  ['src/views/TodayView.vue', 27524],
-  ['src/views/SettingsView.vue', 15023],
-  ['src/views/WeekView.vue', 25425],
-  ['src/views/MonthView.vue', 20421],
-  ['src/features/settings/useSettingsForm.ts', 12379],
+  ['src/views/TodayView.vue', 28086],
+  ['src/views/SettingsView.vue', 14541],
+  ['src/views/WeekView.vue', 24230],
+  ['src/views/MonthView.vue', 20807],
+  ['src/features/settings/useSettingsForm.ts', 12359],
 ]);
 const allowedDbOwners = new Set(['src/stores/app.ts', 'src/features/sync/base.ts']);
 const allowedServiceFeatureEdges = new Set(['src/services/analytics.ts']);
 const styleOwnerRules = [
-  { selector: 'bottom-nav', owner: 'src/styles/shell.css', overrides: /^src\/styles\/responsive-/ },
-  { selector: 'primary-button', owner: 'src/styles/primitives.css' },
-  { selector: 'secondary-button', owner: 'src/styles/primitives.css' },
-  { selector: 'danger-button', owner: 'src/styles/primitives.css' },
-  { selector: 'range-tabs', owner: 'src/styles/primitives.css', overrides: /^src\/styles\/responsive-/ },
-  { selector: 'section-heading', owner: 'src/styles/primitives.css' },
-  { selector: 'form-card', owner: 'src/styles/primitives.css', overrides: /^src\/styles\/responsive-/ },
-  {
-    selector: 'result-composer',
-    owner: 'src/styles/primitives.css',
-    allowedFiles: new Set(['src/styles/journal.css']),
-    overrides: /^src\/styles\/responsive-/,
-  },
-  {
-    selector: 'dashboard-card',
-    owner: 'src/styles/primitives.css',
-    allowedFiles: new Set(['src/styles/reviews.css']),
-    overrides: /^src\/styles\/responsive-/,
-  },
-  {
-    selector: 'review-card',
-    owner: 'src/styles/primitives.css',
-    allowedFiles: new Set(['src/styles/reviews.css']),
-    overrides: /^src\/styles\/responsive-/,
-  },
+  { selector: 'bottom-nav', owner: 'src/App.css' },
+  { selector: 'primary-button', owner: 'src/shared/ui/actions/ActionButton.css' },
+  { selector: 'secondary-button', owner: 'src/shared/ui/actions/ActionButton.css' },
+  { selector: 'danger-button', owner: 'src/shared/ui/actions/ActionButton.css' },
+  { selector: 'range-tabs', owner: 'src/shared/ui/navigation/RangeTabs.css' },
+  { selector: 'section-heading', owner: 'src/shared/ui/layout/SectionHeading.css' },
+  { selector: 'form-card', owner: 'src/shared/ui/layout/SurfaceCard.css' },
+  { selector: 'dashboard-card', owner: 'src/shared/ui/layout/SurfaceCard.css' },
+  { selector: 'review-card', owner: 'src/shared/ui/layout/SurfaceCard.css' },
   {
     selector: 'settings-card',
-    owner: 'src/styles/primitives.css',
-    allowedFiles: new Set(['src/styles/settings.css']),
-    overrides: /^src\/styles\/responsive-/,
+    owner: 'src/features/settings/ui/SettingsCard.css',
   },
 ];
+const visualPrimitiveOwners = new Map([
+  ['primary-button', 'src/shared/ui/actions/ActionButton.vue'],
+  ['secondary-button', 'src/shared/ui/actions/ActionButton.vue'],
+  ['danger-button', 'src/shared/ui/actions/ActionButton.vue'],
+  ['range-tabs', 'src/shared/ui/navigation/RangeTabs.vue'],
+  ['section-heading', 'src/shared/ui/layout/SectionHeading.vue'],
+  ['data-note', 'src/shared/ui/content/DataNote.vue'],
+  ['form-card', 'src/shared/ui/layout/SurfaceCard.vue'],
+  ['dashboard-card', 'src/shared/ui/layout/SurfaceCard.vue'],
+  ['review-card', 'src/shared/ui/layout/SurfaceCard.vue'],
+]);
 
 async function collectFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -98,7 +91,7 @@ function localSpecifiers(filePath, source) {
   function visit(node) {
     if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier) {
       const specifier = node.moduleSpecifier.text;
-      if (specifier.startsWith('.')) {
+      if (specifier.startsWith('.') || specifier.startsWith('@/')) {
         specifiers.add(specifier);
       }
     } else if (
@@ -108,7 +101,7 @@ function localSpecifiers(filePath, source) {
       ts.isStringLiteral(node.arguments[0])
     ) {
       const specifier = node.arguments[0].text;
-      if (specifier.startsWith('.')) {
+      if (specifier.startsWith('.') || specifier.startsWith('@/')) {
         specifiers.add(specifier);
       }
     }
@@ -119,7 +112,7 @@ function localSpecifiers(filePath, source) {
 }
 
 function resolveLocalImport(importer, specifier, knownFiles) {
-  const base = path.resolve(path.dirname(importer), specifier);
+  const base = specifier.startsWith('@/') ? path.resolve(sourceRoot, specifier.slice(2)) : path.resolve(path.dirname(importer), specifier);
   const candidates = [
     base,
     ...[...sourceExtensions].map((extension) => `${base}${extension}`),
@@ -229,6 +222,17 @@ for (const rule of styleOwnerRules) {
 
 for (const importer of architectureFiles) {
   const source = await readFile(importer, 'utf8');
+  const importerPath = projectPath(importer);
+  const staticClassAttributes = source.matchAll(/<[A-Za-z][\w.-]*\b[^>]*\bclass=(['"])(.*?)\1[^>]*>/gs);
+  for (const match of staticClassAttributes) {
+    const classNames = match[2].split(/\s+/).filter(Boolean);
+    for (const className of classNames) {
+      const owner = visualPrimitiveOwners.get(className);
+      if (owner && importerPath !== owner) {
+        violations.push(`${importerPath}: .${className} создаётся вручную; используйте компонент ${owner}.`);
+      }
+    }
+  }
   const targets = localSpecifiers(importer, source)
     .map((specifier) => resolveLocalImport(importer, specifier, knownFiles))
     .filter(Boolean);
@@ -236,7 +240,6 @@ for (const importer of architectureFiles) {
   graph.set(importer, productionTargets);
 
   for (const target of productionTargets) {
-    const importerPath = projectPath(importer);
     const targetPath = projectPath(target);
     const fromLayer = sourceLayer(importer);
     const toLayer = sourceLayer(target);

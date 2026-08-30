@@ -5,16 +5,16 @@ import { buildEventComparison } from '../eventComparison';
 import { buildObservations, factorSummaries } from '../observations';
 import { entriesForPeriod, entriesForWeek, summarize } from '../periodSummary';
 import { buildRangeReviewCues, buildReviewCues } from '../reviewCues';
-import { weekSummaryText } from '../../../services/analytics';
+import { weekSummaryText } from '@/services/analytics';
 import {
   AI_PROMPT_CHARACTER_LIMIT,
   buildAiReportCustomRangePayload,
   buildAiReportPayload,
   buildAiReportPrompt,
   buildAiReportRangePayload,
-} from '../../export/report';
-import { addMonths, monthsBetween } from '../../../services/dates';
-import { AI_REPORT_VERSION } from '../../../model/dataVersions';
+} from '@/features/export/report';
+import { addMonths, monthsBetween } from '@/services/dates';
+import { AI_REPORT_VERSION } from '@/model/dataVersions';
 import {
   defaultSettings,
   emptyDailyEntry,
@@ -26,7 +26,7 @@ import {
   normalizeSettings,
   normalizeWeeklyReview,
   type DailyEntry,
-} from '../../../types';
+} from '@/types';
 
 function entry(date: string, patch: Partial<DailyEntry>): DailyEntry {
   const recordedFields = new Set(patch.recordedFields ?? []);

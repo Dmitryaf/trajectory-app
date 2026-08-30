@@ -1,11 +1,11 @@
 import 'fake-indexeddb/auto';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
-import { db } from '../../src/db';
-import { normalizeSnapshot } from '../../src/features/backup/snapshot';
-import { BACKUP_VERSION, SETTINGS_VERSION } from '../../src/model/dataVersions';
-import { useAppStore, type ExportPayload } from '../../src/stores/app';
-import { defaultSettings, emptyDailyEntry, emptyWeeklyReview } from '../../src/types';
+import { db } from '@/db';
+import { normalizeSnapshot } from '@/features/backup/snapshot';
+import { BACKUP_VERSION, SETTINGS_VERSION } from '@/model/dataVersions';
+import { useAppStore, type ExportPayload } from '@/stores/app';
+import { defaultSettings, emptyDailyEntry, emptyWeeklyReview } from '@/types';
 
 beforeEach(async () => {
   await db.delete();

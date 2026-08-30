@@ -8,6 +8,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 2 : undefined,
   reporter: process.env.CI ? 'github' : 'list',
   snapshotPathTemplate: '{testDir}/{testFilePath}-snapshots/{arg}-{projectName}{ext}',
   use: {
@@ -24,7 +25,7 @@ export default defineConfig({
     },
     {
       name: 'webkit',
-      testIgnore: ['**/performance.e2e.ts', '**/today-visual.e2e.ts'],
+      testIgnore: ['**/performance.e2e.ts', '**/today-visual.e2e.ts', '**/interface-visual.e2e.ts'],
       use: { ...devices['Desktop Safari'] },
     },
     {

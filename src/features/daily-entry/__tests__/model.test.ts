@@ -7,8 +7,8 @@ import {
   validateDailyEntryMetrics,
   validateDailyEntryText,
 } from '../model';
-import { emptyDailyEntry, type DailyBlockId } from '../../../types';
-import { DAILY_ENTRY_SCHEMA_VERSION } from '../../../model/dataVersions';
+import { emptyDailyEntry, type DailyBlockId } from '@/types';
+import { DAILY_ENTRY_SCHEMA_VERSION } from '@/model/dataVersions';
 
 describe('daily entry model', () => {
   it('calculates time in bed across midnight and rejects invalid ranges', () => {

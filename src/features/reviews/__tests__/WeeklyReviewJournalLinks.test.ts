@@ -3,10 +3,10 @@
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { readFirstUseFunnel } from '../../first-use/funnel';
+import { readFirstUseFunnel } from '@/features/first-use/funnel';
 import WeeklyReviewJournalLinks from '../ui/WeeklyReviewJournalLinks.vue';
-import { useAppStore } from '../../../stores/app';
-import { defaultSettings, emptyWeeklyReview, type LifeEventRecord, type ResultRecord } from '../../../types';
+import { useAppStore } from '@/stores/app';
+import { defaultSettings, emptyWeeklyReview, type LifeEventRecord, type ResultRecord } from '@/types';
 
 function setup(existingResults: ResultRecord[] = []) {
   const pinia = createPinia();

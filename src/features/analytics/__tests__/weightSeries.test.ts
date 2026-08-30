@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { dateRange, endOfMonth, startOfMonth } from '../../../services/dates';
-import { emptyDailyEntry } from '../../../types';
+import { dateRange, endOfMonth, startOfMonth } from '@/services/dates';
+import { emptyDailyEntry } from '@/types';
 import { buildWeightSeries } from '../weightSeries';
 
 describe('monthly weight series', () => {

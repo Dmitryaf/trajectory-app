@@ -58,7 +58,7 @@ export function useDialogFocus(active: Ref<boolean>, dialog: Ref<HTMLElement | u
       previouslyFocused = null;
       await nextTick();
       if (target?.isConnected) {
-        target.focus();
+        target.focus({ preventScroll: true });
       }
     },
     { immediate: true },

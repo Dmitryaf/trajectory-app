@@ -1,17 +1,17 @@
 import 'fake-indexeddb/auto';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { db } from '../../src/db';
-import { useAppStore } from '../../src/stores/app';
-import { emptyDailyEntry } from '../../src/types';
+import { db } from '@/db';
+import { useAppStore } from '@/stores/app';
+import { emptyDailyEntry } from '@/types';
 
 const storageProtection = vi.hoisted(() => ({
   check: vi.fn(),
   request: vi.fn(),
 }));
 
-vi.mock('../../src/services/storageProtection', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../src/services/storageProtection')>();
+vi.mock('@/services/storageProtection', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/storageProtection')>();
   return {
     ...actual,
     checkStoragePersistence: storageProtection.check,

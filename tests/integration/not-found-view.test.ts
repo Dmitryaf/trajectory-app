@@ -3,7 +3,7 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import { describe, expect, it } from 'vitest';
-import NotFoundView from '../../src/views/NotFoundView.vue';
+import NotFoundView from '@/views/NotFoundView.vue';
 
 describe('unknown route', () => {
   it('explains the missing page and returns to Today', async () => {

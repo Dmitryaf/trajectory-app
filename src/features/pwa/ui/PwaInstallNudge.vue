@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { postponePwaInstallNudge, readPwaInstallNudgeDismissedUntil, shouldShowPwaInstallNudge } from '../installNudge';
@@ -49,11 +50,84 @@ async function install() {
       <p>Добавьте приложение на домашний экран телефона.</p>
     </div>
     <div class="pwa-install-nudge__actions">
-      <button v-if="canPrompt" class="secondary-button" type="button" :disabled="installing" @click="install">
+      <ActionButton v-if="canPrompt" variant="secondary" type="button" :disabled="installing" @click="install">
         {{ installing ? 'Открываю…' : 'Установить' }}
-      </button>
-      <RouterLink v-else class="secondary-button" to="/settings#install-settings">{{ guideLabel }}</RouterLink>
+      </ActionButton>
+      <ActionButton v-else :as="RouterLink" variant="secondary" to="/settings#install-settings">{{ guideLabel }}</ActionButton>
       <button class="pwa-install-nudge__later" type="button" @click="postpone">Позже</button>
     </div>
   </aside>
 </template>
+
+<style scoped>
+.pwa-install-nudge {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 13px 14px;
+  border: 1px solid var(--pwa-nudge-border);
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--pwa-nudge-gradient-start), var(--pwa-nudge-gradient-end));
+}
+.pwa-install-nudge__mark {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--pwa-nudge-icon-surface);
+  color: var(--accent-dark);
+  font-size: 18px;
+  font-weight: 900;
+}
+.pwa-install-nudge strong {
+  display: block;
+  color: var(--navy);
+  font-size: 14px;
+}
+.pwa-install-nudge p {
+  margin: 2px 0 0;
+  color: var(--pwa-nudge-text);
+  font-size: 12px;
+}
+.pwa-install-nudge__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pwa-install-nudge__actions .secondary-button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 11px;
+  text-align: center;
+  text-decoration: none;
+}
+.pwa-install-nudge__later {
+  min-height: 40px;
+  padding: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--pwa-nudge-action);
+  font-weight: 750;
+}
+.pwa-install-nudge__later:hover {
+  color: var(--accent-dark);
+}
+
+@media (max-width: 720px) {
+  .pwa-install-nudge {
+    grid-template-columns: 38px minmax(0, 1fr);
+    align-items: start;
+  }
+  .pwa-install-nudge__actions {
+    grid-column: 1 / -1;
+  }
+  .pwa-install-nudge__actions .secondary-button {
+    flex: 1;
+  }
+}
+</style>

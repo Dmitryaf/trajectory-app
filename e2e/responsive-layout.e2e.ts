@@ -1,7 +1,18 @@
 import { expect, test } from './fixtures';
+import type { Locator } from '@playwright/test';
 import { demoAnchor, demoFilePath, emptyPeriodDate } from './demo-data';
 
 const routes = ['/', '/week', '/month', '/trends', '/more', '/results', '/events', '/settings'];
+
+async function expectPeriodDetailsChrome(details: Locator) {
+  await expect(details).toHaveCSS('border-top-style', 'solid');
+  await expect(details).toHaveCSS('border-top-color', 'rgb(220, 229, 225)');
+  await expect(details).toHaveCSS('border-radius', '16px');
+  await expect(details).toHaveCSS('background-color', 'rgba(255, 255, 255, 0.72)');
+  const summary = details.locator(':scope > summary');
+  await expect(summary).toHaveCSS('padding-top', '16px');
+  await expect(summary).toHaveCSS('padding-right', '18px');
+}
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/settings');
@@ -121,6 +132,49 @@ test('keeps mobile form controls inside their cards', async ({ page }) => {
   }
 });
 
+test('separates month metric controls from the chart and reuses the secondary daily action style', async ({ page }) => {
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 1280, height: 720 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/month');
+
+    for (const layout of [
+      { switcher: '.month-metric-card .metric-switcher', chart: '.month-metric-card .echart-panel' },
+      { switcher: '.trend-metric-switcher', chart: '.trend-metric-card .echart-panel' },
+    ]) {
+      if (layout.switcher === '.trend-metric-switcher') {
+        await page.goto('/trends');
+        await page.locator('.trends-metric-details > summary').click();
+      }
+
+      const switcherBox = await page.locator(layout.switcher).boundingBox();
+      const chartBox = await page.locator(layout.chart).boundingBox();
+      expect(switcherBox).not.toBeNull();
+      expect(chartBox).not.toBeNull();
+      expect(chartBox!.y - (switcherBox!.y + switcherBox!.height)).toBeGreaterThanOrEqual(14);
+    }
+  }
+
+  await page.goto('/');
+  const settingsAction = page.locator('.daily-layout-settings .secondary-button');
+  const goalAction = page.locator('.current-goal-summary .secondary-button');
+  await expect(settingsAction).toBeVisible();
+  await expect(goalAction).toBeVisible();
+
+  const styleProperties = ['backgroundColor', 'borderRadius', 'fontSize', 'fontWeight', 'minHeight', 'padding'] as const;
+  const settingsStyle = await settingsAction.evaluate((element, properties) => {
+    const style = getComputedStyle(element);
+    return Object.fromEntries(properties.map((property) => [property, style[property]]));
+  }, styleProperties);
+  const goalStyle = await goalAction.evaluate((element, properties) => {
+    const style = getComputedStyle(element);
+    return Object.fromEntries(properties.map((property) => [property, style[property]]));
+  }, styleProperties);
+  expect(settingsStyle).toEqual(goalStyle);
+});
+
 test('separates the custom-period action from adjacent review content', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 
@@ -174,9 +228,29 @@ test('keeps change history visible and one metric behind a compact mobile disclo
   await expect(metric.locator('.metric-switcher')).toBeVisible();
   await expect(page.locator('.trend-table')).toHaveCount(0);
 
+  const list = history.locator('.history-timeline__list');
+  const initialListHeight = await list.evaluate((element) => element.getBoundingClientRect().height);
   await history.locator('.archive-pagination button', { hasText: 'Дальше' }).click();
+  const transitionHeights = await list.evaluate(
+    (element) =>
+      new Promise<number[]>((resolve) => {
+        const heights: number[] = [];
+        const startedAt = performance.now();
+        const sample = () => {
+          heights.push(element.getBoundingClientRect().height);
+          if (performance.now() - startedAt >= 400) {
+            resolve(heights);
+            return;
+          }
+          requestAnimationFrame(sample);
+        };
+        sample();
+      }),
+  );
   await expect(history.locator('.decision-timeline__item')).toHaveCount(10);
   await expect(history.locator('.archive-pagination span')).toHaveText(/^2 из \d+$/);
+  const finalListHeight = transitionHeights.at(-1)!;
+  expect(Math.max(...transitionHeights)).toBeLessThanOrEqual(Math.max(initialListHeight, finalListHeight) + 2);
 
   const widths = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,
@@ -393,6 +467,7 @@ test('keeps monthly results before the review and secondary context behind a dis
   await expect(page.locator('.month-featured-events')).toHaveCount(0);
   await expect(page.locator('.month-facts-details')).toHaveCount(0);
   await expect(page.locator('.month-analysis-details')).not.toHaveAttribute('open', '');
+  await expectPeriodDetailsChrome(page.locator('.month-analysis-details'));
 
   const records = page.locator('.period-records--featured');
   await expect(records.getByText('Итоги месяца', { exact: true })).toBeVisible();
@@ -411,6 +486,7 @@ test('keeps monthly results before the review and secondary context behind a dis
   await records.getByRole('navigation', { name: 'Страницы итогов месяца' }).getByRole('button', { name: 'Дальше' }).click();
   await expect(records.getByRole('navigation', { name: 'Страницы итогов месяца' })).toContainText('2 из');
   const secondaryRecords = page.locator('details.period-records');
+  await expectPeriodDetailsChrome(secondaryRecords);
   await secondaryRecords.getByText('Показать действия и дополнительный контекст', { exact: true }).click();
   await secondaryRecords.getByText('Конкретные действия и подготовка', { exact: true }).click();
   await expect(secondaryRecords.getByRole('navigation', { name: 'Страницы действий месяца' })).toBeVisible();
@@ -425,6 +501,7 @@ test('keeps weekly results and events visible before detailed daily context', as
   await expect(records.getByRole('link', { name: 'Открыть все итоги' })).toHaveCount(0);
   await expect(records.getByRole('link', { name: 'Открыть все события' })).toHaveCount(0);
   await expect(page.locator('.week-data-details')).not.toHaveAttribute('open', '');
+  await expectPeriodDetailsChrome(page.locator('.week-data-details'));
 });
 
 test('keeps desktop navigation visible while the page scrolls', async ({ page }) => {

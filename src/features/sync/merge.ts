@@ -1,5 +1,5 @@
-import { BACKUP_VERSION } from '../../model/dataVersions';
-import type { LifeEventRecord, ResultRecord } from '../../types';
+import { BACKUP_VERSION } from '@/model/dataVersions';
+import type { LifeEventRecord, ResultRecord } from '@/types';
 import { normalizeSnapshot, type ExportPayload } from '../backup/snapshot';
 
 type KeyedRecord = Record<string, unknown>;

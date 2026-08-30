@@ -56,3 +56,10 @@ onMounted(resize);
     @input="update"
   ></textarea>
 </template>
+
+<style scoped>
+.auto-grow-textarea {
+  overflow-y: hidden;
+  resize: none;
+}
+</style>

@@ -1,21 +1,21 @@
 import 'fake-indexeddb/auto';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { db } from '../../src/db';
-import { BACKUP_VERSION } from '../../src/features/backup/version';
-import { saveCloudSyncBase } from '../../src/features/sync/base';
+import { db } from '@/db';
+import { BACKUP_VERSION } from '@/features/backup/version';
+import { saveCloudSyncBase } from '@/features/sync/base';
 import {
   CloudRevisionConflictError,
   getCloudSyncMeta,
   loadCloudSnapshot,
   markCloudSyncPending,
   saveCloudSnapshot,
-} from '../../src/services/cloudSync';
-import { useAppStore } from '../../src/stores/app';
-import { useAuthStore } from '../../src/stores/auth';
-import { defaultSettings, emptyDailyEntry, emptyMonthlyReview, emptyWeeklyReview } from '../../src/types';
+} from '@/services/cloudSync';
+import { useAppStore } from '@/stores/app';
+import { useAuthStore } from '@/stores/auth';
+import { defaultSettings, emptyDailyEntry, emptyMonthlyReview, emptyWeeklyReview } from '@/types';
 
-vi.mock('../../src/services/cloudSync', () => ({
+vi.mock('@/services/cloudSync', () => ({
   CloudRevisionConflictError: class CloudRevisionConflictError extends Error {},
   clearCloudSyncMeta: vi.fn(),
   clearLocalCloudSession: vi.fn(),

@@ -6,8 +6,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const feedback = vi.hoisted(() => ({ send: vi.fn() }));
 const notifications = vi.hoisted(() => ({ error: vi.fn(), saved: vi.fn() }));
 
-vi.mock('../../../services/feedback', () => ({ sendFeedback: feedback.send }));
-vi.mock('../../../services/notifications', () => ({
+vi.mock('@/services/feedback', () => ({ sendFeedback: feedback.send }));
+vi.mock('@/services/notifications', () => ({
   notifyError: notifications.error,
   notifySaved: notifications.saved,
 }));

@@ -1,7 +1,14 @@
 <script setup lang="ts">
+import SurfaceCard from '@/shared/ui/layout/SurfaceCard.vue';
+import SectionHeading from '@/shared/ui/layout/SectionHeading.vue';
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import { RouterLink } from 'vue-router';
-import AiAnalysisSteps from '../../analysis/ui/AiAnalysisSteps.vue';
-import type { ReviewCue } from '../../analytics/reviewCues';
+import AiAnalysisSteps from '@/features/analysis/ui/AiAnalysisSteps.vue';
+import PeriodActions from '@/features/reviews/ui/PeriodActions.vue';
+import ReviewCueGrid from '@/features/reviews/ui/ReviewCueGrid.vue';
+import type { ReviewCue } from '@/features/analytics/reviewCues';
+import ReviewNudge from '@/shared/ui/content/ReviewNudge.vue';
+import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
 
 defineProps<{
   title: string;
@@ -17,32 +24,43 @@ defineEmits<{
 </script>
 
 <template>
-  <article :id="sectionId" class="dashboard-card">
-    <div class="section-heading">
+  <SurfaceCard :id="sectionId" kind="dashboard" class="period-analysis-card">
+    <SectionHeading>
       <div>
-        <span class="eyebrow">Короткий разбор</span>
+        <EyebrowText>Короткий разбор</EyebrowText>
         <h2>{{ title }}</h2>
       </div>
-      <div class="period-actions">
-        <button class="secondary-button" type="button" :disabled="copying" :aria-busy="copying" @click="$emit('copy')">
-          Подготовить текст для нейросети
-        </button>
-        <button class="secondary-button" type="button" @click="$emit('download')">Скачать данные</button>
-      </div>
-    </div>
+      <PeriodActions :copying="copying" @copy="$emit('copy')" @download="$emit('download')" />
+    </SectionHeading>
     <AiAnalysisSteps />
-    <div class="review-nudge range-custom-action" style="margin-top: 16px">
+    <ReviewNudge class="range-custom-action period-analysis-card__range">
       <div>
         <strong>Нужен другой период?</strong>
         <p>Выберите точные даты и подготовьте текст в настройках.</p>
       </div>
-      <RouterLink class="secondary-button" to="/settings#analysis-settings">Выбрать даты</RouterLink>
-    </div>
-    <div class="review-cue-grid review-cue-grid--primary">
-      <article v-for="cue in cues" :key="cue.id" class="review-cue" :class="`review-cue--${cue.tone}`">
-        <strong>{{ cue.title }}</strong>
-        <p>{{ cue.text }}</p>
-      </article>
-    </div>
-  </article>
+      <ActionButton :as="RouterLink" variant="secondary" to="/settings#analysis-settings">Выбрать даты</ActionButton>
+    </ReviewNudge>
+    <ReviewCueGrid :cues="cues" />
+  </SurfaceCard>
 </template>
+
+<style scoped>
+.period-analysis-card {
+  position: relative;
+  margin-bottom: 16px;
+  border-color: var(--line-success);
+}
+.period-analysis-card > .section-heading {
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--review-section-divider);
+}
+.period-analysis-card__range {
+  margin-top: 16px;
+}
+@media (max-width: 720px) {
+  .section-heading:has(.period-actions) {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+</style>

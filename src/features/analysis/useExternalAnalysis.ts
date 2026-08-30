@@ -1,7 +1,7 @@
 import { reactive, ref } from 'vue';
-import { addDays, todayKey } from '../../services/dates';
-import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '../../services/notifications';
-import { useAppStore } from '../../stores/app';
+import { addDays, todayKey } from '@/services/dates';
+import { notifyError, notifyInfo, notifySaved, notifyUnknownError } from '@/services/notifications';
+import { useAppStore } from '@/stores/app';
 import { copyText, downloadJson } from '../export/browser';
 import { buildAiReportCustomRangePayload, buildAiReportPayload, buildAiReportPrompt, type AiReportPeriod } from '../export/report';
 

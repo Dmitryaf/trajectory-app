@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import { computed, nextTick, onMounted, ref } from 'vue';
-import { recordFirstUseEvent } from '../../first-use/funnel';
-import PasswordField from '../../../shared/ui/forms/PasswordField.vue';
-import PwaInstallGuide from '../../pwa/ui/PwaInstallGuide.vue';
-import { useAuthStore } from '../../../stores/auth';
+import { recordFirstUseEvent } from '@/features/first-use/funnel';
+import PasswordField from '@/shared/ui/forms/PasswordField.vue';
+import FormFieldLabel from '@/shared/ui/forms/FormFieldLabel.vue';
+import PwaInstallGuide from '@/features/pwa/ui/PwaInstallGuide.vue';
+import { useAuthStore } from '@/stores/auth';
+import BrandMark from '@/shared/ui/branding/BrandMark.vue';
+import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
 
 type PreviewLevelId = 'today' | 'journal' | 'week' | 'month';
 
@@ -215,7 +219,7 @@ async function requestPasswordReset() {
     <div class="auth-layout">
       <article class="auth-presentation" aria-labelledby="auth-presentation-title">
         <div class="auth-presentation__intro">
-          <p class="eyebrow">Личная картина времени</p>
+          <EyebrowText tag="p">Личная картина времени</EyebrowText>
           <h1 id="auth-presentation-title">Увидьте, чем были наполнены ваши дни, недели и месяцы</h1>
           <p>
             Записывайте, что сделали, что произошло и как себя чувствовали. В обзоре недели эти записи окажутся рядом — будет проще
@@ -224,8 +228,10 @@ async function requestPasswordReset() {
           <p class="auth-presentation__choice">Приложение не оценивает ваши дни. Менять что-то или нет — решаете вы.</p>
 
           <div class="auth-presentation__actions">
-            <button v-if="auth.signupEnabled" class="primary-button" type="button" @click="openAuthForm('sign-up')">Создать аккаунт</button>
-            <button class="secondary-button" type="button" @click="openAuthForm('sign-in')">Войти</button>
+            <ActionButton v-if="auth.signupEnabled" variant="primary" type="button" @click="openAuthForm('sign-up')"
+              >Создать аккаунт</ActionButton
+            >
+            <ActionButton variant="secondary" type="button" @click="openAuthForm('sign-in')">Войти</ActionButton>
           </div>
         </div>
 
@@ -251,7 +257,7 @@ async function requestPasswordReset() {
           </div>
 
           <div class="auth-preview__content" aria-live="polite">
-            <p class="eyebrow">{{ activePreview.tab }}</p>
+            <EyebrowText tag="p">{{ activePreview.tab }}</EyebrowText>
             <h3>{{ activePreview.title }}</h3>
             <p>{{ activePreview.description }}</p>
             <ul>
@@ -267,9 +273,9 @@ async function requestPasswordReset() {
 
       <article class="auth-card">
         <div class="auth-card__brand">
-          <span class="brand__mark"><i></i></span>
+          <BrandMark />
           <div>
-            <p class="eyebrow">{{ mode === 'sign-up' ? 'Новый аккаунт' : 'С возвращением' }}</p>
+            <EyebrowText tag="p">{{ mode === 'sign-up' ? 'Новый аккаунт' : 'С возвращением' }}</EyebrowText>
             <h2>{{ mode === 'sign-up' ? 'Создайте аккаунт' : 'Войдите в «Траекторию»' }}</h2>
           </div>
         </div>
@@ -293,10 +299,10 @@ async function requestPasswordReset() {
           </ol>
           <p class="auth-confirmation__note">Если письма нет, проверь папку «Спам» или отправь его ещё раз.</p>
           <div class="auth-confirmation__actions">
-            <button class="primary-button" type="button" :disabled="auth.loading" @click="continueToSignIn">Перейти ко входу</button>
-            <button class="secondary-button" type="button" :disabled="auth.loading" @click="resendConfirmation">
+            <ActionButton variant="primary" type="button" :disabled="auth.loading" @click="continueToSignIn">Перейти ко входу</ActionButton>
+            <ActionButton variant="secondary" type="button" :disabled="auth.loading" @click="resendConfirmation">
               {{ auth.operation === 'resending-confirmation' ? 'Отправляем письмо…' : 'Отправить письмо ещё раз' }}
-            </button>
+            </ActionButton>
             <button class="auth-reset" type="button" :disabled="auth.loading" @click="editConfirmationEmail">Изменить email</button>
           </div>
         </section>
@@ -306,7 +312,7 @@ async function requestPasswordReset() {
             Будет создан аккаунт для облачной синхронизации записей. После регистрации нужно подтвердить email по ссылке из письма.
           </p>
           <label class="form-control">
-            <span class="field-label">Email</span>
+            <FormFieldLabel tag="span">Email</FormFieldLabel>
             <input
               ref="emailInput"
               v-model="email"
@@ -319,7 +325,7 @@ async function requestPasswordReset() {
             />
           </label>
           <div class="form-control">
-            <label class="field-label" for="auth-password">Пароль</label>
+            <FormFieldLabel for="auth-password">Пароль</FormFieldLabel>
             <PasswordField
               id="auth-password"
               v-model="password"
@@ -333,7 +339,7 @@ async function requestPasswordReset() {
           </div>
           <template v-if="mode === 'sign-up'">
             <div class="form-control">
-              <label class="field-label" for="auth-password-confirmation">Повтори пароль</label>
+              <FormFieldLabel for="auth-password-confirmation">Повтори пароль</FormFieldLabel>
               <PasswordField
                 id="auth-password-confirmation"
                 v-model="passwordConfirmation"
@@ -344,7 +350,7 @@ async function requestPasswordReset() {
               />
             </div>
             <label class="form-control">
-              <span class="field-label">Код приглашения</span>
+              <FormFieldLabel tag="span">Код приглашения</FormFieldLabel>
               <input
                 v-model="inviteCode"
                 type="text"
@@ -356,10 +362,10 @@ async function requestPasswordReset() {
               />
             </label>
           </template>
-          <button class="primary-button" type="submit" :disabled="auth.loading">
+          <ActionButton variant="primary" type="submit" :disabled="auth.loading">
             <span v-if="auth.loading" class="auth-button-spinner" aria-hidden="true"></span>
             {{ submitLabel }}
-          </button>
+          </ActionButton>
         </form>
         <button
           v-if="mode === 'sign-in' && !confirmationEmail"
@@ -384,3 +390,5 @@ async function requestPasswordReset() {
     </div>
   </section>
 </template>
+
+<style scoped src="./AuthGate.css"></style>
