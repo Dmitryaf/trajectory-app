@@ -132,6 +132,49 @@ test('keeps mobile form controls inside their cards', async ({ page }) => {
   }
 });
 
+test('separates month metric controls from the chart and reuses the secondary daily action style', async ({ page }) => {
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 1280, height: 720 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/month');
+
+    for (const layout of [
+      { switcher: '.month-metric-card .metric-switcher', chart: '.month-metric-card .echart-panel' },
+      { switcher: '.trend-metric-switcher', chart: '.trend-metric-card .echart-panel' },
+    ]) {
+      if (layout.switcher === '.trend-metric-switcher') {
+        await page.goto('/trends');
+        await page.locator('.trends-metric-details > summary').click();
+      }
+
+      const switcherBox = await page.locator(layout.switcher).boundingBox();
+      const chartBox = await page.locator(layout.chart).boundingBox();
+      expect(switcherBox).not.toBeNull();
+      expect(chartBox).not.toBeNull();
+      expect(chartBox!.y - (switcherBox!.y + switcherBox!.height)).toBeGreaterThanOrEqual(14);
+    }
+  }
+
+  await page.goto('/');
+  const settingsAction = page.locator('.daily-layout-settings .secondary-button');
+  const goalAction = page.locator('.current-goal-summary .secondary-button');
+  await expect(settingsAction).toBeVisible();
+  await expect(goalAction).toBeVisible();
+
+  const styleProperties = ['backgroundColor', 'borderRadius', 'fontSize', 'fontWeight', 'minHeight', 'padding'] as const;
+  const settingsStyle = await settingsAction.evaluate((element, properties) => {
+    const style = getComputedStyle(element);
+    return Object.fromEntries(properties.map((property) => [property, style[property]]));
+  }, styleProperties);
+  const goalStyle = await goalAction.evaluate((element, properties) => {
+    const style = getComputedStyle(element);
+    return Object.fromEntries(properties.map((property) => [property, style[property]]));
+  }, styleProperties);
+  expect(settingsStyle).toEqual(goalStyle);
+});
+
 test('separates the custom-period action from adjacent review content', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 

@@ -237,34 +237,6 @@
   gap: 10px;
 }
 
-.daily-layout-settings {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin: -4px 0 14px;
-  padding: 10px 12px;
-  border: 1px solid var(--daily-layout-border);
-  border-radius: 14px;
-  background: var(--daily-layout-surface);
-  color: var(--daily-layout-text);
-  font-size: 12px;
-}
-
-.daily-layout-settings a {
-  flex: 0 0 auto;
-  padding: 7px 9px;
-  border-radius: 10px;
-  background: var(--daily-layout-action-surface);
-  color: var(--accent-dark);
-  font-weight: 850;
-  text-decoration: none;
-}
-
-.daily-layout-settings a:hover {
-  background: var(--daily-layout-action-hover);
-}
-
 .today-pulse {
   align-items: flex-start;
   border-color: var(--today-pulse-border);
@@ -583,12 +555,6 @@
   .first-entry-guide__actions .secondary-button,
   .first-entry-guide__actions .help-link--inline {
     width: 100%;
-  }
-
-  .daily-layout-settings {
-    justify-content: space-between;
-    margin-right: 2px;
-    margin-left: 2px;
   }
 
   .card-settings-link {

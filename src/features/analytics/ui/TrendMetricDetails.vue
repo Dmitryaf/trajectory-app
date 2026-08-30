@@ -32,6 +32,7 @@ defineEmits<{ 'update:modelValue': [value: string] }>();
       </SectionHeading>
       <MetricSwitcher
         :model-value="modelValue"
+        class="trend-metric-switcher"
         :options="options"
         label="Показатель графика"
         @update:model-value="$emit('update:modelValue', $event)"
@@ -69,6 +70,9 @@ defineEmits<{ 'update:modelValue': [value: string] }>();
 .trend-metric-card > .section-heading {
   padding-bottom: 15px;
   border-bottom: 1px solid var(--review-section-divider);
+}
+.trend-metric-switcher {
+  margin-bottom: 14px;
 }
 .data-note {
   margin: 10px 0 0;

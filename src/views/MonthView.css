@@ -78,6 +78,9 @@
   font-size: 13px;
   line-height: 1.45;
 }
+.month-metric-card > :deep(.metric-switcher) {
+  margin-bottom: 14px;
+}
 .coverage-list {
   display: grid;
   gap: 13px;
