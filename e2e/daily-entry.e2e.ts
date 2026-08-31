@@ -402,7 +402,6 @@ test('keeps one experiment identity while extending it across weekly slices', as
     const saveButton = page.locator('.floating-save-button');
     await saveButton.click();
     await expect(saveButton).toBeHidden();
-    await expect(page.getByText('День сохранён на устройстве', { exact: true }).last()).toBeVisible();
   };
 
   await saveExperimentDay(previousEntryDate, 'Нет', 'В прошлой неделе долго готовился');

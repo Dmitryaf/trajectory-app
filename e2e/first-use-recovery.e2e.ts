@@ -60,6 +60,7 @@ test('saves and resumes the first week recovery on a small screen', async ({ pag
     content: document.documentElement.scrollWidth,
   }));
   expect(desktopWidth.content).toBeLessThanOrEqual(desktopWidth.viewport);
+  await page.setViewportSize({ width: 390, height: 844 });
 
   await page.getByRole('button', { name: 'Готово' }).click();
   await expect(page).toHaveURL(/\/week\?week=\d{4}-\d{2}-\d{2}#first-use-overview$/);
@@ -79,13 +80,13 @@ test('saves and resumes the first week recovery on a small screen', async ({ pag
   expect(localFunnel).not.toContain('Состоялся важный разговор');
   expect(localFunnel).not.toContain('К середине недели было мало сил');
 
-  await page.locator('.bottom-nav a[href="/"]').click();
-  await page.locator('.bottom-nav a[href="/week"]').click();
+  await page.locator('.bottom-nav a[href="/"]').press('Enter');
+  await page.locator('.bottom-nav a[href="/week"]').press('Enter');
   await expect(page.locator('.period-nav__label')).toContainText('Текущая неделя');
   await expect(page.locator('#first-use-overview')).toHaveCount(0);
   await expect(page.locator('#week-review textarea').first()).toHaveValue('К середине недели было мало сил');
 
-  await page.getByRole('button', { name: 'Следующий период' }).click();
+  await page.getByRole('button', { name: 'Следующий период' }).press('Enter');
   const savedOverviewNotice = page.locator('.recovered-week-link');
   await expect(page.getByText('За эту неделю пока нет записей')).toBeVisible();
   await expect(savedOverviewNotice.getByText('Ваш первый обзор сохранён')).toBeVisible();

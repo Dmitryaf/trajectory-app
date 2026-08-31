@@ -1,6 +1,6 @@
 import { expect, test } from './fixtures';
 import type { Locator } from '@playwright/test';
-import { demoAnchor, demoFilePath, emptyPeriodDate } from './demo-data';
+import { demoAnchor, demoFilePath, emptyPeriodDate, visualDemoFilePath } from './demo-data';
 
 const routes = ['/', '/week', '/month', '/trends', '/more', '/results', '/events', '/settings'];
 
@@ -461,7 +461,11 @@ test('opens period review forms from the summary shortcuts', async ({ page }) =>
 });
 
 test('keeps monthly results before the review and secondary context behind a disclosure', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-08-30T12:00:00.000Z'));
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/settings');
+  await page.locator('input[type="file"]').setInputFiles(visualDemoFilePath);
+  await page.getByText('Резервная копия восстановлена', { exact: true }).waitFor();
   await page.goto('/month');
   await page.getByRole('button', { name: 'Предыдущий период' }).click();
   await expect(page.locator('.month-featured-events')).toHaveCount(0);
