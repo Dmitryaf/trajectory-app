@@ -29,6 +29,11 @@ const clientErrorFunction = readFileSync(new URL('../../api/client-error.ts', im
 const cloudSyncService = readFileSync(new URL('../../src/services/cloudSync.ts', import.meta.url), 'utf8');
 const envExample = readFileSync(new URL('../../.env.example', import.meta.url), 'utf8');
 const viteConfig = readFileSync(new URL('../../vite.config.ts', import.meta.url), 'utf8');
+const ciWorkflow = readFileSync(new URL('../../.github/workflows/ci.yml', import.meta.url), 'utf8');
+const playwrightConfig = readFileSync(new URL('../../playwright.config.ts', import.meta.url), 'utf8');
+const packageConfig = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')) as {
+  scripts: Record<string, string>;
+};
 
 function cacheControlFor(source: string): string | undefined {
   return config.headers.find((rule) => rule.source === source)?.headers.find((header) => header.key.toLowerCase() === 'cache-control')
@@ -36,6 +41,15 @@ function cacheControlFor(source: string): string | undefined {
 }
 
 describe('deployment configuration', () => {
+  it('keeps one CI runner and fails delivery on flaky browser scenarios', () => {
+    expect(ciWorkflow.match(/^ {4}runs-on:/gm)).toHaveLength(1);
+    expect(ciWorkflow).toContain('run: npm run test:e2e:ci');
+    expect(ciWorkflow).toContain('playwright-report/');
+    expect(packageConfig.scripts['test:e2e:ci']).toContain('--fail-on-flaky-tests');
+    expect(playwrightConfig).toContain('retries: isCI ? 1 : 0');
+    expect(playwrightConfig).toContain("trace: isCI ? 'retain-on-failure' : 'off'");
+  });
+
   it('rewrites user routes to the SPA entry point', () => {
     expect(config.rewrites).toEqual([{ source: spaFallbackSource, destination: '/index.html' }]);
   });

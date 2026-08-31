@@ -1,19 +1,24 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const isCI = Boolean(process.env.CI);
+
 export default defineConfig({
   testDir: './e2e',
   testMatch: '**/*.e2e.ts',
   testIgnore: '**/performance.e2e.ts',
   globalSetup: './e2e/global-setup.ts',
+  globalTimeout: isCI ? 8 * 60_000 : undefined,
   fullyParallel: true,
-  forbidOnly: Boolean(process.env.CI),
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 2 : undefined,
-  reporter: process.env.CI ? 'github' : 'list',
+  forbidOnly: isCI,
+  retries: isCI ? 1 : 0,
+  workers: isCI ? 2 : undefined,
+  maxFailures: isCI ? 3 : 0,
+  reporter: isCI ? [['github'], ['html', { open: 'never' }]] : 'list',
   snapshotPathTemplate: '{testDir}/{testFilePath}-snapshots/{arg}-{projectName}{ext}',
   use: {
     baseURL: 'http://127.0.0.1:4173',
-    trace: 'on-first-retry',
+    trace: isCI ? 'retain-on-failure' : 'off',
+    screenshot: 'only-on-failure',
   },
   projects: [
     {
