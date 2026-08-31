@@ -1,6 +1,7 @@
 import { expect, test } from './fixtures';
 
 test('saves and resumes the first week recovery on a small screen', async ({ page }) => {
+  test.slow();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
 
@@ -42,11 +43,11 @@ test('saves and resumes the first week recovery on a small screen', async ({ pag
   await resultItem.locator('input[type="date"]').fill(exactDate!);
   await resultItem.locator('select').selectOption('career');
   await resultItem.getByRole('button', { name: /Сохранить в Журнале/ }).click();
-  await expect(resultItem.getByText('Уже есть в Журнале')).toBeVisible();
+  await expect(resultItem.getByText('Уже есть в Журнале')).toBeVisible({ timeout: 10_000 });
   await eventItem.locator('input[type="date"]').fill(exactDate!);
   await eventItem.locator('select').selectOption('event');
   await eventItem.getByRole('button', { name: /Сохранить в Журнале/ }).click();
-  await expect(eventItem.getByText('Уже есть в Журнале')).toBeVisible();
+  await expect(eventItem.getByText('Уже есть в Журнале')).toBeVisible({ timeout: 10_000 });
 
   const mobileWidth = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,

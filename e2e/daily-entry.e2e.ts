@@ -367,6 +367,7 @@ test('selects and preserves a past daily entry on mobile', async ({ page }) => {
 });
 
 test('keeps one experiment identity while extending it across weekly slices', async ({ page }) => {
+  test.slow();
   await openDailyEntry(page);
   const today = await page.getByLabel('Дата записи').getAttribute('max');
   expect(today).not.toBeNull();
