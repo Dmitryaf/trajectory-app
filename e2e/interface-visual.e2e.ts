@@ -65,3 +65,10 @@ test('keeps the results archive visually stable on mobile', async ({ page }) => 
     .evaluateAll((elements) => elements.forEach((element) => element.classList.add('visual-dynamic-text')));
   await expectInterfaceScreenshot(page, 'results-archive-mobile.png');
 });
+
+test('keeps the journal entry choice visually stable on mobile', async ({ page }) => {
+  await page.goto('/more');
+  await page.getByRole('button', { name: 'Добавить запись' }).click();
+  await expect(page.getByRole('dialog', { name: 'Что хотите сохранить?' })).toBeVisible();
+  await expectInterfaceScreenshot(page, 'journal-entry-choice-mobile.png');
+});

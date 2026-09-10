@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { RouterLink } from 'vue-router';
+import { RouterLink, useRoute } from 'vue-router';
+import JournalEntryTypeDialog from '../features/journal/ui/JournalEntryTypeDialog.vue';
 import { useAppStore } from '../stores/app';
 import PageHeading from '../shared/ui/layout/PageHeading.vue';
 import PageShell from '../shared/ui/layout/PageShell.vue';
 import EyebrowText from '../shared/ui/typography/EyebrowText.vue';
 
 const store = useAppStore();
+const route = useRoute();
+const openEntryDialog = computed(() => route.query.add === '1');
 const sections = computed(() => [
   {
     to: '/results',
@@ -36,6 +39,7 @@ const sections = computed(() => [
         <p>Здесь отдельно хранятся конкретные итоги, события, мысли и наблюдения.</p>
       </div>
     </PageHeading>
+    <JournalEntryTypeDialog :open-initially="openEntryDialog" />
     <article class="journal-guide-card">
       <strong>Что записывать в Журнал</strong>
       <p>

@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import ActionButton from '@/shared/ui/actions/ActionButton.vue';
-import { computed, ref } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 import ArchiveDateRange from '../features/journal/ui/ArchiveDateRange.vue';
 import ArchiveItemActions from '../features/journal/ui/ArchiveItemActions.vue';
 import ArchivePage from '../features/journal/ui/ArchivePage.vue';
 import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
+import JournalComposerReturn from '../features/journal/ui/JournalComposerReturn.vue';
 import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
 import ChipGroup from '../shared/ui/forms/ChipGroup.vue';
 import FormCardHeading from '../shared/ui/forms/FormCardHeading.vue';
@@ -27,6 +28,8 @@ const editingId = ref<number | null>(null);
 const editingCreatedAt = ref('');
 const saving = ref(false);
 const removingIds = ref<number[]>([]);
+const titleInput = ref<HTMLInputElement>();
+const journalComposeRequested = new URLSearchParams(window.location.search).get('compose') === 'journal';
 const archiveRange = archiveRangeFromQuery();
 const recentResults = computed(() => [...store.results].sort((a, b) => b.date.localeCompare(a.date)));
 const resultOptions = computed(() => [...resultAreaOptions, ...store.settings.customLifeAreaOptions]);
@@ -34,6 +37,7 @@ const resultEntryOptions = computed(() => [
   ...resultAreaOptions,
   ...store.settings.customLifeAreaOptions.filter((option) => !option.archived || option.id === area.value),
 ]);
+const createDraftDirty = computed(() => Boolean(title.value || note.value) || date.value !== todayKey() || area.value !== 'career');
 const {
   filterText,
   filterCategory: filterArea,
@@ -128,6 +132,14 @@ function areaMeta(value: ResultRecord['area']) {
 function resultKey(result: ResultRecord) {
   return String(result.id ?? result.createdAt);
 }
+
+onMounted(async () => {
+  if (!journalComposeRequested) {
+    return;
+  }
+  await nextTick();
+  titleInput.value?.focus();
+});
 </script>
 
 <template>
@@ -156,6 +168,7 @@ function resultKey(result: ResultRecord) {
       <ChipGroup v-model="area" :options="resultEntryOptions" />
       <div class="result-composer__fields">
         <input
+          ref="titleInput"
           v-model="title"
           type="text"
           maxlength="160"
@@ -176,6 +189,7 @@ function resultKey(result: ResultRecord) {
       <ActionButton v-if="editingId !== null" variant="secondary" class="composer-cancel" type="button" @click="resetForm">
         Отменить редактирование
       </ActionButton>
+      <JournalComposerReturn v-else-if="journalComposeRequested" :dirty="createDraftDirty" @discard="resetForm" />
     </template>
     <template #filters>
       <input v-model="filterText" type="search" placeholder="Поиск по итогам" aria-label="Поиск по итогам" />
