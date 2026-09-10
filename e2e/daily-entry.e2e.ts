@@ -53,6 +53,29 @@ async function emulateSafeViewport(
   );
 }
 
+test('uses the full visible date control as the pointer and keyboard target', async ({ page }) => {
+  await openDailyEntry(page);
+
+  const control = page.locator('.entry-date-control');
+  const trigger = page.getByRole('button', { name: 'Выбрать дату записи' });
+  const [controlBox, triggerBox] = await Promise.all([control.boundingBox(), trigger.boundingBox()]);
+  expect(controlBox).not.toBeNull();
+  expect(triggerBox).not.toBeNull();
+  expect(triggerBox!.x).toBeCloseTo(controlBox!.x, 0);
+  expect(triggerBox!.y).toBeCloseTo(controlBox!.y, 0);
+  expect(triggerBox!.width).toBeCloseTo(controlBox!.width, 0);
+  expect(triggerBox!.height).toBeCloseTo(controlBox!.height, 0);
+  expect(triggerBox!.height).toBeGreaterThanOrEqual(44);
+
+  await trigger.focus();
+  await expect(trigger).toBeFocused();
+  await trigger.evaluate((element) => {
+    element.addEventListener('click', () => element.setAttribute('data-click-observed', 'true'), { once: true });
+  });
+  await trigger.click({ position: { x: 2, y: 2 } });
+  await expect(trigger).toHaveAttribute('data-click-observed', 'true');
+});
+
 test('keeps native mobile date and time inputs inside their cards', async ({ page }) => {
   await openDailyEntry(page);
 
