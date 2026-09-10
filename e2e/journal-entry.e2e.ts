@@ -14,7 +14,22 @@ async function openEntryChoice(page: Page) {
   const addAction = page.getByRole('button', { name: 'Добавить запись' });
   await expect(addAction).toHaveCount(1);
   await addAction.click();
-  return page.getByRole('dialog', { name: 'Что хотите сохранить?' });
+  const dialog = page.getByRole('dialog', { name: 'Что хотите сохранить?' });
+  await expect(dialog).toBeVisible();
+  const dialogBox = await dialog.boundingBox();
+  const layout = await dialog.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+    viewportWidth: document.documentElement.clientWidth,
+    viewportHeight: window.innerHeight,
+  }));
+  expect(dialogBox).not.toBeNull();
+  expect(dialogBox!.x).toBeGreaterThanOrEqual(0);
+  expect(dialogBox!.y).toBeGreaterThanOrEqual(0);
+  expect(dialogBox!.x + dialogBox!.width).toBeLessThanOrEqual(layout.viewportWidth);
+  expect(dialogBox!.y + dialogBox!.height).toBeLessThanOrEqual(layout.viewportHeight);
+  expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth);
+  return dialog;
 }
 
 test('adds both existing journal entry types from one action', async ({ page }) => {
