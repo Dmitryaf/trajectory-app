@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ActionButton from '@/shared/ui/actions/ActionButton.vue';
+import UiIcon from '@/shared/ui/icons/UiIcon.vue';
 import { computed, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import { postponePwaInstallNudge, readPwaInstallNudgeDismissedUntil, shouldShowPwaInstallNudge } from '../installNudge';
@@ -48,7 +49,7 @@ async function install() {
 
 <template>
   <aside v-if="visible" class="pwa-install-nudge" aria-label="Установка приложения">
-    <span class="pwa-install-nudge__mark" aria-hidden="true">⌂</span>
+    <span class="pwa-install-nudge__mark"><UiIcon name="install" /></span>
     <div>
       <strong>Открывайте «Траекторию» без браузера</strong>
       <p>Добавьте приложение на домашний экран телефона.</p>

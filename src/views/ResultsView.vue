@@ -152,14 +152,14 @@ onMounted(async () => {
     archive-title="Итоги"
     :count="filteredResults.length"
     :has-items="visibleResults.length > 0"
-    empty-icon="✓"
+    empty-icon="result"
     :empty-title="recentResults.length ? 'Ничего не найдено' : 'Итогов пока нет'"
     :empty-description="
       recentResults.length ? 'Измените фильтры или диапазон дат.' : 'Добавьте первое сделанное дело или полученный результат.'
     "
   >
     <template #composer>
-      <FormCardHeading icon="✓" tone="green">
+      <FormCardHeading icon="result" tone="green">
         <div>
           <h2>{{ editingId === null ? 'Добавить итог' : 'Редактировать итог' }}</h2>
           <p>Запишите одним предложением, что вы сделали или какой результат получили.</p>
@@ -217,15 +217,14 @@ onMounted(async () => {
             />
           </div>
           <ArchiveItemActions>
-            <IconActionButton label="Редактировать итог" @click="edit(result)">✎</IconActionButton>
+            <IconActionButton icon="edit" label="Редактировать итог" @click="edit(result)" />
             <IconActionButton
+              icon="delete"
               danger
               label="Удалить итог"
               :disabled="result.id !== undefined && removingIds.includes(result.id)"
               @click="remove(result.id)"
-            >
-              ×
-            </IconActionButton>
+            />
           </ArchiveItemActions>
         </article>
       </TransitionGroup>

@@ -14,8 +14,10 @@ import FirstUseRecovery from '../features/first-use/ui/FirstUseRecovery.vue';
 import { isFirstUsePrimary } from '../features/first-use/priority';
 import HowItWorksDialog from '../features/first-use/ui/HowItWorksDialog.vue';
 import PwaInstallNudge from '../features/pwa/ui/PwaInstallNudge.vue';
+import JournalQuickCapture from '../features/journal/ui/JournalQuickCapture.vue';
 import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
 import FormCardHeading from '../shared/ui/forms/FormCardHeading.vue';
+import UiIcon from '../shared/ui/icons/UiIcon.vue';
 import FormFieldLabel from '../shared/ui/forms/FormFieldLabel.vue';
 import FormDisclosure from '../shared/ui/forms/FormDisclosure.vue';
 import FormHint from '../shared/ui/forms/FormHint.vue';
@@ -358,10 +360,7 @@ function openEntryDatePicker() {
       @available-hidden="firstUsePromptHidden = true"
     />
 
-    <nav v-if="!firstUseTakesPriority && !isFirstEntry" class="quick-capture" aria-label="Быстрые записи">
-      <RouterLink to="/results"><span>✓</span><strong>Сохранить завершённый результат</strong></RouterLink>
-      <RouterLink to="/events"><span>✦</span><strong>Записать мысль или событие</strong></RouterLink>
-    </nav>
+    <JournalQuickCapture v-if="!firstUseTakesPriority && !isFirstEntry" />
 
     <section v-if="isFirstEntry && !firstUseTakesPriority" class="first-entry-guide" aria-label="Первая запись">
       <div>
@@ -455,7 +454,7 @@ function openEntryDatePicker() {
         <span>Состояние и условия</span>
       </div>
       <SurfaceCard v-if="blockIsActive('sleep')" id="sleep" kind="form" class="form-card--sleep form-card--wide">
-        <FormCardHeading icon="◒" tone="purple">
+        <FormCardHeading icon="sleep" tone="purple">
           <div>
             <h2>Сон и состояние</h2>
             <p v-if="isFirstEntry">Сон перед этой датой и сколько сил было в этот день.</p>
@@ -493,7 +492,7 @@ function openEntryDatePicker() {
       </SurfaceCard>
 
       <SurfaceCard v-if="blockIsActive('context')" id="day-conditions" kind="form" class="form-card--context form-card--wide">
-        <FormCardHeading icon="⌁" tone="orange">
+        <FormCardHeading icon="context" tone="orange">
           <div>
             <h2>Что могло повлиять на день</h2>
             <p v-if="isFirstEntry">Отметьте условия, которые стоит сравнить с другими днями.</p>
@@ -547,7 +546,7 @@ function openEntryDatePicker() {
         :class="{ 'form-card--direction-empty': !showGoalActionChoices }"
         aria-label="Текущая цель"
       >
-        <FormCardHeading icon="⌁" tone="blue">
+        <FormCardHeading icon="goal" tone="blue">
           <div>
             <h2>Шаг по текущей цели</h2>
             <p>
@@ -637,7 +636,7 @@ function openEntryDatePicker() {
         </summary>
         <div class="daily-additional-blocks__grid">
           <SurfaceCard v-if="blockIsActive('career')" id="career" kind="form">
-            <FormCardHeading icon="↗" tone="blue">
+            <FormCardHeading icon="goal" tone="blue">
               <div>
                 <h2>Рабочий контекст</h2>
                 <p>Что было частью рабочего дня. Эта отметка сама по себе не считается шагом по текущей цели.</p>
@@ -662,7 +661,7 @@ function openEntryDatePicker() {
           </SurfaceCard>
 
           <SurfaceCard v-if="blockIsActive('movement')" id="movement" kind="form">
-            <FormCardHeading icon="△" tone="green">
+            <FormCardHeading icon="activity" tone="green">
               <div>
                 <h2>Физическая активность</h2>
                 <p v-if="isFirstEntry">Отметьте, была ли сегодня активность и какая.</p>
@@ -686,7 +685,7 @@ function openEntryDatePicker() {
           </SurfaceCard>
 
           <SurfaceCard v-if="blockIsActive('nutrition')" id="nutrition" kind="form" class="form-card--nutrition">
-            <FormCardHeading icon="◐" tone="green">
+            <FormCardHeading icon="nutrition" tone="green">
               <div>
                 <h2>Питание</h2>
                 <p>
@@ -714,7 +713,7 @@ function openEntryDatePicker() {
           </SurfaceCard>
 
           <SurfaceCard v-if="showLifeAreas" id="life-areas" kind="form">
-            <FormCardHeading icon="✦" tone="amber">
+            <FormCardHeading icon="event" tone="amber">
               <div>
                 <h2>Области жизни</h2>
                 <p v-if="isFirstEntry">Что было заметной частью этого дня. Это не оценка успешности.</p>
@@ -738,7 +737,7 @@ function openEntryDatePicker() {
           </SurfaceCard>
 
           <SurfaceCard v-if="experimentAppliesToSelectedDate" id="experiment" kind="form" class="form-card--experiment">
-            <FormCardHeading icon="⌁" tone="orange">
+            <FormCardHeading icon="context" tone="orange">
               <div>
                 <h2>Эксперимент</h2>
                 <p>{{ store.settings.experiment.title }}</p>
@@ -777,7 +776,7 @@ function openEntryDatePicker() {
         <span>Короткий итог дня</span>
       </div>
       <SurfaceCard kind="form" class="form-card--daily-summary form-card--wide">
-        <FormCardHeading icon="·">
+        <FormCardHeading icon="note">
           <div>
             <h2>Заметка дня</h2>
             <p v-if="isFirstEntry">Что сегодня произошло или что вы заметили — даже если день был обычным.</p>
@@ -803,7 +802,7 @@ function openEntryDatePicker() {
           @click="save"
         >
           <span>{{ saveButtonText }}</span
-          ><span aria-hidden="true">→</span>
+          ><span><UiIcon name="arrow-right" /></span>
         </ActionButton>
       </Transition>
     </Teleport>

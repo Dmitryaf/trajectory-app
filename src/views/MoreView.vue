@@ -6,14 +6,16 @@ import { useAppStore } from '../stores/app';
 import PageHeading from '../shared/ui/layout/PageHeading.vue';
 import PageShell from '../shared/ui/layout/PageShell.vue';
 import EyebrowText from '../shared/ui/typography/EyebrowText.vue';
+import UiIcon from '../shared/ui/icons/UiIcon.vue';
+import type { UiIconName } from '../shared/ui/icons/icons';
 
 const store = useAppStore();
 const route = useRoute();
 const openEntryDialog = computed(() => route.query.add === '1');
-const sections = computed(() => [
+const sections = computed<Array<{ to: string; icon: UiIconName; tone: string; count: number; title: string; text: string }>>(() => [
   {
     to: '/results',
-    icon: '✓',
+    icon: 'result',
     tone: 'mint',
     count: store.results.length,
     title: 'Итоги',
@@ -21,7 +23,7 @@ const sections = computed(() => [
   },
   {
     to: '/events',
-    icon: '✦',
+    icon: 'event',
     tone: 'amber',
     count: store.lifeEvents.length,
     title: 'События и наблюдения',
@@ -49,23 +51,23 @@ const sections = computed(() => [
     </article>
     <div class="more-grid">
       <RouterLink v-for="section in sections" :key="section.to" :to="section.to" class="more-card" :class="`more-card--${section.tone}`">
-        <span>{{ section.icon }}</span>
+        <span><UiIcon :name="section.icon" /></span>
         <div>
           <small>{{ section.count }} в журнале</small>
           <h2>{{ section.title }}</h2>
           <p>{{ section.text }}</p>
         </div>
-        <i>→</i>
+        <i><UiIcon name="arrow-right" /></i>
       </RouterLink>
     </div>
     <RouterLink to="/settings" class="journal-settings-card">
-      <span>⚙</span>
+      <span><UiIcon name="settings" /></span>
       <div>
         <small>Управление приложением</small>
         <h2>Настройки</h2>
         <p>Поля ежедневной записи, текущая цель, эксперимент и копии данных.</p>
       </div>
-      <i>→</i>
+      <i><UiIcon name="arrow-right" /></i>
     </RouterLink>
   </PageShell>
 </template>

@@ -3,6 +3,7 @@ import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import { computed, nextTick, onMounted, ref } from 'vue';
 import { recordFirstUseEvent } from '@/features/first-use/funnel';
 import PasswordField from '@/shared/ui/forms/PasswordField.vue';
+import UiIcon from '@/shared/ui/icons/UiIcon.vue';
 import FormFieldLabel from '@/shared/ui/forms/FormFieldLabel.vue';
 import PwaInstallGuide from '@/features/pwa/ui/PwaInstallGuide.vue';
 import { useAuthStore } from '@/stores/auth';
@@ -286,7 +287,7 @@ async function requestPasswordReset() {
         </div>
 
         <section v-if="confirmationEmail" class="auth-confirmation" aria-labelledby="auth-confirmation-title" aria-live="polite">
-          <div class="auth-confirmation__mark" aria-hidden="true">✓</div>
+          <div class="auth-confirmation__mark"><UiIcon name="result" /></div>
           <h3 id="auth-confirmation-title">Аккаунт создан</h3>
           <p>
             Мы отправили письмо на <strong>{{ confirmationEmail }}</strong

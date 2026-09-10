@@ -17,6 +17,7 @@ import PwaInstallGuide from '../features/pwa/ui/PwaInstallGuide.vue';
 import { pwaPlatform } from '../features/pwa/installation';
 import { settingsGroupForHash, settingsGroups, type SettingsGroup } from '../features/settings/navigation';
 import SettingsCard from '../features/settings/ui/SettingsCard.vue';
+import SettingsOptionAction from '../features/settings/ui/SettingsOptionAction.vue';
 import { useSettingsForm } from '../features/settings/useSettingsForm';
 import type { DailyBlockId, LifeAreaId } from '../types';
 
@@ -130,7 +131,7 @@ const {
       aria-label="Настройка ежедневной записи"
     >
       <SettingsCard id="daily-blocks" class="settings-card--daily-blocks">
-        <FormCardHeading icon="☷" tone="blue">
+        <FormCardHeading icon="blocks" tone="blue">
           <div>
             <h2>Блоки ежедневной записи</h2>
             <p>Оставьте только то, что хотите видеть каждый день. Прежние записи не пропадут.</p>
@@ -151,7 +152,7 @@ const {
       </SettingsCard>
 
       <SettingsCard id="movement-options" class="settings-card--movement">
-        <FormCardHeading icon="△" tone="green">
+        <FormCardHeading icon="activity" tone="green">
           <div>
             <h2>Физическая активность</h2>
             <p>Оставь общие варианты или добавь занятия, которые важны именно тебе.</p>
@@ -163,16 +164,12 @@ const {
               ><i v-if="option.icon">{{ option.icon }}</i
               >{{ option.label }}</span
             >
-            <button
-              class="hide-option-button"
-              type="button"
-              :aria-label="`Убрать ${option.label} из ежедневной записи`"
-              title="Убрать из ежедневной записи"
+            <SettingsOptionAction
+              mode="hide"
+              :label="option.label"
               :disabled="isSaving('activity')"
               @click="removeActivityOption(option.id)"
-            >
-              −
-            </button>
+            />
           </div>
         </div>
         <div class="custom-options">
@@ -198,17 +195,14 @@ const {
           <div v-if="hiddenActivityOptions.length" class="hidden-options">
             <FormFieldLabel tag="span">Убраны из ежедневной записи</FormFieldLabel>
             <div class="hidden-options__list">
-              <button
+              <SettingsOptionAction
                 v-for="option in hiddenActivityOptions"
                 :key="option.id"
-                class="restore-option"
-                type="button"
-                :aria-label="`Вернуть ${option.label} в ежедневную запись`"
+                mode="restore"
+                :label="option.label"
                 :disabled="isSaving('activity')"
                 @click="restoreActivityOption(option.id)"
-              >
-                <span>+</span>{{ option.label }}
-              </button>
+              />
             </div>
           </div>
           <DataNote>Убранные варианты не предлагаются в новых записях. Прежние отметки сохраняются в истории и выгрузке.</DataNote>
@@ -216,7 +210,7 @@ const {
       </SettingsCard>
 
       <SettingsCard id="life-areas" class="settings-card--areas" tone="areas">
-        <FormCardHeading icon="✦" tone="amber">
+        <FormCardHeading icon="event" tone="amber">
           <div>
             <h2>Области жизни</h2>
             <p>Выберите важные для вас части жизни или добавьте свою.</p>
@@ -253,9 +247,13 @@ const {
                 ><i>{{ option.icon }}</i
                 >{{ option.label }}</span
               >
-              <IconButton danger :label="`Скрыть ${option.label}`" :disabled="isSaving('life-areas')" @click="removeLifeArea(option.id)">
-                ×
-              </IconButton>
+              <IconButton
+                icon="delete"
+                danger
+                :label="`Скрыть ${option.label}`"
+                :disabled="isSaving('life-areas')"
+                @click="removeLifeArea(option.id)"
+              />
             </div>
           </div>
         </div>
@@ -265,7 +263,7 @@ const {
       </SettingsCard>
 
       <SettingsCard id="context-options" class="settings-card--context">
-        <FormCardHeading icon="⌁" tone="orange">
+        <FormCardHeading icon="context" tone="orange">
           <div>
             <h2>Условия дня</h2>
             <p>Добавьте условия, которые повторяются и которые вы хотите сравнивать между днями.</p>
@@ -277,16 +275,12 @@ const {
               ><i v-if="option.icon">{{ option.icon }}</i
               >{{ option.label }}</span
             >
-            <button
-              class="hide-option-button"
-              type="button"
-              :aria-label="`Убрать ${option.label} из ежедневной записи`"
-              title="Убрать из ежедневной записи"
+            <SettingsOptionAction
+              mode="hide"
+              :label="option.label"
               :disabled="isSaving('context')"
               @click="removeContextFactor(option.id)"
-            >
-              −
-            </button>
+            />
           </div>
         </div>
         <div class="custom-options">
@@ -312,17 +306,14 @@ const {
           <div v-if="hiddenContextFactorOptions.length" class="hidden-options">
             <FormFieldLabel tag="span">Убраны из ежедневной записи</FormFieldLabel>
             <div class="hidden-options__list">
-              <button
+              <SettingsOptionAction
                 v-for="option in hiddenContextFactorOptions"
                 :key="option.id"
-                class="restore-option"
-                type="button"
-                :aria-label="`Вернуть ${option.label} в ежедневную запись`"
+                mode="restore"
+                :label="option.label"
                 :disabled="isSaving('context')"
                 @click="restoreContextFactor(option.id)"
-              >
-                <span>+</span>{{ option.label }}
-              </button>
+              />
             </div>
           </div>
           <DataNote>Минус убирает вариант из ежедневной записи. Прежние отметки остаются в истории, графиках и выгрузке.</DataNote>
@@ -330,7 +321,7 @@ const {
       </SettingsCard>
 
       <SettingsCard id="work-settings" class="settings-card--career" tone="career">
-        <FormCardHeading icon="↗" tone="blue">
+        <FormCardHeading icon="goal" tone="blue">
           <div>
             <h2>Варианты для блока «Работа»</h2>
             <p>Оставьте общие варианты или добавьте то, что имеет смысл именно в вашей работе.</p>
@@ -369,16 +360,20 @@ const {
                 ><i>{{ option.icon }}</i
                 >{{ option.label }}</span
               >
-              <IconButton danger :label="`Скрыть ${option.label}`" :disabled="isSaving('career')" @click="removeCareerOption(option.id)">
-                ×
-              </IconButton>
+              <IconButton
+                icon="delete"
+                danger
+                :label="`Скрыть ${option.label}`"
+                :disabled="isSaving('career')"
+                @click="removeCareerOption(option.id)"
+              />
             </div>
           </div>
         </div>
       </SettingsCard>
 
       <SettingsCard id="nutrition-settings" class="settings-card--nutrition" tone="success">
-        <FormCardHeading icon="◐" tone="green">
+        <FormCardHeading icon="nutrition" tone="green">
           <div>
             <h2>Критерий питания</h2>
             <p>Заранее запишите, по каким понятным признакам питание подходит вашему плану.</p>
@@ -431,7 +426,7 @@ const {
       aria-label="Данные и синхронизация"
     >
       <SettingsCard v-if="pwaPlatform !== 'other'" id="install-settings" class="settings-card--backup" tone="brand">
-        <FormCardHeading icon="⌂" tone="blue">
+        <FormCardHeading icon="install" tone="blue">
           <div>
             <h2>Установка на телефон</h2>
             <p>Добавьте «Траекторию» на домашний экран и открывайте её как отдельное приложение.</p>
@@ -441,7 +436,7 @@ const {
       </SettingsCard>
 
       <SettingsCard id="backup-settings" class="settings-card--backup" tone="brand">
-        <FormCardHeading icon="↓" tone="blue">
+        <FormCardHeading icon="download" tone="blue">
           <div>
             <h2>Копия отдельным файлом</h2>
             <p>Для обычной работы скачивать файл не требуется. Он нужен только как дополнительная личная копия или для переноса данных.</p>
@@ -477,7 +472,7 @@ const {
       </SettingsCard>
 
       <SettingsCard id="cloud-settings" class="settings-card--cloud" tone="success">
-        <FormCardHeading icon="↥" tone="green">
+        <FormCardHeading icon="sync" tone="green">
           <div>
             <h2>Автоматическая облачная копия</h2>
             <p>

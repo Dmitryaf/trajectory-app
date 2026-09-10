@@ -6,6 +6,7 @@ import DialogCloseButton from '@/shared/ui/overlays/DialogCloseButton.vue';
 import DialogSurface from '@/shared/ui/overlays/DialogSurface.vue';
 import UtilityTriggerButton from '@/shared/ui/actions/UtilityTriggerButton.vue';
 import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
+import UiIcon from '@/shared/ui/icons/UiIcon.vue';
 import { useBodyScrollLock } from '@/shared/ui/overlays/useBodyScrollLock';
 import { useDialogBackdropClose } from '@/shared/ui/overlays/useDialogBackdropClose';
 import { useDialogFocus } from '@/shared/ui/overlays/useDialogFocus';
@@ -76,7 +77,7 @@ const { startBackdropClose, finishBackdropClose, cancelBackdropClose } = useDial
     ref="trigger"
     class="help-link"
     :class="{ 'help-link--inline': inline }"
-    icon="?"
+    icon="help"
     :variant="inline ? 'inline' : 'help'"
     aria-label="Как работает приложение"
     title="Как это работает"
@@ -147,9 +148,9 @@ const { startBackdropClose, finishBackdropClose, cancelBackdropClose } = useDial
         <p>Когда накопятся записи, приложение может собрать их в понятный текст для дополнительного разбора.</p>
         <AiAnalysisSteps />
         <div class="dialog-actions help-dialog__actions">
-          <ActionButton :as="RouterLink" variant="secondary" to="/week#ai-analysis" @click="close"
-            >Подготовить текст для нейросети →</ActionButton
-          >
+          <ActionButton :as="RouterLink" variant="secondary" to="/week#ai-analysis" @click="close">
+            Подготовить текст для нейросети <UiIcon name="arrow-right" />
+          </ActionButton>
         </div>
       </section>
 
@@ -168,6 +169,7 @@ const { startBackdropClose, finishBackdropClose, cancelBackdropClose } = useDial
   min-height: 52px;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   padding-right: 14px;
   padding-left: 14px;
   line-height: 1.25;

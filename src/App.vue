@@ -4,6 +4,8 @@ import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch 
 import { RouterLink, RouterView, useRouter } from 'vue-router';
 import { Toaster } from 'vue-sonner';
 import BrandMark from './shared/ui/branding/BrandMark.vue';
+import UiIcon from './shared/ui/icons/UiIcon.vue';
+import type { UiIconName } from './shared/ui/icons/icons';
 import 'vue-sonner/style.css';
 import AccountMenu from './features/auth/ui/AccountMenu.vue';
 import AuthGate from './features/auth/ui/AuthGate.vue';
@@ -221,12 +223,12 @@ async function signOut() {
   }
 }
 
-const navItems = [
-  { to: '/', label: 'Сегодня', icon: '●' },
-  { to: '/week', label: 'Неделя', icon: '▦' },
-  { to: '/month', label: 'Месяц', icon: '▥' },
-  { to: '/trends', label: 'История', icon: '≋' },
-  { to: '/more', label: 'Журнал', icon: '◇' },
+const navItems: Array<{ to: string; label: string; icon: UiIconName }> = [
+  { to: '/', label: 'Сегодня', icon: 'today' },
+  { to: '/week', label: 'Неделя', icon: 'week' },
+  { to: '/month', label: 'Месяц', icon: 'month' },
+  { to: '/trends', label: 'История', icon: 'history' },
+  { to: '/more', label: 'Журнал', icon: 'journal' },
 ];
 </script>
 
@@ -242,7 +244,7 @@ const navItems = [
         <HowItWorksDialog />
         <FeedbackDialog v-if="feedbackEnabled" :access-token="auth.session?.access_token ?? ''" />
         <RouterLink v-if="!auth.requiresAuth" to="/settings" class="header-settings-link" aria-label="Открыть настройки" title="Настройки">
-          <span>⚙</span><strong>Настройки</strong>
+          <span><UiIcon name="settings" /></span><strong>Настройки</strong>
         </RouterLink>
         <AccountMenu v-else :email="auth.userEmail" :loading="auth.loading" @sign-out="signOut" />
       </div>
@@ -260,7 +262,7 @@ const navItems = [
         <strong>Проверяю доступ…</strong>
       </div>
       <section v-else-if="auth.configurationMissing" class="auth-config-error" role="alert">
-        <span class="auth-config-error__mark" aria-hidden="true">!</span>
+        <span class="auth-config-error__mark"><UiIcon name="warning" /></span>
         <div>
           <h1>Эта сборка временно недоступна</h1>
           <p>Не удалось подключить вход. Используй основную ссылку или попробуй позже.</p>
@@ -272,7 +274,7 @@ const navItems = [
         <strong>{{ appDataLoadingText }}</strong>
       </div>
       <section v-else-if="effectiveLoadError" class="storage-error" role="alert">
-        <span class="storage-error__mark" aria-hidden="true">!</span>
+        <span class="storage-error__mark"><UiIcon name="warning" /></span>
         <div>
           <EyebrowText tag="p">Локальное хранилище недоступно</EyebrowText>
           <h1>Записи пока не открылись</h1>
@@ -286,7 +288,7 @@ const navItems = [
           class="sync-banner"
           :class="`sync-banner--${store.cloudSyncStatus}`"
         >
-          <span class="sync-banner__mark" aria-hidden="true">↥</span>
+          <span class="sync-banner__mark"><UiIcon name="sync" /></span>
           <div>
             <strong>Облако не обновлено</strong>
             <p>{{ store.cloudSyncMessage }}</p>
@@ -310,7 +312,7 @@ const navItems = [
         class="bottom-nav__item"
         :class="{ 'router-link-active': item.to === '/more' && ['/results', '/events'].includes($route.path) }"
       >
-        <span>{{ item.icon }}</span>
+        <span><UiIcon :name="item.icon" /></span>
         <small>{{ item.label }}</small>
       </RouterLink>
     </nav>

@@ -12,6 +12,7 @@ describe('PeriodNavigator', () => {
 
     expect(wrapper.text()).toContain('Июль 2026');
     expect(wrapper.text()).toContain('20 записей');
+    expect(wrapper.findAll('.icon-button svg[aria-hidden="true"]')).toHaveLength(2);
 
     await wrapper.get('[aria-label="Предыдущий период"]').trigger('click');
     await wrapper.get('.period-nav__label').trigger('click');

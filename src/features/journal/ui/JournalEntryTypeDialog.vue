@@ -5,6 +5,7 @@ import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import DialogCloseButton from '@/shared/ui/overlays/DialogCloseButton.vue';
 import DialogSurface from '@/shared/ui/overlays/DialogSurface.vue';
 import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
+import UiIcon from '@/shared/ui/icons/UiIcon.vue';
 import { useBodyScrollLock } from '@/shared/ui/overlays/useBodyScrollLock';
 import { useDialogBackdropClose } from '@/shared/ui/overlays/useDialogBackdropClose';
 import { useDialogFocus } from '@/shared/ui/overlays/useDialogFocus';
@@ -44,7 +45,7 @@ onMounted(() => {
 
 <template>
   <ActionButton ref="trigger" class="journal-add-button" variant="primary" type="button" aria-haspopup="dialog" @click="open">
-    <span aria-hidden="true">＋</span>
+    <span><UiIcon name="add" /></span>
     Добавить запись
   </ActionButton>
 
@@ -80,24 +81,24 @@ onMounted(() => {
           :to="{ path: '/results', query: { compose: 'journal' } }"
           @click="close"
         >
-          <span aria-hidden="true">✓</span>
+          <span><UiIcon name="result" /></span>
           <div>
             <strong>Итог</strong>
             <p>Завершённое дело или полученный результат. Например: закончил курс или получил ответ.</p>
           </div>
-          <i aria-hidden="true">→</i>
+          <i><UiIcon name="arrow-right" /></i>
         </RouterLink>
         <RouterLink
           class="journal-entry-option journal-entry-option--event"
           :to="{ path: '/events', query: { compose: 'journal' } }"
           @click="close"
         >
-          <span aria-hidden="true">✦</span>
+          <span><UiIcon name="event" /></span>
           <div>
             <strong>Событие или наблюдение</strong>
             <p>Важная ситуация, мысль или деталь. Например: встреча, решение или новое понимание.</p>
           </div>
-          <i aria-hidden="true">→</i>
+          <i><UiIcon name="arrow-right" /></i>
         </RouterLink>
       </div>
 

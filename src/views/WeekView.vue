@@ -12,6 +12,7 @@ import Pill from '../features/reviews/ui/PeriodPill.vue';
 import ReviewHeading from '../features/reviews/ui/ReviewPageHeading.vue';
 import ReviewNotice from '../features/reviews/ui/ReviewNotice.vue';
 import WeeklyReviewJournalLinks from '../features/reviews/ui/WeeklyReviewJournalLinks.vue';
+import Insight from '@/features/reviews/ui/WeeklyInsightCard.vue';
 import WeeklyReviewOverview from '../features/reviews/ui/WeeklyReviewOverview.vue';
 import WeeklyRhythmCard from '../features/reviews/ui/WeeklyRhythmCard.vue';
 import DecisionFollowUp from '../features/reviews/ui/DecisionFollowUp.vue';
@@ -410,10 +411,7 @@ watch(
         </div>
       </article>
 
-      <article v-if="hasDailyData" class="insight-card">
-        <span class="insight-card__mark">⌁</span>
-        <p>{{ summaryText }}</p>
-      </article>
+      <Insight v-if="hasDailyData">{{ summaryText }}</Insight>
 
       <section
         v-if="results.length || lifeEvents.length"

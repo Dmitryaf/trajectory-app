@@ -63,7 +63,7 @@ async function submit() {
 </script>
 
 <template>
-  <UtilityTriggerButton class="beta-feedback-link" icon="✦" aria-label="Обратная связь" aria-haspopup="dialog" @click="open">
+  <UtilityTriggerButton class="beta-feedback-link" icon="event" aria-label="Обратная связь" aria-haspopup="dialog" @click="open">
     Обратная связь
   </UtilityTriggerButton>
 

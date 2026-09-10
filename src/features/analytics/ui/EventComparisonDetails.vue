@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import UiIcon from '@/shared/ui/icons/UiIcon.vue';
 import SurfaceCard from '@/shared/ui/layout/SurfaceCard.vue';
 import SectionHeading from '@/shared/ui/layout/SectionHeading.vue';
 import DataNote from '@/shared/ui/content/DataNote.vue';
@@ -39,7 +40,7 @@ function select(event: LifeEventRecord) {
         </div>
         <details ref="picker" class="event-picker">
           <summary aria-label="Выбрать событие для сравнения">
-            <span class="event-picker__icon">◆</span>
+            <span class="event-picker__icon"><UiIcon name="event" /></span>
             <span class="event-picker__current">
               <small>Событие для сравнения</small>
               <strong v-if="selectedEvent"
@@ -65,7 +66,7 @@ function select(event: LifeEventRecord) {
                 ><strong>{{ event.title }}</strong
                 ><small v-if="event.note">{{ event.note }}</small></span
               >
-              <i>{{ eventKey(event) === selectedKey ? '✓' : '' }}</i>
+              <i><UiIcon v-if="eventKey(event) === selectedKey" name="result" /></i>
             </button>
           </div>
         </details>

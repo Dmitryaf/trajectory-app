@@ -20,7 +20,7 @@ const { auth, changePassword, deleteAccount, newPassword, newPasswordConfirmatio
 
 <template>
   <SettingsCard class="settings-card--account settings-card--career" tone="career">
-    <FormCardHeading icon="◉" tone="blue">
+    <FormCardHeading icon="account" tone="blue">
       <div>
         <h2>Аккаунт и безопасность</h2>
         <p>Управляйте входом, паролем и удалением аккаунта отдельно от копий данных.</p>

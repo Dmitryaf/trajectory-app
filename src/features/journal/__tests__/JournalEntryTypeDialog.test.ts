@@ -39,6 +39,7 @@ describe('JournalEntryTypeDialog', () => {
     expect(dialog?.textContent).toContain('встреча, решение или новое понимание');
     expect(dialog?.querySelector('a[href="/results?compose=journal"]')).not.toBeNull();
     expect(dialog?.querySelector('a[href="/events?compose=journal"]')).not.toBeNull();
+    expect(dialog?.querySelectorAll('svg[aria-hidden="true"]')).toHaveLength(5);
     wrapper.unmount();
   });
 

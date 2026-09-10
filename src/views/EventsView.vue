@@ -150,12 +150,12 @@ onMounted(async () => {
     archive-title="События и важные мысли"
     :count="filteredEvents.length"
     :has-items="visibleEvents.length > 0"
-    empty-icon="◆"
+    empty-icon="event"
     :empty-title="recentEvents.length ? 'Ничего не найдено' : 'Записей пока нет'"
     :empty-description="recentEvents.length ? 'Измените фильтры или диапазон дат.' : 'Добавьте первое важное событие или понимание.'"
   >
     <template #composer>
-      <FormCardHeading icon="◆" tone="amber">
+      <FormCardHeading icon="event" tone="amber">
         <div>
           <h2>{{ editingId === null ? 'Добавить запись' : 'Редактировать запись' }}</h2>
           <p>Выберите, что хотите записать: произошедшее событие или важную мысль.</p>
@@ -201,15 +201,14 @@ onMounted(async () => {
             />
           </div>
           <ArchiveItemActions>
-            <IconActionButton label="Редактировать событие" @click="edit(event)">✎</IconActionButton>
+            <IconActionButton icon="edit" label="Редактировать событие" @click="edit(event)" />
             <IconActionButton
+              icon="delete"
               danger
               label="Удалить событие"
               :disabled="event.id !== undefined && removingIds.includes(event.id)"
               @click="remove(event.id)"
-            >
-              ×
-            </IconActionButton>
+            />
           </ArchiveItemActions>
         </article>
       </TransitionGroup>

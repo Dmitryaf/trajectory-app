@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import UiIcon from '@/shared/ui/icons/UiIcon.vue';
+import type { UiIconName } from '@/shared/ui/icons/icons';
 import SurfaceCard from '@/shared/ui/layout/SurfaceCard.vue';
 import SectionHeading from '@/shared/ui/layout/SectionHeading.vue';
 import PageHeading from '@/shared/ui/layout/PageHeading.vue';
@@ -13,7 +15,7 @@ defineProps<{
   archiveTitle: string;
   count: number;
   hasItems: boolean;
-  emptyIcon: string;
+  emptyIcon: UiIconName;
   emptyTitle: string;
   emptyDescription: string;
 }>();
@@ -46,7 +48,7 @@ defineProps<{
       </div>
       <slot v-if="hasItems"></slot>
       <div v-else class="archive-empty">
-        <span>{{ emptyIcon }}</span>
+        <span><UiIcon :name="emptyIcon" /></span>
         <h3>{{ emptyTitle }}</h3>
         <p>{{ emptyDescription }}</p>
       </div>
