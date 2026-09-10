@@ -147,16 +147,16 @@ test('keeps mobile form controls inside their cards', async ({ page }) => {
     expect(overflow, `form controls should stay inside cards at ${width}px`).toEqual([]);
 
     const quickCaptureBox = await page.locator('.quick-capture').boundingBox();
-    const goalSummaryBox = await page.locator('.current-goal-summary').boundingBox();
+    const goalCardBox = await page.locator('#goal-actions').boundingBox();
     expect(quickCaptureBox).not.toBeNull();
-    expect(goalSummaryBox).not.toBeNull();
-    expect(goalSummaryBox!.y, `goal should stay below quick actions at ${width}px`).toBeGreaterThanOrEqual(
+    expect(goalCardBox).not.toBeNull();
+    expect(goalCardBox!.y, `goal should stay below quick actions at ${width}px`).toBeGreaterThanOrEqual(
       quickCaptureBox!.y + quickCaptureBox!.height + 12,
     );
   }
 });
 
-test('separates month metric controls from the chart and reuses the secondary daily action style', async ({ page }) => {
+test('separates month metric controls from the chart and keeps compact daily actions visible', async ({ page }) => {
   for (const viewport of [
     { width: 390, height: 844 },
     { width: 1280, height: 720 },
@@ -183,20 +183,10 @@ test('separates month metric controls from the chart and reuses the secondary da
 
   await page.goto('/');
   const settingsAction = page.locator('.daily-layout-settings .secondary-button');
-  const goalAction = page.locator('.current-goal-summary .secondary-button');
+  const goalAction = page.locator('#goal-actions .card-settings-link');
   await expect(settingsAction).toBeVisible();
   await expect(goalAction).toBeVisible();
-
-  const styleProperties = ['backgroundColor', 'borderRadius', 'fontSize', 'fontWeight', 'minHeight', 'padding'] as const;
-  const settingsStyle = await settingsAction.evaluate((element, properties) => {
-    const style = getComputedStyle(element);
-    return Object.fromEntries(properties.map((property) => [property, style[property]]));
-  }, styleProperties);
-  const goalStyle = await goalAction.evaluate((element, properties) => {
-    const style = getComputedStyle(element);
-    return Object.fromEntries(properties.map((property) => [property, style[property]]));
-  }, styleProperties);
-  expect(settingsStyle).toEqual(goalStyle);
+  await expect(goalAction).toHaveText('Изменить');
 });
 
 test('separates the custom-period action from adjacent review content', async ({ page }) => {
@@ -210,10 +200,17 @@ test('separates the custom-period action from adjacent review content', async ({
       const box = element.getBoundingClientRect();
       const previousBox = element.previousElementSibling?.getBoundingClientRect();
       const nextBox = element.nextElementSibling?.getBoundingClientRect();
+      const cardBox = element.closest('.period-analysis-card')?.getBoundingClientRect();
       const linkBox = element.querySelector('a')?.getBoundingClientRect();
+      let after = 0;
+      if (nextBox) {
+        after = nextBox.top - box.bottom;
+      } else if (cardBox) {
+        after = cardBox.bottom - box.bottom;
+      }
       return {
         before: previousBox ? box.top - previousBox.bottom : 0,
-        after: nextBox ? nextBox.top - box.bottom : 0,
+        after,
         linkInside: linkBox ? linkBox.left >= box.left && linkBox.right <= box.right : false,
       };
     });
@@ -293,24 +290,30 @@ test('keeps the returning daily form compact and visibly grouped', async ({ page
   await expect(page.getByText('Запись за дату', { exact: true })).toBeVisible();
   await expect(page.getByText('Состояние и условия', { exact: true })).toBeVisible();
   await expect(page.locator('form').getByText('Текущая цель', { exact: true })).toBeVisible();
-  await expect(page.getByText('Остальные части дня', { exact: true })).toBeVisible();
+  await expect(page.getByText('Дополнительные разделы', { exact: true })).toBeVisible();
   await expect(page.getByText('Короткий итог дня', { exact: true })).toBeVisible();
   await expect(page.getByText('Сон перед этой датой и сколько сил было в этот день.', { exact: true })).toBeHidden();
 
   const goalCard = page.locator('#goal-actions');
+  const additionalBlocks = page.locator('.daily-additional-blocks');
   const workCard = page.locator('#career');
   const goalBox = await goalCard.boundingBox();
-  const workBox = await workCard.boundingBox();
-  expect(goalBox).not.toBeNull();
-  expect(workBox).not.toBeNull();
-  expect(goalBox!.y).toBeLessThan(workBox!.y);
-  await expect(workCard.locator('textarea')).toHaveCount(0);
-
-  const goalSummaryBox = await page.locator('.current-goal-summary').boundingBox();
   const quickCaptureBox = await page.locator('.quick-capture').boundingBox();
-  expect(goalSummaryBox).not.toBeNull();
+  const additionalBlocksBox = await additionalBlocks.boundingBox();
+  expect(goalBox).not.toBeNull();
   expect(quickCaptureBox).not.toBeNull();
-  expect(goalSummaryBox!.y).toBeGreaterThanOrEqual(quickCaptureBox!.y + quickCaptureBox!.height + 12);
+  expect(additionalBlocksBox).not.toBeNull();
+  expect(goalBox!.y).toBeGreaterThanOrEqual(quickCaptureBox!.y + quickCaptureBox!.height + 12);
+  expect(goalBox!.y).toBeLessThan(additionalBlocksBox!.y);
+  await expect(additionalBlocks).not.toHaveAttribute('open', '');
+  await additionalBlocks.locator('summary').click();
+  await expect(additionalBlocks).toHaveAttribute('open', '');
+  const expandedGoalBox = await goalCard.boundingBox();
+  const workBox = await workCard.boundingBox();
+  expect(expandedGoalBox).not.toBeNull();
+  expect(workBox).not.toBeNull();
+  expect(expandedGoalBox!.y).toBeLessThan(workBox!.y);
+  await expect(workCard.locator('textarea')).toHaveCount(0);
 
   const dailySummaryHeadingBox = await page.getByText('Короткий итог дня', { exact: true }).boundingBox();
   const dailySummaryCardBox = await page.locator('.form-card--daily-summary').boundingBox();
@@ -402,6 +405,7 @@ test('explains the app from the permanent help button', async ({ page }) => {
 
 test('opens the exact settings section from a daily card', async ({ page }) => {
   await page.goto('/');
+  await page.locator('.daily-additional-blocks > summary').click();
   await page.locator('#life-areas').getByRole('link', { name: 'Настроить' }).click();
 
   await expect(page).toHaveURL(/\/settings#life-areas$/);
