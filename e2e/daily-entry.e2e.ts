@@ -23,6 +23,15 @@ async function selectEntryDate(page: Page, value: string) {
   await expect(dateInput).toHaveValue(value);
 }
 
+async function openAdditionalBlocks(page: Page) {
+  const disclosure = page.locator('.daily-additional-blocks');
+  await expect(disclosure).toBeVisible();
+  if (!(await disclosure.evaluate((element) => (element as HTMLDetailsElement).open))) {
+    await disclosure.locator('summary').click();
+  }
+  await expect(disclosure).toHaveAttribute('open', '');
+}
+
 function addDays(dateKey: string, amount: number): string {
   const date = new Date(`${dateKey}T12:00:00.000Z`);
   date.setUTCDate(date.getUTCDate() + amount);
@@ -165,6 +174,26 @@ test('moves mobile navigation away while a form field is being edited', async ({
   await expect(navigation).toHaveCSS('opacity', '1');
 });
 
+test('keeps the core entry before keyboard-accessible additional blocks', async ({ page }) => {
+  await openDailyEntry(page);
+  const sleepHeading = page.locator('#sleep h2');
+  const headingBox = await sleepHeading.boundingBox();
+  const navigationBox = await page.locator('.bottom-nav').boundingBox();
+  expect(headingBox).not.toBeNull();
+  expect(navigationBox).not.toBeNull();
+  expect(headingBox!.y).toBeLessThan(navigationBox!.y);
+
+  const disclosure = page.locator('.daily-additional-blocks');
+  const summary = disclosure.locator('summary');
+  await expect(disclosure).not.toHaveAttribute('open', '');
+  await summary.focus();
+  await page.keyboard.press('Enter');
+  await expect(disclosure).toHaveAttribute('open', '');
+  await expect(page.locator('#movement')).toBeVisible();
+  await page.keyboard.press('Enter');
+  await expect(disclosure).not.toHaveAttribute('open', '');
+});
+
 test('saves a dirty daily entry from the mobile action', async ({ page }) => {
   await openDailyEntry(page);
   const floatingSave = page.locator('.floating-save-button');
@@ -200,12 +229,17 @@ test('saves a dirty daily entry from the mobile action', async ({ page }) => {
   await expect(page.getByText('День сохранён на устройстве', { exact: true })).toBeVisible();
   await expect(floatingSave).toBeHidden();
 
+  await openAdditionalBlocks(page);
   const weight = page.getByLabel('Вес');
   await weight.fill('88,2');
+  const additionalBlocks = page.locator('.daily-additional-blocks');
+  await additionalBlocks.locator('summary').click();
+  await expect(additionalBlocks).not.toHaveAttribute('open', '');
   await expect(floatingSave).toContainText('Сохранить изменения');
   await floatingSave.click();
   await expect(page.getByText(/Запись за .* обновлена на устройстве/)).toBeVisible();
   await page.reload();
+  await openAdditionalBlocks(page);
   await expect(weight).toHaveValue('88.2');
 });
 
@@ -418,6 +452,7 @@ test('keeps one experiment identity while extending it across weekly slices', as
     if (await startToday.isVisible()) {
       await startToday.click();
     }
+    await openAdditionalBlocks(page);
     const experimentCard = page.locator('#experiment');
     await expect(experimentCard).toBeVisible();
     await experimentCard.getByRole('button', { name: answer, exact: true }).click();

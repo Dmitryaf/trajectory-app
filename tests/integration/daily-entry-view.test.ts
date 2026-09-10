@@ -51,7 +51,8 @@ describe('daily entry scenario', () => {
     expect(wrapper.text()).not.toContain('С чего начать');
     expect(wrapper.text()).toContain('Состояние и условия');
     expect(wrapper.text()).toContain('Текущая цель');
-    expect(wrapper.text()).toContain('Остальные части дня');
+    expect(wrapper.text()).toContain('Дополнительные разделы');
+    expect(wrapper.get('.daily-additional-blocks').attributes('open')).toBeUndefined();
     expect(wrapper.text()).toContain('Короткий итог дня');
     expect(wrapper.text()).not.toContain('Сон перед этой датой и сколько сил было в этот день.');
   });
@@ -293,18 +294,24 @@ describe('daily entry scenario', () => {
     };
     const saveEntry = vi.spyOn(store, 'saveEntry').mockImplementation(async (entry) => entry);
     const wrapper = mount(TodayView, {
+      attachTo: document.body,
       global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
     });
     const experimentCard = wrapper.get('#experiment');
     const note = experimentCard.get('#experiment-note');
+    const additionalBlocks = wrapper.get('.daily-additional-blocks');
 
     expect(experimentCard.text()).toContain('Период: 20 июля — 27 июля 2026 г.');
+    expect(additionalBlocks.attributes('open')).toBeUndefined();
 
     expect(note.attributes('maxlength')).toBe('500');
     await note.setValue('x'.repeat(501));
     await wrapper.get('form').trigger('submit');
+    await flushPromises();
     expect(saveEntry).not.toHaveBeenCalled();
     expect(wrapper.get('[role="alert"]').text()).toContain('Заметка к эксперименту длиннее 500 символов');
+    expect(additionalBlocks.attributes('open')).toBe('');
+    expect(document.activeElement).toBe(note.element);
 
     await note.setValue('Заранее убрал телефон, но поздний звонок сбил план');
     await experimentCard
@@ -321,6 +328,7 @@ describe('daily entry scenario', () => {
         experimentNote: 'Заранее убрал телефон, но поздний звонок сбил план',
       }),
     );
+    wrapper.unmount();
   });
 
   it('opens the native date picker from the full desktop date control', async () => {

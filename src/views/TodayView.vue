@@ -8,6 +8,7 @@ import AiAnalysisNudge from '../features/analysis/ui/AiAnalysisNudge.vue';
 import CurrentGoalDialog from '../features/daily-entry/ui/CurrentGoalDialog.vue';
 import { resolveTodayContextCue } from '../features/daily-entry/contextCue';
 import DailyLayoutSettings from '../features/daily-entry/ui/DailyLayoutSettings.vue';
+import { useDailyBlocksDisclosure } from '../features/daily-entry/useDailyBlocksDisclosure';
 import { useTodayContext } from '../features/daily-entry/useTodayContext';
 import FirstUseRecovery from '../features/first-use/ui/FirstUseRecovery.vue';
 import { isFirstUsePrimary } from '../features/first-use/priority';
@@ -79,6 +80,7 @@ const {
   resolveDraftConflict,
   save,
 } = useDailyEntryForm(store);
+const { additionalBlocksOpen, syncAdditionalBlocksOpen } = useDailyBlocksDisclosure(validationMessage);
 
 const selectedDateLabel = computed(() => selectedDate.value.split('-').reverse().join('.'));
 
@@ -623,138 +625,153 @@ function openEntryDatePicker() {
         </div>
       </SurfaceCard>
 
-      <div v-if="hasAdditionalDayBlocks" class="checkin-group-heading">
-        <span>Остальные части дня</span>
-      </div>
-      <SurfaceCard v-if="blockIsActive('career')" id="career" kind="form">
-        <FormCardHeading icon="↗" tone="blue">
-          <div>
-            <h2>Рабочий контекст</h2>
-            <p>Что было частью рабочего дня. Эта отметка сама по себе не считается шагом по текущей цели.</p>
-          </div>
-          <RouterLink class="card-settings-link" to="/settings#work-settings">Настроить</RouterLink>
-        </FormCardHeading>
-        <ChipGroup
-          :model-value="form.careerStates as CareerState[]"
-          :options="careerItems"
-          multiple
-          @update:model-value="setCareerStates"
-        />
-        <button
-          class="none-option"
-          :class="{ selected: form.recordedFields.includes('careerStates') && !form.careerStates.length }"
-          type="button"
-          @click="setCareerStates([])"
-        >
-          Ничего из списка
-        </button>
-        <DataNote>Конкретное действие по выбранной цели записывается только в блоке выше.</DataNote>
-      </SurfaceCard>
+      <details
+        v-if="hasAdditionalDayBlocks"
+        class="daily-additional-blocks"
+        :open="additionalBlocksOpen"
+        @toggle="syncAdditionalBlocksOpen"
+      >
+        <summary>
+          <span>Дополнительные разделы</span>
+          <small>Работа, движение, питание и другое — по вашим настройкам</small>
+        </summary>
+        <div class="daily-additional-blocks__grid">
+          <SurfaceCard v-if="blockIsActive('career')" id="career" kind="form">
+            <FormCardHeading icon="↗" tone="blue">
+              <div>
+                <h2>Рабочий контекст</h2>
+                <p>Что было частью рабочего дня. Эта отметка сама по себе не считается шагом по текущей цели.</p>
+              </div>
+              <RouterLink class="card-settings-link" to="/settings#work-settings">Настроить</RouterLink>
+            </FormCardHeading>
+            <ChipGroup
+              :model-value="form.careerStates as CareerState[]"
+              :options="careerItems"
+              multiple
+              @update:model-value="setCareerStates"
+            />
+            <button
+              class="none-option"
+              :class="{ selected: form.recordedFields.includes('careerStates') && !form.careerStates.length }"
+              type="button"
+              @click="setCareerStates([])"
+            >
+              Ничего из списка
+            </button>
+            <DataNote>Конкретное действие по выбранной цели записывается только в блоке выше.</DataNote>
+          </SurfaceCard>
 
-      <SurfaceCard v-if="blockIsActive('movement')" id="movement" kind="form">
-        <FormCardHeading icon="△" tone="green">
-          <div>
-            <h2>Физическая активность</h2>
-            <p v-if="isFirstEntry">Отметьте, была ли сегодня активность и какая.</p>
-          </div>
-          <RouterLink class="card-settings-link" to="/settings#movement-options">Настроить</RouterLink>
-        </FormCardHeading>
-        <ChipGroup :model-value="form.activities as ActivityId[]" :options="activityItems" multiple @update:model-value="setActivities" />
-        <button
-          class="none-option"
-          :class="{ selected: form.activitiesRecorded && !form.activities.length }"
-          type="button"
-          @click="setActivities([])"
-        >
-          Без активности
-        </button>
-      </SurfaceCard>
+          <SurfaceCard v-if="blockIsActive('movement')" id="movement" kind="form">
+            <FormCardHeading icon="△" tone="green">
+              <div>
+                <h2>Физическая активность</h2>
+                <p v-if="isFirstEntry">Отметьте, была ли сегодня активность и какая.</p>
+              </div>
+              <RouterLink class="card-settings-link" to="/settings#movement-options">Настроить</RouterLink>
+            </FormCardHeading>
+            <ChipGroup
+              :model-value="form.activities as ActivityId[]"
+              :options="activityItems"
+              multiple
+              @update:model-value="setActivities"
+            />
+            <button
+              class="none-option"
+              :class="{ selected: form.activitiesRecorded && !form.activities.length }"
+              type="button"
+              @click="setActivities([])"
+            >
+              Без активности
+            </button>
+          </SurfaceCard>
 
-      <SurfaceCard v-if="blockIsActive('nutrition')" id="nutrition" kind="form" class="form-card--nutrition">
-        <FormCardHeading icon="◐" tone="green">
-          <div>
-            <h2>Питание</h2>
-            <p>
-              {{ displayedNutritionCriterion || 'Отметьте, как прошёл день относительно вашего ориентира в питании.' }}
-            </p>
-          </div>
-          <RouterLink class="card-settings-link" to="/settings#nutrition-settings">Настроить</RouterLink>
-        </FormCardHeading>
-        <ChipGroup :model-value="form.nutritionState" :options="nutritionOptions" allow-clear @update:model-value="setNutritionState" />
-        <div class="sleep-field-grid">
-          <div>
-            <FormFieldLabel for="weight-kg">Вес</FormFieldLabel>
-            <div class="number-field">
-              <input id="weight-kg" v-model="weightKg" type="text" inputmode="decimal" autocomplete="off" placeholder="82.4" />
-              <span>кг</span>
+          <SurfaceCard v-if="blockIsActive('nutrition')" id="nutrition" kind="form" class="form-card--nutrition">
+            <FormCardHeading icon="◐" tone="green">
+              <div>
+                <h2>Питание</h2>
+                <p>
+                  {{ displayedNutritionCriterion || 'Отметьте, как прошёл день относительно вашего ориентира в питании.' }}
+                </p>
+              </div>
+              <RouterLink class="card-settings-link" to="/settings#nutrition-settings">Настроить</RouterLink>
+            </FormCardHeading>
+            <ChipGroup :model-value="form.nutritionState" :options="nutritionOptions" allow-clear @update:model-value="setNutritionState" />
+            <div class="sleep-field-grid">
+              <div>
+                <FormFieldLabel for="weight-kg">Вес</FormFieldLabel>
+                <div class="number-field">
+                  <input id="weight-kg" v-model="weightKg" type="text" inputmode="decimal" autocomplete="off" placeholder="82.4" />
+                  <span>кг</span>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-        <textarea
-          v-model="form.nutritionNote"
-          rows="2"
-          maxlength="180"
-          placeholder="Например: много перекусов вечером, ел по плану, пропустил нормальный ужин"
-        ></textarea>
-      </SurfaceCard>
+            <textarea
+              v-model="form.nutritionNote"
+              rows="2"
+              maxlength="180"
+              placeholder="Например: много перекусов вечером, ел по плану, пропустил нормальный ужин"
+            ></textarea>
+          </SurfaceCard>
 
-      <SurfaceCard v-if="showLifeAreas" id="life-areas" kind="form">
-        <FormCardHeading icon="✦" tone="amber">
-          <div>
-            <h2>Области жизни</h2>
-            <p v-if="isFirstEntry">Что было заметной частью этого дня. Это не оценка успешности.</p>
-          </div>
-          <RouterLink class="card-settings-link" to="/settings#life-areas">Настроить</RouterLink>
-        </FormCardHeading>
-        <ChipGroup
-          :model-value="form.lifeAreas as LifeAreaId[]"
-          :options="dailyLifeAreaItems"
-          multiple
-          @update:model-value="setLifeAreas"
-        />
-        <button
-          class="none-option"
-          :class="{ selected: form.lifeAreasRecorded && !form.lifeAreas.length }"
-          type="button"
-          @click="setLifeAreas([])"
-        >
-          Ничего не отмечаю
-        </button>
-      </SurfaceCard>
+          <SurfaceCard v-if="showLifeAreas" id="life-areas" kind="form">
+            <FormCardHeading icon="✦" tone="amber">
+              <div>
+                <h2>Области жизни</h2>
+                <p v-if="isFirstEntry">Что было заметной частью этого дня. Это не оценка успешности.</p>
+              </div>
+              <RouterLink class="card-settings-link" to="/settings#life-areas">Настроить</RouterLink>
+            </FormCardHeading>
+            <ChipGroup
+              :model-value="form.lifeAreas as LifeAreaId[]"
+              :options="dailyLifeAreaItems"
+              multiple
+              @update:model-value="setLifeAreas"
+            />
+            <button
+              class="none-option"
+              :class="{ selected: form.lifeAreasRecorded && !form.lifeAreas.length }"
+              type="button"
+              @click="setLifeAreas([])"
+            >
+              Ничего не отмечаю
+            </button>
+          </SurfaceCard>
 
-      <SurfaceCard v-if="experimentAppliesToSelectedDate" id="experiment" kind="form" class="form-card--experiment">
-        <FormCardHeading icon="⌁" tone="orange">
-          <div>
-            <h2>Эксперимент</h2>
-            <p>{{ store.settings.experiment.title }}</p>
-          </div>
-          <RouterLink class="card-settings-link" to="/settings#experiment-settings">Настроить</RouterLink>
-        </FormCardHeading>
-        <p class="form-context experiment-period">Период: {{ experimentPeriodLabel }}</p>
-        <p v-if="store.settings.experiment.hypothesis" class="form-context">
-          Что хотите узнать: {{ store.settings.experiment.hypothesis }}
-        </p>
-        <FormFieldLabel>Сегодня получилось это сделать?</FormFieldLabel>
-        <div class="binary-choice">
-          <button type="button" :class="{ selected: form.experimentCompleted === true }" @click="form.experimentCompleted = true">
-            Да
-          </button>
-          <button type="button" :class="{ selected: form.experimentCompleted === false }" @click="form.experimentCompleted = false">
-            Нет
-          </button>
-          <button type="button" :class="{ selected: form.experimentCompleted === null }" @click="form.experimentCompleted = null">
-            Нет отметки
-          </button>
+          <SurfaceCard v-if="experimentAppliesToSelectedDate" id="experiment" kind="form" class="form-card--experiment">
+            <FormCardHeading icon="⌁" tone="orange">
+              <div>
+                <h2>Эксперимент</h2>
+                <p>{{ store.settings.experiment.title }}</p>
+              </div>
+              <RouterLink class="card-settings-link" to="/settings#experiment-settings">Настроить</RouterLink>
+            </FormCardHeading>
+            <p class="form-context experiment-period">Период: {{ experimentPeriodLabel }}</p>
+            <p v-if="store.settings.experiment.hypothesis" class="form-context">
+              Что хотите узнать: {{ store.settings.experiment.hypothesis }}
+            </p>
+            <FormFieldLabel>Сегодня получилось это сделать?</FormFieldLabel>
+            <div class="binary-choice">
+              <button type="button" :class="{ selected: form.experimentCompleted === true }" @click="form.experimentCompleted = true">
+                Да
+              </button>
+              <button type="button" :class="{ selected: form.experimentCompleted === false }" @click="form.experimentCompleted = false">
+                Нет
+              </button>
+              <button type="button" :class="{ selected: form.experimentCompleted === null }" @click="form.experimentCompleted = null">
+                Нет отметки
+              </button>
+            </div>
+            <FormFieldLabel for="experiment-note" optional>Что помогло или помешало?</FormFieldLabel>
+            <AutoGrowTextarea
+              id="experiment-note"
+              v-model="form.experimentNote"
+              :rows="2"
+              :max-length="experimentTextLimits.dailyNote"
+              placeholder="Например: заранее убрал телефон; поздний звонок сбил план"
+            />
+          </SurfaceCard>
         </div>
-        <FormFieldLabel for="experiment-note" optional>Что помогло или помешало?</FormFieldLabel>
-        <AutoGrowTextarea
-          id="experiment-note"
-          v-model="form.experimentNote"
-          :rows="2"
-          :max-length="experimentTextLimits.dailyNote"
-          placeholder="Например: заранее убрал телефон; поздний звонок сбил план"
-        />
-      </SurfaceCard>
+      </details>
 
       <div class="checkin-group-heading">
         <span>Короткий итог дня</span>

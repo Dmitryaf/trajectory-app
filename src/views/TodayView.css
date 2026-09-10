@@ -300,6 +300,39 @@
   background: var(--checkin-group-divider);
 }
 
+.daily-additional-blocks {
+  grid-column: 1 / -1;
+  padding: 0 18px 18px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--today-summary-surface);
+}
+
+.daily-additional-blocks > summary {
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  color: var(--navy);
+  cursor: pointer;
+  font-weight: 850;
+}
+
+.daily-additional-blocks > summary small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  text-align: right;
+}
+
+.daily-additional-blocks__grid {
+  display: grid;
+  gap: 16px;
+  padding-top: 4px;
+}
+
 .form-card--sleep {
   background: linear-gradient(135deg, var(--sleep-card-glow), var(--quick-capture-surface) 45%);
 }
@@ -595,6 +628,21 @@
     padding-bottom: 64px;
   }
 
+  .daily-additional-blocks {
+    padding: 0 12px 12px;
+    border-radius: 18px;
+  }
+
+  .daily-additional-blocks > summary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .daily-additional-blocks > summary small {
+    text-align: left;
+  }
+
   .floating-save-button {
     right: calc(14px + var(--safe-right));
     left: calc(14px + var(--safe-left));
@@ -650,6 +698,10 @@
 
   .checkin-grid > .form-card--wide {
     grid-column: 1 / -1;
+  }
+
+  .daily-additional-blocks__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
