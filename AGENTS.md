@@ -5,11 +5,12 @@
 1. `.ai-rules/RULESET.md`;
 2. `.ai-rules/PROJECT_RULES.md`;
 3. `.ai-rules/upstream/CORE.md`;
-4. всех выбранных файлов из `.ai-rules/upstream/profiles/`;
-5. только относящихся к задаче файлов из `.ai-rules/upstream/rules/`;
-6. релевантной проектной документации, кода и тестов.
+4. `.ai-rules/upstream/INDEX.md`;
+5. всех выбранных файлов из `.ai-rules/upstream/profiles/`;
+6. только относящихся к задаче файлов из `.ai-rules/upstream/rules/`;
+7. релевантной проектной документации, кода и тестов.
 
-Точный состав профилей и тем определяй через `.ai-rules/manifest.json`, `.ai-rules/lock.json` и проектный status. `.ai-rules/RULESET.md` объясняет причины выбора и явные исключения, а `.ai-rules/PROJECT_RULES.md` содержит правила именно этого проекта.
+`INDEX.md` показывает, что и когда читать, но не является источником истины. Точный состав профилей и тем определяй через `.ai-rules/manifest.json`, `.ai-rules/lock.json` и проектный status. `.ai-rules/RULESET.md` объясняет причины выбора и явные исключения, а `.ai-rules/PROJECT_RULES.md` содержит правила именно этого проекта.
 
 Остальные managed-правила читай только по типу задачи:
 
