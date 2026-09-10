@@ -72,6 +72,30 @@ test('keeps every primary screen inside the minimum viewport width', async ({ pa
   }
 });
 
+test('keeps archive filters inside a tablet viewport', async ({ page }) => {
+  for (const width of [768, 820]) {
+    await page.setViewportSize({ width, height: 1024 });
+    for (const route of ['/results', '/events']) {
+      await page.goto(route);
+      await page.locator('.page--archive').waitFor();
+
+      const layout = await page.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        content: document.documentElement.scrollWidth,
+      }));
+      expect(layout.content, `${route} should not scroll horizontally at ${width}px`).toBeLessThanOrEqual(layout.viewport);
+
+      const panel = page.locator('.archive-panel');
+      const filters = page.locator('.archive-filters');
+      const [panelBox, filtersBox] = await Promise.all([panel.boundingBox(), filters.boundingBox()]);
+      expect(panelBox).not.toBeNull();
+      expect(filtersBox).not.toBeNull();
+      expect(filtersBox!.x).toBeGreaterThanOrEqual(panelBox!.x);
+      expect(filtersBox!.x + filtersBox!.width).toBeLessThanOrEqual(panelBox!.x + panelBox!.width);
+    }
+  }
+});
+
 test('shows an unknown user route and returns to Today with the keyboard', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 720 });
   await page.goto('/missing-page');

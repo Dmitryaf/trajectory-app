@@ -195,6 +195,14 @@ defineProps<{
   position: absolute;
   width: 100%;
 }
+@media (max-width: 820px) {
+  .archive-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+  :deep(.archive-filters > input:first-child) {
+    grid-column: 1 / -1;
+  }
+}
 @media (max-width: 720px) {
   .page--archive > .page-heading {
     min-height: 132px;
@@ -213,12 +221,6 @@ defineProps<{
   .archive-panel {
     padding: 18px;
     border-radius: 20px;
-  }
-  .archive-filters {
-    grid-template-columns: 1fr 1fr;
-  }
-  :deep(.archive-filters > input:first-child) {
-    grid-column: 1 / -1;
   }
 }
 @media (max-width: 520px) {
