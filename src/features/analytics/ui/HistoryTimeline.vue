@@ -66,6 +66,7 @@ defineEmits<{ 'update:page': [value: number] }>();
 .history-timeline__list {
   position: relative;
   display: grid;
+  gap: 7px;
 }
 .history-timeline__summary {
   display: flex;
@@ -126,9 +127,6 @@ defineEmits<{ 'update:page': [value: number] }>();
   border-left: 2px solid var(--history-timeline-line);
   border-radius: 0 14px 14px 0;
   background: var(--surface);
-}
-.history-timeline__list > article + article {
-  margin-top: 7px;
 }
 .history-timeline__list > article::before {
   content: '';
