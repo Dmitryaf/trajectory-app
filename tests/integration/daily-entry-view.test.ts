@@ -32,7 +32,9 @@ describe('daily entry scenario', () => {
     expect(wrapper.text()).toContain('Зачем это заполнять?');
     expect(wrapper.text()).not.toContain('Вчера без записи');
     expect(wrapper.find('.quick-capture').exists()).toBe(false);
-    expect(wrapper.text()).toContain('Сначала выберите, над чем сейчас хотите работать.');
+    expect(wrapper.text()).toContain('Цель необязательна. Выберите её, если хотите связать дневные действия с периодом.');
+    expect(wrapper.find('.current-goal-summary').exists()).toBe(false);
+    expect(wrapper.get('#goal-actions').classes()).toContain('form-card--direction-empty');
     expect(wrapper.get('#goal-actions .context-action').text()).toBe('Выбрать цель');
     expect(wrapper.text()).not.toContain('Конкретное действие');
   });
@@ -96,6 +98,9 @@ describe('daily entry scenario', () => {
 
     expect(wrapper.html().indexOf('id="goal-actions"')).toBeLessThan(wrapper.html().indexOf('id="career"'));
     expect(goalCard.get('h2').text()).toBe('Шаг по текущей цели');
+    expect(wrapper.find('.current-goal-summary').exists()).toBe(false);
+    expect(goalCard.classes()).not.toContain('form-card--direction-empty');
+    expect(wrapper.text().match(/Подготовить доклад/g)).toHaveLength(1);
     expect(goalCard.get('.goal-context-details').attributes('open')).toBeUndefined();
     expect(workCard.get('h2').text()).toBe('Рабочий контекст');
     expect(workCard.text()).toContain('не считается шагом по текущей цели');
@@ -491,12 +496,30 @@ describe('daily entry scenario', () => {
     await wrapper.get('[aria-label="Дата записи"]').setValue('2026-07-20');
 
     const goalCard = wrapper.get('#goal-actions');
+    expect(goalCard.classes()).not.toContain('form-card--direction-empty');
     expect(goalCard.text()).toContain('Для этой записи цель не была сохранена.');
     expect(goalCard.text()).not.toContain('Новая текущая цель');
     expect(goalCard.text()).not.toContain('Новый критерий результата');
     expect(goalCard.text()).not.toContain('Новое внешнее подтверждение');
     expect(goalCard.find('.card-settings-link').exists()).toBe(false);
     expect(wrapper.get('#nutrition').text()).not.toContain('Новый ориентир питания');
+  });
+
+  it('keeps a historical day without a goal compact and independent from the current goal', async () => {
+    const { pinia, store } = createStore();
+    store.settings.activeFocusTitle = 'Новая текущая цель';
+    store.dailyEntries = [{ ...emptyDailyEntry('2026-07-20'), importantFact: 'Историческая запись' }];
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+
+    await wrapper.get('[aria-label="Дата записи"]').setValue('2026-07-20');
+
+    const goalCard = wrapper.get('#goal-actions');
+    expect(goalCard.classes()).toContain('form-card--direction-empty');
+    expect(goalCard.text()).toContain('Для этой даты цель не была сохранена. Текущие настройки не изменяют историю.');
+    expect(goalCard.text()).not.toContain('Новая текущая цель');
+    expect(goalCard.find('.context-action').exists()).toBe(false);
   });
 
   it('shows context independently when the sleep block is hidden', () => {
@@ -662,7 +685,7 @@ describe('daily entry scenario', () => {
     const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Заметка дня');
     await factCard!.get('textarea').setValue('Не потерять введённый текст');
 
-    await wrapper.get('.current-goal-summary button').trigger('click');
+    await wrapper.get('#goal-actions .context-action').trigger('click');
     const goalDialog = wrapper.getComponent(CurrentGoalDialog);
     expect(goalDialog.props('open')).toBe(true);
     await flushPromises();
@@ -675,7 +698,7 @@ describe('daily entry scenario', () => {
 
     expect(store.settings.activeFocusTitle).toBe('Подготовиться к собеседованию');
     expect(store.settings.externalEvidenceCriterion).toBe('Получить независимую обратную связь');
-    expect(wrapper.get('.current-goal-summary').text()).toContain('Подготовиться к собеседованию');
+    expect(wrapper.get('#goal-actions').text()).toContain('Подготовиться к собеседованию');
     expect(factCard!.get('textarea').element).toHaveProperty('value', 'Не потерять введённый текст');
     expect(confirm).not.toHaveBeenCalled();
     expect(notifySaved).toHaveBeenCalledWith('Текущая цель сохранена');
@@ -687,7 +710,7 @@ describe('daily entry scenario', () => {
       global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub, Teleport: true } },
     });
 
-    await wrapper.get('.current-goal-summary button').trigger('click');
+    await wrapper.get('#goal-actions .context-action').trigger('click');
     const goalDialog = wrapper.getComponent(CurrentGoalDialog);
     const titleInput = goalDialog.get('#current-goal-title');
     await titleInput.setValue('Несохранённое изменение цели');
@@ -720,14 +743,15 @@ describe('daily entry scenario', () => {
       global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub, Teleport: true } },
     });
 
-    await wrapper.get('.current-goal-summary button').trigger('click');
+    await wrapper.get('#goal-actions .card-settings-link').trigger('click');
     const goalDialog = wrapper.getComponent(CurrentGoalDialog);
     const removeButton = goalDialog.findAll('button').find((button) => button.text() === 'Убрать цель');
     await removeButton!.trigger('click');
     await flushPromises();
 
     expect(store.settings.activeFocusTitle).toBe('');
-    expect(wrapper.get('.current-goal-summary').text()).toContain('Пока не выбрана');
+    expect(wrapper.get('#goal-actions').text()).toContain('Цель необязательна');
+    expect(wrapper.get('#goal-actions').classes()).toContain('form-card--direction-empty');
     expect(notifySaved).toHaveBeenCalledWith('Текущая цель убрана');
   });
 

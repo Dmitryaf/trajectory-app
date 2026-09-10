@@ -169,8 +169,7 @@
 
 .today-pulse,
 .recovery-nudge,
-.entry-change-notice,
-.current-goal-summary {
+.entry-change-notice {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -180,30 +179,6 @@
   border: 1px solid var(--line);
   border-radius: 18px;
   background: var(--today-summary-surface);
-}
-
-.current-goal-summary {
-  border-color: var(--current-goal-border);
-  background: linear-gradient(135deg, var(--current-goal-surface-start), var(--weekly-rhythm-item-surface));
-}
-
-.current-goal-summary > div {
-  min-width: 0;
-  flex: 1;
-}
-
-.current-goal-summary strong {
-  display: block;
-  margin-top: 3px;
-  overflow-wrap: anywhere;
-  color: var(--navy);
-  font-size: 16px;
-}
-
-.current-goal-summary p {
-  margin: 3px 0 0;
-  color: var(--empty-guide-text);
-  font-size: 13px;
 }
 
 .first-entry-guide {
@@ -337,6 +312,19 @@
 .form-card--direction {
   border-color: var(--direction-card-border);
   background: linear-gradient(135deg, var(--direction-card-glow), var(--quick-capture-surface) 48%);
+}
+
+.form-card--direction .form-card__heading p {
+  overflow-wrap: anywhere;
+}
+
+.form-card--direction-empty {
+  padding-top: 18px;
+  padding-bottom: 18px;
+}
+
+.goal-empty-action {
+  margin-top: -8px;
 }
 
 .form-card--nutrition {
@@ -593,15 +581,10 @@
 
   .today-pulse,
   .recovery-nudge,
-  .entry-change-notice,
-  .current-goal-summary {
+  .entry-change-notice {
     align-items: stretch;
     flex-direction: column;
     padding: 15px;
-  }
-
-  .current-goal-summary .context-action {
-    width: 100%;
   }
 
   .today-pulse > p {

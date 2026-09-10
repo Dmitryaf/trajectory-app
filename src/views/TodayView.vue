@@ -158,7 +158,6 @@ const displayedNutritionCriterion = computed(() =>
   hasSavedEntry.value ? form.nutritionCriterion : form.nutritionCriterion || store.settings.nutritionGoalCriterion,
 );
 const hasSelectedFocus = computed(() => Boolean(displayedFocusTitle.value.trim()));
-const currentGoalTitle = computed(() => store.settings.activeFocusTitle.trim());
 const hasRecordedGoalAction = computed(() => form.recordedFields.includes('actionDirection'));
 const showGoalActionChoices = computed(() => hasSelectedFocus.value || hasRecordedGoalAction.value);
 const showLifeAreas = computed(() => activeLifeOptions.value.length > 0 || form.lifeAreas.length > 0 || form.lifeAreasRecorded);
@@ -362,17 +361,6 @@ function openEntryDatePicker() {
       <RouterLink to="/events"><span>✦</span><strong>Записать мысль или событие</strong></RouterLink>
     </nav>
 
-    <section v-if="!firstUseTakesPriority && isToday" class="current-goal-summary" aria-label="Текущая цель">
-      <div>
-        <EyebrowText>Текущая цель</EyebrowText>
-        <strong>{{ currentGoalTitle || 'Пока не выбрана' }}</strong>
-        <p v-if="!currentGoalTitle">Можно продолжать заполнять день без цели.</p>
-      </div>
-      <ActionButton variant="secondary" class="context-action" type="button" aria-haspopup="dialog" @click="goalDialogOpen = true">
-        {{ currentGoalTitle ? 'Изменить' : 'Выбрать цель' }}
-      </ActionButton>
-    </section>
-
     <section v-if="isFirstEntry && !firstUseTakesPriority" class="first-entry-guide" aria-label="Первая запись">
       <div>
         <EyebrowText>С чего начать</EyebrowText>
@@ -550,7 +538,13 @@ function openEntryDatePicker() {
       <div class="checkin-group-heading">
         <span>Текущая цель</span>
       </div>
-      <SurfaceCard id="goal-actions" kind="form" class="form-card--direction form-card--wide">
+      <SurfaceCard
+        id="goal-actions"
+        kind="form"
+        class="form-card--direction form-card--wide"
+        :class="{ 'form-card--direction-empty': !showGoalActionChoices }"
+        aria-label="Текущая цель"
+      >
         <FormCardHeading icon="⌁" tone="blue">
           <div>
             <h2>Шаг по текущей цели</h2>
@@ -560,18 +554,20 @@ function openEntryDatePicker() {
                   ? `${hasSavedEntry ? 'Цель на эту дату' : 'Текущая цель'}: ${displayedFocusTitle}`
                   : hasRecordedGoalAction
                     ? 'Для этой записи цель не была сохранена.'
-                    : 'Сначала выберите, над чем сейчас хотите работать.'
+                    : hasSavedEntry
+                      ? 'Для этой даты цель не была сохранена. Текущие настройки не изменяют историю.'
+                      : 'Цель необязательна. Выберите её, если хотите связать дневные действия с периодом.'
               }}
             </p>
           </div>
           <button
-            v-if="hasSelectedFocus && !hasSavedEntry"
+            v-if="hasSelectedFocus && isToday"
             class="card-settings-link"
             type="button"
             aria-haspopup="dialog"
             @click="goalDialogOpen = true"
           >
-            Настроить
+            {{ store.settings.activeFocusTitle.trim() ? 'Изменить' : 'Выбрать новую' }}
           </button>
         </FormCardHeading>
         <template v-if="showGoalActionChoices">
@@ -620,17 +616,8 @@ function openEntryDatePicker() {
             </p>
           </FormDisclosure>
         </template>
-        <div v-else class="empty-block-note">
-          <p v-if="hasSavedEntry">Для этой даты цель не была сохранена. Текущие настройки не изменяют историю.</p>
-          <p v-else>После выбора цели здесь можно будет отмечать конкретные шаги, подготовку или дни, занятые другими делами.</p>
-          <ActionButton
-            v-if="!hasSavedEntry"
-            variant="secondary"
-            class="context-action"
-            type="button"
-            aria-haspopup="dialog"
-            @click="goalDialogOpen = true"
-          >
+        <div v-else-if="!hasSavedEntry" class="empty-block-note goal-empty-action">
+          <ActionButton variant="secondary" class="context-action" type="button" aria-haspopup="dialog" @click="goalDialogOpen = true">
             Выбрать цель
           </ActionButton>
         </div>

@@ -39,7 +39,8 @@ test('keeps Today visually stable across its critical states', async ({ page }) 
 
   await page.getByRole('button', { name: 'Изменить' }).click();
   await page.getByRole('button', { name: 'Убрать цель' }).click();
-  await expect(page.getByLabel('Текущая цель')).toContainText('Пока не выбрана');
+  await expect(page.getByLabel('Текущая цель')).toContainText('Цель на эту дату: Подготовить короткий доклад');
+  await expect(page.getByRole('button', { name: 'Выбрать новую' })).toBeVisible();
   await expectTodayScreenshot(page, 'today-mobile-without-goal.png');
 
   await page.setViewportSize({ width: 768, height: 1024 });
