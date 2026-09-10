@@ -334,6 +334,22 @@
   box-shadow: 0 6px 16px var(--bottom-nav-active-shadow);
 }
 
+@media (max-width: 979px) {
+  .app-main--first-use {
+    padding-bottom: 18px;
+  }
+
+  .bottom-nav--first-use {
+    position: static;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    width: min(520px, calc(100% - 16px - var(--safe-left) - var(--safe-right)));
+    margin: 0 auto max(8px, var(--safe-bottom));
+    transform: none;
+  }
+}
+
 @media (max-width: 720px) {
   :global([data-sonner-toaster]) {
     width: auto;

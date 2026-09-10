@@ -9,6 +9,7 @@ import { shouldShowAiAnalysisNudge } from '../features/analysis/discovery';
 import CurrentGoalDialog from '../features/daily-entry/ui/CurrentGoalDialog.vue';
 import DailyLayoutSettings from '../features/daily-entry/ui/DailyLayoutSettings.vue';
 import FirstUseRecovery from '../features/first-use/ui/FirstUseRecovery.vue';
+import { isFirstUsePrimary } from '../features/first-use/priority';
 import HowItWorksDialog from '../features/first-use/ui/HowItWorksDialog.vue';
 import PwaInstallNudge from '../features/pwa/ui/PwaInstallNudge.vue';
 import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
@@ -140,13 +141,7 @@ const dailyLifeAreaItems = computed(() => [
 const isToday = computed(() => selectedDate.value === todayKey());
 const isFirstEntry = computed(() => store.loaded && store.dailyEntries.length === 0);
 const firstUseEditRequested = new URL(window.location.href).searchParams.get('first-use') === 'edit';
-const firstUseTakesPriority = computed(
-  () =>
-    isToday.value &&
-    (store.settings.firstUse.status === 'not_started' ||
-      store.settings.firstUse.status === 'in_progress' ||
-      (firstUseEditRequested && store.settings.firstUse.status === 'completed')),
-);
+const firstUseTakesPriority = computed(() => isToday.value && isFirstUsePrimary(store.settings.firstUse, firstUseEditRequested));
 const displayedFocusTitle = computed(() => (hasSavedEntry.value ? form.focusTitle : form.focusTitle || store.settings.activeFocusTitle));
 const displayedFocusOutcomeCriterion = computed(() =>
   hasSavedEntry.value ? form.focusOutcomeCriterion : form.focusOutcomeCriterion || store.settings.focusOutcomeCriterion,

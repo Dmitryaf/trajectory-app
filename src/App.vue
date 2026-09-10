@@ -11,6 +11,7 @@ import HowItWorksDialog from './features/first-use/ui/HowItWorksDialog.vue';
 import PasswordResetView from './views/PasswordResetView.vue';
 import EyebrowText from './shared/ui/typography/EyebrowText.vue';
 import { recordFirstUseReturnEvents } from './features/first-use/funnel';
+import { isFirstUsePrimary } from './features/first-use/priority';
 import { createResumeCloudRefresh } from './features/sync/resume';
 import { prepareLocalCacheOwner, reconcileCloudSnapshotAfterResume, reconcileCloudSnapshotOnStartup } from './features/sync/startup';
 import { hasUnsavedSyncEditors, onUnsavedSyncEditorsChange } from './features/sync/editing';
@@ -30,6 +31,11 @@ const appDataReady = ref(false);
 const appDataLoadError = ref('');
 const appDataLoadingText = ref('Загружаю записи…');
 const effectiveLoadError = computed(() => store.loadError || appDataLoadError.value);
+const firstUseOwnsToday = computed(
+  () =>
+    router.currentRoute.value.path === '/' &&
+    isFirstUsePrimary(store.settings.firstUse, router.currentRoute.value.query['first-use'] === 'edit'),
+);
 let appDataLoadPromise: Promise<void> | null = null;
 let stopCloudSubscription: (() => void) | undefined;
 let stopEditingSubscription: (() => void) | undefined;
@@ -242,7 +248,13 @@ const navItems = [
       </div>
     </header>
 
-    <main class="app-main" :class="{ 'app-main--auth': auth.initialized && auth.requiresAuth && !auth.isAuthenticated }">
+    <main
+      class="app-main"
+      :class="{
+        'app-main--auth': auth.initialized && auth.requiresAuth && !auth.isAuthenticated,
+        'app-main--first-use': firstUseOwnsToday,
+      }"
+    >
       <div v-if="!auth.initialized" class="loading-card" role="status" aria-live="polite">
         <span class="loading-card__mark" aria-hidden="true"><i></i></span>
         <strong>Проверяю доступ…</strong>
@@ -285,7 +297,12 @@ const navItems = [
       </template>
     </main>
 
-    <nav v-if="canOpenApp && appDataReady && store.loaded && !effectiveLoadError" class="bottom-nav" aria-label="Основная навигация">
+    <nav
+      v-if="canOpenApp && appDataReady && store.loaded && !effectiveLoadError"
+      class="bottom-nav"
+      :class="{ 'bottom-nav--first-use': firstUseOwnsToday }"
+      aria-label="Основная навигация"
+    >
       <RouterLink
         v-for="item in navItems"
         :key="item.to"

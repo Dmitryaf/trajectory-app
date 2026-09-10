@@ -9,6 +9,11 @@ test('saves and resumes the first week recovery on a small screen', async ({ pag
   await expect(page.getByRole('radio', { name: /Прошлая неделя/ })).toBeVisible();
   await page.getByRole('radio', { name: /Эта неделя/ }).click();
   await expect(page.locator('.checkin-grid')).toBeHidden();
+  const choiceActionsBox = await page.locator('.first-use-card--choice .first-use-card__actions').boundingBox();
+  const navigationBox = await page.locator('.bottom-nav').boundingBox();
+  expect(choiceActionsBox).not.toBeNull();
+  expect(navigationBox).not.toBeNull();
+  expect(choiceActionsBox!.y + choiceActionsBox!.height).toBeLessThanOrEqual(navigationBox!.y);
   await page.getByRole('button', { name: 'Начать обзор' }).click();
   await expect(page.getByRole('heading', { name: 'Что вам удалось закончить или получить?' })).toBeVisible();
 
