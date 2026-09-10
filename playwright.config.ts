@@ -1,6 +1,12 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const isCI = Boolean(process.env.CI);
+const mobileWebKitTests = [
+  '**/daily-entry.e2e.ts',
+  '**/first-use-recovery.e2e.ts',
+  '**/pwa-installation.e2e.ts',
+  '**/storage-protection.e2e.ts',
+];
 
 export default defineConfig({
   testDir: './e2e',
@@ -29,14 +35,14 @@ export default defineConfig({
       },
     },
     {
-      name: 'webkit',
-      testIgnore: ['**/performance.e2e.ts', '**/today-visual.e2e.ts', '**/interface-visual.e2e.ts'],
-      use: { ...devices['Desktop Safari'] },
+      name: 'mobile-webkit',
+      testMatch: mobileWebKitTests,
+      use: { ...devices['iPhone 13'] },
     },
     {
-      name: 'mobile-webkit',
-      testMatch: ['**/daily-entry.e2e.ts', '**/first-use-recovery.e2e.ts', '**/pwa-installation.e2e.ts', '**/storage-protection.e2e.ts'],
-      use: { ...devices['iPhone 13'] },
+      name: 'webkit',
+      testIgnore: ['**/performance.e2e.ts', '**/today-visual.e2e.ts', '**/interface-visual.e2e.ts', ...mobileWebKitTests],
+      use: { ...devices['Desktop Safari'] },
     },
   ],
 });
