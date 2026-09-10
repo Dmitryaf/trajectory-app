@@ -415,16 +415,6 @@ watch(
         <p>{{ summaryText }}</p>
       </article>
 
-      <PeriodAnalysisCard
-        v-if="hasDailyData || hasJournalData"
-        section-id="ai-analysis"
-        title="На что обратить внимание"
-        :cues="primaryReviewCues"
-        :copying="promptCopying"
-        @copy="copyPrompt"
-        @download="downloadJson"
-      />
-
       <section
         v-if="results.length || lifeEvents.length"
         class="period-records period-records--featured"
@@ -450,6 +440,16 @@ watch(
           pagination-label="событий недели"
         />
       </section>
+
+      <PeriodAnalysisCard
+        v-if="hasDailyData || hasJournalData"
+        content="cues"
+        title="На что обратить внимание"
+        :cues="primaryReviewCues"
+        :copying="promptCopying"
+        @copy="copyPrompt"
+        @download="downloadJson"
+      />
 
       <DecisionFollowUp v-if="decisionFollowUp" :follow-up="decisionFollowUp" />
 
@@ -520,6 +520,17 @@ watch(
         <strong>Короткий обзор появится в конце недели</strong>
         <p>Его можно пропустить — дневные записи и сводка недели останутся на месте.</p>
       </ReviewNotice>
+
+      <PeriodAnalysisCard
+        v-if="hasDailyData || hasJournalData"
+        section-id="ai-analysis"
+        content="external"
+        title="Внешний разбор недели"
+        :cues="primaryReviewCues"
+        :copying="promptCopying"
+        @copy="copyPrompt"
+        @download="downloadJson"
+      />
 
       <PeriodDetails
         v-if="hasDailyData || hasJournalData || experimentCards.length"

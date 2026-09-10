@@ -520,7 +520,7 @@ test('keeps monthly results before the review and secondary context behind a dis
   await expect(secondaryRecords.getByRole('navigation', { name: 'Страницы действий месяца' })).toBeVisible();
 });
 
-test('keeps weekly results and events visible before detailed daily context', async ({ page }) => {
+test('keeps weekly facts, observations, reflection and external analysis in decision order', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`/week?week=${demoAnchor()}`);
   const records = page.locator('.period-records--featured');
@@ -528,8 +528,21 @@ test('keeps weekly results and events visible before detailed daily context', as
   await expect(records.getByText('События недели', { exact: true })).toBeVisible();
   await expect(records.getByRole('link', { name: 'Открыть все итоги' })).toHaveCount(0);
   await expect(records.getByRole('link', { name: 'Открыть все события' })).toHaveCount(0);
-  await expect(page.locator('.week-data-details')).not.toHaveAttribute('open', '');
-  await expectPeriodDetailsChrome(page.locator('.week-data-details'));
+  const observations = page.locator('.period-analysis-card:not(#ai-analysis)');
+  const review = page.locator('#week-review');
+  const externalAnalysis = page.locator('#ai-analysis');
+  const details = page.locator('.week-data-details');
+  await expect(observations.locator('.review-cue-grid')).toBeVisible();
+  await expect(observations.locator('.period-actions')).toHaveCount(0);
+  await expect(externalAnalysis.getByRole('button', { name: 'Подготовить текст для нейросети' })).toBeVisible();
+  await expect(externalAnalysis.locator('.review-cue-grid')).toHaveCount(0);
+  await expect(details).not.toHaveAttribute('open', '');
+  await expectPeriodDetailsChrome(details);
+
+  const positions = await Promise.all(
+    [records, observations, review, externalAnalysis, details].map(async (locator) => (await locator.boundingBox())?.y ?? -1),
+  );
+  expect(positions).toEqual([...positions].sort((left, right) => left - right));
 });
 
 test('keeps desktop navigation visible while the page scrolls', async ({ page }) => {

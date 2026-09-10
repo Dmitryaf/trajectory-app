@@ -14,7 +14,7 @@ const reportThresholds = new Map([
 const hotspotContentBudgets = new Map([
   ['src/views/TodayView.vue', 26712],
   ['src/views/SettingsView.vue', 14541],
-  ['src/views/WeekView.vue', 24230],
+  ['src/views/WeekView.vue', 24436],
   ['src/views/MonthView.vue', 20807],
   ['src/features/settings/useSettingsForm.ts', 12359],
 ]);

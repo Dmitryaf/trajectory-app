@@ -10,12 +10,16 @@ import type { ReviewCue } from '@/features/analytics/reviewCues';
 import ReviewNudge from '@/shared/ui/content/ReviewNudge.vue';
 import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
 
-defineProps<{
-  title: string;
-  cues: ReviewCue[];
-  copying: boolean;
-  sectionId?: string;
-}>();
+withDefaults(
+  defineProps<{
+    title: string;
+    cues: ReviewCue[];
+    copying: boolean;
+    sectionId?: string;
+    content?: 'combined' | 'cues' | 'external';
+  }>(),
+  { content: 'combined', sectionId: undefined },
+);
 
 defineEmits<{
   copy: [];
@@ -25,22 +29,33 @@ defineEmits<{
 
 <template>
   <SurfaceCard :id="sectionId" kind="dashboard" class="period-analysis-card">
-    <SectionHeading>
-      <div>
-        <EyebrowText>Короткий разбор</EyebrowText>
-        <h2>{{ title }}</h2>
+    <template v-if="content !== 'external'">
+      <SectionHeading>
+        <div>
+          <EyebrowText>Короткий разбор</EyebrowText>
+          <h2>{{ title }}</h2>
+        </div>
+      </SectionHeading>
+      <ReviewCueGrid :cues="cues" />
+    </template>
+    <section v-if="content !== 'cues'" class="period-analysis-card__external">
+      <div class="period-analysis-card__external-heading">
+        <div>
+          <EyebrowText>Внешняя помощь</EyebrowText>
+          <h2 v-if="content === 'external'">{{ title }}</h2>
+          <h3 v-else>Внешний разбор</h3>
+        </div>
+        <PeriodActions :copying="copying" @copy="$emit('copy')" @download="$emit('download')" />
       </div>
-      <PeriodActions :copying="copying" @copy="$emit('copy')" @download="$emit('download')" />
-    </SectionHeading>
-    <AiAnalysisSteps />
-    <ReviewNudge class="range-custom-action period-analysis-card__range">
-      <div>
-        <strong>Нужен другой период?</strong>
-        <p>Выберите точные даты и подготовьте текст в настройках.</p>
-      </div>
-      <ActionButton :as="RouterLink" variant="secondary" to="/settings#analysis-settings">Выбрать даты</ActionButton>
-    </ReviewNudge>
-    <ReviewCueGrid :cues="cues" />
+      <AiAnalysisSteps />
+      <ReviewNudge class="range-custom-action period-analysis-card__range">
+        <div>
+          <strong>Нужен другой период?</strong>
+          <p>Выберите точные даты и подготовьте текст в настройках.</p>
+        </div>
+        <ActionButton :as="RouterLink" variant="secondary" to="/settings#analysis-settings">Выбрать даты</ActionButton>
+      </ReviewNudge>
+    </section>
   </SurfaceCard>
 </template>
 
@@ -54,11 +69,30 @@ defineEmits<{
   padding-bottom: 15px;
   border-bottom: 1px solid var(--review-section-divider);
 }
+.period-analysis-card__external {
+  padding-top: 16px;
+  border-top: 1px solid var(--review-section-divider);
+}
+.period-analysis-card__external:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.period-analysis-card__external-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.period-analysis-card__external-heading h2,
+.period-analysis-card__external-heading h3 {
+  margin: 4px 0 0;
+}
 .period-analysis-card__range {
   margin-top: 16px;
 }
 @media (max-width: 720px) {
-  .section-heading:has(.period-actions) {
+  .period-analysis-card__external-heading {
     align-items: flex-start;
     flex-direction: column;
   }
