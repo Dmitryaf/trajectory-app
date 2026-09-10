@@ -15,10 +15,12 @@ import { emptyWeeklyReview, type FirstUseState, type FirstUseStep, type WeeklyRe
 
 type DecisionChoice = '' | 'continue' | 'change' | 'later';
 
+const props = withDefaults(defineProps<{ showAvailablePrompt?: boolean }>(), { showAvailablePrompt: true });
+const emit = defineEmits<{ availableHidden: [] }>();
+
 const store = useAppStore();
 const router = getCurrentInstance()?.appContext.config.globalProperties.$router as Router | undefined;
 const editRequested = new URL(window.location.href).searchParams.get('first-use') === 'edit';
-const hiddenForNow = ref(false);
 const saving = ref(false);
 const saveError = ref('');
 const review = reactive<WeeklyReview>(emptyWeeklyReview(''));
@@ -38,7 +40,9 @@ const firstUse = computed(() => store.settings.firstUse);
 const isChoice = computed(
   () => firstUse.value.status === 'not_started' || (firstUse.value.status === 'in_progress' && firstUse.value.lastStep === 'choice'),
 );
-const showAvailablePrompt = computed(() => firstUse.value.status === 'available' && store.dailyEntries.length > 0 && !hiddenForNow.value);
+const availablePromptVisible = computed(
+  () => props.showAvailablePrompt && firstUse.value.status === 'available' && store.dailyEntries.length > 0,
+);
 const isRecovery = computed(() => firstUse.value.status === 'in_progress' && !isChoice.value);
 const currentStep = computed(() => firstUse.value.lastStep);
 const currentStepIndex = computed(() => steps.indexOf(currentStep.value));
@@ -187,6 +191,10 @@ async function dismiss() {
   } finally {
     saving.value = false;
   }
+}
+
+function hideAvailablePrompt() {
+  emit('availableHidden');
 }
 
 function applyCurrentAnswer() {
@@ -353,7 +361,7 @@ async function completeRecovery() {
     <p v-if="saveError" class="first-use-card__error" role="alert">{{ saveError }}</p>
   </section>
 
-  <section v-else-if="showAvailablePrompt" class="first-use-card first-use-card--available" aria-label="Первый обзор недели">
+  <section v-else-if="availablePromptVisible" class="first-use-card first-use-card--available" aria-label="Первый обзор недели">
     <div>
       <strong>Собрать недавнюю неделю?</strong>
       <p>Выберите период. Несколько коротких вопросов помогут увидеть его целиком.</p>
@@ -378,7 +386,7 @@ async function completeRecovery() {
       <ActionButton variant="secondary" class="context-action" type="button" :disabled="saving" @click="beginRecovery"
         >Открыть обзор</ActionButton
       >
-      <button class="first-use-card__text-button" type="button" @click="hiddenForNow = true">Не сейчас</button>
+      <button class="first-use-card__text-button" type="button" @click="hideAvailablePrompt">Не сейчас</button>
       <button class="first-use-card__text-button" type="button" :disabled="saving" @click="dismiss">Больше не показывать</button>
     </div>
     <p v-if="saveError" class="first-use-card__error" role="alert">{{ saveError }}</p>

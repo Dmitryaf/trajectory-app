@@ -5,9 +5,10 @@ import SurfaceCard from '@/shared/ui/layout/SurfaceCard.vue';
 import DataNote from '@/shared/ui/content/DataNote.vue';
 import { computed, ref } from 'vue';
 import AiAnalysisNudge from '../features/analysis/ui/AiAnalysisNudge.vue';
-import { shouldShowAiAnalysisNudge } from '../features/analysis/discovery';
 import CurrentGoalDialog from '../features/daily-entry/ui/CurrentGoalDialog.vue';
+import { resolveTodayContextCue } from '../features/daily-entry/contextCue';
 import DailyLayoutSettings from '../features/daily-entry/ui/DailyLayoutSettings.vue';
+import { useTodayContext } from '../features/daily-entry/useTodayContext';
 import FirstUseRecovery from '../features/first-use/ui/FirstUseRecovery.vue';
 import { isFirstUsePrimary } from '../features/first-use/priority';
 import HowItWorksDialog from '../features/first-use/ui/HowItWorksDialog.vue';
@@ -30,14 +31,13 @@ import { experimentTextLimits } from '../features/experiments/model';
 import { useDailyEntryForm } from '../features/daily-entry/useDailyEntryForm';
 import { useAppStore } from '../stores/app';
 import { notifySaved, notifyUnknownError } from '../services/notifications';
-import { addDays, endOfMonth, endOfWeek, formatDate, formatMinutes, startOfMonth, startOfWeek, todayKey } from '../services/dates';
-import { buildObservations, entriesForPeriod, entriesForWeek, summarize } from '../services/analytics';
+import { formatDate, formatMinutes, todayKey } from '../services/dates';
+import { buildObservations } from '../services/analytics';
 import {
   actionDirectionEntryOptions,
   activityOptions,
   careerOptions,
   experimentAppliesToDate,
-  externalCareerIdsForOptions,
   contextFactorOptions,
   legacyContextFactorOptions,
   legacyActivityOptions,
@@ -58,6 +58,8 @@ const store = useAppStore();
 const entryDateInput = ref<InstanceType<typeof DateInput>>();
 const goalDialogOpen = ref(false);
 const goalSaving = ref(false);
+const firstUsePromptHidden = ref(false);
+const pwaNudgeAvailable = ref(false);
 const {
   selectedDate,
   sleepDurationMinutes,
@@ -160,14 +162,16 @@ const currentGoalTitle = computed(() => store.settings.activeFocusTitle.trim());
 const hasRecordedGoalAction = computed(() => form.recordedFields.includes('actionDirection'));
 const showGoalActionChoices = computed(() => hasSelectedFocus.value || hasRecordedGoalAction.value);
 const showLifeAreas = computed(() => activeLifeOptions.value.length > 0 || form.lifeAreas.length > 0 || form.lifeAreasRecorded);
-const currentWeekEntries = computed(() => entriesForWeek(store.dailyEntries, todayKey()));
-const externalCareerIds = computed(() => externalCareerIdsForOptions(store.settings.customCareerOptions));
-const currentWeekSummary = computed(() => summarize(currentWeekEntries.value, externalCareerIds.value));
+const {
+  activeReviewReminder,
+  currentWeekEntries,
+  currentWeeklyPlan,
+  currentWeekSummary,
+  showAiAnalysisNudge,
+  yesterday,
+  yesterdayMissing,
+} = useTodayContext(store, isToday);
 const currentWeekObservation = computed(() => buildObservations(currentWeekEntries.value, contextFactorItems.value)[0]);
-const currentMonthEntries = computed(() => entriesForPeriod(store.dailyEntries, startOfMonth(todayKey()), endOfMonth(todayKey())));
-const currentMonthSummary = computed(() => summarize(currentMonthEntries.value, externalCareerIds.value));
-const isWeekReviewWindow = computed(() => isToday.value && todayKey() >= addDays(endOfWeek(todayKey()), -1));
-const isMonthReviewWindow = computed(() => isToday.value && todayKey() >= addDays(endOfMonth(todayKey()), -2));
 const experimentAppliesToSelectedDate = computed(() => {
   return experimentAppliesToDate(store.settings.experiment, selectedDate.value);
 });
@@ -186,42 +190,17 @@ const hasAdditionalDayBlocks = computed(
     showLifeAreas.value ||
     experimentAppliesToSelectedDate.value,
 );
-const reviewReminders = computed(() =>
-  [
-    isWeekReviewWindow.value &&
-    currentWeekSummary.value.ordinaryCoveredEntriesCount >= 4 &&
-    currentWeekSummary.value.ordinaryCoreEntriesCount >= 2 &&
-    !store.reviewByWeek(startOfWeek(todayKey()))
-      ? {
-          id: 'week',
-          title: 'Неделя готова к разбору',
-          text: `${currentWeekSummary.value.ordinaryCoveredEntriesCount} заполненных дней уже достаточно для короткого обзора.`,
-          to: '/week',
-          label: 'Открыть неделю',
-        }
-      : null,
-    isMonthReviewWindow.value &&
-    currentMonthSummary.value.ordinaryCoveredEntriesCount >= 12 &&
-    currentMonthSummary.value.ordinaryCoreEntriesCount >= 6 &&
-    !store.reviewByMonth(startOfMonth(todayKey()))
-      ? {
-          id: 'month',
-          title: 'Месяц готов к разбору',
-          text: `${currentMonthSummary.value.ordinaryCoveredEntriesCount} заполненных дней дают материал для месячного обзора.`,
-          to: '/month',
-          label: 'Открыть месяц',
-        }
-      : null,
-  ].filter((item): item is { id: string; title: string; text: string; to: string; label: string } => item !== null),
-);
-const activeReviewReminder = computed(() => reviewReminders.value[0] ?? null);
-const currentWeeklyPlan = computed(() => store.reviewByWeek(startOfWeek(todayKey()))?.ifThenPlan.trim() ?? '');
-const yesterday = computed(() => addDays(todayKey(), -1));
-const yesterdayMissing = computed(
-  () => isToday.value && store.loaded && store.dailyEntries.length > 0 && !store.entryByDate(yesterday.value),
-);
-const showAiAnalysisNudge = computed(
-  () => isToday.value && store.loaded && shouldShowAiAnalysisNudge(store.dailyEntries, store.settings.aiAnalysisNudgeDismissed),
+const activeContextCue = computed(() =>
+  resolveTodayContextCue({
+    firstUse:
+      isToday.value && store.settings.firstUse.status === 'available' && store.dailyEntries.length > 0 && !firstUsePromptHidden.value,
+    review: Boolean(activeReviewReminder.value),
+    recovery: yesterdayMissing.value,
+    plan: isToday.value && Boolean(currentWeeklyPlan.value),
+    pwa: isToday.value && pwaNudgeAvailable.value,
+    ai: showAiAnalysisNudge.value,
+    pulse: isToday.value && currentWeekSummary.value.coveredEntriesCount > 0,
+  }),
 );
 
 async function dismissAiAnalysisNudge() {
@@ -372,7 +351,11 @@ function openEntryDatePicker() {
       </div>
     </PageHeading>
 
-    <FirstUseRecovery v-if="isToday" />
+    <FirstUseRecovery
+      v-if="isToday"
+      :show-available-prompt="activeContextCue === 'first-use'"
+      @available-hidden="firstUsePromptHidden = true"
+    />
 
     <nav v-if="!firstUseTakesPriority && !isFirstEntry" class="quick-capture" aria-label="Быстрые записи">
       <RouterLink to="/results"><span>✓</span><strong>Сохранить завершённый результат</strong></RouterLink>
@@ -404,7 +387,12 @@ function openEntryDatePicker() {
 
     <DailyLayoutSettings v-else-if="!firstUseTakesPriority && !isFirstEntry" />
 
-    <PwaInstallNudge v-if="!firstUseTakesPriority && isToday" :saved-entry-count="store.dailyEntries.length" />
+    <PwaInstallNudge
+      v-if="!firstUseTakesPriority && isToday"
+      :active="activeContextCue === 'pwa'"
+      :saved-entry-count="store.dailyEntries.length"
+      @availability-change="pwaNudgeAvailable = $event"
+    />
 
     <section v-if="!firstUseTakesPriority && draftConflict" class="entry-change-notice draft-conflict-notice" role="alert">
       <div>
@@ -424,7 +412,11 @@ function openEntryDatePicker() {
       </div>
     </section>
 
-    <ReviewNudge v-else-if="!firstUseTakesPriority && activeReviewReminder" tag="section" aria-label="Период готов к обзору">
+    <ReviewNudge
+      v-else-if="!firstUseTakesPriority && activeContextCue === 'review' && activeReviewReminder"
+      tag="section"
+      aria-label="Период готов к обзору"
+    >
       <div>
         <strong>{{ activeReviewReminder.title }}</strong>
         <p>{{ activeReviewReminder.text }}</p>
@@ -434,7 +426,7 @@ function openEntryDatePicker() {
       }}</ActionButton>
     </ReviewNudge>
 
-    <section v-else-if="!firstUseTakesPriority && yesterdayMissing" class="recovery-nudge" aria-label="Вчера без записи">
+    <section v-else-if="!firstUseTakesPriority && activeContextCue === 'recovery'" class="recovery-nudge" aria-label="Вчера без записи">
       <div>
         <strong>Вчера без записи</strong>
         <p>Можно заполнить коротко сейчас или спокойно продолжить с сегодняшнего дня.</p>
@@ -442,7 +434,7 @@ function openEntryDatePicker() {
       <ActionButton variant="secondary" class="context-action" type="button" @click="fillYesterday">Добавить запись</ActionButton>
     </section>
 
-    <section v-else-if="!firstUseTakesPriority && isToday && currentWeeklyPlan" class="today-pulse" aria-label="Текущий план недели">
+    <section v-else-if="!firstUseTakesPriority && activeContextCue === 'plan'" class="today-pulse" aria-label="Текущий план недели">
       <div>
         <EyebrowText>План недели</EyebrowText>
         <p>{{ currentWeeklyPlan }}</p>
@@ -450,16 +442,12 @@ function openEntryDatePicker() {
     </section>
 
     <AiAnalysisNudge
-      v-else-if="!firstUseTakesPriority && showAiAnalysisNudge"
+      v-else-if="!firstUseTakesPriority && activeContextCue === 'ai'"
       @dismiss="dismissAiAnalysisNudge()"
       @prepare="dismissAiAnalysisNudge()"
     />
 
-    <section
-      v-else-if="!firstUseTakesPriority && isToday && currentWeekSummary.coveredEntriesCount"
-      class="today-pulse"
-      aria-label="Пульс недели"
-    >
+    <section v-else-if="!firstUseTakesPriority && activeContextCue === 'pulse'" class="today-pulse" aria-label="Пульс недели">
       <div>
         <EyebrowText>Пульс недели</EyebrowText>
         <p>

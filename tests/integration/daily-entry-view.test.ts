@@ -8,7 +8,7 @@ import { LocalStorageQuotaError } from '@/services/storageProtection';
 import CurrentGoalDialog from '@/features/daily-entry/ui/CurrentGoalDialog.vue';
 import { emptyDailyEntry, emptyWeeklyReview } from '@/types';
 import { DAILY_ENTRY_SCHEMA_VERSION } from '@/model/dataVersions';
-import { addDays, todayKey } from '@/services/dates';
+import { addDays, startOfWeek, todayKey } from '@/services/dates';
 import TodayView from '@/views/TodayView.vue';
 import { createStore, routerLinkStub } from '../helpers/viewScenario';
 
@@ -127,6 +127,39 @@ describe('daily entry scenario', () => {
     expect(wrapper.text()).toContain('Собрать недавнюю неделю?');
     expect(wrapper.text()).toContain('Не сейчас');
     expect(wrapper.find('.checkin-grid').exists()).toBe(true);
+  });
+
+  it('shows one optional cue and falls back after first-use is postponed', async () => {
+    const { pinia, store } = createStore();
+    store.settings.firstUse = {
+      status: 'available',
+      weekStart: '',
+      periodEnd: '',
+      lastStep: 'choice',
+      overviewSeen: false,
+      updatedAt: '',
+    };
+    store.dailyEntries = [-2, -1, 0].map((offset) => ({
+      ...emptyDailyEntry(addDays(todayKey(), offset)),
+      importantFact: `Запись ${offset}`,
+    }));
+    store.weeklyReviews = [{ ...emptyWeeklyReview(startOfWeek(todayKey())), ifThenPlan: 'Если устану, сокращу необязательную задачу' }];
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+
+    expect(wrapper.find('.first-use-card--available').exists()).toBe(true);
+    expect(wrapper.find('[aria-label="Текущий план недели"]').exists()).toBe(false);
+    expect(wrapper.find('.ai-analysis-nudge').exists()).toBe(false);
+
+    await wrapper
+      .findAll('.first-use-card__text-button')
+      .find((button) => button.text() === 'Не сейчас')!
+      .trigger('click');
+
+    expect(wrapper.find('.first-use-card--available').exists()).toBe(false);
+    expect(wrapper.get('[aria-label="Текущий план недели"]').text()).toContain('Если устану, сокращу необязательную задачу');
+    expect(wrapper.find('.ai-analysis-nudge').exists()).toBe(false);
   });
 
   it('shows only one current cue and keeps a weekly plan visible without daily tracking', () => {
