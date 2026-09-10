@@ -359,7 +359,7 @@ test('keeps navigation, fixed actions and dialogs inside safe areas and a reduce
   expect(saveBox!.x + saveBox!.width).toBeLessThanOrEqual(390 - 18);
   expect(saveBox!.y + saveBox!.height).toBeLessThan(navigationBox!.y);
 
-  await page.getByLabel('Текущая цель').getByRole('button').click();
+  await page.getByRole('button', { name: 'Выбрать цель' }).click();
   await emulateSafeViewport(page, { top: 24, right: 18, bottom: 34, left: 18 }, 520);
   const goalBackdrop = page.locator('.goal-dialog-backdrop');
   const goalDialog = page.getByRole('dialog', { name: 'Над чем вы сейчас работаете' });
