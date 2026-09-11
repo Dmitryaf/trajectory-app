@@ -1,4 +1,5 @@
 import { expect, test } from './fixtures';
+import { expectPageFitsViewport, expectVerticalSeparation, readLayoutBox } from './layout-assertions';
 
 test('saves and resumes the first week recovery on a small screen', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -9,11 +10,9 @@ test('saves and resumes the first week recovery on a small screen', async ({ pag
   await expect(page.getByRole('radio', { name: /Прошлая неделя/ })).toBeVisible();
   await page.getByRole('radio', { name: /Эта неделя/ }).click();
   await expect(page.locator('.checkin-grid')).toBeHidden();
-  const choiceActionsBox = await page.locator('.first-use-card--choice .first-use-card__actions').boundingBox();
-  const navigationBox = await page.locator('.bottom-nav').boundingBox();
-  expect(choiceActionsBox).not.toBeNull();
-  expect(navigationBox).not.toBeNull();
-  expect(choiceActionsBox!.y + choiceActionsBox!.height).toBeLessThanOrEqual(navigationBox!.y);
+  const choiceActionsBox = await readLayoutBox(page.locator('.first-use-card--choice .first-use-card__actions'), 'first-use actions');
+  const navigationBox = await readLayoutBox(page.locator('.bottom-nav'), 'first-use navigation');
+  expectVerticalSeparation(choiceActionsBox, navigationBox, 0, 'first-use actions and navigation');
   await page.getByRole('button', { name: 'Начать обзор' }).click();
   await expect(page.getByRole('heading', { name: 'Что вам удалось закончить или получить?' })).toBeVisible();
 
@@ -53,18 +52,10 @@ test('saves and resumes the first week recovery on a small screen', async ({ pag
   await eventItem.getByRole('button', { name: /Сохранить в Журнале/ }).click();
   await expect(eventItem.getByText('Уже есть в Журнале')).toBeVisible();
 
-  const mobileWidth = await page.evaluate(() => ({
-    viewport: document.documentElement.clientWidth,
-    content: document.documentElement.scrollWidth,
-  }));
-  expect(mobileWidth.content).toBeLessThanOrEqual(mobileWidth.viewport);
+  await expectPageFitsViewport(page, 'first-use mobile overview');
 
   await page.setViewportSize({ width: 1280, height: 900 });
-  const desktopWidth = await page.evaluate(() => ({
-    viewport: document.documentElement.clientWidth,
-    content: document.documentElement.scrollWidth,
-  }));
-  expect(desktopWidth.content).toBeLessThanOrEqual(desktopWidth.viewport);
+  await expectPageFitsViewport(page, 'first-use desktop overview');
   await page.setViewportSize({ width: 390, height: 844 });
 
   await page.getByRole('button', { name: 'Готово' }).click();

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from './fixtures';
 import { demoFilePath } from './demo-data';
+import { expectBoxInsideViewport, expectElementHasNoHorizontalOverflow } from './layout-assertions';
 
 test.use({ viewport: { width: 390, height: 844 }, isMobile: true });
 
@@ -16,19 +17,8 @@ async function openEntryChoice(page: Page) {
   await addAction.click();
   const dialog = page.getByRole('dialog', { name: 'Что хотите сохранить?' });
   await expect(dialog).toBeVisible();
-  const dialogBox = await dialog.boundingBox();
-  const layout = await dialog.evaluate((element) => ({
-    clientWidth: element.clientWidth,
-    scrollWidth: element.scrollWidth,
-    viewportWidth: document.documentElement.clientWidth,
-    viewportHeight: window.innerHeight,
-  }));
-  expect(dialogBox).not.toBeNull();
-  expect(dialogBox!.x).toBeGreaterThanOrEqual(0);
-  expect(dialogBox!.y).toBeGreaterThanOrEqual(0);
-  expect(dialogBox!.x + dialogBox!.width).toBeLessThanOrEqual(layout.viewportWidth);
-  expect(dialogBox!.y + dialogBox!.height).toBeLessThanOrEqual(layout.viewportHeight);
-  expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth);
+  await expectBoxInsideViewport(page, dialog, 'journal entry choice');
+  await expectElementHasNoHorizontalOverflow(dialog, 'journal entry choice');
   return dialog;
 }
 

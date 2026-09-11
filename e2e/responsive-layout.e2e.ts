@@ -1,6 +1,18 @@
 import { expect, test } from './fixtures';
 import type { Locator } from '@playwright/test';
 import { demoAnchor, demoFilePath, emptyPeriodDate, visualDemoFilePath } from './demo-data';
+import {
+  breakpointProbeWidths,
+  expectBoxInside,
+  expectHorizontalSeparation,
+  expectPageFitsViewport,
+  expectSamePosition,
+  expectVerticalSeparation,
+  readDocumentLayoutBox,
+  readLayoutBox,
+  sampleHeights,
+  uniqueWidths,
+} from './layout-assertions';
 
 const routes = ['/', '/week', '/month', '/trends', '/more', '/results', '/events', '/settings'];
 
@@ -26,74 +38,31 @@ test('keeps every primary screen inside the minimum viewport width', async ({ pa
   for (const route of routes) {
     await page.goto(route);
     await page.locator('.page').waitFor();
-    const layout = await page.evaluate(() => ({
-      viewport: document.documentElement.clientWidth,
-      content: document.documentElement.scrollWidth,
-    }));
-    const offenders =
-      layout.content > layout.viewport
-        ? await page.evaluate(
-            (viewport) =>
-              [...document.querySelectorAll<HTMLElement>('body *')]
-                .map((element) => {
-                  const rect = element.getBoundingClientRect();
-                  const style = getComputedStyle(element);
-                  const selector = `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ''}${[...element.classList]
-                    .slice(0, 3)
-                    .map((name) => `.${name}`)
-                    .join('')}`;
-                  return {
-                    selector,
-                    left: Math.round(rect.left * 10) / 10,
-                    right: Math.round(rect.right * 10) / 10,
-                    width: Math.round(rect.width * 10) / 10,
-                    clientWidth: element.clientWidth,
-                    scrollWidth: element.scrollWidth,
-                    display: style.display,
-                    position: style.position,
-                    overflowX: style.overflowX,
-                  };
-                })
-                .filter(
-                  (item) =>
-                    item.left < -0.5 ||
-                    item.right > viewport + 0.5 ||
-                    (item.overflowX === 'visible' && item.scrollWidth > item.clientWidth + 1),
-                )
-                .slice(0, 12),
-            layout.viewport,
-          )
-        : [];
-    expect(layout.content, `${route} should not scroll horizontally; offenders: ${JSON.stringify(offenders)}`).toBeLessThanOrEqual(
-      layout.viewport,
-    );
+    await expectPageFitsViewport(page, route);
     const feedback = page.getByRole('button', { name: 'Обратная связь' });
     await expect(feedback).toBeVisible();
   }
 });
 
 test('keeps archive filters aligned across responsive widths', async ({ page }) => {
+  test.slow();
   const layouts = new Map<number, { height: number; searchWidth: number }>();
 
-  for (const width of [390, 768, 820, 821, 900, 1100]) {
+  for (const width of uniqueWidths([390, 768, 820, 821, 900, 1100], breakpointProbeWidths(1024))) {
     await page.setViewportSize({ width, height: 1024 });
     for (const route of ['/results', '/events']) {
       await page.goto(route);
       await page.locator('.page--archive').waitFor();
 
-      const layout = await page.evaluate(() => ({
-        viewport: document.documentElement.clientWidth,
-        content: document.documentElement.scrollWidth,
-      }));
-      expect(layout.content, `${route} should not scroll horizontally at ${width}px`).toBeLessThanOrEqual(layout.viewport);
+      await expectPageFitsViewport(page, `${route} at ${width}px`);
 
       const panel = page.locator('.archive-panel');
       const filters = page.locator('.archive-filters');
-      const [panelBox, filtersBox] = await Promise.all([panel.boundingBox(), filters.boundingBox()]);
-      expect(panelBox).not.toBeNull();
-      expect(filtersBox).not.toBeNull();
-      expect(filtersBox!.x).toBeGreaterThanOrEqual(panelBox!.x);
-      expect(filtersBox!.x + filtersBox!.width).toBeLessThanOrEqual(panelBox!.x + panelBox!.width);
+      const [panelBox, filtersBox] = await Promise.all([
+        readLayoutBox(panel, `${route} panel at ${width}px`),
+        readLayoutBox(filters, `${route} filters at ${width}px`),
+      ]);
+      expectBoxInside(filtersBox, panelBox, `${route} filters at ${width}px`);
 
       const fields = page.locator('.archive-filter-field');
       await expect(fields).toHaveCount(4);
@@ -126,21 +95,44 @@ test('keeps archive filters aligned across responsive widths', async ({ page }) 
         ).toBeLessThanOrEqual(1);
       }
       for (const field of fieldGeometry) {
-        expect(field.controlLeft).toBeGreaterThanOrEqual(filtersBox!.x);
-        expect(field.controlRight).toBeLessThanOrEqual(filtersBox!.x + filtersBox!.width);
+        expect(field.controlLeft).toBeGreaterThanOrEqual(filtersBox.x);
+        expect(field.controlRight).toBeLessThanOrEqual(filtersBox.x + filtersBox.width);
+        expect(field.controlRight - field.controlLeft).toBeGreaterThanOrEqual(140);
         expect(field.controlHeight).toBeLessThanOrEqual(52);
       }
+      expect(fieldGeometry.map((field) => field.labelTop)).toEqual([...fieldGeometry.map((field) => field.labelTop)].sort((a, b) => a - b));
 
       const searchBox = await fields.first().locator('input').boundingBox();
       expect(searchBox).not.toBeNull();
       if (route === '/results') {
-        layouts.set(width, { height: filtersBox!.height, searchWidth: searchBox!.width });
+        layouts.set(width, { height: filtersBox.height, searchWidth: searchBox!.width });
       }
     }
   }
 
   expect(Math.abs(layouts.get(820)!.height - layouts.get(821)!.height)).toBeLessThanOrEqual(2);
   expect(Math.abs(layouts.get(820)!.searchWidth - layouts.get(821)!.searchWidth)).toBeLessThanOrEqual(2);
+});
+
+test('keeps archive reset geometry stable between active and inactive ranges', async ({ page }) => {
+  for (const width of [390, 1100]) {
+    await page.setViewportSize({ width, height: 1024 });
+    for (const route of ['/results', '/events']) {
+      await page.goto(route);
+      const filters = page.locator('.archive-filters');
+      const reset = page.getByRole('button', { name: 'За всё время' });
+      const beforeFilters = await readDocumentLayoutBox(filters, `${route} active filters at ${width}px`);
+      const beforeReset = await readDocumentLayoutBox(reset, `${route} active reset at ${width}px`);
+
+      await reset.click();
+      await expect(reset).toBeDisabled();
+      const afterFilters = await readDocumentLayoutBox(filters, `${route} inactive filters at ${width}px`);
+      const afterReset = await readDocumentLayoutBox(reset, `${route} inactive reset at ${width}px`);
+
+      expect(Math.abs(afterFilters.height - beforeFilters.height), `${route} filter height at ${width}px`).toBeLessThanOrEqual(1);
+      expectSamePosition(beforeReset, afterReset, `${route} reset at ${width}px`);
+    }
+  }
 });
 
 test('shows an unknown user route and returns to Today with the keyboard', async ({ page }) => {
@@ -273,32 +265,45 @@ test('keeps history entry colors aligned with the type summary', async ({ page }
   const history = page.locator('.history-timeline--featured');
   await expect(history).toBeVisible();
 
-  const summaryColors = await history.locator('.history-timeline__summary > span').evaluateAll((elements) =>
-    Object.fromEntries(
-      elements.map((element) => {
-        const toneClass = [...element.classList].find((name) => name.startsWith('history-timeline__summary-item--')) ?? '';
-        const tone = toneClass.replace('history-timeline__summary-item--', '');
-        return [tone, getComputedStyle(element.querySelector('i')!).backgroundColor];
-      }),
-    ),
-  );
+  const summaryItems = history.locator('.history-timeline__summary > span');
+  const readSummaryColors = () =>
+    summaryItems.evaluateAll((elements) =>
+      Object.fromEntries(
+        elements.map((element) => {
+          const toneClass = [...element.classList].find((name) => name.startsWith('history-timeline__summary-item--')) ?? '';
+          const tone = toneClass.replace('history-timeline__summary-item--', '');
+          return [tone, getComputedStyle(element.querySelector('i')!).backgroundColor];
+        }),
+      ),
+    );
+  await expect
+    .poll(async () => {
+      const colors = Object.values(await readSummaryColors());
+      return colors.length > 0 && colors.every(Boolean);
+    })
+    .toBe(true);
+  const summaryColors = await readSummaryColors();
   expect(new Set(Object.values(summaryColors)).size).toBe(Object.keys(summaryColors).length);
 
   const entryColors: Record<string, string> = {};
-  const nextPage = history.locator('.archive-pagination button', { hasText: 'Дальше' });
-  for (let pageNumber = 1; pageNumber <= 20; pageNumber += 1) {
-    Object.assign(
-      entryColors,
-      await history.locator('.history-timeline__list > article').evaluateAll((elements) =>
-        Object.fromEntries(
-          elements.map((element) => {
-            const toneClass = [...element.classList].find((name) => name.startsWith('history-timeline__item--')) ?? '';
-            const tone = toneClass.replace('history-timeline__item--', '');
-            return [tone, getComputedStyle(element, '::before').backgroundColor];
-          }),
-        ),
+  const entries = history.locator('.history-timeline__list > article');
+  const readEntryColors = () =>
+    entries.evaluateAll((elements) =>
+      Object.fromEntries(
+        elements.map((element) => {
+          const toneClass = [...element.classList].find((name) => name.startsWith('history-timeline__item--')) ?? '';
+          const tone = toneClass.replace('history-timeline__item--', '');
+          return [tone, getComputedStyle(element, '::before').backgroundColor];
+        }),
       ),
     );
+  const nextPage = history.locator('.archive-pagination button', { hasText: 'Дальше' });
+  const transitioningEntries = history.locator('.reveal-list-enter-active, .reveal-list-leave-active');
+  for (let pageNumber = 1; pageNumber <= 20; pageNumber += 1) {
+    await expect(transitioningEntries).toHaveCount(0);
+    const currentEntryColors = await readEntryColors();
+    expect(Object.values(currentEntryColors).every(Boolean)).toBe(true);
+    Object.assign(entryColors, currentEntryColors);
     if (await nextPage.isDisabled()) {
       break;
     }
@@ -342,22 +347,7 @@ test('keeps change history visible and one metric behind a compact mobile disclo
 
   const list = history.locator('.history-timeline__list');
   const initialListHeight = await list.evaluate((element) => element.getBoundingClientRect().height);
-  const transitionHeightsPromise = list.evaluate(
-    (element) =>
-      new Promise<number[]>((resolve) => {
-        const heights: number[] = [];
-        const startedAt = performance.now();
-        const sample = () => {
-          heights.push(element.getBoundingClientRect().height);
-          if (performance.now() - startedAt >= 400) {
-            resolve(heights);
-            return;
-          }
-          requestAnimationFrame(sample);
-        };
-        sample();
-      }),
-  );
+  const transitionHeightsPromise = sampleHeights(list);
   await history.locator('.archive-pagination button', { hasText: 'Дальше' }).click();
   const transitionHeights = await transitionHeightsPromise;
   await expect(history.locator('.decision-timeline__item')).toHaveCount(10);
@@ -396,22 +386,7 @@ test('moves paginated list height smoothly instead of collapsing between pages',
       await expect(pagination.locator('span')).toHaveText(`${currentPage + 1} из ${pageCount}`);
     }
 
-    const samplesPromise = list.evaluate(
-      (element) =>
-        new Promise<number[]>((resolve) => {
-          const heights: number[] = [];
-          const startedAt = performance.now();
-          const sample = () => {
-            heights.push(element.getBoundingClientRect().height);
-            if (performance.now() - startedAt >= 450) {
-              resolve(heights);
-              return;
-            }
-            requestAnimationFrame(sample);
-          };
-          sample();
-        }),
-    );
+    const samplesPromise = sampleHeights(list, 450);
     await pagination.getByRole('button', { name: 'Дальше' }).click();
     const activeTransition = await list.evaluate((element) => ({
       inlineHeight: (element as HTMLElement).style.height,
@@ -455,15 +430,12 @@ test('reserves header space while the feedback action loads', async ({ browser }
       await feedbackModuleRequested;
       const help = isolatedPage.getByRole('button', { name: 'Как работает приложение' });
       await expect(help).toBeVisible();
-      const before = await help.boundingBox();
-      expect(before).not.toBeNull();
+      const before = await readLayoutBox(help, `help before feedback at ${viewport.width}px`);
 
       releaseFeedbackModule();
       await expect(isolatedPage.getByRole('button', { name: 'Обратная связь' })).toBeVisible();
-      const after = await help.boundingBox();
-      expect(after).not.toBeNull();
-      expect(Math.abs(after!.x - before!.x), `horizontal shift at ${viewport.width}px`).toBeLessThanOrEqual(1);
-      expect(Math.abs(after!.y - before!.y), `vertical shift at ${viewport.width}px`).toBeLessThanOrEqual(1);
+      const after = await readLayoutBox(help, `help after feedback at ${viewport.width}px`);
+      expectSamePosition(before, after, `help while feedback loads at ${viewport.width}px`);
     } finally {
       releaseFeedbackModule();
       await context.close();
@@ -761,18 +733,21 @@ test('keeps desktop navigation visible while the page scrolls', async ({ page })
   await expect.poll(async () => (await navigation.boundingBox())?.y).toBe(initialTop);
 });
 
-test('keeps desktop navigation clear of the header controls', async ({ page }) => {
-  for (const width of [980, 1100, 1280, 1514]) {
+test('keeps navigation clear of the header controls around its desktop breakpoint', async ({ page }) => {
+  for (const width of uniqueWidths(breakpointProbeWidths(980), [1100, 1280, 1514])) {
     await page.setViewportSize({ width, height: 720 });
     await page.goto('/');
+    await expectPageFitsViewport(page, `application chrome at ${width}px`);
 
-    const brandBox = await page.locator('.brand').boundingBox();
-    const navigationBox = await page.locator('.bottom-nav').boundingBox();
-    const actionsBox = await page.locator('.header-actions').boundingBox();
-    expect(brandBox).not.toBeNull();
-    expect(navigationBox).not.toBeNull();
-    expect(actionsBox).not.toBeNull();
-    expect(brandBox!.x + brandBox!.width + 8, `brand and navigation overlap at ${width}px`).toBeLessThanOrEqual(navigationBox!.x);
-    expect(navigationBox!.x + navigationBox!.width + 8, `navigation and actions overlap at ${width}px`).toBeLessThanOrEqual(actionsBox!.x);
+    const headerBox = await readLayoutBox(page.locator('.app-header'), `header at ${width}px`);
+    const brandBox = await readLayoutBox(page.locator('.brand'), `brand at ${width}px`);
+    const navigationBox = await readLayoutBox(page.locator('.bottom-nav'), `navigation at ${width}px`);
+    const actionsBox = await readLayoutBox(page.locator('.header-actions'), `header actions at ${width}px`);
+    if (width < 980) {
+      expectVerticalSeparation(headerBox, navigationBox, 0, `header and bottom navigation at ${width}px`);
+      continue;
+    }
+    expectHorizontalSeparation(brandBox, navigationBox, 8, `brand and navigation at ${width}px`);
+    expectHorizontalSeparation(navigationBox, actionsBox, 8, `navigation and actions at ${width}px`);
   }
 });

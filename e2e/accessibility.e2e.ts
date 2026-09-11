@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { expect, test } from './fixtures';
 import { demoFilePath } from './demo-data';
+import { expectPageFitsViewport } from './layout-assertions';
 
 const require = createRequire(import.meta.url);
 const axeSource = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
@@ -67,11 +68,7 @@ test('reflows critical routes at 200 percent without hiding navigation', async (
     await page.evaluate(() => {
       document.documentElement.style.zoom = '2';
     });
-    const widths = await page.evaluate(() => ({
-      viewport: document.documentElement.clientWidth,
-      content: document.documentElement.scrollWidth,
-    }));
-    expect(widths.content, `${route} should reflow at 200%`).toBeLessThanOrEqual(widths.viewport);
+    await expectPageFitsViewport(page, `${route} at 200%`);
     await expect(page.getByRole('navigation', { name: 'Основная навигация' })).toBeVisible();
   }
 });
