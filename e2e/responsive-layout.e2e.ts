@@ -221,6 +221,50 @@ test('separates the custom-period action from adjacent review content', async ({
   }
 });
 
+test('keeps history entry colors aligned with the type summary', async ({ page }) => {
+  await page.goto('/trends');
+  const history = page.locator('.history-timeline--featured');
+  await expect(history).toBeVisible();
+
+  const summaryColors = await history.locator('.history-timeline__summary > span').evaluateAll((elements) =>
+    Object.fromEntries(
+      elements.map((element) => {
+        const toneClass = [...element.classList].find((name) => name.startsWith('history-timeline__summary-item--')) ?? '';
+        const tone = toneClass.replace('history-timeline__summary-item--', '');
+        return [tone, getComputedStyle(element.querySelector('i')!).backgroundColor];
+      }),
+    ),
+  );
+  expect(new Set(Object.values(summaryColors)).size).toBe(Object.keys(summaryColors).length);
+
+  const entryColors: Record<string, string> = {};
+  const nextPage = history.locator('.archive-pagination button', { hasText: 'Дальше' });
+  for (let pageNumber = 1; pageNumber <= 20; pageNumber += 1) {
+    Object.assign(
+      entryColors,
+      await history.locator('.history-timeline__list > article').evaluateAll((elements) =>
+        Object.fromEntries(
+          elements.map((element) => {
+            const toneClass = [...element.classList].find((name) => name.startsWith('history-timeline__item--')) ?? '';
+            const tone = toneClass.replace('history-timeline__item--', '');
+            return [tone, getComputedStyle(element, '::before').backgroundColor];
+          }),
+        ),
+      ),
+    );
+    if (await nextPage.isDisabled()) {
+      break;
+    }
+    await nextPage.click();
+    await expect(history.locator('.archive-pagination span')).toHaveText(new RegExp(`^${pageNumber + 1} из \\d+$`));
+  }
+
+  expect(Object.keys(entryColors).sort()).toEqual(Object.keys(summaryColors).sort());
+  for (const [tone, color] of Object.entries(summaryColors)) {
+    expect(entryColors[tone], `${tone} entries should use their summary color`).toBe(color);
+  }
+});
+
 test('keeps change history visible and one metric behind a compact mobile disclosure', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/trends');

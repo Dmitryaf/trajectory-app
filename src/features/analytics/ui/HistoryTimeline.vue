@@ -45,6 +45,7 @@ defineEmits<{ 'update:page': [value: number] }>();
 <style scoped>
 .history-timeline {
   --section-accent: var(--amber);
+  --history-timeline-tone: var(--history-timeline-marker);
   position: relative;
   margin-bottom: 16px;
   border-color: var(--line-success);
@@ -90,30 +91,30 @@ defineEmits<{ 'update:page': [value: number] }>();
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--history-timeline-marker);
+  background: var(--history-timeline-tone);
 }
 .history-timeline__summary strong {
   color: var(--navy);
 }
-.history-timeline__summary-item--event i,
-.history-timeline__item--event::before {
-  background: var(--status-danger-bright);
+.history-timeline__summary-item--event,
+.history-timeline__item--event {
+  --history-timeline-tone: var(--status-danger-bright);
 }
-.history-timeline__summary-item--result i,
-.history-timeline__item--result::before {
-  background: var(--status-success);
+.history-timeline__summary-item--result,
+.history-timeline__item--result {
+  --history-timeline-tone: var(--status-success);
 }
-.history-timeline__summary-item--decision i,
-.history-timeline__item--decision::before {
-  background: var(--brand-strong);
+.history-timeline__summary-item--decision,
+.history-timeline__item--decision {
+  --history-timeline-tone: var(--brand-strong);
 }
-.history-timeline__summary-item--outcome i,
-.history-timeline__item--outcome::before {
-  background: var(--amber);
+.history-timeline__summary-item--outcome,
+.history-timeline__item--outcome {
+  --history-timeline-tone: var(--amber);
 }
-.history-timeline__summary-item--experiment i,
-.history-timeline__item--experiment::before {
-  background: var(--orange);
+.history-timeline__summary-item--experiment,
+.history-timeline__item--experiment {
+  --history-timeline-tone: var(--orange);
 }
 .history-timeline__list > article {
   position: relative;
@@ -137,7 +138,7 @@ defineEmits<{ 'update:page': [value: number] }>();
   height: 10px;
   border: 2px solid var(--line-inverse);
   border-radius: 50%;
-  background: var(--history-timeline-marker);
+  background: var(--history-timeline-tone);
   box-shadow: 0 0 0 1px var(--history-timeline-marker-ring);
 }
 .history-timeline__list time {
