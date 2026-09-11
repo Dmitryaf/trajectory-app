@@ -13,7 +13,7 @@ const legacyViewStyleBudgets = new Map([
   ['src/views/MonthView.css', 4347],
   ['src/views/SettingsView.css', 2586],
   ['src/views/TodayView.css', 11132],
-  ['src/views/WeekView.css', 6653],
+  ['src/views/WeekView.css', 5003],
 ]);
 const allowedUnusedTokens = new Set();
 
