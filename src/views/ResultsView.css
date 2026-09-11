@@ -2,7 +2,7 @@
   display: grid;
   grid-template-columns: 1fr 155px auto;
   gap: 10px;
-  margin: 18px 0 10px;
+  margin: 14px 0 10px;
 }
 .results-list {
   position: relative;
@@ -41,6 +41,9 @@
 .result-item strong,
 .result-item small {
   display: block;
+}
+.result-item strong {
+  overflow-wrap: anywhere;
 }
 .result-item__content {
   min-width: 0;

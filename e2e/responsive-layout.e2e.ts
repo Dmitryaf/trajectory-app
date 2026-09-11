@@ -135,6 +135,60 @@ test('keeps archive reset geometry stable between active and inactive ranges', a
   }
 });
 
+test('keeps the Journal and archive chrome compact at pilot widths', async ({ page }) => {
+  test.slow();
+
+  for (const width of [390, 768, 1179]) {
+    await page.setViewportSize({ width, height: 1024 });
+    await page.goto('/more');
+    await expectPageFitsViewport(page, `Journal at ${width}px`);
+
+    const journalHeading = await readLayoutBox(page.locator('.page--journal > .page-heading'), `Journal heading at ${width}px`);
+    const journalTitleSize = await page
+      .locator('.page--journal h1')
+      .evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
+    const journalCards = page.locator('.more-card');
+    await expect(journalCards).toHaveCount(2);
+    const cardBoxes = await Promise.all([
+      readLayoutBox(journalCards.nth(0), `first Journal choice at ${width}px`),
+      readLayoutBox(journalCards.nth(1), `second Journal choice at ${width}px`),
+    ]);
+    const settingsBox = await readLayoutBox(page.locator('.journal-settings-card'), `Journal settings at ${width}px`);
+
+    expect(journalTitleSize, `Journal title size at ${width}px`).toBeLessThanOrEqual(width <= 720 ? 34 : 44);
+    expect(Math.max(...cardBoxes.map((box) => box.height)), `Journal choice height at ${width}px`).toBeLessThanOrEqual(
+      width <= 760 ? 160 : 176,
+    );
+    expect(settingsBox.height, `Journal settings height at ${width}px`).toBeLessThanOrEqual(100);
+    expectVerticalSeparation(journalHeading, cardBoxes[0], 0, `Journal heading and choices at ${width}px`);
+    if (width === 390) {
+      expect(cardBoxes[0].y, 'Journal choices should appear in the first mobile viewport').toBeLessThanOrEqual(300);
+      expectVerticalSeparation(cardBoxes[0], cardBoxes[1], 12, 'stacked Journal choices');
+    } else {
+      expect(Math.abs(cardBoxes[0].y - cardBoxes[1].y), `Journal choice alignment at ${width}px`).toBeLessThanOrEqual(1);
+      expect(Math.abs(cardBoxes[0].height - cardBoxes[1].height), `Journal choice height match at ${width}px`).toBeLessThanOrEqual(1);
+    }
+
+    for (const route of ['/results', '/events']) {
+      await page.goto(route);
+      await expectPageFitsViewport(page, `${route} compact chrome at ${width}px`);
+      const heading = await readLayoutBox(page.locator('.page--archive > .page-heading'), `${route} heading at ${width}px`);
+      const titleSize = await page
+        .locator('.page--archive h1')
+        .evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
+      const composer = await readLayoutBox(page.locator('.archive-composer'), `${route} composer at ${width}px`);
+      const primaryActionHeight = await page
+        .locator('.archive-composer .primary-button')
+        .evaluate((element) => element.getBoundingClientRect().height);
+
+      expect(heading.height, `${route} heading height at ${width}px`).toBeLessThanOrEqual(width <= 720 ? 124 : 150);
+      expect(titleSize, `${route} title size at ${width}px`).toBeLessThanOrEqual(width <= 720 ? 32 : 44);
+      expect(primaryActionHeight, `${route} primary action height at ${width}px`).toBeGreaterThanOrEqual(44);
+      expectVerticalSeparation(heading, composer, 0, `${route} heading and composer at ${width}px`);
+    }
+  }
+});
+
 test('shows an unknown user route and returns to Today with the keyboard', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 720 });
   await page.goto('/missing-page');

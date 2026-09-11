@@ -59,19 +59,19 @@ defineProps<{
 <style scoped>
 .page--archive > .page-heading {
   position: relative;
-  min-height: 158px;
+  min-height: 132px;
   align-items: center;
   overflow: hidden;
-  margin: 10px 0 18px;
-  padding: 28px 30px;
-  border-radius: 28px;
+  margin: 8px 0 14px;
+  padding: 22px 24px;
+  border-radius: 24px;
   box-shadow: var(--shadow-soft);
 }
 .page--archive > .page-heading::after {
   content: '';
   position: absolute;
-  width: 190px;
-  height: 190px;
+  width: 168px;
+  height: 168px;
   right: -42px;
   bottom: -128px;
   border-radius: 50%;
@@ -82,9 +82,12 @@ defineProps<{
   z-index: 1;
 }
 .page--archive > .page-heading h1 {
-  margin-top: 5px;
-  font-size: clamp(38px, 5vw, 58px);
-  letter-spacing: -0.045em;
+  margin-top: 3px;
+  font-size: clamp(34px, 4vw, 44px);
+  letter-spacing: -0.035em;
+}
+.page--archive > .page-heading p {
+  font-size: 14px;
 }
 .page--results > .page-heading {
   border: 1px solid var(--archive-result-border);
@@ -102,7 +105,9 @@ defineProps<{
 }
 .archive-composer {
   position: relative;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  padding: 20px 22px;
+  border-radius: 22px;
   overflow: hidden;
   box-shadow: 0 12px 30px var(--archive-card-shadow);
 }
@@ -119,15 +124,18 @@ defineProps<{
 :deep(.composer-cancel) {
   margin-top: 10px;
 }
+:deep(.archive-composer .form-card__heading) {
+  margin-bottom: 16px;
+}
 .archive-panel {
-  padding: 24px;
+  padding: 20px;
   border: 1px solid var(--archive-group-border);
-  border-radius: 26px;
+  border-radius: 22px;
   background: var(--archive-group-surface);
   box-shadow: 0 12px 34px var(--archive-group-shadow);
 }
 .archive-panel > .section-heading {
-  padding-bottom: 15px;
+  padding-bottom: 12px;
   border-bottom: 1px solid var(--archive-group-divider);
 }
 .archive-count {
@@ -149,7 +157,7 @@ defineProps<{
   grid-template-columns: minmax(220px, 1.35fr) minmax(170px, 0.9fr) minmax(150px, 0.75fr) minmax(150px, 0.75fr);
   gap: 10px;
   align-items: start;
-  margin-bottom: 18px;
+  margin-bottom: 14px;
   padding: 12px;
   border: 1px solid var(--archive-entry-border);
   border-radius: 17px;
@@ -178,7 +186,7 @@ defineProps<{
   height: 48px;
 }
 .archive-empty {
-  padding: 45px 24px;
+  padding: 34px 22px;
   border: 1px dashed var(--archive-empty-border);
   border-radius: 20px;
   color: var(--muted);
@@ -218,13 +226,20 @@ defineProps<{
 }
 @media (max-width: 720px) {
   .page--archive > .page-heading {
-    min-height: 132px;
-    margin: 4px 0 14px;
-    padding: 22px;
-    border-radius: 24px;
+    min-height: 102px;
+    margin: 4px 0 12px;
+    padding: 15px 18px;
+    border-radius: 20px;
+  }
+  .page--archive > .page-heading :deep(.eyebrow) {
+    display: none;
   }
   .page--archive > .page-heading h1 {
-    font-size: 40px;
+    margin-bottom: 6px;
+    font-size: 32px;
+  }
+  .page--archive > .page-heading p {
+    font-size: 13px;
   }
   .page--archive > .page-heading::after {
     right: -82px;
@@ -232,8 +247,8 @@ defineProps<{
   }
   .archive-composer,
   .archive-panel {
-    padding: 18px;
-    border-radius: 20px;
+    padding: 16px;
+    border-radius: 18px;
   }
 }
 @media (max-width: 520px) {

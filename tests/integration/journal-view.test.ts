@@ -92,7 +92,7 @@ describe('journal scenarios', () => {
     const addResult = vi.spyOn(store, 'addResult').mockResolvedValue(undefined);
     const wrapper = mount(ResultsView, { global: { plugins: [pinia] } });
 
-    expect(wrapper.text()).toContain('Итог — конкретное сделанное дело или полученный результат.');
+    expect(wrapper.text()).toContain('Сделанное дело или полученный результат.');
     expect(wrapper.get('[aria-label="Начальная дата итогов"]').element).toHaveProperty('value', '2026-07-21');
     expect(wrapper.get('[aria-label="Конечная дата итогов"]').element).toHaveProperty('value', '');
     expect(wrapper.text()).toContain('Сегодняшний итог');
@@ -193,7 +193,7 @@ describe('journal scenarios', () => {
     const addLifeEvent = vi.spyOn(store, 'addLifeEvent').mockResolvedValue(undefined);
     const wrapper = mount(EventsView, { global: { plugins: [pinia] } });
 
-    expect(wrapper.text()).toContain('Событие — ситуация, которую важно помнить.');
+    expect(wrapper.text()).toContain('Важная ситуация, мысль или деталь дня.');
     expect(wrapper.get('[aria-label="Начальная дата событий"]').element).toHaveProperty('value', '2026-07-21');
     expect(wrapper.get('[aria-label="Конечная дата событий"]').element).toHaveProperty('value', '');
     expect(wrapper.text()).toContain('Сегодняшнее решение');

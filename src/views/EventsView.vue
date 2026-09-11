@@ -134,7 +134,7 @@ function eventKey(event: LifeEventRecord) {
     tone="events"
     heading-eyebrow="Что произошло и что вы заметили"
     heading-title="События и наблюдения"
-    heading-description="Событие — ситуация, которую важно помнить. Мысль или наблюдение может быть обычной деталью дня, к которой захочется вернуться."
+    heading-description="Важная ситуация, мысль или деталь дня."
     archive-eyebrow="Хронология"
     archive-title="События и важные мысли"
     :count="filteredEvents.length"

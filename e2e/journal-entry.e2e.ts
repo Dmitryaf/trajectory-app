@@ -1,5 +1,6 @@
 import { expect, test } from './fixtures';
 import { demoFilePath } from './demo-data';
+import { expectPageFitsViewport } from './layout-assertions';
 
 test.use({ viewport: { width: 390, height: 844 }, isMobile: true });
 
@@ -72,4 +73,18 @@ test('keeps cancellation for the remaining archive edit scenarios', async ({ pag
   await page.getByRole('button', { name: 'Отменить редактирование' }).click();
   await expect(eventTitle).toHaveValue('');
   await expect(page.getByText('Другое несохранённое изменение', { exact: true })).toHaveCount(0);
+});
+
+test('contains the longest supported journal titles without shrinking primary actions', async ({ page }) => {
+  await page.goto('/results');
+  await page.getByPlaceholder('Что вы сделали или какой результат получили').fill('И'.repeat(160));
+  await page.getByRole('button', { name: 'Добавить итог' }).click();
+  await expect(page.getByText('Итог добавлен', { exact: true })).toBeVisible();
+  await expectPageFitsViewport(page, 'result with a maximum-length title');
+
+  await page.goto('/events');
+  await page.getByPlaceholder('Короткое название').fill('С'.repeat(140));
+  await page.locator('.result-composer .primary-button').click();
+  await expect(page.getByText('Событие добавлено', { exact: true })).toBeVisible();
+  await expectPageFitsViewport(page, 'event with a maximum-length title');
 });

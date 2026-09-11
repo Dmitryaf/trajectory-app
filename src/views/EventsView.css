@@ -2,7 +2,7 @@
   display: grid;
   grid-template-columns: 1fr 155px;
   gap: 10px;
-  margin: 18px 0 10px;
+  margin: 14px 0 10px;
 }
 .timeline-list {
   position: relative;
@@ -41,6 +41,9 @@
 .timeline-item strong,
 .timeline-item small {
   display: block;
+}
+.timeline-item strong {
+  overflow-wrap: anywhere;
 }
 .timeline-item small {
   margin-top: 4px;

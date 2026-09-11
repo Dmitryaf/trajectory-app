@@ -136,7 +136,7 @@ function resultKey(result: ResultRecord) {
     tone="results"
     heading-eyebrow="Конкретные результаты"
     heading-title="Итоги"
-    heading-description="Итог — конкретное сделанное дело или полученный результат."
+    heading-description="Сделанное дело или полученный результат."
     archive-eyebrow="Архив"
     archive-title="Итоги"
     :count="filteredResults.length"
