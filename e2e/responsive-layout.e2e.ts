@@ -457,6 +457,41 @@ test('moves paginated list height smoothly instead of collapsing between pages',
   }
 });
 
+test('keeps the document position while paging the change history', async ({ page }) => {
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 1280, height: 720 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/trends');
+
+    const history = page.locator('.history-timeline--featured');
+    const pagination = history.locator('.archive-pagination');
+    const pageLabel = pagination.locator('span');
+    await expect(pagination).toBeVisible();
+
+    async function placePaginationInViewport() {
+      const documentTop = await pagination.evaluate((element) => element.getBoundingClientRect().top + window.scrollY);
+      await page.evaluate((top) => window.scrollTo(0, Math.max(0, top - 560)), documentTop);
+      await expect(pagination).toBeInViewport();
+      return page.evaluate(() => window.scrollY);
+    }
+
+    const beforeNext = await placePaginationInViewport();
+    const next = pagination.getByRole('button', { name: 'Дальше' });
+    await next.click();
+    await expect(pageLabel).toHaveText(/^2 из \d+$/);
+    await page.waitForTimeout(550);
+    expect(await page.evaluate(() => window.scrollY)).toBeCloseTo(beforeNext, 0);
+
+    const beforePrevious = await placePaginationInViewport();
+    await pagination.getByRole('button', { name: 'Назад' }).click();
+    await expect(pageLabel).toHaveText(/^1 из \d+$/);
+    await page.waitForTimeout(550);
+    expect(await page.evaluate(() => window.scrollY)).toBeCloseTo(beforePrevious, 0);
+  }
+});
+
 test('reserves header space while the feedback action loads', async ({ browser }) => {
   for (const viewport of [
     { width: 390, height: 844 },
