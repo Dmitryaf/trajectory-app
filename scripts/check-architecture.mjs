@@ -22,11 +22,8 @@ const allowedDbOwners = new Set(['src/stores/app.ts', 'src/features/sync/base.ts
 const allowedServiceFeatureEdges = new Set(['src/services/analytics.ts']);
 const allowedNonRuntimeModules = new Set(['src/shared/ui/data-display/MetricCard.vue']);
 const legacyRouteImplementations = new Set([
-  'src/views/EventsView.vue',
   'src/views/MonthView.vue',
-  'src/views/MoreView.vue',
   'src/views/PasswordResetView.vue',
-  'src/views/ResultsView.vue',
   'src/views/SettingsView.vue',
   'src/views/TodayView.vue',
   'src/views/WeekView.vue',

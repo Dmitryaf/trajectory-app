@@ -10,11 +10,8 @@ const targetGlobalStyleOrder = ['src/styles/tokens.css', 'src/styles/reset.css',
 const targetGlobalStyles = new Set(targetGlobalStyleOrder);
 const allowedUtilityClasses = new Set(['visually-hidden']);
 const legacyViewStyleBudgets = new Map([
-  ['src/views/EventsView.css', 1094],
   ['src/views/MonthView.css', 4347],
-  ['src/views/MoreView.css', 3010],
   ['src/views/PasswordResetView.css', 1656],
-  ['src/views/ResultsView.css', 1097],
   ['src/views/SettingsView.css', 2586],
   ['src/views/TodayView.css', 11132],
   ['src/views/WeekView.css', 6653],
