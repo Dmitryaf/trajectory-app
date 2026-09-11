@@ -20,6 +20,18 @@ const hotspotContentBudgets = new Map([
 ]);
 const allowedDbOwners = new Set(['src/stores/app.ts', 'src/features/sync/base.ts']);
 const allowedServiceFeatureEdges = new Set(['src/services/analytics.ts']);
+const allowedNonRuntimeModules = new Set(['src/shared/ui/data-display/MetricCard.vue']);
+const legacyRouteImplementations = new Set([
+  'src/views/EventsView.vue',
+  'src/views/MonthView.vue',
+  'src/views/MoreView.vue',
+  'src/views/PasswordResetView.vue',
+  'src/views/ResultsView.vue',
+  'src/views/SettingsView.vue',
+  'src/views/TodayView.vue',
+  'src/views/WeekView.vue',
+]);
+const forbiddenRouteDependencyLayers = new Set(['db.ts', 'model', 'services', 'stores', 'types.ts']);
 const styleOwnerRules = [
   { selector: 'bottom-nav', owner: 'src/App.css' },
   { selector: 'primary-button', owner: 'src/shared/ui/actions/ActionButton.css' },
@@ -150,6 +162,20 @@ function findCycles(graph) {
   return [...cycles].sort();
 }
 
+function findReachableModules(graph, entry) {
+  const reachable = new Set();
+  const pending = entry ? [entry] : [];
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (!current || reachable.has(current)) {
+      continue;
+    }
+    reachable.add(current);
+    pending.push(...(graph.get(current) ?? []));
+  }
+  return reachable;
+}
+
 const allFiles = await collectFiles(sourceRoot);
 const sourceFiles = allFiles.filter((filePath) => sourceExtensions.has(path.extname(filePath)));
 const knownFiles = new Set(sourceFiles.map(path.normalize));
@@ -162,6 +188,7 @@ const violations = [];
 const layerEdges = new Map();
 const largeFiles = [];
 const observedHotspots = new Set();
+const observedLegacyRouteImplementations = new Set();
 
 function contentUnits(source) {
   return source.replace(/[\s{}]/g, '').length;
@@ -239,6 +266,20 @@ for (const importer of architectureFiles) {
   const productionTargets = targets.filter((target) => architectureFiles.includes(target));
   graph.set(importer, productionTargets);
 
+  if (importerPath.startsWith('src/views/') && importerPath.endsWith('.vue')) {
+    const forbiddenTargets = productionTargets.filter((target) => forbiddenRouteDependencyLayers.has(sourceLayer(target)));
+    if (legacyRouteImplementations.has(importerPath)) {
+      observedLegacyRouteImplementations.add(importerPath);
+    }
+    if (forbiddenTargets.length > 0 && !legacyRouteImplementations.has(importerPath)) {
+      violations.push(
+        `${importerPath}: route view напрямую зависит от ${forbiddenTargets.map(projectPath).join(', ')}. Перенесите поведение к feature-владельцу.`,
+      );
+    } else if (forbiddenTargets.length === 0 && legacyRouteImplementations.has(importerPath)) {
+      violations.push(`${importerPath}: удалите устаревшее исключение legacyRouteImplementations.`);
+    }
+  }
+
   for (const target of productionTargets) {
     const targetPath = projectPath(target);
     const fromLayer = sourceLayer(importer);
@@ -255,9 +296,44 @@ for (const importer of architectureFiles) {
   }
 }
 
-const cycles = findCycles(graph);
+for (const filePath of legacyRouteImplementations) {
+  if (!observedLegacyRouteImplementations.has(filePath)) {
+    violations.push(`${filePath}: удалите несуществующее route-исключение.`);
+  }
+}
 
-console.log('Архитектурные зависимости:');
+const cycles = findCycles(graph);
+const moduleCounts = new Map();
+for (const filePath of architectureFiles) {
+  const layer = sourceLayer(filePath);
+  moduleCounts.set(layer, (moduleCounts.get(layer) ?? 0) + 1);
+}
+const runtimeEntry = architectureFiles.find((filePath) => projectPath(filePath) === 'src/main.ts');
+const reachableModules = findReachableModules(graph, runtimeEntry);
+const unreachableModules = architectureFiles
+  .filter((filePath) => !reachableModules.has(filePath))
+  .map(projectPath)
+  .sort();
+const unreachableModuleSet = new Set(unreachableModules);
+for (const filePath of unreachableModules) {
+  if (!allowedNonRuntimeModules.has(filePath)) {
+    violations.push(
+      `${filePath}: модуль недостижим из src/main.ts. Удалите его, подключите к сценарию или обоснуйте в allowedNonRuntimeModules.`,
+    );
+  }
+}
+for (const filePath of allowedNonRuntimeModules) {
+  if (!unreachableModuleSet.has(filePath)) {
+    violations.push(`${filePath}: удалите устаревшее исключение allowedNonRuntimeModules.`);
+  }
+}
+
+console.log('Производственные TS/Vue-модули:');
+for (const [layer, count] of [...moduleCounts.entries()].sort()) {
+  console.log(`- ${layer}: ${count}`);
+}
+
+console.log('\nАрхитектурные зависимости:');
 for (const [edge, count] of [...layerEdges.entries()].sort()) {
   console.log(`- ${edge}: ${count}`);
 }
@@ -267,6 +343,14 @@ for (const item of largeFiles.sort((a, b) => b.lines - a.lines)) {
   console.log(`- ${item.file}: ${item.lines} строк (порог ${item.threshold})`);
 }
 if (!largeFiles.length) {
+  console.log('- нет');
+}
+
+console.log('\nЯвно допущенные модули вне графа src/main.ts:');
+for (const filePath of unreachableModules) {
+  console.log(`- ${filePath}`);
+}
+if (!unreachableModules.length) {
   console.log('- нет');
 }
 
