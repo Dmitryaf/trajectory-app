@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import ActionButton from '@/shared/ui/actions/ActionButton.vue';
-import { computed, nextTick, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import ArchiveDateRange from '../features/journal/ui/ArchiveDateRange.vue';
 import ArchiveItemActions from '../features/journal/ui/ArchiveItemActions.vue';
 import ArchivePage from '../features/journal/ui/ArchivePage.vue';
 import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
-import JournalComposerReturn from '../features/journal/ui/JournalComposerReturn.vue';
 import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
 import ChipGroup from '../shared/ui/forms/ChipGroup.vue';
 import FormCardHeading from '../shared/ui/forms/FormCardHeading.vue';
@@ -29,14 +28,11 @@ const editingId = ref<number | null>(null);
 const editingCreatedAt = ref('');
 const saving = ref(false);
 const removingIds = ref<number[]>([]);
-const titleInput = ref<HTMLInputElement>();
-const journalComposeRequested = new URLSearchParams(window.location.search).get('compose') === 'journal';
 const archiveRange = archiveRangeFromQuery();
 
 const recentEvents = computed(() =>
   [...store.lifeEvents].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)),
 );
-const createDraftDirty = computed(() => Boolean(title.value || note.value) || date.value !== todayKey() || type.value !== 'change');
 const {
   filterText,
   filterCategory: filterType,
@@ -131,14 +127,6 @@ function eventMeta(value: LifeEventRecord['type']) {
 function eventKey(event: LifeEventRecord) {
   return String(event.id ?? event.createdAt);
 }
-
-onMounted(async () => {
-  if (!journalComposeRequested) {
-    return;
-  }
-  await nextTick();
-  titleInput.value?.focus();
-});
 </script>
 
 <template>
@@ -164,7 +152,7 @@ onMounted(async () => {
       </FormCardHeading>
       <ChipGroup v-model="type" :options="lifeEventTypeOptions" />
       <div class="event-composer__fields">
-        <input ref="titleInput" v-model="title" type="text" maxlength="140" placeholder="Короткое название" @keyup.enter="saveEvent" />
+        <input v-model="title" type="text" maxlength="140" placeholder="Короткое название" @keyup.enter="saveEvent" />
         <DateInput v-model="date" required aria-label="Дата события" />
       </div>
       <AutoGrowTextarea v-model="note" :rows="4" :max-length="2000" placeholder="Что произошло или что вы поняли и почему это важно" />
@@ -174,7 +162,6 @@ onMounted(async () => {
       <ActionButton v-if="editingId !== null" variant="secondary" class="composer-cancel" type="button" @click="resetForm">
         Отменить редактирование
       </ActionButton>
-      <JournalComposerReturn v-else-if="journalComposeRequested" :dirty="createDraftDirty" @discard="resetForm" />
     </template>
     <template #filters>
       <label class="archive-filter-field">

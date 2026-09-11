@@ -2,7 +2,6 @@
 
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import { createMemoryHistory, createRouter } from 'vue-router';
 import { notifyError, notifyInfo, notifyUnknownError } from '@/services/notifications';
 import EventsView from '@/views/EventsView.vue';
 import ResultsView from '@/views/ResultsView.vue';
@@ -16,38 +15,6 @@ vi.mock('@/services/notifications', () => ({
 }));
 
 describe('journal scenarios', () => {
-  it('keeps a journal draft when cancellation is rejected and returns to the type choice after confirmation', async () => {
-    window.history.replaceState(null, '', '/results?compose=journal');
-    const { pinia } = createStore();
-    const router = createRouter({
-      history: createMemoryHistory(),
-      routes: [
-        { path: '/results', component: ResultsView },
-        { path: '/more', component: { template: '<div data-test="journal-return" />' } },
-      ],
-    });
-    await router.push('/results?compose=journal');
-    await router.isReady();
-    const wrapper = mount({ template: '<RouterView />' }, { attachTo: document.body, global: { plugins: [pinia, router] } });
-    await flushPromises();
-
-    const titleInput = wrapper.get<HTMLInputElement>('.result-composer input[type="text"]');
-    expect(titleInput.element).toBe(document.activeElement);
-    await titleInput.setValue('Несохранённый итог');
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true);
-
-    await wrapper.get('.composer-cancel').trigger('click');
-    await flushPromises();
-    expect(router.currentRoute.value.fullPath).toBe('/results?compose=journal');
-    expect(titleInput.element.value).toBe('Несохранённый итог');
-
-    await wrapper.get('.composer-cancel').trigger('click');
-    await flushPromises();
-    expect(router.currentRoute.value.fullPath).toBe('/more?add=1');
-    expect(wrapper.find('[data-test="journal-return"]').exists()).toBe(true);
-    confirm.mockRestore();
-  });
-
   it('reports archive deletion errors and allows retrying the same record', async () => {
     const { pinia, store } = createStore();
     store.results = [{ id: 1, date: '2026-07-21', area: 'career', title: 'Итог', note: '', createdAt: '2026-07-21T10:00:00.000Z' }];

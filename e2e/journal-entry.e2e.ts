@@ -1,6 +1,5 @@
-import { expect, test, type Page } from './fixtures';
+import { expect, test } from './fixtures';
 import { demoFilePath } from './demo-data';
-import { expectBoxInsideViewport, expectElementHasNoHorizontalOverflow } from './layout-assertions';
 
 test.use({ viewport: { width: 390, height: 844 }, isMobile: true });
 
@@ -10,65 +9,67 @@ test.beforeEach(async ({ page }) => {
   await page.getByText('Резервная копия восстановлена', { exact: true }).waitFor();
 });
 
-async function openEntryChoice(page: Page) {
+test('adds both journal entry types through their direct section links', async ({ page }) => {
   await page.goto('/more');
-  const addAction = page.getByRole('button', { name: 'Добавить запись' });
-  await expect(addAction).toHaveCount(1);
-  await addAction.click();
-  const dialog = page.getByRole('dialog', { name: 'Что хотите сохранить?' });
-  await expect(dialog).toBeVisible();
-  await expectBoxInsideViewport(page, dialog, 'journal entry choice');
-  await expectElementHasNoHorizontalOverflow(dialog, 'journal entry choice');
-  return dialog;
-}
+  await expect(page.getByRole('button', { name: 'Добавить запись' })).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: 'Что хотите сохранить?' })).toHaveCount(0);
+  await expect(page.locator('.journal-guide-card')).toHaveCount(0);
 
-test('adds both existing journal entry types from one action', async ({ page }) => {
-  let dialog = await openEntryChoice(page);
-  await dialog.getByRole('link', { name: /Итог/ }).click();
-  await expect(page).toHaveURL(/\/results\?compose=journal$/);
+  const resultsLink = page.locator('a.more-card[href="/results"]');
+  await resultsLink.focus();
+  await expect(resultsLink).toBeFocused();
+  await resultsLink.press('Enter');
+  await expect(page).toHaveURL(/\/results$/);
   const resultTitle = page.getByPlaceholder('Что вы сделали или какой результат получили');
-  await expect(resultTitle).toBeFocused();
-  await resultTitle.fill('Завершил проверку единого добавления');
-  await page.getByPlaceholder('Что произошло, почему это важно или какой контекст стоит сохранить').fill('Проверен новый путь из Журнала');
+  await resultTitle.fill('Завершил проверку прямого добавления');
+  await page.getByPlaceholder('Что произошло, почему это важно или какой контекст стоит сохранить').fill('Проверен прямой путь из Журнала');
   await page.getByRole('button', { name: 'Добавить итог' }).click();
   await expect(page.getByText('Итог добавлен', { exact: true })).toBeVisible();
-  await expect(page.locator('.result-item').filter({ hasText: 'Завершил проверку единого добавления' })).toBeVisible();
+  await expect(page.locator('.result-item').filter({ hasText: 'Завершил проверку прямого добавления' })).toBeVisible();
 
-  dialog = await openEntryChoice(page);
-  await dialog.getByRole('link', { name: /Событие или наблюдение/ }).click();
-  await expect(page).toHaveURL(/\/events\?compose=journal$/);
+  await page.goto('/more');
+  const eventsLink = page.locator('a.more-card[href="/events"]');
+  await eventsLink.focus();
+  await expect(eventsLink).toBeFocused();
+  await eventsLink.press('Enter');
+  await expect(page).toHaveURL(/\/events$/);
   const eventTitle = page.getByPlaceholder('Короткое название');
-  await expect(eventTitle).toBeFocused();
   await page.getByRole('button', { name: /Мысль или наблюдение/ }).click();
-  await eventTitle.fill('Заметил понятный путь к новой записи');
-  await page.getByPlaceholder('Что произошло или что вы поняли и почему это важно').fill('Тип выбирается до начала ввода');
+  await eventTitle.fill('Заметил прямой путь к новой записи');
+  await page.getByPlaceholder('Что произошло или что вы поняли и почему это важно').fill('Тип выбирается в форме раздела');
   await page.locator('.result-composer .primary-button').click();
   await expect(page.getByText('Событие добавлено', { exact: true })).toBeVisible();
-  await expect(page.locator('.timeline-item').filter({ hasText: 'Заметил понятный путь к новой записи' })).toBeVisible();
+  await expect(page.locator('.timeline-item').filter({ hasText: 'Заметил прямой путь к новой записи' })).toBeVisible();
 });
 
-test('keeps a dirty draft until cancellation is confirmed and returns focus after closing the choice', async ({ page }) => {
-  let dialog = await openEntryChoice(page);
-  await dialog.getByRole('button', { name: 'Отменить' }).click();
-  await expect(dialog).toBeHidden();
-  await expect(page.getByRole('button', { name: 'Добавить запись' })).toBeFocused();
+test('does not revive the removed journal modal or composer return from legacy queries', async ({ page }) => {
+  await page.goto('/more?add=1');
+  await expect(page.locator('a.more-card[href="/results"]')).toBeVisible();
+  await expect(page.locator('a.more-card[href="/events"]')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Добавить запись' })).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: 'Что хотите сохранить?' })).toHaveCount(0);
 
-  await page.getByRole('button', { name: 'Добавить запись' }).click();
-  dialog = page.getByRole('dialog', { name: 'Что хотите сохранить?' });
-  await dialog.getByRole('link', { name: /Итог/ }).click();
+  for (const route of ['/results?compose=journal', '/events?compose=journal']) {
+    await page.goto(route);
+    await expect(page.locator('.archive-composer')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Отменить добавление' })).toHaveCount(0);
+  }
+});
+
+test('keeps cancellation for the remaining archive edit scenarios', async ({ page }) => {
+  await page.goto('/results');
   const resultTitle = page.getByPlaceholder('Что вы сделали или какой результат получили');
-  await resultTitle.fill('Черновик, который нельзя потерять');
+  await page.getByRole('button', { name: 'Редактировать итог' }).first().click();
+  await resultTitle.fill('Изменение, которое не нужно сохранять');
+  await page.getByRole('button', { name: 'Отменить редактирование' }).click();
+  await expect(resultTitle).toHaveValue('');
+  await expect(page.getByText('Изменение, которое не нужно сохранять', { exact: true })).toHaveCount(0);
 
-  page.once('dialog', (confirmation) => confirmation.dismiss());
-  await page.getByRole('button', { name: 'Отменить добавление' }).click();
-  await expect(page).toHaveURL(/\/results\?compose=journal$/);
-  await expect(resultTitle).toHaveValue('Черновик, который нельзя потерять');
-
-  page.once('dialog', (confirmation) => confirmation.accept());
-  await page.getByRole('button', { name: 'Отменить добавление' }).click();
-  await expect(page).toHaveURL(/\/more\?add=1$/);
-  dialog = page.getByRole('dialog', { name: 'Что хотите сохранить?' });
-  await expect(dialog).toBeVisible();
-  await dialog.getByRole('button', { name: 'Отменить' }).click();
-  await expect(page.getByRole('button', { name: 'Добавить запись' })).toBeFocused();
+  await page.goto('/events');
+  const eventTitle = page.getByPlaceholder('Короткое название');
+  await page.getByRole('button', { name: 'Редактировать событие' }).first().click();
+  await eventTitle.fill('Другое несохранённое изменение');
+  await page.getByRole('button', { name: 'Отменить редактирование' }).click();
+  await expect(eventTitle).toHaveValue('');
+  await expect(page.getByText('Другое несохранённое изменение', { exact: true })).toHaveCount(0);
 });
