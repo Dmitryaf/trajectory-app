@@ -12,6 +12,7 @@ import FormCardHeading from '../shared/ui/forms/FormCardHeading.vue';
 import DateInput from '../shared/ui/forms/DateInput.vue';
 import ClampedText from '../shared/ui/content/ClampedText.vue';
 import IconActionButton from '../shared/ui/actions/IconActionButton.vue';
+import StableHeightTransitionGroup from '../shared/ui/layout/StableHeightTransitionGroup.vue';
 import { archiveRangeFromQuery } from '../features/journal/archiveQuery';
 import { useArchiveList } from '../features/journal/useArchiveList';
 import { formatDate, todayKey } from '../services/dates';
@@ -176,15 +177,21 @@ onMounted(async () => {
       <JournalComposerReturn v-else-if="journalComposeRequested" :dirty="createDraftDirty" @discard="resetForm" />
     </template>
     <template #filters>
-      <input v-model="filterText" type="search" placeholder="Поиск по событиям" aria-label="Поиск по событиям" />
-      <select v-model="filterType" aria-label="Тип события">
-        <option value="all">Все типы</option>
-        <option v-for="option in lifeEventTypeOptions" :key="option.id" :value="option.id">{{ option.label }}</option>
-      </select>
+      <label class="archive-filter-field">
+        <span class="archive-filter-field__label">Поиск</span>
+        <input v-model="filterText" type="search" placeholder="Поиск по событиям" aria-label="Поиск по событиям" />
+      </label>
+      <label class="archive-filter-field">
+        <span class="archive-filter-field__label">Тип</span>
+        <select v-model="filterType" aria-label="Тип события">
+          <option value="all">Все типы</option>
+          <option v-for="option in lifeEventTypeOptions" :key="option.id" :value="option.id">{{ option.label }}</option>
+        </select>
+      </label>
       <ArchiveDateRange v-model:date-from="dateFrom" v-model:date-to="dateTo" context-label="событий" />
     </template>
     <div>
-      <TransitionGroup name="archive-list" tag="div" class="timeline-list">
+      <StableHeightTransitionGroup name="archive-list" :change-key="currentPage" tag="div" class="timeline-list">
         <article v-for="event in visibleEvents" :key="eventKey(event)" class="timeline-item">
           <span class="timeline-item__icon">{{ eventMeta(event.type).icon }}</span>
           <div>
@@ -211,7 +218,7 @@ onMounted(async () => {
             />
           </ArchiveItemActions>
         </article>
-      </TransitionGroup>
+      </StableHeightTransitionGroup>
       <ArchivePagination v-model:page="currentPage" :page-count="pageCount" context-label="событий" />
     </div>
   </ArchivePage>

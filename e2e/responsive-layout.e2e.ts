@@ -72,8 +72,10 @@ test('keeps every primary screen inside the minimum viewport width', async ({ pa
   }
 });
 
-test('keeps archive filters inside a tablet viewport', async ({ page }) => {
-  for (const width of [768, 820]) {
+test('keeps archive filters aligned across responsive widths', async ({ page }) => {
+  const layouts = new Map<number, { height: number; searchWidth: number }>();
+
+  for (const width of [390, 768, 820, 821, 900, 1100]) {
     await page.setViewportSize({ width, height: 1024 });
     for (const route of ['/results', '/events']) {
       await page.goto(route);
@@ -92,8 +94,53 @@ test('keeps archive filters inside a tablet viewport', async ({ page }) => {
       expect(filtersBox).not.toBeNull();
       expect(filtersBox!.x).toBeGreaterThanOrEqual(panelBox!.x);
       expect(filtersBox!.x + filtersBox!.width).toBeLessThanOrEqual(panelBox!.x + panelBox!.width);
+
+      const fields = page.locator('.archive-filter-field');
+      await expect(fields).toHaveCount(4);
+      const fieldGeometry = await fields.evaluateAll((elements) =>
+        elements.map((element) => {
+          const label = element.querySelector<HTMLElement>('.archive-filter-field__label')!;
+          const control = element.querySelector<HTMLElement>('input, select')!;
+          const labelBox = label.getBoundingClientRect();
+          const controlBox = control.getBoundingClientRect();
+          return {
+            labelTop: labelBox.top,
+            controlTop: controlBox.top,
+            controlHeight: controlBox.height,
+            controlLeft: controlBox.left,
+            controlRight: controlBox.right,
+          };
+        }),
+      );
+      const rows = fieldGeometry.reduce<Record<string, typeof fieldGeometry>>((groups, field) => {
+        const key = String(Math.round(field.labelTop));
+        (groups[key] ??= []).push(field);
+        return groups;
+      }, {});
+      for (const row of Object.values(rows)) {
+        expect(Math.max(...row.map((field) => field.controlTop)) - Math.min(...row.map((field) => field.controlTop))).toBeLessThanOrEqual(
+          1,
+        );
+        expect(
+          Math.max(...row.map((field) => field.controlHeight)) - Math.min(...row.map((field) => field.controlHeight)),
+        ).toBeLessThanOrEqual(1);
+      }
+      for (const field of fieldGeometry) {
+        expect(field.controlLeft).toBeGreaterThanOrEqual(filtersBox!.x);
+        expect(field.controlRight).toBeLessThanOrEqual(filtersBox!.x + filtersBox!.width);
+        expect(field.controlHeight).toBeLessThanOrEqual(52);
+      }
+
+      const searchBox = await fields.first().locator('input').boundingBox();
+      expect(searchBox).not.toBeNull();
+      if (route === '/results') {
+        layouts.set(width, { height: filtersBox!.height, searchWidth: searchBox!.width });
+      }
     }
   }
+
+  expect(Math.abs(layouts.get(820)!.height - layouts.get(821)!.height)).toBeLessThanOrEqual(2);
+  expect(Math.abs(layouts.get(820)!.searchWidth - layouts.get(821)!.searchWidth)).toBeLessThanOrEqual(2);
 });
 
 test('shows an unknown user route and returns to Today with the keyboard', async ({ page }) => {
@@ -295,8 +342,7 @@ test('keeps change history visible and one metric behind a compact mobile disclo
 
   const list = history.locator('.history-timeline__list');
   const initialListHeight = await list.evaluate((element) => element.getBoundingClientRect().height);
-  await history.locator('.archive-pagination button', { hasText: 'Дальше' }).click();
-  const transitionHeights = await list.evaluate(
+  const transitionHeightsPromise = list.evaluate(
     (element) =>
       new Promise<number[]>((resolve) => {
         const heights: number[] = [];
@@ -312,9 +358,12 @@ test('keeps change history visible and one metric behind a compact mobile disclo
         sample();
       }),
   );
+  await history.locator('.archive-pagination button', { hasText: 'Дальше' }).click();
+  const transitionHeights = await transitionHeightsPromise;
   await expect(history.locator('.decision-timeline__item')).toHaveCount(10);
   await expect(history.locator('.archive-pagination span')).toHaveText(/^2 из \d+$/);
   const finalListHeight = transitionHeights.at(-1)!;
+  expect(Math.min(...transitionHeights)).toBeGreaterThanOrEqual(Math.min(initialListHeight, finalListHeight) - 2);
   expect(Math.max(...transitionHeights)).toBeLessThanOrEqual(Math.max(initialListHeight, finalListHeight) + 2);
 
   const widths = await page.evaluate(() => ({
@@ -322,6 +371,114 @@ test('keeps change history visible and one metric behind a compact mobile disclo
     content: document.documentElement.scrollWidth,
   }));
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
+});
+
+test('moves paginated list height smoothly instead of collapsing between pages', async ({ page }) => {
+  for (const scenario of [
+    { route: '/trends', list: '.history-timeline__list', pagination: '.history-timeline .archive-pagination', width: 390 },
+    { route: '/trends', list: '.history-timeline__list', pagination: '.history-timeline .archive-pagination', width: 1280 },
+    { route: '/results', list: '.results-list', pagination: '.archive-panel .archive-pagination', width: 390 },
+    { route: '/events', list: '.timeline-list', pagination: '.archive-panel .archive-pagination', width: 390 },
+  ]) {
+    await page.setViewportSize({ width: scenario.width, height: 1024 });
+    await page.goto(scenario.route);
+    if (scenario.route === '/results' || scenario.route === '/events') {
+      await page.getByRole('button', { name: 'За всё время' }).click();
+    }
+    const list = page.locator(scenario.list);
+    const pagination = page.locator(scenario.pagination);
+    await expect(pagination).toBeVisible();
+
+    const pageCount = Number((await pagination.locator('span').textContent())?.split(' из ')[1]);
+    expect(pageCount, `${scenario.route} should have enough data to test pagination`).toBeGreaterThan(1);
+    for (let currentPage = 1; currentPage < pageCount - 1; currentPage += 1) {
+      await pagination.getByRole('button', { name: 'Дальше' }).click();
+      await expect(pagination.locator('span')).toHaveText(`${currentPage + 1} из ${pageCount}`);
+    }
+
+    const samplesPromise = list.evaluate(
+      (element) =>
+        new Promise<number[]>((resolve) => {
+          const heights: number[] = [];
+          const startedAt = performance.now();
+          const sample = () => {
+            heights.push(element.getBoundingClientRect().height);
+            if (performance.now() - startedAt >= 450) {
+              resolve(heights);
+              return;
+            }
+            requestAnimationFrame(sample);
+          };
+          sample();
+        }),
+    );
+    await pagination.getByRole('button', { name: 'Дальше' }).click();
+    const activeTransition = await list.evaluate((element) => ({
+      inlineHeight: (element as HTMLElement).style.height,
+      property: getComputedStyle(element).transitionProperty,
+      duration: getComputedStyle(element).transitionDuration,
+    }));
+    expect(activeTransition.inlineHeight, `${scenario.route} at ${scenario.width}px should lock the previous height`).not.toBe('');
+    expect(activeTransition.property).toContain('height');
+    expect(activeTransition.duration).not.toBe('0s');
+    const samples = await samplesPromise;
+    await expect(pagination.locator('span')).toHaveText(`${pageCount} из ${pageCount}`);
+
+    expect(Math.min(...samples), `${scenario.route} at ${scenario.width}px should not collapse`).toBeGreaterThan(0);
+  }
+});
+
+test('reserves header space while the feedback action loads', async ({ browser }) => {
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 1280, height: 720 },
+  ]) {
+    const context = await browser.newContext({ viewport });
+    const isolatedPage = await context.newPage();
+    let releaseFeedbackModule!: () => void;
+    let markFeedbackModuleRequested!: () => void;
+    const feedbackModuleRequested = new Promise<void>((resolve) => {
+      markFeedbackModuleRequested = resolve;
+    });
+    const feedbackModuleReleased = new Promise<void>((resolve) => {
+      releaseFeedbackModule = resolve;
+    });
+
+    await isolatedPage.route('**/src/features/feedback/ui/FeedbackDialog.vue*', async (route) => {
+      markFeedbackModuleRequested();
+      await feedbackModuleReleased;
+      await route.continue();
+    });
+
+    try {
+      await isolatedPage.goto('/');
+      await feedbackModuleRequested;
+      const help = isolatedPage.getByRole('button', { name: 'Как работает приложение' });
+      await expect(help).toBeVisible();
+      const before = await help.boundingBox();
+      expect(before).not.toBeNull();
+
+      releaseFeedbackModule();
+      await expect(isolatedPage.getByRole('button', { name: 'Обратная связь' })).toBeVisible();
+      const after = await help.boundingBox();
+      expect(after).not.toBeNull();
+      expect(Math.abs(after!.x - before!.x), `horizontal shift at ${viewport.width}px`).toBeLessThanOrEqual(1);
+      expect(Math.abs(after!.y - before!.y), `vertical shift at ${viewport.width}px`).toBeLessThanOrEqual(1);
+    } finally {
+      releaseFeedbackModule();
+      await context.close();
+    }
+  }
+});
+
+test('removes paginated list motion when reduced motion is requested', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/trends');
+  const list = page.locator('.history-timeline__list');
+  await expect(list).toHaveCSS('transition-duration', '0s');
+  await page.locator('.history-timeline .archive-pagination').getByRole('button', { name: 'Дальше' }).click();
+  await expect(page.locator('.history-timeline .archive-pagination span')).toHaveText(/^2 из \d+$/);
+  await expect.poll(() => list.evaluate((element) => element.style.height)).toBe('');
 });
 
 test('keeps the returning daily form compact and visibly grouped', async ({ page }) => {

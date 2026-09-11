@@ -12,6 +12,7 @@ import FormCardHeading from '../shared/ui/forms/FormCardHeading.vue';
 import DateInput from '../shared/ui/forms/DateInput.vue';
 import ClampedText from '../shared/ui/content/ClampedText.vue';
 import IconActionButton from '../shared/ui/actions/IconActionButton.vue';
+import StableHeightTransitionGroup from '../shared/ui/layout/StableHeightTransitionGroup.vue';
 import { archiveRangeFromQuery } from '../features/journal/archiveQuery';
 import { useArchiveList } from '../features/journal/useArchiveList';
 import { formatDate, todayKey } from '../services/dates';
@@ -192,15 +193,21 @@ onMounted(async () => {
       <JournalComposerReturn v-else-if="journalComposeRequested" :dirty="createDraftDirty" @discard="resetForm" />
     </template>
     <template #filters>
-      <input v-model="filterText" type="search" placeholder="Поиск по итогам" aria-label="Поиск по итогам" />
-      <select v-model="filterArea" aria-label="Область итога">
-        <option value="all">Все области</option>
-        <option v-for="option in resultOptions" :key="option.id" :value="option.id">{{ option.label }}</option>
-      </select>
+      <label class="archive-filter-field">
+        <span class="archive-filter-field__label">Поиск</span>
+        <input v-model="filterText" type="search" placeholder="Поиск по итогам" aria-label="Поиск по итогам" />
+      </label>
+      <label class="archive-filter-field">
+        <span class="archive-filter-field__label">Область</span>
+        <select v-model="filterArea" aria-label="Область итога">
+          <option value="all">Все области</option>
+          <option v-for="option in resultOptions" :key="option.id" :value="option.id">{{ option.label }}</option>
+        </select>
+      </label>
       <ArchiveDateRange v-model:date-from="dateFrom" v-model:date-to="dateTo" context-label="итогов" />
     </template>
     <div>
-      <TransitionGroup name="archive-list" tag="div" class="results-list">
+      <StableHeightTransitionGroup name="archive-list" :change-key="currentPage" tag="div" class="results-list">
         <article v-for="result in visibleResults" :key="result.id ?? result.createdAt" class="result-item">
           <span class="result-item__icon">{{ areaMeta(result.area).icon }}</span>
           <div class="result-item__content">
@@ -227,7 +234,7 @@ onMounted(async () => {
             />
           </ArchiveItemActions>
         </article>
-      </TransitionGroup>
+      </StableHeightTransitionGroup>
       <ArchivePagination v-model:page="currentPage" :page-count="pageCount" context-label="итогов" />
     </div>
   </ArchivePage>

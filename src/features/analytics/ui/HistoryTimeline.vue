@@ -4,6 +4,7 @@ import SectionHeading from '@/shared/ui/layout/SectionHeading.vue';
 import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
 import ArchivePagination from '@/features/journal/ui/ArchivePagination.vue';
 import CountBadge from '@/shared/ui/data-display/CountBadge.vue';
+import StableHeightTransitionGroup from '@/shared/ui/layout/StableHeightTransitionGroup.vue';
 import { formatDate } from '@/services/dates';
 import type { TimelineTone } from '@/features/analytics/useChangeHistoryView';
 
@@ -28,7 +29,7 @@ defineEmits<{ 'update:page': [value: number] }>();
         <i></i>{{ item.label }} <strong>{{ item.count }}</strong>
       </span>
     </div>
-    <TransitionGroup name="reveal-list" tag="div" class="history-timeline__list">
+    <StableHeightTransitionGroup name="reveal-list" :change-key="page" tag="div" class="history-timeline__list">
       <article v-for="item in items" :key="item.key" class="decision-timeline__item" :class="`history-timeline__item--${item.tone}`">
         <time>{{ formatDate(item.date, { day: 'numeric', month: 'short', year: 'numeric' }) }}</time>
         <span>{{ item.type }}</span>
@@ -37,7 +38,7 @@ defineEmits<{ 'update:page': [value: number] }>();
           <p v-if="item.detail">{{ item.detail }}</p>
         </div>
       </article>
-    </TransitionGroup>
+    </StableHeightTransitionGroup>
     <ArchivePagination :page="page" :page-count="pageCount" context-label="истории изменений" @update:page="$emit('update:page', $event)" />
   </SurfaceCard>
 </template>

@@ -242,7 +242,9 @@ const navItems: Array<{ to: string; label: string; icon: UiIconName }> = [
       </RouterLink>
       <div v-if="canOpenApp && appDataReady && store.loaded && !effectiveLoadError" class="header-actions">
         <HowItWorksDialog />
-        <FeedbackDialog v-if="feedbackEnabled" :access-token="auth.session?.access_token ?? ''" />
+        <div v-if="feedbackEnabled" class="header-feedback-slot">
+          <FeedbackDialog :access-token="auth.session?.access_token ?? ''" />
+        </div>
         <RouterLink v-if="!auth.requiresAuth" to="/settings" class="header-settings-link" aria-label="Открыть настройки" title="Настройки">
           <span><UiIcon name="settings" /></span><strong>Настройки</strong>
         </RouterLink>

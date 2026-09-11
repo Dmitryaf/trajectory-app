@@ -521,7 +521,9 @@
   --shadow-soft: 0 8px 24px rgba(23, 48, 43, 0.06);
   --motion-fast: 140ms;
   --motion-base: 190ms;
+  --motion-layout: 260ms;
   --motion-ease: cubic-bezier(0.2, 0.75, 0.25, 1);
+  --motion-layout-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);

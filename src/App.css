@@ -45,6 +45,18 @@
   gap: 8px;
 }
 
+.header-feedback-slot {
+  width: 124px;
+  min-height: 38px;
+  display: flex;
+  flex: 0 0 auto;
+}
+
+:deep(.header-feedback-slot .beta-feedback-link) {
+  width: 100%;
+  justify-content: center;
+}
+
 .header-settings-link {
   min-height: 38px;
   display: inline-flex;
@@ -374,6 +386,11 @@
     padding-top: 0;
   }
 
+  .header-feedback-slot {
+    width: 36px;
+    min-height: 36px;
+  }
+
   .header-settings-link {
     width: 36px;
     min-height: 36px;
@@ -510,5 +527,11 @@
 
   .app-main {
     padding-bottom: calc(54px + var(--safe-bottom));
+  }
+}
+
+@media (min-width: 980px) and (max-width: 1150px) {
+  .header-feedback-slot {
+    width: 38px;
   }
 }

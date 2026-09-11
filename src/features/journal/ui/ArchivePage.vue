@@ -146,8 +146,9 @@ defineProps<{
 }
 .archive-filters {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) 190px 150px 150px;
+  grid-template-columns: minmax(220px, 1.35fr) minmax(170px, 0.9fr) minmax(150px, 0.75fr) minmax(150px, 0.75fr);
   gap: 10px;
+  align-items: start;
   margin-bottom: 18px;
   padding: 12px;
   border: 1px solid var(--archive-entry-border);
@@ -158,10 +159,23 @@ defineProps<{
   border-color: var(--archive-event-entry-border);
   background: var(--archive-event-entry-surface);
 }
-:deep(.archive-filters > input),
-:deep(.archive-filters > select) {
+:deep(.archive-filter-field) {
   width: 100%;
   min-width: 0;
+  display: grid;
+  grid-template-rows: auto 48px;
+  gap: 6px;
+}
+:deep(.archive-filter-field__label) {
+  color: var(--archive-date-label);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+:deep(.archive-filter-field > input),
+:deep(.archive-filter-field > select) {
+  min-width: 0;
+  height: 48px;
 }
 .archive-empty {
   padding: 45px 24px;
@@ -197,12 +211,9 @@ defineProps<{
   position: absolute;
   width: 100%;
 }
-@media (max-width: 820px) {
+@media (max-width: 1023px) {
   .archive-filters {
     grid-template-columns: 1fr 1fr;
-  }
-  :deep(.archive-filters > input:first-child) {
-    grid-column: 1 / -1;
   }
 }
 @media (max-width: 720px) {
@@ -228,9 +239,6 @@ defineProps<{
 @media (max-width: 520px) {
   .archive-filters {
     grid-template-columns: 1fr;
-  }
-  :deep(.archive-filters > input:first-child) {
-    grid-column: auto;
   }
 }
 </style>
