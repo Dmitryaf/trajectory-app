@@ -359,11 +359,11 @@ function shiftMonth(offset: number) {
 <template>
   <PageShell class="page--review page--month">
     <ReviewHeading
-      label="Месячная сводка"
       title="Месяц"
       summary="Сравните недели, важные события и результаты. Решите, что продолжить или изменить."
       :action="hasPeriodData ? (reviewAvailable ? 'К итогу' : 'Итог позже') : undefined"
       href="#month-review"
+      period="month"
     />
     <PeriodNavigator
       :title="formatDate(start, { month: 'long', year: 'numeric' })"

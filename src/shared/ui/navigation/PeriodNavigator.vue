@@ -34,7 +34,10 @@ defineEmits<{ previous: []; next: []; current: [] }>();
   box-shadow: 0 14px 32px var(--period-navigator-shadow);
 }
 .icon-button {
+  display: grid;
+  place-items: center;
   height: 46px;
+  padding: 0;
   border: 0;
   border-radius: 14px;
   background: var(--period-navigator-control-surface);

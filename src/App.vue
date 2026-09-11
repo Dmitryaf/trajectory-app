@@ -223,13 +223,18 @@ async function signOut() {
   }
 }
 
-const navItems: Array<{ to: string; label: string; icon: UiIconName }> = [
-  { to: '/', label: 'Сегодня', icon: 'today' },
-  { to: '/week', label: 'Неделя', icon: 'week' },
-  { to: '/month', label: 'Месяц', icon: 'month' },
-  { to: '/trends', label: 'История', icon: 'history' },
-  { to: '/more', label: 'Журнал', icon: 'journal' },
+type PrimaryNavigationItem = { to: string; label: string; icon: UiIconName; activePaths: string[] };
+
+const navItems: PrimaryNavigationItem[] = [
+  { to: '/', label: 'Сегодня', icon: 'today', activePaths: ['/'] },
+  { to: '/week', label: 'Обзор', icon: 'week', activePaths: ['/week', '/month'] },
+  { to: '/trends', label: 'История', icon: 'history', activePaths: ['/trends'] },
+  { to: '/more', label: 'Журнал', icon: 'journal', activePaths: ['/more', '/results', '/events'] },
 ];
+
+function isPrimaryNavigationItemActive(item: PrimaryNavigationItem, path: string): boolean {
+  return item.activePaths.includes(path);
+}
 </script>
 
 <template>
@@ -312,7 +317,8 @@ const navItems: Array<{ to: string; label: string; icon: UiIconName }> = [
         :key="item.to"
         :to="item.to"
         class="bottom-nav__item"
-        :class="{ 'router-link-active': item.to === '/more' && ['/results', '/events'].includes($route.path) }"
+        :class="{ 'router-link-active': isPrimaryNavigationItemActive(item, $route.path) }"
+        :aria-current="isPrimaryNavigationItemActive(item, $route.path) ? 'page' : undefined"
       >
         <span><UiIcon :name="item.icon" /></span>
         <small>{{ item.label }}</small>

@@ -1,20 +1,27 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import PageHeading from '@/shared/ui/layout/PageHeading.vue';
 import UiIcon from '@/shared/ui/icons/UiIcon.vue';
 import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
-defineProps<{
-  label: string;
+import ReviewPeriodNavigation from './ReviewPeriodNavigation.vue';
+
+const props = defineProps<{
+  label?: string;
   title: string;
   summary: string;
   action?: string;
   href?: string;
+  period?: 'week' | 'month';
 }>();
+
+const periodLabels = { week: 'Недельная сводка', month: 'Месячная сводка' } as const;
+const headingLabel = computed(() => props.label ?? (props.period ? periodLabels[props.period] : ''));
 </script>
 
 <template>
   <PageHeading>
     <div>
-      <EyebrowText>{{ label }}</EyebrowText>
+      <EyebrowText>{{ headingLabel }}</EyebrowText>
       <h1>{{ title }}</h1>
       <p>{{ summary }}</p>
     </div>
@@ -22,6 +29,7 @@ defineProps<{
       >{{ action }} <span><UiIcon name="arrow-down" /></span
     ></a>
   </PageHeading>
+  <ReviewPeriodNavigation v-if="period" :period="period" />
 </template>
 
 <style scoped>

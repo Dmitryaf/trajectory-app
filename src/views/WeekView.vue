@@ -343,11 +343,11 @@ watch(
 <template>
   <PageShell class="page--review page--week">
     <ReviewHeading
-      label="Недельная сводка"
       title="Неделя"
       summary="Посмотрите, чем была наполнена неделя, и решите, хотите ли что-то менять."
       :action="hasPeriodData ? (reviewAvailable ? 'К обзору' : 'Обзор позже') : undefined"
       href="#week-review"
+      period="week"
     />
     <PeriodNavigator
       :title="`${formatDate(start, { day: 'numeric', month: 'short' })} — ${formatDate(end, { day: 'numeric', month: 'short' })}`"

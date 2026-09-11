@@ -44,6 +44,46 @@ test('keeps every primary screen inside the minimum viewport width', async ({ pa
   }
 });
 
+test('groups weekly and monthly reviews under one primary navigation item', async ({ page }) => {
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 1280, height: 720 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/');
+
+    const primaryNavigation = page.getByRole('navigation', { name: 'Основная навигация' });
+    const overviewLink = primaryNavigation.getByRole('link', { name: 'Обзор', exact: true });
+    await expect(primaryNavigation.getByRole('link')).toHaveCount(4);
+    await expect(primaryNavigation.getByRole('link', { name: 'Неделя', exact: true })).toHaveCount(0);
+    await expect(primaryNavigation.getByRole('link', { name: 'Месяц', exact: true })).toHaveCount(0);
+
+    await overviewLink.click();
+    await expect(page).toHaveURL(/\/week$/);
+    await expect(overviewLink).toHaveAttribute('aria-current', 'page');
+
+    const periodNavigation = page.getByRole('navigation', { name: 'Период обзора' });
+    const weekLink = periodNavigation.getByRole('link', { name: 'Неделя', exact: true });
+    const monthLink = periodNavigation.getByRole('link', { name: 'Месяц', exact: true });
+    await expect(weekLink).toHaveAttribute('aria-current', 'page');
+    await expect(monthLink).not.toHaveAttribute('aria-current');
+
+    await monthLink.click();
+    await expect(page).toHaveURL(/\/month$/);
+    await expect(overviewLink).toHaveAttribute('aria-current', 'page');
+    await expect(monthLink).toHaveAttribute('aria-current', 'page');
+    await expect(weekLink).not.toHaveAttribute('aria-current');
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/week$/);
+    await expect(page.getByRole('navigation', { name: 'Период обзора' }).getByRole('link', { name: 'Неделя' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    await expectPageFitsViewport(page, `review navigation at ${viewport.width}px`);
+  }
+});
+
 test('keeps archive filters aligned across responsive widths', async ({ page }) => {
   test.slow();
   const layouts = new Map<number, { height: number; searchWidth: number }>();
@@ -280,6 +320,36 @@ test('separates month metric controls from the chart and keeps compact daily act
   await expect(settingsAction).toBeVisible();
   await expect(goalAction).toBeVisible();
   await expect(goalAction).toHaveText('Изменить');
+});
+
+test('separates analysis guidance from insights and centers period arrows', async ({ page }) => {
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 1280, height: 720 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/trends');
+
+    const guidanceBox = await readLayoutBox(
+      page.locator('.history-overview-card > .ai-analysis-steps'),
+      `analysis guidance at ${viewport.width}px`,
+    );
+    const insightsBox = await readLayoutBox(page.locator('.history-overview-card > .review-cue-grid'), `insights at ${viewport.width}px`);
+    expectVerticalSeparation(guidanceBox, insightsBox, 16, `analysis guidance and insights at ${viewport.width}px`);
+
+    for (const route of ['/week', '/month']) {
+      await page.goto(route);
+      const controls = page.locator('.period-nav > .icon-button');
+      await expect(controls).toHaveCount(2);
+
+      for (let index = 0; index < 2; index += 1) {
+        const control = await readLayoutBox(controls.nth(index), `${route} period control ${index} at ${viewport.width}px`);
+        const icon = await readLayoutBox(controls.nth(index).locator('.ui-icon'), `${route} period icon ${index} at ${viewport.width}px`);
+        expect(Math.abs(icon.x + icon.width / 2 - (control.x + control.width / 2))).toBeLessThanOrEqual(1);
+        expect(Math.abs(icon.y + icon.height / 2 - (control.y + control.height / 2))).toBeLessThanOrEqual(1);
+      }
+    }
+  }
 });
 
 test('separates the custom-period action from adjacent review content', async ({ page }) => {

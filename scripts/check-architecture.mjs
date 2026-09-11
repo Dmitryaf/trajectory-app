@@ -14,8 +14,8 @@ const reportThresholds = new Map([
 const hotspotContentBudgets = new Map([
   ['src/views/TodayView.vue', 26665],
   ['src/views/SettingsView.vue', 14351],
-  ['src/views/WeekView.vue', 24432],
-  ['src/views/MonthView.vue', 20807],
+  ['src/views/WeekView.vue', 24422],
+  ['src/views/MonthView.vue', 20799],
   ['src/features/settings/useSettingsForm.ts', 12359],
 ]);
 const allowedDbOwners = new Set(['src/stores/app.ts', 'src/features/sync/base.ts']);

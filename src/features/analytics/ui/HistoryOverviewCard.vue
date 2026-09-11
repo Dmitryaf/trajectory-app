@@ -51,6 +51,9 @@ defineEmits<{ copy: []; download: [] }>();
   padding-bottom: 15px;
   border-bottom: 1px solid var(--review-section-divider);
 }
+.history-overview-card > .ai-analysis-steps {
+  margin-bottom: 16px;
+}
 .data-note {
   margin: 10px 0 0;
   color: var(--data-note-text);
