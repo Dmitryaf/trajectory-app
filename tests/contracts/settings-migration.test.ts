@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { contextFactorLabel } from '@/services/analytics';
+import { contextFactorLabel } from '@/features/analytics/presentation';
 import { contextFactorOptions, normalizeDailyEntry, normalizeSettings, normalizeWeeklyReview } from '@/types';
 import { SETTINGS_VERSION } from '@/model/dataVersions';
 

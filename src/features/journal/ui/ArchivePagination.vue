@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { nextTick } from 'vue';
 import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 const props = defineProps<{
   page: number;
@@ -10,8 +11,11 @@ const emit = defineEmits<{
   'update:page': [value: number];
 }>();
 
-function changePage(nextPage: number) {
+async function changePage(nextPage: number) {
+  const scrollPosition = { left: window.scrollX, top: window.scrollY };
   emit('update:page', Math.min(Math.max(1, nextPage), props.pageCount));
+  await nextTick();
+  window.scrollTo({ ...scrollPosition, behavior: 'auto' });
 }
 </script>
 

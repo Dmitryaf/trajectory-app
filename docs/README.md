@@ -5,7 +5,7 @@
 ## С чего начать
 
 - [OWNER_GUIDE.md](./OWNER_GUIDE.md) — подробная карта экранов, каталогов, потоков данных, архитектурных решений и выпуска для владельца.
-- [BACKLOG.md](./planning/BACKLOG.md) — текущие приоритеты и незавершённая работа.
+- [BACKLOG.md](./planning/BACKLOG.md) — текущие приоритеты и [этапы разработки по дополненному аудиту](./planning/BACKLOG.md#план-разработки-по-дополненному-аудиту-11-сентября-2026-года).
 - [PRODUCT_RULES.md](./product/PRODUCT_RULES.md) — обязательные продуктовые ограничения и язык выводов.
 - [ARCHITECTURE.md](./development/ARCHITECTURE.md) — границы модулей и устройство приложения.
 - [DELIVERY.md](./operations/DELIVERY.md) — ветки, проверки, окружения и выпуск релизов.
@@ -49,7 +49,7 @@
 - [2026-07-30-git-state.md](./audits/2026-07-30-git-state.md) — датированный аудит Git на момент переработки документации.
 - [SYSTEM_AUDIT_2026-07-22.md](./audits/SYSTEM_AUDIT_2026-07-22.md) — системный аудит на указанную дату.
 - [DAILY_ENTRY_AUDIT.md](./audits/DAILY_ENTRY_AUDIT.md) — аудит ежедневной записи.
-- [DESIGN_AUDIT.md](./audits/DESIGN_AUDIT.md) — аудит интерфейса.
+- [DESIGN_AUDIT.md](./audits/DESIGN_AUDIT.md) — UI/UX-аудит 9 сентября и повторная проверка 10 сентября 2026 года: уточнённые доказательства, спецификации N1–N15 и решение `EVOLVE`.
 - [UI_COPY_AUDIT.md](./audits/UI_COPY_AUDIT.md) — аудит текстов интерфейса.
 
 ### `agent/` — рабочие инструкции AI-агенту

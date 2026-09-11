@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import UiIcon from '@/shared/ui/icons/UiIcon.vue';
+import type { UiIconName } from '@/shared/ui/icons/icons';
 import SurfaceCard from '@/shared/ui/layout/SurfaceCard.vue';
 import SectionHeading from '@/shared/ui/layout/SectionHeading.vue';
 import PageHeading from '@/shared/ui/layout/PageHeading.vue';
@@ -13,7 +15,7 @@ defineProps<{
   archiveTitle: string;
   count: number;
   hasItems: boolean;
-  emptyIcon: string;
+  emptyIcon: UiIconName;
   emptyTitle: string;
   emptyDescription: string;
 }>();
@@ -46,7 +48,7 @@ defineProps<{
       </div>
       <slot v-if="hasItems"></slot>
       <div v-else class="archive-empty">
-        <span>{{ emptyIcon }}</span>
+        <span><UiIcon :name="emptyIcon" /></span>
         <h3>{{ emptyTitle }}</h3>
         <p>{{ emptyDescription }}</p>
       </div>
@@ -57,19 +59,19 @@ defineProps<{
 <style scoped>
 .page--archive > .page-heading {
   position: relative;
-  min-height: 158px;
+  min-height: 132px;
   align-items: center;
   overflow: hidden;
-  margin: 10px 0 18px;
-  padding: 28px 30px;
-  border-radius: 28px;
+  margin: 8px 0 14px;
+  padding: 22px 24px;
+  border-radius: 24px;
   box-shadow: var(--shadow-soft);
 }
 .page--archive > .page-heading::after {
   content: '';
   position: absolute;
-  width: 190px;
-  height: 190px;
+  width: 168px;
+  height: 168px;
   right: -42px;
   bottom: -128px;
   border-radius: 50%;
@@ -80,9 +82,12 @@ defineProps<{
   z-index: 1;
 }
 .page--archive > .page-heading h1 {
-  margin-top: 5px;
-  font-size: clamp(38px, 5vw, 58px);
-  letter-spacing: -0.045em;
+  margin-top: 3px;
+  font-size: clamp(34px, 4vw, 44px);
+  letter-spacing: -0.035em;
+}
+.page--archive > .page-heading p {
+  font-size: 14px;
 }
 .page--results > .page-heading {
   border: 1px solid var(--archive-result-border);
@@ -100,7 +105,9 @@ defineProps<{
 }
 .archive-composer {
   position: relative;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  padding: 20px 22px;
+  border-radius: 22px;
   overflow: hidden;
   box-shadow: 0 12px 30px var(--archive-card-shadow);
 }
@@ -117,15 +124,18 @@ defineProps<{
 :deep(.composer-cancel) {
   margin-top: 10px;
 }
+:deep(.archive-composer .form-card__heading) {
+  margin-bottom: 16px;
+}
 .archive-panel {
-  padding: 24px;
+  padding: 20px;
   border: 1px solid var(--archive-group-border);
-  border-radius: 26px;
+  border-radius: 22px;
   background: var(--archive-group-surface);
   box-shadow: 0 12px 34px var(--archive-group-shadow);
 }
 .archive-panel > .section-heading {
-  padding-bottom: 15px;
+  padding-bottom: 12px;
   border-bottom: 1px solid var(--archive-group-divider);
 }
 .archive-count {
@@ -144,9 +154,10 @@ defineProps<{
 }
 .archive-filters {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) 190px 150px 150px;
+  grid-template-columns: minmax(220px, 1.35fr) minmax(170px, 0.9fr) minmax(150px, 0.75fr) minmax(150px, 0.75fr);
   gap: 10px;
-  margin-bottom: 18px;
+  align-items: start;
+  margin-bottom: 14px;
   padding: 12px;
   border: 1px solid var(--archive-entry-border);
   border-radius: 17px;
@@ -156,13 +167,26 @@ defineProps<{
   border-color: var(--archive-event-entry-border);
   background: var(--archive-event-entry-surface);
 }
-:deep(.archive-filters > input),
-:deep(.archive-filters > select) {
+:deep(.archive-filter-field) {
   width: 100%;
   min-width: 0;
+  display: grid;
+  grid-template-rows: auto 48px;
+  gap: 6px;
+}
+:deep(.archive-filter-field__label) {
+  color: var(--archive-date-label);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+:deep(.archive-filter-field > input),
+:deep(.archive-filter-field > select) {
+  min-width: 0;
+  height: 48px;
 }
 .archive-empty {
-  padding: 45px 24px;
+  padding: 34px 22px;
   border: 1px dashed var(--archive-empty-border);
   border-radius: 20px;
   color: var(--muted);
@@ -195,15 +219,27 @@ defineProps<{
   position: absolute;
   width: 100%;
 }
+@media (max-width: 1023px) {
+  .archive-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+}
 @media (max-width: 720px) {
   .page--archive > .page-heading {
-    min-height: 132px;
-    margin: 4px 0 14px;
-    padding: 22px;
-    border-radius: 24px;
+    min-height: 102px;
+    margin: 4px 0 12px;
+    padding: 15px 18px;
+    border-radius: 20px;
+  }
+  .page--archive > .page-heading :deep(.eyebrow) {
+    display: none;
   }
   .page--archive > .page-heading h1 {
-    font-size: 40px;
+    margin-bottom: 6px;
+    font-size: 32px;
+  }
+  .page--archive > .page-heading p {
+    font-size: 13px;
   }
   .page--archive > .page-heading::after {
     right: -82px;
@@ -211,22 +247,13 @@ defineProps<{
   }
   .archive-composer,
   .archive-panel {
-    padding: 18px;
-    border-radius: 20px;
-  }
-  .archive-filters {
-    grid-template-columns: 1fr 1fr;
-  }
-  :deep(.archive-filters > input:first-child) {
-    grid-column: 1 / -1;
+    padding: 16px;
+    border-radius: 18px;
   }
 }
 @media (max-width: 520px) {
   .archive-filters {
     grid-template-columns: 1fr;
-  }
-  :deep(.archive-filters > input:first-child) {
-    grid-column: auto;
   }
 }
 </style>

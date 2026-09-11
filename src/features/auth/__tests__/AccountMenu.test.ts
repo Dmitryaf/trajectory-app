@@ -23,6 +23,7 @@ describe('AccountMenu', () => {
     expect(wrapper.get('summary').attributes('aria-label')).toBe('Открыть меню аккаунта');
     expect(wrapper.get('.account-menu__chevron').element.tagName).toBe('svg');
     expect(wrapper.get('.account-menu__chevron path').attributes('d')).toBe('m4 6 4 4 4-4');
+    expect(wrapper.findAll('.account-menu__action svg[aria-hidden="true"]')).toHaveLength(2);
     await wrapper.get('.account-menu__logout').trigger('click');
     expect(wrapper.emitted('signOut')).toHaveLength(1);
   });

@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import UiIcon from '@/shared/ui/icons/UiIcon.vue';
+import type { UiIconName } from '@/shared/ui/icons/icons';
+
 withDefaults(
   defineProps<{
     label: string;
+    icon: UiIconName;
     danger?: boolean;
     disabled?: boolean;
   }>(),
@@ -20,7 +24,7 @@ defineEmits<{ click: [event: MouseEvent] }>();
     :disabled="disabled"
     @click="$emit('click', $event)"
   >
-    <slot></slot>
+    <UiIcon :name="icon" />
   </button>
 </template>
 
@@ -30,7 +34,7 @@ defineEmits<{ click: [event: MouseEvent] }>();
   background: transparent;
   color: var(--icon-action-muted);
   cursor: pointer;
-  font-size: 22px;
+  font-size: 21px;
 }
 .icon-action-button--danger:hover {
   color: var(--icon-action-danger);

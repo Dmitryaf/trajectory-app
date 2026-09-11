@@ -74,7 +74,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 10px 13px;
   border: 1px solid var(--today-date-border);
   border-radius: 13px;
   background: var(--today-date-surface);
@@ -84,12 +83,14 @@
 }
 
 .entry-date-control__trigger {
-  width: 100%;
+  width: calc(100% + 2px);
+  min-height: 46px;
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 0;
+  margin: -1px;
+  padding: 10px 13px;
   border: 0;
   background: transparent;
   color: inherit;
@@ -114,62 +115,9 @@
   }
 }
 
-.quick-capture {
-  position: relative;
-  z-index: 2;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin: -36px 18px 26px;
-}
-
-.quick-capture a {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  min-height: 58px;
-  padding: 12px 15px;
-  border: 1px solid var(--quick-capture-border);
-  border-radius: 18px;
-  background: var(--quick-capture-surface);
-  color: var(--navy);
-  text-decoration: none;
-  box-shadow: 0 12px 30px var(--quick-capture-shadow);
-  transition:
-    transform 0.16s ease,
-    box-shadow 0.16s ease;
-}
-
-.quick-capture a:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 34px var(--quick-capture-hover-shadow);
-}
-
-.quick-capture a:nth-child(2) span {
-  color: var(--more-view-event-text);
-  background: var(--archive-event-surface-end);
-}
-
-.quick-capture span {
-  width: 32px;
-  height: 32px;
-  display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: 11px;
-  background: var(--chip-selected-surface);
-  color: var(--more-view-journal-text);
-}
-
-.quick-capture strong {
-  font-size: 13px;
-  line-height: 1.25;
-}
-
 .today-pulse,
 .recovery-nudge,
-.entry-change-notice,
-.current-goal-summary {
+.entry-change-notice {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -179,30 +127,6 @@
   border: 1px solid var(--line);
   border-radius: 18px;
   background: var(--today-summary-surface);
-}
-
-.current-goal-summary {
-  border-color: var(--current-goal-border);
-  background: linear-gradient(135deg, var(--current-goal-surface-start), var(--weekly-rhythm-item-surface));
-}
-
-.current-goal-summary > div {
-  min-width: 0;
-  flex: 1;
-}
-
-.current-goal-summary strong {
-  display: block;
-  margin-top: 3px;
-  overflow-wrap: anywhere;
-  color: var(--navy);
-  font-size: 16px;
-}
-
-.current-goal-summary p {
-  margin: 3px 0 0;
-  color: var(--empty-guide-text);
-  font-size: 13px;
 }
 
 .first-entry-guide {
@@ -324,6 +248,39 @@
   background: var(--checkin-group-divider);
 }
 
+.daily-additional-blocks {
+  grid-column: 1 / -1;
+  padding: 0 18px 18px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--today-summary-surface);
+}
+
+.daily-additional-blocks > summary {
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  color: var(--navy);
+  cursor: pointer;
+  font-weight: 850;
+}
+
+.daily-additional-blocks > summary small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  text-align: right;
+}
+
+.daily-additional-blocks__grid {
+  display: grid;
+  gap: 16px;
+  padding-top: 4px;
+}
+
 .form-card--sleep {
   background: linear-gradient(135deg, var(--sleep-card-glow), var(--quick-capture-surface) 45%);
 }
@@ -336,6 +293,19 @@
 .form-card--direction {
   border-color: var(--direction-card-border);
   background: linear-gradient(135deg, var(--direction-card-glow), var(--quick-capture-surface) 48%);
+}
+
+.form-card--direction .form-card__heading p {
+  overflow-wrap: anywhere;
+}
+
+.form-card--direction-empty {
+  padding-top: 18px;
+  padding-bottom: 18px;
+}
+
+.goal-empty-action {
+  margin-top: -8px;
 }
 
 .form-card--nutrition {
@@ -592,15 +562,10 @@
 
   .today-pulse,
   .recovery-nudge,
-  .entry-change-notice,
-  .current-goal-summary {
+  .entry-change-notice {
     align-items: stretch;
     flex-direction: column;
     padding: 15px;
-  }
-
-  .current-goal-summary .context-action {
-    width: 100%;
   }
 
   .today-pulse > p {
@@ -609,6 +574,21 @@
 
   .checkin-grid--dirty {
     padding-bottom: 64px;
+  }
+
+  .daily-additional-blocks {
+    padding: 0 12px 12px;
+    border-radius: 18px;
+  }
+
+  .daily-additional-blocks > summary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .daily-additional-blocks > summary small {
+    text-align: left;
   }
 
   .floating-save-button {
@@ -666,6 +646,10 @@
 
   .checkin-grid > .form-card--wide {
     grid-column: 1 / -1;
+  }
+
+  .daily-additional-blocks__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

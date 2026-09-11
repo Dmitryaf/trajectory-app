@@ -5,6 +5,7 @@ import { visualDemoAnchor, visualDemoFilePath } from './demo-data';
 const visualStylePath = resolve(process.cwd(), 'e2e/visual-regression.css');
 
 test.beforeEach(async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-08-30T12:00:00.000Z'));
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/settings');
   await page.locator('input[type="file"]').setInputFiles(visualDemoFilePath);

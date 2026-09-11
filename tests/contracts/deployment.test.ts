@@ -28,14 +28,38 @@ const feedbackFunction = readFileSync(new URL('../../api/feedback.ts', import.me
 const clientErrorFunction = readFileSync(new URL('../../api/client-error.ts', import.meta.url), 'utf8');
 const cloudSyncService = readFileSync(new URL('../../src/services/cloudSync.ts', import.meta.url), 'utf8');
 const envExample = readFileSync(new URL('../../.env.example', import.meta.url), 'utf8');
+const indexHtml = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
+const styleTokens = readFileSync(new URL('../../src/styles/tokens.css', import.meta.url), 'utf8');
 const viteConfig = readFileSync(new URL('../../vite.config.ts', import.meta.url), 'utf8');
+const ciWorkflow = readFileSync(new URL('../../.github/workflows/ci.yml', import.meta.url), 'utf8');
+const playwrightConfig = readFileSync(new URL('../../playwright.config.ts', import.meta.url), 'utf8');
+const packageConfig = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')) as {
+  scripts: Record<string, string>;
+};
 
 function cacheControlFor(source: string): string | undefined {
   return config.headers.find((rule) => rule.source === source)?.headers.find((header) => header.key.toLowerCase() === 'cache-control')
     ?.value;
 }
 
+function colorToken(name: string): string {
+  const value = styleTokens.match(new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i'))?.[1];
+  if (!value) {
+    throw new Error(`Missing color token --${name}`);
+  }
+  return value;
+}
+
 describe('deployment configuration', () => {
+  it('keeps one CI runner and fails delivery on flaky browser scenarios', () => {
+    expect(ciWorkflow.match(/^ {4}runs-on:/gm)).toHaveLength(1);
+    expect(ciWorkflow).toContain('run: npm run test:e2e:ci');
+    expect(ciWorkflow).toContain('playwright-report/');
+    expect(packageConfig.scripts['test:e2e:ci']).toContain('--fail-on-flaky-tests');
+    expect(playwrightConfig).toContain('retries: isCI ? 1 : 0');
+    expect(playwrightConfig).toContain("trace: isCI ? 'retain-on-failure' : 'off'");
+  });
+
   it('rewrites user routes to the SPA entry point', () => {
     expect(config.rewrites).toEqual([{ source: spaFallbackSource, destination: '/index.html' }]);
   });
@@ -58,6 +82,15 @@ describe('deployment configuration', () => {
 
   it.each(['/sw.js', '/manifest.webmanifest'])('revalidates %s on every request', (source) => {
     expect(cacheControlFor(source)).toBe('public, max-age=0, must-revalidate');
+  });
+
+  it('keeps installed PWA shell colors aligned with the current interface', () => {
+    const themeColor = colorToken('navy');
+    const backgroundColor = colorToken('page');
+
+    expect(indexHtml).toContain(`<meta name="theme-color" content="${themeColor}" />`);
+    expect(viteConfig).toContain(`theme_color: '${themeColor}'`);
+    expect(viteConfig).toContain(`background_color: '${backgroundColor}'`);
   });
 
   it('keeps beta signup limited by a server-side hook', () => {

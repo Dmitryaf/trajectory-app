@@ -1,69 +1,64 @@
-.journal-guide-card {
-  margin: 18px 0;
-  padding: 18px 20px;
-  border: 1px solid var(--empty-guide-border);
-  border-radius: 18px;
-  background: var(--empty-guide-surface);
-  box-shadow: var(--shadow-soft);
+.page--journal > .page-heading {
+  margin: 8px 2px 20px;
 }
 
-.journal-guide-card p {
-  margin: 6px 0 0;
-  color: var(--empty-guide-text);
-  font-size: 13px;
-  line-height: 1.55;
+.page--journal > .page-heading h1 {
+  font-size: clamp(36px, 4.5vw, 44px);
+  line-height: 1;
 }
 
-.journal-guide-card b {
-  color: var(--more-view-title);
+.page--journal > .page-heading p {
+  max-width: 560px;
+  font-size: 14px;
 }
 
 .more-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: 14px;
 }
 
 .journal-settings-card {
   position: relative;
-  min-height: 116px;
+  min-height: 88px;
   display: grid;
-  grid-template-columns: 46px 1fr auto;
+  grid-template-columns: 40px 1fr auto;
   align-items: center;
-  gap: 14px;
-  margin-top: 16px;
-  padding: 20px 22px;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 15px 18px;
   overflow: hidden;
-  border: 1px solid var(--more-view-primary-border);
-  border-radius: 22px;
-  background: linear-gradient(135deg, var(--more-view-primary-start), var(--more-view-primary-end));
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface-soft);
   color: inherit;
   text-decoration: none;
-  box-shadow: var(--shadow-soft);
   transition:
     transform 0.18s ease,
+    border-color 0.18s ease,
     box-shadow 0.18s ease;
 }
 
 .journal-settings-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+  border-color: var(--more-view-primary-border);
+  box-shadow: var(--shadow-soft);
 }
 
 .journal-settings-card > span {
-  width: 46px;
-  height: 46px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
-  border-radius: 15px;
-  background: var(--navy);
-  color: var(--mint);
-  font-size: 19px;
+  border-radius: 13px;
+  background: var(--chip-selected-surface);
+  color: var(--accent-dark);
+  font-size: 17px;
 }
 
 .journal-settings-card small {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 3px;
   color: var(--archive-date-action);
   font-size: 10px;
   font-weight: 850;
@@ -72,12 +67,13 @@
 }
 
 .journal-settings-card h2 {
-  margin-bottom: 3px;
+  margin-bottom: 2px;
+  font-size: 17px;
 }
 
 .journal-settings-card p {
   margin: 0;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .journal-settings-card > i {
@@ -88,15 +84,15 @@
 
 .more-card {
   position: relative;
-  min-height: 210px;
+  min-height: 168px;
   display: grid;
-  grid-template-columns: 52px 1fr auto;
+  grid-template-columns: 44px 1fr auto;
   align-items: start;
-  gap: 14px;
+  gap: 12px;
   overflow: hidden;
-  padding: 24px;
+  padding: 20px;
   border: 1px solid var(--line);
-  border-radius: 26px;
+  border-radius: 22px;
   background: var(--surface);
   color: inherit;
   text-decoration: none;
@@ -109,17 +105,17 @@
 .more-card::after {
   content: '';
   position: absolute;
-  width: 145px;
-  height: 145px;
-  right: -58px;
-  bottom: -82px;
+  width: 120px;
+  height: 120px;
+  right: -52px;
+  bottom: -74px;
   border-radius: 50%;
   background: var(--journal-glow);
   opacity: 0.5;
 }
 
 .more-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow);
 }
 
@@ -132,14 +128,14 @@
 }
 
 .more-card > span {
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
-  border-radius: 17px;
+  border-radius: 14px;
   background: var(--chip-selected-surface);
   color: var(--more-view-journal-text);
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 850;
 }
 
@@ -150,7 +146,7 @@
 
 .more-card small {
   display: block;
-  margin: 2px 0 14px;
+  margin: 1px 0 8px;
   color: var(--accent-dark);
   font-size: 10px;
   font-weight: 850;
@@ -160,12 +156,13 @@
 
 .more-card h2 {
   margin: 0 0 4px;
-  font-size: 18px;
+  font-size: 17px;
 }
 
 .more-card p {
   margin: 0;
   font-size: 13px;
+  line-height: 1.5;
 }
 
 .more-card > i {
@@ -177,13 +174,34 @@
 }
 
 @media (max-width: 760px) {
+  .page--journal > .page-heading {
+    margin-bottom: 18px;
+  }
+
   .more-grid {
     grid-template-columns: 1fr;
   }
 
   .more-card {
-    min-height: 176px;
-    padding: 20px;
-    border-radius: 22px;
+    min-height: 144px;
+    padding: 18px;
+    border-radius: 20px;
+  }
+}
+
+@media (max-width: 720px) {
+  .page--journal > .page-heading h1 {
+    font-size: 34px;
+  }
+
+  .journal-settings-card {
+    min-height: 84px;
+    padding: 14px 16px;
+  }
+}
+
+@media (max-width: 520px) {
+  .journal-settings-card p {
+    display: none;
   }
 }

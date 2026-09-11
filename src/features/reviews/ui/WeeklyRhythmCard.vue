@@ -2,7 +2,8 @@
 import SurfaceCard from '@/shared/ui/layout/SurfaceCard.vue';
 import SectionHeading from '@/shared/ui/layout/SectionHeading.vue';
 import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
-import { careerStatesForEntry, specialDayLabel } from '@/services/analytics';
+import { careerStatesForEntry } from '@/features/analytics/periodSummary';
+import { specialDayLabel } from '@/features/analytics/presentation';
 import { formatDate, formatMinutes, todayKey } from '@/services/dates';
 import type { DailyEntry } from '@/types';
 

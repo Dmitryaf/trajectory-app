@@ -1,16 +1,22 @@
 <script setup lang="ts">
+import UiIcon from '@/shared/ui/icons/UiIcon.vue';
+
 defineProps<{ title: string; subtitle?: string }>();
 defineEmits<{ previous: []; next: []; current: [] }>();
 </script>
 
 <template>
   <div class="period-nav">
-    <button class="icon-button" type="button" aria-label="Предыдущий период" @click="$emit('previous')">←</button>
+    <button class="icon-button" type="button" aria-label="Предыдущий период" @click="$emit('previous')">
+      <UiIcon name="arrow-left" />
+    </button>
     <button class="period-nav__label" type="button" @click="$emit('current')">
       <strong>{{ title }}</strong>
       <span v-if="subtitle">{{ subtitle }}</span>
     </button>
-    <button class="icon-button" type="button" aria-label="Следующий период" @click="$emit('next')">→</button>
+    <button class="icon-button" type="button" aria-label="Следующий период" @click="$emit('next')">
+      <UiIcon name="arrow-right" />
+    </button>
   </div>
 </template>
 
@@ -28,7 +34,10 @@ defineEmits<{ previous: []; next: []; current: [] }>();
   box-shadow: 0 14px 32px var(--period-navigator-shadow);
 }
 .icon-button {
+  display: grid;
+  place-items: center;
   height: 46px;
+  padding: 0;
   border: 0;
   border-radius: 14px;
   background: var(--period-navigator-control-surface);

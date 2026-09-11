@@ -2,9 +2,10 @@
 import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import SurfaceCard from '@/shared/ui/layout/SurfaceCard.vue';
 import SectionHeading from '@/shared/ui/layout/SectionHeading.vue';
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import ArchivePagination from '../features/journal/ui/ArchivePagination.vue';
+import WeeklyExperimentCards from '../features/experiments/ui/WeeklyExperimentCards.vue';
+import { buildWeeklyExperimentCards } from '../features/experiments/weeklyReview';
 import PeriodAnalysisCard from '../features/reviews/ui/PeriodAnalysisCard.vue';
 import PeriodDetails from '../features/reviews/ui/PeriodDetails.vue';
 import PeriodRecordCard from '../features/reviews/ui/PeriodRecordCard.vue';
@@ -12,6 +13,7 @@ import Pill from '../features/reviews/ui/PeriodPill.vue';
 import ReviewHeading from '../features/reviews/ui/ReviewPageHeading.vue';
 import ReviewNotice from '../features/reviews/ui/ReviewNotice.vue';
 import WeeklyReviewJournalLinks from '../features/reviews/ui/WeeklyReviewJournalLinks.vue';
+import Insight from '@/features/reviews/ui/WeeklyInsightCard.vue';
 import WeeklyReviewOverview from '../features/reviews/ui/WeeklyReviewOverview.vue';
 import WeeklyRhythmCard from '../features/reviews/ui/WeeklyRhythmCard.vue';
 import DecisionFollowUp from '../features/reviews/ui/DecisionFollowUp.vue';
@@ -19,7 +21,6 @@ import { buildDecisionFollowUp } from '../features/reviews/decisionFollowUp';
 import { usePeriodReview } from '../features/reviews/usePeriodReview';
 import AutoGrowTextarea from '../shared/ui/forms/AutoGrowTextarea.vue';
 import FormFieldLabel from '../shared/ui/forms/FormFieldLabel.vue';
-import FormHint from '../shared/ui/forms/FormHint.vue';
 import PeriodNavigator from '../shared/ui/navigation/PeriodNavigator.vue';
 import Badge from '../shared/ui/data-display/CountBadge.vue';
 import PageShell from '../shared/ui/layout/PageShell.vue';
@@ -35,10 +36,8 @@ import {
   specialDayLabel,
   summarize,
   weekSummaryText,
-} from '../services/analytics';
-import { addDays, dateRange, endOfWeek, formatDate, fromDateKey, startOfWeek, todayKey, toDateKey } from '../services/dates';
-import { experimentDecisionLabel, experimentOverlapsRange } from '../features/experiments/model';
-import { experimentWeekStatusLabel, truncateExperimentText } from '../features/experiments/presentation';
+} from '../features/analytics';
+import { addDays, endOfWeek, formatDate, fromDateKey, startOfWeek, todayKey, toDateKey } from '../services/dates';
 import { useAppStore } from '../stores/app';
 import {
   contextFactorOptions,
@@ -47,10 +46,6 @@ import {
   lifeAreaOptions,
   lifeEventTypeOptions,
   resultAreaOptions,
-  type DailyEntry,
-  type Experiment,
-  type ExperimentDecision,
-  type ExperimentRecord,
   type WeeklyReview,
 } from '../types';
 
@@ -114,135 +109,16 @@ const eventRecordItems = computed(() =>
     dateLabel: formatDate(event.date, { weekday: 'short', day: 'numeric' }),
   })),
 );
-type WeekExperimentCard = {
-  id: string;
-  active: boolean;
-  title: string;
-  titlePreview: string;
-  hypothesis: string;
-  conclusion: string;
-  decision: ExperimentDecision | null;
-  statusLabel: string;
-  periodLabel: string;
-  plannedDays: number;
-  completedDays: number;
-  notCompletedDays: number;
-  unmarkedDays: number;
-  totalPlannedDays: number;
-  totalCompletedDays: number;
-  totalNotCompletedDays: number;
-  totalUnmarkedDays: number;
-  notes: DailyEntry[];
-};
-
-const activeExperiment = computed(() => {
-  const experiment = store.settings.experiment;
-  if (!experiment.active || !experimentOverlapsRange(experiment, start.value, end.value)) {
-    return null;
-  }
-  return experiment;
-});
-const completedExperiments = computed(() =>
-  store.settings.experimentHistory.filter((experiment) => experimentOverlapsRange(experiment, start.value, end.value)),
+const experimentCards = computed(() =>
+  buildWeeklyExperimentCards({
+    start: start.value,
+    end: end.value,
+    weekEntries: entries.value,
+    allEntries: store.dailyEntries,
+    activeExperiment: store.settings.experiment,
+    experimentHistory: store.settings.experimentHistory,
+  }),
 );
-const experimentCards = computed<WeekExperimentCard[]>(() => [
-  ...(activeExperiment.value ? [buildExperimentCard('active-experiment', activeExperiment.value, true)] : []),
-  ...completedExperiments.value.map((experiment) => buildExperimentCard(experiment.id, experiment, false)),
-]);
-const openExperimentId = ref('');
-const openExperimentNotesId = ref('');
-const experimentNotePages = reactive<Record<string, number>>({});
-
-watch(
-  () => experimentCards.value.map((experiment) => experiment.id).join('|'),
-  () => {
-    const cards = experimentCards.value;
-    if (!cards.some((experiment) => experiment.id === openExperimentId.value)) {
-      openExperimentId.value = cards.find((experiment) => experiment.active)?.id ?? cards[0]?.id ?? '';
-    }
-    if (!cards.some((experiment) => experiment.id === openExperimentNotesId.value)) {
-      openExperimentNotesId.value = '';
-    }
-  },
-  { immediate: true },
-);
-
-function buildExperimentCard(id: string, experiment: Experiment | ExperimentRecord, active: boolean): WeekExperimentCard {
-  const experimentDays = days.value.filter((day) => day >= experiment.startDate && day <= experiment.endDate);
-  const experimentEntries = entries.value.filter((entry) => entry.experimentId === experiment.id);
-  const marked = experimentEntries.filter((entry) => entry.experimentCompleted !== null);
-  const totalDays = dateRange(experiment.startDate, experiment.endDate);
-  const totalEntries = store.dailyEntries.filter((entry) => entry.experimentId === experiment.id);
-  const totalMarked = totalEntries.filter((entry) => entry.experimentCompleted !== null);
-  const currentWeekStart = startOfWeek(todayKey());
-  const statusLabel = experimentWeekStatusLabel(
-    active,
-    start.value === currentWeekStart,
-    end.value < currentWeekStart,
-    formatDate(experiment.endDate, { weekday: 'short', day: 'numeric' }),
-  );
-  return {
-    id,
-    active,
-    title: experiment.title,
-    titlePreview: truncateExperimentText(experiment.title, 180),
-    hypothesis: experiment.hypothesis,
-    conclusion: experiment.conclusion,
-    decision: experiment.decision,
-    statusLabel,
-    periodLabel: `${formatDate(experiment.startDate, { day: 'numeric', month: 'short' })} — ${formatDate(experiment.endDate, {
-      day: 'numeric',
-      month: 'short',
-    })}`,
-    plannedDays: experimentDays.length,
-    completedDays: marked.filter((entry) => entry.experimentCompleted === true).length,
-    notCompletedDays: marked.filter((entry) => entry.experimentCompleted === false).length,
-    unmarkedDays: Math.max(0, experimentDays.length - marked.length),
-    totalPlannedDays: totalDays.length,
-    totalCompletedDays: totalMarked.filter((entry) => entry.experimentCompleted === true).length,
-    totalNotCompletedDays: totalMarked.filter((entry) => entry.experimentCompleted === false).length,
-    totalUnmarkedDays: Math.max(0, totalDays.length - totalMarked.length),
-    notes: experimentEntries.filter((entry) => entry.experimentNote.trim()),
-  };
-}
-
-function handleExperimentToggle(event: Event, id: string): void {
-  const details = event.currentTarget as HTMLDetailsElement;
-  if (details.open) {
-    openExperimentId.value = id;
-  } else if (openExperimentId.value === id) {
-    openExperimentId.value = '';
-  }
-}
-
-function toggleExperimentNotes(id: string): void {
-  openExperimentNotesId.value = openExperimentNotesId.value === id ? '' : id;
-  if (!experimentNotePages[id]) {
-    experimentNotePages[id] = 1;
-  }
-}
-
-function experimentNotePage(id: string): number {
-  return experimentNotePages[id] ?? 1;
-}
-
-function setExperimentNotePage(id: string, page: number): void {
-  experimentNotePages[id] = page;
-}
-
-function visibleExperimentNote(experiment: WeekExperimentCard): DailyEntry | null {
-  return experiment.notes[experimentNotePage(experiment.id) - 1] ?? null;
-}
-
-function experimentNoteStatus(entry: DailyEntry): string {
-  if (entry.experimentCompleted === true) {
-    return 'Получилось';
-  }
-  if (entry.experimentCompleted === false) {
-    return 'Не получилось';
-  }
-  return 'Без отметки';
-}
 const reviewCues = computed(() =>
   buildReviewCues('week', entries.value, results.value, lifeEvents.value, externalCareerIds.value, contextFactorItems.value),
 );
@@ -342,11 +218,11 @@ watch(
 <template>
   <PageShell class="page--review page--week">
     <ReviewHeading
-      label="Недельная сводка"
       title="Неделя"
       summary="Посмотрите, чем была наполнена неделя, и решите, хотите ли что-то менять."
       :action="hasPeriodData ? (reviewAvailable ? 'К обзору' : 'Обзор позже') : undefined"
       href="#week-review"
+      period="week"
     />
     <PeriodNavigator
       :title="`${formatDate(start, { day: 'numeric', month: 'short' })} — ${formatDate(end, { day: 'numeric', month: 'short' })}`"
@@ -410,20 +286,7 @@ watch(
         </div>
       </article>
 
-      <article v-if="hasDailyData" class="insight-card">
-        <span class="insight-card__mark">⌁</span>
-        <p>{{ summaryText }}</p>
-      </article>
-
-      <PeriodAnalysisCard
-        v-if="hasDailyData || hasJournalData"
-        section-id="ai-analysis"
-        title="На что обратить внимание"
-        :cues="primaryReviewCues"
-        :copying="promptCopying"
-        @copy="copyPrompt"
-        @download="downloadJson"
-      />
+      <Insight v-if="hasDailyData">{{ summaryText }}</Insight>
 
       <section
         v-if="results.length || lifeEvents.length"
@@ -450,6 +313,16 @@ watch(
           pagination-label="событий недели"
         />
       </section>
+
+      <PeriodAnalysisCard
+        v-if="hasDailyData || hasJournalData"
+        content="cues"
+        title="На что обратить внимание"
+        :cues="primaryReviewCues"
+        :copying="promptCopying"
+        @copy="copyPrompt"
+        @download="downloadJson"
+      />
 
       <DecisionFollowUp v-if="decisionFollowUp" :follow-up="decisionFollowUp" />
 
@@ -521,6 +394,17 @@ watch(
         <p>Его можно пропустить — дневные записи и сводка недели останутся на месте.</p>
       </ReviewNotice>
 
+      <PeriodAnalysisCard
+        v-if="hasDailyData || hasJournalData"
+        section-id="ai-analysis"
+        content="external"
+        title="Внешний разбор недели"
+        :cues="primaryReviewCues"
+        :copying="promptCopying"
+        @copy="copyPrompt"
+        @download="downloadJson"
+      />
+
       <PeriodDetails
         v-if="hasDailyData || hasJournalData || experimentCards.length"
         class="week-data-details"
@@ -529,90 +413,7 @@ watch(
       >
         <WeeklyRhythmCard v-if="hasDailyData" :days="rhythmDays" />
 
-        <SurfaceCard v-if="experimentCards.length" kind="dashboard">
-          <SectionHeading>
-            <div>
-              <EyebrowText>Личные проверки</EyebrowText>
-              <h2>Эксперименты в эту неделю</h2>
-            </div>
-            <Badge>{{ experimentCards.length }}</Badge>
-          </SectionHeading>
-          <div class="period-records__content">
-            <details
-              v-for="(experiment, index) in experimentCards"
-              :key="experiment.id"
-              class="period-record-card period-record-card--disclosure experiment-period-card"
-              :open="openExperimentId === experiment.id"
-              @toggle="handleExperimentToggle($event, experiment.id)"
-            >
-              <summary>
-                <span class="period-record-card__heading">
-                  <span
-                    ><EyebrowText>{{ experiment.statusLabel }}</EyebrowText
-                    ><strong>{{ experiment.titlePreview }}</strong
-                    ><EyebrowText>Период: {{ experiment.periodLabel }}</EyebrowText></span
-                  >
-                  <Badge v-if="experiment.notes.length" :aria-label="`Заметок: ${experiment.notes.length}`">
-                    {{ experiment.notes.length }}
-                  </Badge>
-                </span>
-                <span class="period-record-card__breakdown" aria-label="Отметки эксперимента за эту неделю">
-                  <span>За неделю: получилось · {{ experiment.completedDays }}</span>
-                  <span>Не получилось · {{ experiment.notCompletedDays }}</span>
-                  <span>Без отметки · {{ experiment.unmarkedDays }} из {{ experiment.plannedDays }}</span>
-                </span>
-              </summary>
-              <div class="period-record-card__details">
-                <div class="previous-plan">
-                  <EyebrowText>Условие</EyebrowText>
-                  <p>
-                    <strong>{{ experiment.title }}</strong>
-                  </p>
-                  <p v-if="experiment.hypothesis">Что хотите узнать: {{ experiment.hypothesis }}</p>
-                  <p v-if="experiment.conclusion">
-                    <strong>{{ experiment.active ? 'Промежуточное наблюдение:' : 'Что заметили:' }}</strong
-                    ><br />{{ experiment.conclusion }}
-                  </p>
-                  <p v-if="experiment.decision">Дальше: {{ experimentDecisionLabel(experiment.decision).toLocaleLowerCase('ru-RU') }}</p>
-                  <p v-if="experiment.totalPlannedDays !== experiment.plannedDays">
-                    За весь период: получилось {{ experiment.totalCompletedDays }}, не получилось {{ experiment.totalNotCompletedDays }},
-                    без отметки {{ experiment.totalUnmarkedDays }} из {{ experiment.totalPlannedDays }}.
-                  </p>
-                </div>
-                <ActionButton
-                  v-if="experiment.notes.length"
-                  variant="secondary"
-                  type="button"
-                  :aria-expanded="openExperimentNotesId === experiment.id"
-                  :aria-controls="`experiment-notes-${index}`"
-                  @click="toggleExperimentNotes(experiment.id)"
-                >
-                  {{ openExperimentNotesId === experiment.id ? 'Скрыть заметки' : `Заметки этой недели · ${experiment.notes.length}` }}
-                </ActionButton>
-                <FormHint v-else>Заметок за эту неделю нет.</FormHint>
-                <div
-                  v-if="openExperimentNotesId === experiment.id && visibleExperimentNote(experiment)"
-                  :id="`experiment-notes-${index}`"
-                  class="period-record-card__details experiment-note-page"
-                >
-                  <article class="note-item">
-                    <time>{{ formatDate(visibleExperimentNote(experiment)!.date, { weekday: 'short', day: 'numeric' }) }}</time>
-                    <p>
-                      <strong>{{ experimentNoteStatus(visibleExperimentNote(experiment)!) }}</strong
-                      ><br />{{ visibleExperimentNote(experiment)!.experimentNote }}
-                    </p>
-                  </article>
-                  <ArchivePagination
-                    :page="experimentNotePage(experiment.id)"
-                    :page-count="experiment.notes.length"
-                    context-label="заметок эксперимента"
-                    @update:page="setExperimentNotePage(experiment.id, $event)"
-                  />
-                </div>
-              </div>
-            </details>
-          </div>
-        </SurfaceCard>
+        <WeeklyExperimentCards v-if="experimentCards.length" :experiments="experimentCards" />
 
         <SurfaceCard v-if="hasDailyData && actionNotes.length" kind="dashboard">
           <SectionHeading>

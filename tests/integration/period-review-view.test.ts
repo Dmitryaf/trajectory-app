@@ -347,8 +347,17 @@ describe('period review navigation', () => {
 
     const review = wrapper.get('#week-review');
     const details = wrapper.get('details.week-data-details');
+    const records = wrapper.get('.period-records--featured');
+    const observations = wrapper.get('.period-analysis-card:not(#ai-analysis)');
+    const externalAnalysis = wrapper.get('#ai-analysis');
     const reviewContext = review.get('details.review-context-details');
+    expect(records.element.compareDocumentPosition(observations.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(observations.element.compareDocumentPosition(review.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(review.element.compareDocumentPosition(externalAnalysis.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(externalAnalysis.element.compareDocumentPosition(details.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(review.element.compareDocumentPosition(details.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(observations.find('.period-actions').exists()).toBe(false);
+    expect(externalAnalysis.find('.review-cue-grid').exists()).toBe(false);
     expect(wrapper.findAll('.review-cue-grid--primary .review-cue')).toHaveLength(3);
     expect(wrapper.find('.review-cue-grid--additional').exists()).toBe(false);
     expect((reviewContext.element as HTMLDetailsElement).open).toBe(false);
