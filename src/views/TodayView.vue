@@ -9,6 +9,7 @@ import CurrentGoalDialog from '../features/daily-entry/ui/CurrentGoalDialog.vue'
 import { resolveTodayContextCue } from '../features/daily-entry/contextCue';
 import DailyLayoutSettings from '../features/daily-entry/ui/DailyLayoutSettings.vue';
 import { useDailyBlocksDisclosure } from '../features/daily-entry/useDailyBlocksDisclosure';
+import { useCurrentGoalDialog } from '../features/daily-entry/useCurrentGoalDialog';
 import { useTodayContext } from '../features/daily-entry/useTodayContext';
 import FirstUseRecovery from '../features/first-use/ui/FirstUseRecovery.vue';
 import { isFirstUsePrimary } from '../features/first-use/priority';
@@ -33,7 +34,7 @@ import ScalePicker from '../shared/ui/forms/ScalePicker.vue';
 import { experimentTextLimits } from '../features/experiments/model';
 import { useDailyEntryForm } from '../features/daily-entry/useDailyEntryForm';
 import { useAppStore } from '../stores/app';
-import { notifySaved, notifyUnknownError } from '../services/notifications';
+import { notifyUnknownError } from '../services/notifications';
 import { formatDate, formatMinutes, todayKey } from '../services/dates';
 import { buildObservations } from '../features/analytics';
 import {
@@ -59,10 +60,10 @@ import {
 
 const store = useAppStore();
 const entryDateInput = ref<InstanceType<typeof DateInput>>();
-const goalDialogOpen = ref(false);
-const goalSaving = ref(false);
 const firstUsePromptHidden = ref(false);
 const pwaNudgeAvailable = ref(false);
+const { goalDialogOpen, goalSaving, openCurrentGoalDialog, closeCurrentGoalDialog, saveCurrentGoal, removeCurrentGoal } =
+  useCurrentGoalDialog(store);
 const {
   selectedDate,
   sleepDurationMinutes,
@@ -274,40 +275,6 @@ function markRecorded(field: DailyRecordedFieldId) {
 
 function unmarkRecorded(field: DailyRecordedFieldId) {
   form.recordedFields = form.recordedFields.filter((item) => item !== field);
-}
-
-async function saveCurrentGoal(
-  goal: {
-    title: string;
-    outcomeCriterion: string;
-    reviewDate: string;
-    externalEvidenceCriterion: string;
-  },
-  successMessage = 'Текущая цель сохранена',
-) {
-  if (goalSaving.value) {
-    return;
-  }
-  goalSaving.value = true;
-  try {
-    await store.saveSettings({
-      ...store.settings,
-      activeFocusTitle: goal.title,
-      focusOutcomeCriterion: goal.outcomeCriterion,
-      focusReviewDate: goal.reviewDate,
-      externalEvidenceCriterion: goal.externalEvidenceCriterion,
-    });
-    goalDialogOpen.value = false;
-    notifySaved(successMessage);
-  } catch (error) {
-    notifyUnknownError(error, 'Не удалось сохранить цель');
-  } finally {
-    goalSaving.value = false;
-  }
-}
-
-async function removeCurrentGoal() {
-  await saveCurrentGoal({ title: '', outcomeCriterion: '', reviewDate: '', externalEvidenceCriterion: '' }, 'Текущая цель убрана');
 }
 
 function openEntryDatePicker() {
@@ -566,7 +533,7 @@ function openEntryDatePicker() {
             class="card-settings-link"
             type="button"
             aria-haspopup="dialog"
-            @click="goalDialogOpen = true"
+            @click="openCurrentGoalDialog"
           >
             {{ store.settings.activeFocusTitle.trim() ? 'Изменить' : 'Выбрать новую' }}
           </button>
@@ -618,7 +585,7 @@ function openEntryDatePicker() {
           </FormDisclosure>
         </template>
         <div v-else-if="!hasSavedEntry" class="empty-block-note goal-empty-action">
-          <ActionButton variant="secondary" class="context-action" type="button" aria-haspopup="dialog" @click="goalDialogOpen = true">
+          <ActionButton variant="secondary" class="context-action" type="button" aria-haspopup="dialog" @click="openCurrentGoalDialog">
             Выбрать цель
           </ActionButton>
         </div>
@@ -814,7 +781,7 @@ function openEntryDatePicker() {
       :review-date="store.settings.focusReviewDate"
       :external-evidence-criterion="store.settings.externalEvidenceCriterion"
       :saving="goalSaving"
-      @close="goalDialogOpen = false"
+      @close="closeCurrentGoalDialog"
       @remove="removeCurrentGoal"
       @save="saveCurrentGoal"
     />
