@@ -5,7 +5,7 @@ import SectionHeading from '@/shared/ui/layout/SectionHeading.vue';
 import DataNote from '@/shared/ui/content/DataNote.vue';
 import EyebrowText from '@/shared/ui/typography/EyebrowText.vue';
 import { ref } from 'vue';
-import type { EventComparison, EventComparisonMetric } from '@/services/analytics';
+import type { EventComparison, EventComparisonMetric } from '../eventComparison';
 import { formatDate } from '@/services/dates';
 import type { LifeEventRecord } from '@/types';
 import PeriodDetails from '@/features/reviews/ui/PeriodDetails.vue';

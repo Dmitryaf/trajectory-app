@@ -35,7 +35,7 @@ import { useDailyEntryForm } from '../features/daily-entry/useDailyEntryForm';
 import { useAppStore } from '../stores/app';
 import { notifySaved, notifyUnknownError } from '../services/notifications';
 import { formatDate, formatMinutes, todayKey } from '../services/dates';
-import { buildObservations } from '../services/analytics';
+import { buildObservations } from '../features/analytics';
 import {
   actionDirectionEntryOptions,
   activityOptions,

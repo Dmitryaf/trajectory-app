@@ -20,10 +20,7 @@
   --brand-strong: #1d5148;
   --text-inverse-muted: #a9c8be;
   --status-success: #2eaa7f;
-  --status-warning: #d9952f;
-  --status-danger: #b85c4c;
   --status-danger-bright: #eb7458;
-  --status-info: #5264d8;
   --line-soft: #e5ebe8;
   --line-success: #cfe3da;
   --surface-success: #eef9f4;
@@ -80,10 +77,6 @@
   --review-nudge-text: #61718a;
   --count-badge-surface: #e9edf4;
   --count-badge-text: #5b6579;
-  --metric-card-border: #dde7e2;
-  --metric-card-gradient: #f5f9f6;
-  --metric-card-shadow: rgba(16, 45, 44, 0.06);
-  --metric-card-meta: #798296;
   --chart-panel-border: #dfe8e4;
   --chart-panel-gradient: #f6faf8;
   --chart-panel-highlight: rgba(255, 255, 255, 0.9);
@@ -345,10 +338,7 @@
   --settings-card-shadow: rgba(16, 45, 44, 0.065);
 
   /* Secondary screens */
-  --more-view-title: #2f4d45;
   --more-view-primary-border: #cedfd7;
-  --more-view-primary-start: #f8fcfa;
-  --more-view-primary-end: #e4f5ee;
   --more-view-secondary: #477567;
   --more-view-journal-glow: #ffd98a;
   --more-view-journal-text: #176d53;
@@ -479,8 +469,6 @@
   --quick-capture-shadow: rgba(16, 45, 44, 0.12);
   --quick-capture-hover-shadow: rgba(16, 45, 44, 0.16);
   --today-summary-surface: rgba(255, 255, 255, 0.82);
-  --current-goal-border: #cfe5dc;
-  --current-goal-surface-start: #f2faf7;
   --first-entry-border: #bfe2d4;
   --first-entry-surface: #effbf6;
   --first-entry-text: #60706a;

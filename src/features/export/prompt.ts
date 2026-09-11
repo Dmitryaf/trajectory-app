@@ -1,5 +1,6 @@
 import { formatDate, formatMinutes } from '@/services/dates';
-import { summarize, weekSummaryText } from '@/services/analytics';
+import { summarize } from '@/features/analytics/periodSummary';
+import { weekSummaryText } from '@/features/analytics/presentation';
 import { experimentDecisionLabel } from '../experiments/model';
 import type { ExperimentSummary } from '../analytics/experimentComparison';
 import {

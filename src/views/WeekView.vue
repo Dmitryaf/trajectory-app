@@ -36,7 +36,7 @@ import {
   specialDayLabel,
   summarize,
   weekSummaryText,
-} from '../services/analytics';
+} from '../features/analytics';
 import { addDays, dateRange, endOfWeek, formatDate, fromDateKey, startOfWeek, todayKey, toDateKey } from '../services/dates';
 import { experimentDecisionLabel, experimentOverlapsRange } from '../features/experiments/model';
 import { experimentWeekStatusLabel, truncateExperimentText } from '../features/experiments/presentation';

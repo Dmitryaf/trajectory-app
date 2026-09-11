@@ -19,11 +19,10 @@ const hotspotContentBudgets = new Map([
   ['src/features/settings/useSettingsForm.ts', 12359],
 ]);
 const allowedDbOwners = new Set(['src/stores/app.ts', 'src/features/sync/base.ts']);
-const allowedServiceFeatureEdges = new Set(['src/services/analytics.ts']);
-const allowedNonRuntimeModules = new Set(['src/shared/ui/data-display/MetricCard.vue']);
+const allowedServiceFeatureEdges = new Set();
+const allowedNonRuntimeModules = new Set();
 const legacyRouteImplementations = new Set([
   'src/views/MonthView.vue',
-  'src/views/PasswordResetView.vue',
   'src/views/SettingsView.vue',
   'src/views/TodayView.vue',
   'src/views/WeekView.vue',

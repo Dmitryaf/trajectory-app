@@ -1,4 +1,5 @@
-import { buildObservations, entriesForPeriod, factorSummaries, resultsForPeriod, summarize } from '@/services/analytics';
+import { buildObservations, factorSummaries } from '@/features/analytics/observations';
+import { entriesForPeriod, resultsForPeriod, summarize } from '@/features/analytics/periodSummary';
 import { buildExperimentSummary, type ExperimentSummary } from '../analytics/experimentComparison';
 import { experimentOverlapsRange } from '../experiments/model';
 import { addDays, addMonths, endOfMonth, endOfWeek, startOfMonth, startOfWeek, todayKey } from '@/services/dates';

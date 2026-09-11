@@ -1,6 +1,6 @@
 import { computed, type ComputedRef } from 'vue';
 import { shouldShowAiAnalysisNudge } from '@/features/analysis/discovery';
-import { entriesForPeriod, entriesForWeek, summarize } from '@/services/analytics';
+import { entriesForPeriod, entriesForWeek, summarize } from '@/features/analytics/periodSummary';
 import { addDays, endOfMonth, endOfWeek, startOfMonth, startOfWeek, todayKey } from '@/services/dates';
 import { externalCareerIdsForOptions } from '@/types';
 import type { useAppStore } from '@/stores/app';

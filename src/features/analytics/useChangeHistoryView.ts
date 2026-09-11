@@ -1,13 +1,8 @@
 import { computed, ref, watch } from 'vue';
 import type { EChartsCoreOption } from 'echarts/core';
-import {
-  buildEventComparison,
-  buildRangeReviewCues,
-  entriesForPeriod,
-  resultsForPeriod,
-  summarize,
-  type EventComparisonMetric,
-} from '@/services/analytics';
+import { buildEventComparison, type EventComparisonMetric } from './eventComparison';
+import { entriesForPeriod, resultsForPeriod, summarize } from './periodSummary';
+import { buildRangeReviewCues } from './reviewCues';
 import {
   addMonths,
   endOfMonth,

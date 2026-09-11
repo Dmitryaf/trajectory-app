@@ -5,7 +5,7 @@ import { buildEventComparison } from '../eventComparison';
 import { buildObservations, factorSummaries } from '../observations';
 import { entriesForPeriod, entriesForWeek, summarize } from '../periodSummary';
 import { buildRangeReviewCues, buildReviewCues } from '../reviewCues';
-import { weekSummaryText } from '@/services/analytics';
+import { weekSummaryText } from '../presentation';
 import {
   AI_PROMPT_CHARACTER_LIMIT,
   buildAiReportCustomRangePayload,

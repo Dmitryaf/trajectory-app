@@ -10,7 +10,7 @@ import 'vue-sonner/style.css';
 import AccountMenu from './features/auth/ui/AccountMenu.vue';
 import AuthGate from './features/auth/ui/AuthGate.vue';
 import HowItWorksDialog from './features/first-use/ui/HowItWorksDialog.vue';
-import PasswordResetView from './views/PasswordResetView.vue';
+import PasswordResetScreen from './features/auth/ui/PasswordResetScreen.vue';
 import EyebrowText from './shared/ui/typography/EyebrowText.vue';
 import { recordFirstUseReturnEvents } from './features/first-use/funnel';
 import { isFirstUsePrimary } from './features/first-use/priority';
@@ -238,7 +238,7 @@ function isPrimaryNavigationItemActive(item: PrimaryNavigationItem, path: string
 </script>
 
 <template>
-  <PasswordResetView v-if="auth.initialized && auth.recoveryRequired" />
+  <PasswordResetScreen v-if="auth.initialized && auth.recoveryRequired" />
   <div v-else class="app-shell">
     <header class="app-header">
       <RouterLink to="/" class="brand" aria-label="Траектория — главная">

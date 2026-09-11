@@ -11,21 +11,11 @@ const targetGlobalStyles = new Set(targetGlobalStyleOrder);
 const allowedUtilityClasses = new Set(['visually-hidden']);
 const legacyViewStyleBudgets = new Map([
   ['src/views/MonthView.css', 4347],
-  ['src/views/PasswordResetView.css', 1656],
   ['src/views/SettingsView.css', 2586],
   ['src/views/TodayView.css', 11132],
   ['src/views/WeekView.css', 6653],
 ]);
-const allowedUnusedTokens = new Set([
-  '--current-goal-border',
-  '--current-goal-surface-start',
-  '--more-view-primary-end',
-  '--more-view-primary-start',
-  '--more-view-title',
-  '--status-danger',
-  '--status-info',
-  '--status-warning',
-]);
+const allowedUnusedTokens = new Set();
 
 async function collectFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });

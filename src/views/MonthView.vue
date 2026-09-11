@@ -30,7 +30,7 @@ import {
   resultsForPeriod,
   specialDayLabel,
   summarize,
-} from '@/services/analytics';
+} from '@/features/analytics';
 import { addDays, dateRange, endOfMonth, formatDate, fromDateKey, startOfMonth, startOfWeek, todayKey, toDateKey } from '@/services/dates';
 import { buildWeightSeries } from '@/features/analytics/weightSeries';
 import { pageCount, pageItems } from '@/services/pagination';

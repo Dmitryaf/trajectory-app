@@ -1,31 +1,7 @@
-import type { ContextFactorId, DailyEntry, LifeAreaId, Option } from '../types';
-import {
-  actionDirectionOptions,
-  careerOptions,
-  contextFactorOptions,
-  knownActivityOptions,
-  legacyCareerOptions,
-  legacyContextFactorOptions,
-  lifeAreaOptions,
-  specialDayOptions,
-} from '../types';
-import { careerStatesForEntry, type PeriodSummary } from '../features/analytics/periodSummary';
-import { dateRange, endOfMonth, endOfWeek, formatMinutes, startOfMonth, startOfWeek } from './dates';
-
-export { buildCoverageSeries, dataCoverageLevel, type DataCoverageLevel } from '../features/analytics/coverage';
-export { buildEventComparison, type EventComparison, type EventComparisonMetric } from '../features/analytics/eventComparison';
-export { buildObservations, factorSummaries, type FactorSummary, type Observation } from '../features/analytics/observations';
-export {
-  careerStatesForEntry,
-  entriesForMonth,
-  entriesForPeriod,
-  entriesForWeek,
-  hasMovement,
-  resultsForPeriod,
-  summarize,
-  type PeriodSummary,
-} from '../features/analytics/periodSummary';
-export { buildRangeReviewCues, buildReviewCues, ratioPercent, type ReviewCue } from '../features/analytics/reviewCues';
+import type { ContextFactorId, DailyEntry, LifeAreaId, Option } from '@/types';
+import { actionDirectionOptions, contextFactorOptions, legacyContextFactorOptions, lifeAreaOptions, specialDayOptions } from '@/types';
+import { formatMinutes } from '@/services/dates';
+import { careerStatesForEntry, type PeriodSummary } from './periodSummary';
 
 export function weekSummaryText(summary: PeriodSummary, activeAreas: LifeAreaId[], areaOptions: Option[] = lifeAreaOptions): string {
   if (!summary.coveredEntriesCount) {
@@ -77,18 +53,6 @@ export function hasArea(entry: DailyEntry | undefined, area: string): boolean {
     return entry.activities.some((activity) => activity !== 'recovery');
   }
   return entry.lifeAreas.includes(area as LifeAreaId);
-}
-
-export function periodDays(anchor: string, period: 'week' | 'month'): string[] {
-  return period === 'week' ? dateRange(startOfWeek(anchor), endOfWeek(anchor)) : dateRange(startOfMonth(anchor), endOfMonth(anchor));
-}
-
-export function careerLabel(value: string | null): string {
-  return [...careerOptions, ...legacyCareerOptions].find((option) => option.id === value)?.label ?? 'Нет';
-}
-
-export function activityLabel(value: string): string {
-  return knownActivityOptions.find((option) => option.id === value)?.label ?? value;
 }
 
 export function specialDayLabel(value: string | null): string {
