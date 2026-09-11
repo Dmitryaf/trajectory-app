@@ -16,6 +16,41 @@ import {
 
 const routes = ['/', '/week', '/month', '/trends', '/more', '/results', '/events', '/settings'];
 
+async function observeHeightLock(list: Locator) {
+  return list.evaluate(
+    (element) =>
+      new Promise<{ inlineHeight: string; property: string; duration: string }>((resolve) => {
+        const target = element as HTMLElement;
+        let finished = false;
+        const observer = new MutationObserver(readTransition);
+        const timeout = window.setTimeout(() => finish(), 1000);
+
+        function finish() {
+          if (finished) {
+            return;
+          }
+          finished = true;
+          observer.disconnect();
+          window.clearTimeout(timeout);
+          resolve({
+            inlineHeight: target.style.height,
+            property: getComputedStyle(target).transitionProperty,
+            duration: getComputedStyle(target).transitionDuration,
+          });
+        }
+
+        function readTransition() {
+          if (target.style.height && target.style.height !== 'auto') {
+            finish();
+          }
+        }
+
+        observer.observe(target, { attributes: true, attributeFilter: ['style'] });
+        readTransition();
+      }),
+  );
+}
+
 async function expectPeriodDetailsChrome(details: Locator) {
   await expect(details).toHaveCSS('border-top-style', 'solid');
   await expect(details).toHaveCSS('border-top-color', 'rgb(220, 229, 225)');
@@ -510,13 +545,10 @@ test('moves paginated list height smoothly instead of collapsing between pages',
       await expect(pagination.locator('span')).toHaveText(`${currentPage + 1} из ${pageCount}`);
     }
 
+    const heightLockPromise = observeHeightLock(list);
     const samplesPromise = sampleHeights(list, 450);
     await pagination.getByRole('button', { name: 'Дальше' }).click();
-    const activeTransition = await list.evaluate((element) => ({
-      inlineHeight: (element as HTMLElement).style.height,
-      property: getComputedStyle(element).transitionProperty,
-      duration: getComputedStyle(element).transitionDuration,
-    }));
+    const activeTransition = await heightLockPromise;
     expect(activeTransition.inlineHeight, `${scenario.route} at ${scenario.width}px should lock the previous height`).not.toBe('');
     expect(activeTransition.property).toContain('height');
     expect(activeTransition.duration).not.toBe('0s');
