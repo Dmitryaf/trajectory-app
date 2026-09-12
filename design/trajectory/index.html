@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Траектория · сравнение направлений</title>
+    <link rel="stylesheet" href="fonts/lora.css" />
+    <link rel="stylesheet" href="fonts/golostext.css" />
+    <link rel="stylesheet" href="studio.css" />
+  </head>
+  <body>
+    <header class="studio-tools">
+      <div><strong>Траектория / Visual study</strong><small>Изолированные концепты · синтетические данные · без сохранения</small></div>
+      <div class="controls">
+        <label
+          >Направление<select id="direction">
+            <option value="all">A / B / C рядом</option>
+            <option value="a">A · Current Evolved</option>
+            <option value="b">B · Warm Editorial</option>
+            <option value="c">C · Dark Reflective</option>
+          </select></label
+        >
+        <label
+          >Экран<select id="screen">
+            <option value="landing">Landing</option>
+            <option value="today">Сегодня</option>
+            <option value="week">Неделя</option>
+            <option value="history">История</option>
+          </select></label
+        >
+        <label
+          >Данные<select id="data">
+            <option value="full">Заполнено</option>
+            <option value="partial">Частично</option>
+          </select></label
+        >
+        <label
+          >Ширина<select id="viewport">
+            <option value="desktop">Desktop</option>
+            <option value="mobile">Mobile · 390</option>
+          </select></label
+        >
+      </div>
+    </header>
+    <main id="studio" aria-label="Сравнение концептов"></main>
+    <script src="studio.js"></script>
+  </body>
+</html>
