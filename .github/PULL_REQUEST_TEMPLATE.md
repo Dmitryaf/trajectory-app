@@ -4,11 +4,11 @@
 
 ## Как проверено
 
-- [ ] `npm run check`
+- [ ] `npm run check` для кода, конфигурации и зависимостей; для Markdown-only — формат и ссылки по [PROJECT_RULES](https://github.com/Dmitryaf/trajectory-app/blob/develop/.ai-rules/PROJECT_RULES.md)
 - [ ] `npm run test:e2e`, если менялись браузерные действия, маршруты, вход или облачная сверка
 - [ ] `git diff --check`
 - [ ] Изменённый сценарий проверен вручную
-- [ ] Для маршрутов, PWA или Vercel выполнен SPA/PWA-чек-лист из `docs/agent/QUALITY.md`
+- [ ] Для маршрутов, PWA или Vercel выполнена SPA/PWA-проверка из [DELIVERY](https://github.com/Dmitryaf/trajectory-app/blob/develop/docs/operations/DELIVERY.md)
 - [ ] Миграция старых данных проверена, если менялась модель
 - [ ] В diff нет секретов, личных данных и случайных файлов
 

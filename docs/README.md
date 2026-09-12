@@ -1,67 +1,21 @@
 # Документация проекта
 
-Эта страница — единая точка входа во внутреннюю документацию. Документы сгруппированы по назначению, чтобы правила продукта, текущие планы, эксплуатационные инструкции и исторические аудиты не смешивались в одном списке.
+Маршрут для разработчиков и операторов. Читайте источник по вопросу; код и тесты уточняют реализованное поведение. При изменении контракта обновляется его документ.
 
-## С чего начать
+| Вопрос                                                                | Источник                                                      |
+| --------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Назначение продукта, необязательность ввода, язык интерфейса          | [PRODUCT_RULES](product/PRODUCT_RULES.md)                     |
+| Пропуски, знаменатели, выборка, восстановленная неделя, совместимость | [ANALYTICS_DATA_CONTRACT](product/ANALYTICS_DATA_CONTRACT.md) |
+| Устройство кода, владельцы и синхронизация                            | [ARCHITECTURE](development/ARCHITECTURE.md)                   |
+| Регрессии компоновки и измерение производительности                   | [QUALITY](development/QUALITY.md)                             |
+| Ветки, среды и допуск к выпуску                                       | [DELIVERY](operations/DELIVERY.md)                            |
+| Настройка Supabase, регистрации и почтовых API                        | [BACKEND_AUTH_CI](operations/BACKEND_AUTH_CI.md)              |
+| Хранение, доступ, удаление и восстановление данных                    | [DATA_GOVERNANCE](operations/DATA_GOVERNANCE.md)              |
+| Технические ошибки и инциденты                                        | [INCIDENT_RESPONSE](operations/INCIDENT_RESPONSE.md)          |
+| Сквозная ручная проверка                                              | [MANUAL_REGRESSION](operations/MANUAL_REGRESSION.md)          |
+| Установка и проверка PWA на устройствах                               | [PWA_INSTALLATION](operations/PWA_INSTALLATION.md)            |
+| Браузерные источники и приёмка CSP                                    | [SECURITY_HEADERS](operations/SECURITY_HEADERS.md)            |
 
-- [OWNER_GUIDE.md](./OWNER_GUIDE.md) — подробная карта экранов, каталогов, потоков данных, архитектурных решений и выпуска для владельца.
-- [BACKLOG.md](./planning/BACKLOG.md) — текущие приоритеты и [этапы разработки по дополненному аудиту](./planning/BACKLOG.md#план-разработки-по-дополненному-аудиту-11-сентября-2026-года).
-- [PRODUCT_RULES.md](./product/PRODUCT_RULES.md) — обязательные продуктовые ограничения и язык выводов.
-- [ARCHITECTURE.md](./development/ARCHITECTURE.md) — границы модулей и устройство приложения.
-- [DELIVERY.md](./operations/DELIVERY.md) — ветки, проверки, окружения и выпуск релизов.
-- [AGENTS.md](./AGENTS.md) — правила работы AI-агента в репозитории.
+Текущая стратегия, приоритеты и исполнимая работа находятся в [GitHub Project](https://github.com/users/Dmitryaf/projects/1) и [Issues](https://github.com/Dmitryaf/trajectory-app/issues). Project доступен его участникам. Результаты проверок сохраняются в Issue, PR или CI; прежние решения и документы доступны через Git history. Отдельный Markdown-backlog не ведётся.
 
-## Разделы
-
-### `product/` — продукт и данные
-
-- [PRODUCT_RULES.md](./product/PRODUCT_RULES.md) — назначение продукта и ограничения развития.
-- [ANALYTICS_DATA_CONTRACT.md](./product/ANALYTICS_DATA_CONTRACT.md) — семантика данных и аналитических состояний.
-- [CONTEXT_FACTORS.md](./product/CONTEXT_FACTORS.md) — модель контекстных факторов.
-- [BLOCK_CONSTRUCTOR.md](./product/BLOCK_CONSTRUCTOR.md) — ограничения будущего конструктора блоков.
-
-### `development/` — устройство кода
-
-- [ARCHITECTURE.md](./development/ARCHITECTURE.md) — архитектурные границы и зависимости.
-
-### `operations/` — эксплуатация и выпуск
-
-- [DELIVERY.md](./operations/DELIVERY.md) — Git-процесс, CI, staging, production и hotfix.
-- [BETA_RELEASE.md](./operations/BETA_RELEASE.md) — проверка готовности закрытой беты.
-- [PWA_INSTALLATION.md](./operations/PWA_INSTALLATION.md) — установка и ручная матрица мобильной PWA на staging.
-- [MANUAL_REGRESSION.md](./operations/MANUAL_REGRESSION.md) — сквозной ручной regression-чеклист для компьютера, мобильных браузеров и установленной PWA.
-- [BACKEND_AUTH_CI.md](./operations/BACKEND_AUTH_CI.md) — настройка backend, авторизации и CI.
-- [DATA_GOVERNANCE.md](./operations/DATA_GOVERNANCE.md) — работа с пользовательскими данными.
-- [INCIDENT_RESPONSE.md](./operations/INCIDENT_RESPONSE.md) — безопасное наблюдение ошибок и порядок реакции на инциденты.
-- [SECURITY_HEADERS.md](./operations/SECURITY_HEADERS.md) — инвентаризация браузерных источников, CSP Report-Only и staging-приёмка политики заголовков.
-- [HOSTING_MIGRATION.md](./operations/HOSTING_MIGRATION.md) — перенос хостинга.
-- [PUBLIC_REPOSITORY.md](./operations/PUBLIC_REPOSITORY.md) — граница между внутренними и публичными материалами.
-
-### `planning/` — текущая работа
-
-- [BACKLOG.md](./planning/BACKLOG.md) — единый актуальный бэклог.
-- [BETA_RETENTION_RESEARCH_2026-09-12.md](./planning/BETA_RETENTION_RESEARCH_2026-09-12.md) — текущий beta-сигнал, исследовательные основания и минимальная проверка повторной ценности.
-- [BETA_NOTES_2026-07-30.md](./planning/BETA_NOTES_2026-07-30.md) — разбор заметок первой недели беты.
-- [FIRST_USE_STRATEGY.md](./planning/FIRST_USE_STRATEGY.md) — подтверждённая аудитория, обещание и сценарий первого полезного результата.
-
-### `audits/` — датированные снимки состояния
-
-- [2026-07-30-architecture-audit.md](./audits/2026-07-30-architecture-audit.md) — архитектурный снимок ветки `fix/beta-readiness` на commit `d9ee30e`.
-- [2026-08-08-new-user-review.md](./audits/2026-08-08-new-user-review.md) — независимое ревью первого пользовательского сценария.
-- [2026-07-30-git-state.md](./audits/2026-07-30-git-state.md) — датированный аудит Git на момент переработки документации.
-- [SYSTEM_AUDIT_2026-07-22.md](./audits/SYSTEM_AUDIT_2026-07-22.md) — системный аудит на указанную дату.
-- [DAILY_ENTRY_AUDIT.md](./audits/DAILY_ENTRY_AUDIT.md) — аудит ежедневной записи.
-- [DESIGN_AUDIT.md](./audits/DESIGN_AUDIT.md) — UI/UX-аудит 9 сентября и повторная проверка 10 сентября 2026 года: уточнённые доказательства, спецификации N1–N15 и решение `EVOLVE`.
-- [UI_COPY_AUDIT.md](./audits/UI_COPY_AUDIT.md) — аудит текстов интерфейса.
-
-### `agent/` — рабочие инструкции AI-агенту
-
-Начальная страница раздела — [agent/README.md](./agent/README.md). Эти документы задают процесс изменений и критерии качества, но не заменяют продуктовые правила и архитектурные ограничения.
-
-## Правила размещения
-
-- В корне `docs/` остаются эта навигация, `AGENTS.md` и устойчивое руководство владельца.
-- Долгоживущие правила относятся к `product/`, `development/` или `operations/`.
-- Текущие планы и разборы незавершённой работы относятся к `planning/`.
-- Датированный аудит фиксирует прошлое состояние и после исправлений не превращается в актуальный бэклог.
-- Новый документ добавляется в этот индекс, только если он остаётся полезным как самостоятельный источник.
+Вход для coding agents — корневой [AGENTS.md](../AGENTS.md), затем AI Rules Hub и карта в [PROJECT_RULES](../.ai-rules/PROJECT_RULES.md). Общие правила разработки здесь не дублируются.
