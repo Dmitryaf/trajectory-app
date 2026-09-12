@@ -37,9 +37,13 @@ const packageConfig = JSON.parse(readFileSync(new URL('../../package.json', impo
   scripts: Record<string, string>;
 };
 
-function cacheControlFor(source: string): string | undefined {
-  return config.headers.find((rule) => rule.source === source)?.headers.find((header) => header.key.toLowerCase() === 'cache-control')
+function headerFor(source: string, key: string): string | undefined {
+  return config.headers.find((rule) => rule.source === source)?.headers.find((header) => header.key.toLowerCase() === key.toLowerCase())
     ?.value;
+}
+
+function cacheControlFor(source: string): string | undefined {
+  return headerFor(source, 'Cache-Control');
 }
 
 function colorToken(name: string): string {
@@ -82,6 +86,20 @@ describe('deployment configuration', () => {
 
   it.each(['/sw.js', '/manifest.webmanifest'])('revalidates %s on every request', (source) => {
     expect(cacheControlFor(source)).toBe('public, max-age=0, must-revalidate');
+  });
+
+  it('keeps browser connections within the app and Supabase while CSP remains report-only', () => {
+    const policy = headerFor('/(.*)', 'Content-Security-Policy-Report-Only');
+
+    expect(policy).toContain("default-src 'self'");
+    expect(policy).toContain("object-src 'none'");
+    expect(policy).toContain("frame-ancestors 'none'");
+    expect(policy).toContain("connect-src 'self' https://*.supabase.co wss://*.supabase.co");
+    expect(policy).not.toMatch(/report-(?:uri|to)/);
+    expect(headerFor('/(.*)', 'X-Content-Type-Options')).toBe('nosniff');
+    expect(headerFor('/(.*)', 'X-Frame-Options')).toBe('DENY');
+    expect(headerFor('/(.*)', 'Referrer-Policy')).toBe('strict-origin-when-cross-origin');
+    expect(headerFor('/(.*)', 'Permissions-Policy')).toBe('camera=(), geolocation=(), microphone=()');
   });
 
   it('keeps installed PWA shell colors aligned with the current interface', () => {
