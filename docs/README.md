@@ -39,6 +39,7 @@
 ### `planning/` — текущая работа
 
 - [BACKLOG.md](./planning/BACKLOG.md) — единый актуальный бэклог.
+- [BETA_RETENTION_RESEARCH_2026-09-12.md](./planning/BETA_RETENTION_RESEARCH_2026-09-12.md) — текущий beta-сигнал, исследовательные основания и минимальная проверка повторной ценности.
 - [BETA_NOTES_2026-07-30.md](./planning/BETA_NOTES_2026-07-30.md) — разбор заметок первой недели беты.
 - [FIRST_USE_STRATEGY.md](./planning/FIRST_USE_STRATEGY.md) — подтверждённая аудитория, обещание и сценарий первого полезного результата.
 
