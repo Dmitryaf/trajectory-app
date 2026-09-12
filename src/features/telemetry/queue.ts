@@ -18,6 +18,11 @@ export interface TelemetryState {
   busy: boolean;
   pendingWithdrawal: boolean;
   message: string;
+  decision?: 'undecided' | 'allowed' | 'snoozed' | 'declined';
+  firstOfferedAt?: string | null;
+  snoozedUntil?: string | null;
+  reminderCount?: number;
+  serverNow?: number;
 }
 interface Consent {
   enabled: boolean;
@@ -117,7 +122,7 @@ export class TelemetryQueue {
     if (owner) {
       this.restore();
     }
-    this.deps.state.pendingWithdrawal = !!owner && this.read(WITHDRAWAL_KEY + owner) === 'true';
+    this.deps.state.pendingWithdrawal = !!owner && !!this.read(WITHDRAWAL_KEY + owner);
     if (owner) {
       void this.refresh();
     }
@@ -132,7 +137,18 @@ export class TelemetryQueue {
     this.retryAfter = 0;
     this.owner = '';
     this.token = '';
-    Object.assign(this.deps.state, { available: false, enabled: false, busy: false, pendingWithdrawal: false, message: '' });
+    Object.assign(this.deps.state, {
+      available: false,
+      enabled: false,
+      busy: false,
+      pendingWithdrawal: false,
+      message: '',
+      decision: undefined,
+      firstOfferedAt: undefined,
+      snoozedUntil: undefined,
+      reminderCount: undefined,
+      serverNow: undefined,
+    });
   }
   clearDeletedAccount(owner: string) {
     if (owner === this.owner) {
@@ -178,6 +194,14 @@ export class TelemetryQueue {
     this.deps.state.available = knownPolicy;
     this.deps.state.enabled = knownPolicy && consent.enabled && !this.deps.state.pendingWithdrawal;
     this.deps.state.message = '';
+    this.deps.state.serverNow = serverTime;
+    this.deps.state.decision =
+      typeof body.decision === 'string' && ['undecided', 'allowed', 'snoozed', 'declined'].includes(body.decision)
+        ? (body.decision as TelemetryState['decision'])
+        : undefined;
+    this.deps.state.firstOfferedAt = typeof body.first_offered_at === 'string' ? body.first_offered_at : null;
+    this.deps.state.snoozedUntil = typeof body.snoozed_until === 'string' ? body.snoozed_until : null;
+    this.deps.state.reminderCount = typeof body.reminder_count === 'number' ? body.reminder_count : undefined;
     this.persist();
     return true;
   }
@@ -186,7 +210,7 @@ export class TelemetryQueue {
       return;
     }
     if (this.deps.state.pendingWithdrawal) {
-      await this.withdraw();
+      await this.withdraw(this.read(WITHDRAWAL_KEY + this.owner) === 'snooze' ? 'snooze' : 'withdraw');
       return;
     }
     const generation = this.generation;
@@ -229,7 +253,24 @@ export class TelemetryQueue {
       }
     }
   }
-  async withdraw() {
+  async offer(operation: 'offer' | 'reminder'): Promise<boolean> {
+    if (!this.deps.collectionEnabled || !this.revision || this.deps.state.busy || this.deps.state.pendingWithdrawal) {
+      return false;
+    }
+    const generation = this.generation;
+    this.deps.state.busy = true;
+    try {
+      const result = await this.request({ operation, revision: this.revision });
+      return result.status === 200 && this.applyConsent(result.body) && result.body.offered === true;
+    } catch {
+      return false;
+    } finally {
+      if (generation === this.generation) {
+        this.deps.state.busy = false;
+      }
+    }
+  }
+  async withdraw(operation: 'withdraw' | 'snooze' = 'withdraw') {
     if (!this.owner) {
       return;
     }
@@ -241,13 +282,14 @@ export class TelemetryQueue {
     this.events = [];
     this.deps.state.enabled = false;
     this.deps.state.pendingWithdrawal = true;
-    this.write(WITHDRAWAL_KEY + this.owner, 'true');
+    this.deps.state.decision = operation === 'snooze' ? 'snoozed' : 'declined';
+    this.write(WITHDRAWAL_KEY + this.owner, operation === 'snooze' ? 'snooze' : 'true');
     this.persist();
     const generation = this.generation;
     this.deps.state.busy = true;
     this.deps.state.message = 'Сбор на этом устройстве остановлен. Удаление на сервере ожидает подтверждения.';
     try {
-      const result = await this.request({ operation: 'withdraw' });
+      const result = await this.request({ operation });
       if (result.status !== 200) {
         return;
       }
@@ -337,7 +379,7 @@ export class TelemetryQueue {
       return;
     }
     // Another tab can revoke consent; never merge its events into this tab's session.
-    if (this.read(WITHDRAWAL_KEY + this.owner) === 'true') {
+    if (this.read(WITHDRAWAL_KEY + this.owner)) {
       this.deps.state.enabled = false;
       this.deps.state.pendingWithdrawal = true;
       this.events = [];

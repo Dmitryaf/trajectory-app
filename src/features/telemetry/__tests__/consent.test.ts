@@ -15,10 +15,11 @@ vi.mock('../productTelemetry', async () => {
 describe('consent withdrawal control', () => {
   it('allows local withdrawal while the server status check is still pending', async () => {
     const wrapper = mount(TelemetryConsent);
-    const button = wrapper.get('button');
+    const button = wrapper.get('[role=switch]');
     expect(button.attributes('disabled')).toBeUndefined();
     await button.trigger('click');
     expect(productTelemetry.withdraw).toHaveBeenCalledOnce();
+    telemetryState.enabled = false;
     telemetryState.pendingWithdrawal = true;
     await wrapper.vm.$nextTick();
     expect(button.attributes('disabled')).toBeDefined();

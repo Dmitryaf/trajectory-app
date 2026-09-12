@@ -28,6 +28,21 @@ function request(body: unknown, headers: Record<string, string> = {}) {
   });
 }
 describe('first-party ingestion boundary', () => {
+  it('validates preference operations without coercing arbitrary objects and honors the kill switch', async () => {
+    const { handler, process } = setup();
+    for (const operation of ['offer', 'reminder']) {
+      const body = { operation, revision: randomUUID() };
+      expect((await handler(request(body))).status).toBe(200);
+      expect(process).toHaveBeenLastCalledWith('verified-owner', body);
+      expect((await handler(request({ operation }))).status).toBe(400);
+      expect((await handler(request({ ...body, note: 'private' }))).status).toBe(400);
+    }
+    expect((await handler(request({ operation: { toString: null } }))).status).toBe(400);
+    const killed = setup(false).handler;
+    expect((await killed(request({ operation: 'offer', revision: randomUUID() }))).status).toBe(503);
+    expect((await killed(request({ operation: 'reminder', revision: randomUUID() }))).status).toBe(503);
+    expect((await killed(request({ operation: 'snooze' }))).status).toBe(200);
+  });
   it('derives identity exclusively from verified auth and denies missing/deleted users', async () => {
     const { handler, process, getUser } = setup();
     const body = { operation: 'ingest', revision: randomUUID(), events: [event()] };

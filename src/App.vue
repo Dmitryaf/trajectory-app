@@ -26,6 +26,7 @@ import { useAuthStore } from './stores/auth';
 const store = useAppStore();
 const auth = useAuthStore();
 const router = useRouter();
+const ConsentExperience = defineAsyncComponent(() => import('./features/telemetry/ui/ConsentExperience.vue'));
 const FeedbackDialog = defineAsyncComponent(() => import('./features/feedback/ui/FeedbackDialog.vue'));
 const PasswordResetScreen = defineAsyncComponent(() => import('./features/auth/ui/PasswordResetScreen.vue'));
 const canOpenApp = computed(() => auth.initialized && auth.isAuthenticated);
@@ -328,6 +329,7 @@ function isPrimaryNavigationItemActive(item: PrimaryNavigationItem, path: string
           </div>
           <ActionButton :as="RouterLink" variant="secondary" to="/settings#cloud-settings">Настройки синхронизации</ActionButton>
         </section>
+        <ConsentExperience v-if="auth.session?.user.id" :key="auth.session.user.id" />
         <RouterView />
       </template>
     </main>

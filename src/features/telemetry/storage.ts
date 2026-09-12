@@ -3,7 +3,7 @@ export const TELEMETRY_WITHDRAWAL_PREFIX = 'trajectory:telemetry-withdrawal:';
 
 export function hasTelemetryState(owner: string): boolean {
   try {
-    return !!localStorage.getItem(TELEMETRY_STORAGE_KEY) || localStorage.getItem(TELEMETRY_WITHDRAWAL_PREFIX + owner) === 'true';
+    return !!localStorage.getItem(TELEMETRY_STORAGE_KEY) || !!localStorage.getItem(TELEMETRY_WITHDRAWAL_PREFIX + owner);
   } catch {
     return false;
   }

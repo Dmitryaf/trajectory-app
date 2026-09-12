@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { TELEMETRY_STORAGE_KEY, TelemetryQueue, type TelemetryState } from '../queue';
+import { hasTelemetryState } from '../storage';
 
 function setup(collectionEnabled = true) {
   let now = Date.now();
@@ -66,6 +67,58 @@ function setup(collectionEnabled = true) {
 }
 
 describe('consent-aware owner-bound telemetry queue', () => {
+  it('retries a marker-only snooze with collection disabled after the old queue was removed', async () => {
+    const s = setup(false);
+    s.values.set('trajectory:telemetry-withdrawal:a', 'snooze');
+    vi.stubGlobal('localStorage', s.storage);
+    try {
+      expect(hasTelemetryState('a')).toBe(true);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    s.request.mockResolvedValue({
+      status: 200,
+      body: { enabled: false, revision: s.revision, policy_version: 1, server_time: new Date().toISOString(), decision: 'snoozed' },
+    });
+    await s.connect();
+    expect(s.request.mock.calls[0][1]).toEqual({ operation: 'snooze' });
+    expect(s.state.pendingWithdrawal).toBe(false);
+    expect(s.state.enabled).toBe(false);
+  });
+  it.each(['withdraw', 'snooze'] as const)(
+    'persists %s across a new queue instance offline, retries before enabling, and never backfills',
+    async (operation) => {
+      const s = setup();
+      await s.connect();
+      const before = s.queue.capture('daily_entry_saved', { save_kind: 'created', recorded_field_count: 1, entry_count_bucket: '1' });
+      s.request.mockRejectedValue(new Error('offline'));
+      await s.queue.withdraw(operation);
+      before();
+      expect(s.queued()).toHaveLength(0);
+      s.queue.stop();
+      const restarted = new TelemetryQueue(s.deps);
+      restarted.setSession('a', 'token-a');
+      await vi.waitFor(() => expect(s.state.busy).toBe(false));
+      expect(s.state.pendingWithdrawal).toBe(true);
+      await restarted.grant();
+      expect(s.state.enabled).toBe(false);
+      s.request.mockResolvedValue({
+        status: 200,
+        body: {
+          enabled: false,
+          revision: randomUUID(),
+          policy_version: 1,
+          server_time: new Date().toISOString(),
+          decision: operation === 'snooze' ? 'snoozed' : 'declined',
+        },
+      });
+      await restarted.refresh();
+      expect(s.request.mock.calls.at(-1)?.[1]).toEqual({ operation });
+      expect(s.state.pendingWithdrawal).toBe(false);
+      expect(s.state.enabled).toBe(false);
+      expect(s.queued()).toHaveLength(0);
+    },
+  );
   it('removes expired or foreign persisted events even when consent status cannot be fetched offline', async () => {
     const s = setup();
     await s.connect();

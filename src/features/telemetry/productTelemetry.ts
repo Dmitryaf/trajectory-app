@@ -54,6 +54,12 @@ export const productTelemetry = {
   async withdraw() {
     await queue?.withdraw();
   },
+  async snooze() {
+    await queue?.withdraw('snooze');
+  },
+  async offer(kind: 'offer' | 'reminder') {
+    return (await queue?.offer(kind)) ?? false;
+  },
   storageChanged(key: string | null) {
     queue?.storageChanged(key);
   },

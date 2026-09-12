@@ -41,6 +41,7 @@ describe('telemetry migration on PostgreSQL (PGlite)', () => {
       'create schema auth; create table auth.users(id uuid primary key, created_at timestamptz default now()); create role anon; create role authenticated; create role service_role; grant usage on schema public to anon, authenticated, service_role;',
     );
     await db.exec(readFileSync('supabase/migrations/20260912000000_product_telemetry.sql', 'utf8'));
+    await db.exec(readFileSync('supabase/migrations/20260912010000_telemetry_consent_experience.sql', 'utf8'));
   }, 30_000);
   beforeEach(async () => {
     await db.exec('reset role; truncate auth.users cascade;');
@@ -67,6 +68,27 @@ describe('telemetry migration on PostgreSQL (PGlite)', () => {
     await db.exec('grant select on public.product_events to authenticated; set role authenticated;');
     expect((await db.query('select * from public.product_events')).rows).toEqual([]);
     await db.exec('reset role; revoke select on public.product_events from authenticated;');
+  });
+
+  it('reserves one account-wide first offer and one delayed reminder, and never asks after decline', async () => {
+    const initial = await process(a, 'status');
+    expect(initial.decision).toBe('undecided');
+    expect(await process(a, 'offer', initial.revision as string)).toMatchObject({ offered: true, enabled: false });
+    expect(await process(a, 'offer', initial.revision as string)).toMatchObject({ offered: false });
+    const later = await process(a, 'snooze');
+    expect(later).toMatchObject({ decision: 'snoozed', enabled: false, reminder_count: 0 });
+    expect(await process(a, 'reminder', later.revision as string)).toMatchObject({ offered: false });
+    await db.exec(
+      "update public.product_telemetry_consent set first_offered_at = now() - interval '8 days', snoozed_until = now() - interval '1 day'",
+    );
+    expect(await process(a, 'reminder', later.revision as string)).toMatchObject({ offered: true, reminder_count: 1 });
+    expect(await process(a, 'reminder', later.revision as string)).toMatchObject({ offered: false, reminder_count: 1 });
+    const declined = await process(a, 'withdraw');
+    expect(declined.decision).toBe('declined');
+    expect(await process(a, 'offer', declined.revision as string)).toMatchObject({ offered: false });
+    expect(await process(a, 'reminder', declined.revision as string)).toMatchObject({ offered: false });
+    expect(await count('product_events')).toBe(0);
+    expect(await process(a, 'grant', declined.revision as string)).toMatchObject({ enabled: true, decision: 'allowed' });
   });
 
   it('starts disabled and deduplicates stable ids within each owner', async () => {

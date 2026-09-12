@@ -87,7 +87,7 @@ ERROR_FROM_EMAIL=<подтверждённый отправитель>
 
 Состав данных и триггеры — в [OBSERVABILITY_CONTRACT](../product/OBSERVABILITY_CONTRACT.md). Сбор выключен по умолчанию. Настраивать сначала в отдельном staging:
 
-1. Применить миграции, включая `20260912000000_product_telemetry.sql`, и развернуть `product-events` из корня репозитория. Handler использует чистый общий контракт из `src/model`; проверить его включение в bundle функции. JWT-проверка gateway включена, функция дополнительно проверяет пользователя через Auth.
+1. Применить миграции, включая `20260912000000_product_telemetry.sql` и `20260912010000_telemetry_consent_experience.sql`, и развернуть `product-events` из корня репозитория. Handler использует чистый общий контракт из `src/model`; проверить его включение в bundle функции. JWT-проверка gateway включена, функция дополнительно проверяет пользователя через Auth.
 2. Оставить `PRODUCT_TELEMETRY_ENABLED=false`; задать Edge secret `TELEMETRY_ALLOWED_ORIGINS` точным списком origin через запятую, без wildcard, путей и production-origin на staging. Supabase URL и `SUPABASE_SERVICE_ROLE_KEY` берутся из серверного окружения; service-role key не передаётся в Vite/Vercel client config.
 3. Включить Supabase Cron (`pg_cron`) и выполнить [расписание retention](../../supabase/queries/schedule-telemetry-retention.sql). Проверить `cron.job_run_details`, ручной purge на синтетических старых событиях и максимальный возраст строк. Сбой расписания требует остановки сбора до исправления.
 4. Принять публичную политику, реквизиты/контакт оператора, форму согласия, регионы всех подрядчиков, локализацию/трансграничную передачу и фактические сроки резервных копий/логов для выбранной юрисдикции. Opt-in сам по себе не подтверждает соблюдение этих требований.

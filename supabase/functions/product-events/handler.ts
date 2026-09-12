@@ -1,6 +1,6 @@
 import { hasExactKeys, isObject, isProductEvent, isUuid, TELEMETRY_BATCH_LIMIT, TELEMETRY_BODY_LIMIT } from '../../../src/model/productTelemetry.ts';
 
-type Operation = 'status' | 'grant' | 'withdraw' | 'ingest';
+type Operation = 'status' | 'grant' | 'withdraw' | 'ingest' | 'snooze' | 'offer' | 'reminder';
 interface TelemetryRequest { operation: Operation; revision?: string; events?: unknown[] }
 export interface TelemetryDependencies {
   enabled: boolean;
@@ -11,9 +11,9 @@ export interface TelemetryDependencies {
 }
 
 function validRequest(body: unknown, now: number): body is TelemetryRequest {
-  if (!isObject(body)) { return false; }
-  if (body.operation === 'status' || body.operation === 'withdraw') { return hasExactKeys(body, ['operation']); }
-  if (body.operation === 'grant') { return hasExactKeys(body, ['operation', 'revision']) && isUuid(body.revision); }
+  if (!isObject(body) || typeof body.operation !== 'string') { return false; }
+  if (body.operation === 'status' || body.operation === 'withdraw' || body.operation === 'snooze') { return hasExactKeys(body, ['operation']); }
+  if (['grant', 'offer', 'reminder'].includes(body.operation)) { return hasExactKeys(body, ['operation', 'revision']) && isUuid(body.revision); }
   return body.operation === 'ingest' && hasExactKeys(body, ['operation', 'revision', 'events']) &&
     isUuid(body.revision) && Array.isArray(body.events) && body.events.length > 0 &&
     body.events.length <= TELEMETRY_BATCH_LIMIT && body.events.every(event => isProductEvent(event, now));
@@ -61,7 +61,7 @@ export function createTelemetryHandler(dependencies: TelemetryDependencies) {
     let body: unknown;
     try { body = await readBoundedBody(request); } catch { return reply({ error: 'invalid_request' }, 400); }
     if (!validRequest(body, now())) { return reply({ error: 'invalid_request' }, 400); }
-    if (!dependencies.enabled && ['grant', 'ingest'].includes(body.operation)) { return reply({ error: 'collection_disabled' }, 503); }
+    if (!dependencies.enabled && ['grant', 'ingest', 'offer', 'reminder'].includes(body.operation)) { return reply({ error: 'collection_disabled' }, 503); }
     try {
       const user = await dependencies.getUser(token);
       if (!user) { return reply({ error: 'unauthorized' }, 401); }

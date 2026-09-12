@@ -73,6 +73,7 @@ describe('application startup', () => {
         plugins: [pinia, router],
         stubs: {
           FeedbackDialog: true,
+          ConsentExperience: { template: '<div data-testid="consent-slot" />' },
           Toaster: true,
         },
       },
@@ -125,6 +126,7 @@ describe('application startup', () => {
         plugins: [pinia, router],
         stubs: {
           FeedbackDialog: true,
+          ConsentExperience: { template: '<div data-testid="consent-slot" />' },
           Toaster: true,
         },
       },
@@ -136,12 +138,14 @@ describe('application startup', () => {
     expect(wrapper.text()).toContain('Сверяю записи с облаком…');
     expect(wrapper.find('[data-testid="working-screen"]').exists()).toBe(false);
     expect(wrapper.find('.bottom-nav').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="consent-slot"]').exists()).toBe(false);
 
     finishCloudCheck();
     await flushPromises();
 
     expect(wrapper.find('[data-testid="working-screen"]').exists()).toBe(true);
     expect(wrapper.find('.bottom-nav').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="consent-slot"]').exists()).toBe(true);
     expect(funnel.clearFirstUseFunnel).toHaveBeenCalledOnce();
     expect(cloud.subscribe).toHaveBeenCalledWith('user-1', expect.any(Function));
 
