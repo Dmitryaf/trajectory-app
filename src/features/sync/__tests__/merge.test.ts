@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { emptyDailyEntry, defaultSettings } from '@/types';
 import { BACKUP_VERSION } from '@/features/backup/version';
 import type { ExportPayload } from '@/features/backup/snapshot';
-import { mergeCloudSnapshots } from '../merge';
+import { CloudMergeConflictError, mergeCloudSnapshots } from '../merge';
 
 function emptyPayload(): ExportPayload {
   return {
@@ -38,6 +38,57 @@ describe('cloud snapshot merge', () => {
 
     expect(merged.settings.activeFocusTitle).toBe('Новая цель');
     expect(merged.settings.focusOutcomeCriterion).toBe('Готовый результат');
+  });
+
+  it('blocks two different edits to the same field', () => {
+    const entry = { ...emptyDailyEntry('2026-08-20'), energy: 3 };
+    const base = { ...emptyPayload(), dailyEntries: [entry] };
+    const local = { ...base, dailyEntries: [{ ...entry, energy: 4 }] };
+    const remote = { ...base, dailyEntries: [{ ...entry, energy: 2 }] };
+
+    expect(() => mergeCloudSnapshots(base, local, remote)).toThrowError(
+      expect.objectContaining<Partial<CloudMergeConflictError>>({
+        conflicts: [{ path: 'dailyEntries[2026-08-20].energy', kind: 'both_changed' }],
+      }),
+    );
+  });
+
+  it('blocks an edit on one device when the other deleted the same entry', () => {
+    const entry = { ...emptyDailyEntry('2026-08-20'), importantFact: 'Исходная запись' };
+    const base = { ...emptyPayload(), dailyEntries: [entry] };
+    const local = { ...base, dailyEntries: [] };
+    const remote = { ...base, dailyEntries: [{ ...entry, importantFact: 'Изменение с телефона' }] };
+
+    expect(() => mergeCloudSnapshots(base, local, remote)).toThrowError(
+      expect.objectContaining<Partial<CloudMergeConflictError>>({
+        conflicts: [{ path: 'dailyEntries[2026-08-20]', kind: 'edit_delete' }],
+      }),
+    );
+  });
+
+  it('blocks a local edit when the other device deleted the same entry', () => {
+    const entry = { ...emptyDailyEntry('2026-08-20'), importantFact: 'Исходная запись' };
+    const base = { ...emptyPayload(), dailyEntries: [entry] };
+    const local = { ...base, dailyEntries: [{ ...entry, importantFact: 'Изменение с компьютера' }] };
+    const remote = { ...base, dailyEntries: [] };
+
+    expect(() => mergeCloudSnapshots(base, local, remote)).toThrowError(
+      expect.objectContaining<Partial<CloudMergeConflictError>>({
+        conflicts: [{ path: 'dailyEntries[2026-08-20]', kind: 'edit_delete' }],
+      }),
+    );
+  });
+
+  it('blocks different changes to an atomic settings list', () => {
+    const base = emptyPayload();
+    const local = { ...base, settings: { ...base.settings, activeLifeAreas: ['health'] } };
+    const remote = { ...base, settings: { ...base.settings, activeLifeAreas: ['career'] } };
+
+    expect(() => mergeCloudSnapshots(base, local, remote)).toThrowError(
+      expect.objectContaining<Partial<CloudMergeConflictError>>({
+        conflicts: [{ path: 'settings.activeLifeAreas', kind: 'both_changed' }],
+      }),
+    );
   });
 
   it('preserves two new journal records that received the same local id', () => {

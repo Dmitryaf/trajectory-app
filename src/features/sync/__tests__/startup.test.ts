@@ -5,7 +5,7 @@ import type { CloudSnapshot, CloudSyncMeta } from '@/services/cloudSync';
 import { useAppStore } from '@/stores/app';
 import { defaultSettings, emptyDailyEntry } from '@/types';
 
-vi.mock('../base', () => ({ saveCloudSyncBase: vi.fn() }));
+vi.mock('../base', () => ({ loadCloudSyncBase: vi.fn(), saveCloudSyncBase: vi.fn() }));
 
 const emptyMeta: CloudSyncMeta = {
   lastCloudUpdatedAt: '',
@@ -27,10 +27,16 @@ function createStore() {
   return store;
 }
 
-function createServices(snapshot: CloudSnapshot | null, meta: Partial<CloudSyncMeta> = {}) {
+function createServices(
+  snapshot: CloudSnapshot | null,
+  meta: Partial<CloudSyncMeta> = {},
+  base: { revision: number; snapshot: unknown } | null = null,
+) {
   return {
     loadSnapshot: vi.fn().mockResolvedValue(snapshot),
+    loadBase: vi.fn().mockResolvedValue(base),
     getMeta: vi.fn(() => ({ ...emptyMeta, ...meta })),
+    markConflict: vi.fn(),
     markSynced: vi.fn(),
   };
 }
@@ -53,7 +59,7 @@ describe('startup cloud reconciliation', () => {
     const store = createStore();
     store.settings.activeFocusTitle = 'Локальная цель';
     const snapshot = { payload: { version: 3 }, updatedAt: '2026-07-22T10:00:00.000Z', userId: 'user-1', revision: 2 };
-    const services = createServices(snapshot);
+    const services = createServices(snapshot, {}, { revision: 1, snapshot: store.exportData() });
 
     expect(hasLocalUserData(store)).toBe(true);
     await reconcileCloudSnapshotOnStartup(store, 'user-1', services);
@@ -77,7 +83,11 @@ describe('startup cloud reconciliation', () => {
     const store = createStore();
     store.dailyEntries = [emptyDailyEntry('2026-07-21')];
     const snapshot = { payload: { version: 3 }, updatedAt: '2026-07-22T10:00:00.000Z', userId: 'user-1', revision: 5 };
-    const services = createServices(snapshot, { lastCloudUpdatedAt: '2026-07-21T10:00:00.000Z' });
+    const services = createServices(
+      snapshot,
+      { lastCloudUpdatedAt: '2026-07-21T10:00:00.000Z' },
+      { revision: 4, snapshot: store.exportData() },
+    );
 
     await reconcileCloudSnapshotOnStartup(store, 'user-1', services);
 
@@ -89,7 +99,11 @@ describe('startup cloud reconciliation', () => {
     const store = createStore();
     store.dailyEntries = [emptyDailyEntry('2026-07-21')];
     const snapshot = { payload: { version: 3 }, updatedAt: '2026-07-22T10:00:00.000Z', userId: 'user-1', revision: 6 };
-    const services = createServices(snapshot, { lastCloudUpdatedAt: '2026-07-21T10:00:00.000Z' });
+    const services = createServices(
+      snapshot,
+      { lastCloudUpdatedAt: '2026-07-21T10:00:00.000Z' },
+      { revision: 5, snapshot: store.exportData() },
+    );
 
     await reconcileCloudSnapshotAfterResume(store, 'user-1', services);
 
@@ -139,7 +153,7 @@ describe('startup cloud reconciliation', () => {
     });
   });
 
-  it('replaces a stale conflict with the current cloud snapshot', async () => {
+  it('keeps local data when a known conflict still differs from the cloud snapshot', async () => {
     const store = createStore();
     store.settings.activeFocusTitle = 'Локальная цель';
     const updatedAt = '2026-07-22T10:00:00.000+00:00';
@@ -152,9 +166,55 @@ describe('startup cloud reconciliation', () => {
 
     await reconcileCloudSnapshotOnStartup(store, 'user-1', services);
 
-    expect(store.importData).toHaveBeenCalledWith(cloudPayload, { syncCloud: false, preserveDailyDrafts: true });
+    expect(store.importData).not.toHaveBeenCalled();
     expect(store.syncCloudSnapshot).not.toHaveBeenCalled();
-    expect(services.markSynced).toHaveBeenCalledWith('user-1', updatedAt, 9);
+    expect(services.markSynced).not.toHaveBeenCalled();
+    expect(store.setCloudSyncState).toHaveBeenCalledWith(
+      'conflict',
+      'Локальная и облачная версии изменены по-разному. Автоматическая запись остановлена; обе версии сохранены.',
+    );
+  });
+
+  it('keeps both versions when sync metadata and a trusted base are missing', async () => {
+    const store = createStore();
+    store.settings.activeFocusTitle = 'Локальная цель';
+    const cloudPayload = {
+      ...store.exportData(),
+      settings: { ...store.settings, activeFocusTitle: 'Облачная цель' },
+    };
+    const snapshot = {
+      payload: cloudPayload,
+      updatedAt: '2026-07-22T10:00:00.000Z',
+      userId: 'user-1',
+      revision: 10,
+    };
+    const services = createServices(snapshot);
+
+    await reconcileCloudSnapshotOnStartup(store, 'user-1', services);
+
+    expect(store.importData).not.toHaveBeenCalled();
+    expect(store.syncCloudSnapshot).not.toHaveBeenCalled();
+    expect(services.markConflict).toHaveBeenCalledWith('user-1', snapshot.updatedAt, 10);
+    expect(store.cloudConflictSnapshot).toEqual(snapshot);
+  });
+
+  it('reconciles through the guarded merge when local data changed after the stored base', async () => {
+    const store = createStore();
+    const baseSnapshot = JSON.parse(JSON.stringify(store.exportData()));
+    store.settings.activeFocusTitle = 'Новая локальная цель';
+    const snapshot = {
+      payload: { version: 3 },
+      updatedAt: '2026-07-22T10:00:00.000Z',
+      userId: 'user-1',
+      revision: 11,
+    };
+    const services = createServices(snapshot, {}, { revision: 9, snapshot: baseSnapshot });
+
+    await reconcileCloudSnapshotOnStartup(store, 'user-1', services);
+
+    expect(store.syncCloudSnapshot).toHaveBeenCalledWith({ force: true });
+    expect(store.importData).not.toHaveBeenCalled();
+    expect(services.markSynced).not.toHaveBeenCalled();
   });
 
   it('keeps local data available when the cloud check fails', async () => {
@@ -169,6 +229,24 @@ describe('startup cloud reconciliation', () => {
       error: 'network unavailable',
     });
     expect(store.cloudSyncError).toBe('network unavailable');
+    warning.mockRestore();
+  });
+
+  it('keeps a persisted conflict blocked when the cloud cannot be checked after reload', async () => {
+    const store = createStore();
+    const services = createServices(null, { conflict: true });
+    services.loadSnapshot.mockRejectedValue(new Error('network unavailable'));
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    await reconcileCloudSnapshotOnStartup(store, 'user-1', services);
+
+    expect(store.setCloudSyncState).toHaveBeenCalledWith(
+      'conflict',
+      'Автозапись остановлена: для выбора между версиями нужно снова проверить облако.',
+      { error: 'network unavailable' },
+    );
+    expect(store.importData).not.toHaveBeenCalled();
+    expect(store.syncCloudSnapshot).not.toHaveBeenCalled();
     warning.mockRestore();
   });
 
