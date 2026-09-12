@@ -1,6 +1,8 @@
 /* global document, URLSearchParams, location, history */
 const settings = { direction: 'all', screen: 'landing', data: 'full', viewport: 'mobile' };
 const params = new URLSearchParams(location.search);
+const canvasOnly = params.get('canvas') === '1';
+document.body.classList.toggle('canvas-only', canvasOnly);
 for (const key of Object.keys(settings)) {
   const select = document.getElementById(key);
   if ([...select.options].some((option) => option.value === params.get(key))) {
@@ -9,11 +11,34 @@ for (const key of Object.keys(settings)) {
   select.value = settings[key];
   select.addEventListener('change', () => {
     settings[key] = select.value;
-    history.replaceState(null, '', '?' + new URLSearchParams(settings));
+    updateUrl();
     render();
   });
 }
-const names = { a: 'A · Current Evolved', b: 'B · Warm Editorial', c: 'C · Dark Reflective' };
+const names = {
+  a: 'A · Current Evolved',
+  b: 'B · Warm Editorial',
+  c: 'C · Dark Reflective',
+  b1: 'B1 · Editorial Pure',
+  b2: 'B2 · Warm Organic',
+  b3: 'B3 · Atmospheric Editorial',
+  b4: 'B4 · Reflective Journal',
+};
+const warmVariants = ['b1', 'b2', 'b3', 'b4'];
+let historyRange = 'all';
+function updateUrl() {
+  const query = new URLSearchParams(settings);
+  if (canvasOnly) query.set('canvas', '1');
+  history.replaceState(null, '', '?' + query);
+}
+document.querySelectorAll('[data-direction]').forEach((button) => {
+  button.addEventListener('click', () => {
+    settings.direction = button.dataset.direction;
+    document.getElementById('direction').value = settings.direction;
+    updateUrl();
+    render();
+  });
+});
 const titles = { landing: 'Landing', today: 'Сегодня', week: 'Неделя', history: 'История' };
 const brand = `<span class="wordmark"><svg class="brand-path" viewBox="0 0 28 32" fill="none" aria-hidden="true"><path d="M4 28V20C4 14 23 17 23 9V3M4 28L1 24M23 3L26 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>Траектория</span>`;
 const series = () => (settings.data === 'full' ? [3, 4, 2, 3, 4, null, 4] : [3, null, null, null, 4, null, null]);
@@ -46,12 +71,15 @@ function example() {
   const partial = settings.data === 'partial';
   return `<aside class="example"><p class="eyebrow">Одна неделя · пример</p><p><strong>7–13 сентября</strong></p><p class="quote">«Казалось, ничего<br>не произошло»</p><div class="fact">Завершён первый черновик статьи<small>Результат · пятница</small></div>${partial ? '' : '<div class="fact">Прогулка с сестрой у реки<small>Событие · воскресенье</small></div>'}<div class="fact">Энергия ${average(series())} из 5<small>По ${series().filter((v) => v !== null).length} записям из 7 дней. Остальное неизвестно.</small></div><p class="muted" style="margin:18px 0 0">Этого достаточно, чтобы вспомнить конкретные моменты. Что они значат для вас — решаете вы.</p></aside>`;
 }
-function landing() {
+function productPreviews(id) {
+  return `<section class="section product-previews"><h2>Записи, обзор, история</h2><p class="muted">Один и тот же вымышленный период на трёх экранах.</p><div class="preview-grid">${['today', 'week', 'history'].map((screen) => `<figure><a href="#" data-screen="${screen}"><img src="previews/${id}-${screen}.jpg" width="560" height="700" alt="${titles[screen]}: пример экрана Траектории" loading="lazy"></a><figcaption>${titles[screen]}</figcaption></figure>`).join('')}</div></section>`;
+}
+function landing(id) {
   return `<header class="topbar">${brand}<a class="login" href="#" data-demo="В будущем — отдельный экран входа. Сейчас это дизайн-концепт.">Войти</a></header><div class="content">
-  <section class="hero"><div><p class="eyebrow">Личные записи · взгляд на период</p><h1>Неделя была.<br>Что в ней осталось?</h1><p class="lead">Иногда кажется, что ничего не произошло. Короткие записи помогают вспомнить результаты, события и своё состояние — и увидеть период полнее.</p><div class="actions"><a class="button" href="#" data-demo="Попробовать: создать аккаунт → подтвердить email → войти → по желанию восстановить прошедшую неделю.">Попробовать</a><a href="#example" data-example>Посмотреть пример ↓</a></div><small class="caption">Начать с аккаунта. Ежедневные записи необязательны.</small></div>${example()}</section>
-  <section class="section" id="example"><p class="eyebrow">От записи к собственному пониманию</p><h2>Без необходимости<br>оценивать всю жизнь</h2><div class="steps"><div><span class="step-number">01 / ЗАПИСАТЬ</span><h3>Оставьте то, что важно</h3><p class="muted">Результат, событие или состояние. Любые поля можно пропустить.</p></div><div><span class="step-number">02 / УВИДЕТЬ</span><h3>Вернитесь к периоду</h3><p class="muted">Посмотрите записи рядом. Пропуски останутся пропусками.</p></div><div><span class="step-number">03 / ОСМЫСЛИТЬ</span><h3>Сделайте свой вывод</h3><p class="muted">Можно записать наблюдение или решение. Можно просто вспомнить.</p></div></div></section>
+  <section class="hero"><div><p class="eyebrow">Личные записи · взгляд на период</p><h1>Неделя была.<br>Что в ней осталось?</h1><p class="lead">Иногда кажется, что ничего не произошло. Короткие записи помогают вспомнить результаты, события и своё состояние — и увидеть период полнее.</p><div class="actions"><a class="button" href="#" data-demo="Попробовать: создать аккаунт → подтвердить email → войти → по желанию восстановить прошедшую неделю.">Попробовать</a><a href="#example-${id}" data-example>Посмотреть пример ↓</a></div><small class="caption">Начать с аккаунта. Ежедневные записи необязательны.</small></div>${example()}</section>
+  <section class="section" id="example-${id}"><p class="eyebrow">От записи к собственному пониманию</p><h2>Без необходимости<br>оценивать всю жизнь</h2><div class="steps"><div><span class="step-number">01 / ЗАПИСАТЬ</span><h3>Оставьте то, что важно</h3><p class="muted">Результат, событие или состояние. Любые поля можно пропустить.</p></div><div><span class="step-number">02 / УВИДЕТЬ</span><h3>Вернитесь к периоду</h3><p class="muted">Посмотрите записи рядом. Пропуски останутся пропусками.</p></div><div><span class="step-number">03 / ОСМЫСЛИТЬ</span><h3>Сделайте свой вывод</h3><p class="muted">Можно записать наблюдение или решение. Можно просто вспомнить.</p></div></div></section>
   <section class="section privacy"><div><p class="eyebrow">Ваши записи</p><h2>Вы выбираете,<br>чем делиться</h2></div><div><p>Записи можно выгрузить. Аккаунт и связанные данные можно удалить в Настройках.</p><p>Статистика использования — только с разрешения, без содержимого записей. Передача во внешнюю нейросеть — вручную, по вашему выбору.</p><p class="muted">В аккаунте записи синхронизируются с сервером. Условия обработки и сведения об операторе будут доступны до регистрации.</p></div></section>
-  <section class="section"><h2>Можно начать<br>с прошедшей недели</h2><p>Вспомните один момент. Этого достаточно для первой записи.</p><a class="button" href="#" data-demo="Следующий шаг — регистрация. Здесь аккаунт не создаётся.">Попробовать</a><p class="demo-status" role="status"></p></section><footer class="footer"><span>Траектория</span><span>Концепт публичного входа</span><span>Пример составлен из вымышленных записей</span></footer></div>`;
+  ${warmVariants.includes(id) ? productPreviews(id) : ''}<section class="section"><h2>Можно начать<br>с прошедшей недели</h2><p>Вспомните один момент. Этого достаточно для первой записи.</p><a class="button" href="#" data-demo="Следующий шаг — регистрация. Здесь аккаунт не создаётся.">Попробовать</a><p class="demo-status" role="status"></p></section><footer class="footer"><span>Траектория</span><span>Концепт публичного входа</span><span>Пример составлен из вымышленных записей</span></footer></div>`;
 }
 function shell(screen, body) {
   return `<header class="topbar">${brand}<a class="login" href="#" data-demo="Настройки в концепте не подключены к аккаунту.">Настройки</a></header><nav class="appnav" aria-label="Разделы концепта">${[
@@ -85,6 +113,22 @@ function week(id) {
   <section class="block"><h2>Своими словами</h2><p class="reflection">${partial ? 'Пока хочется просто сохранить черновик статьи как один из моментов недели. По нескольким записям не получается вспомнить весь период. Можно вернуться к этому позже — или оставить как есть.' : 'В начале недели казалось, что всё время уходит на мелочи. Сейчас вижу законченный черновик и встречу, которую давно откладывал. В записях есть и усталость, и интерес. Не хочу сводить их к одной оценке. На следующей неделе попробую оставлять короткую заметку после работы, если будет желание.'}</p><button class="secondary" type="button" data-demo="Здесь будет редактирование обзора. Записи концепта не сохраняются.">Изменить обзор</button></section>`,
   );
 }
+function historyFilters(id) {
+  return `<div class="history-filters"><label for="range-${id}">Периоды в таблице<select id="range-${id}" data-history-range><option value="all">10 августа — 13 сентября 2026</option><option value="september">Недели с днями сентября</option><option value="august">Недели только августа</option></select></label><p class="caption" data-filter-status role="status"></p></div>`;
+}
+function applyHistoryFilter() {
+  document.querySelectorAll('.prototype').forEach((prototype) => {
+    const select = prototype.querySelector('[data-history-range]');
+    if (!select) return;
+    select.value = historyRange;
+    const rows = [...prototype.querySelectorAll('[data-period]')];
+    for (const row of rows) {
+      row.hidden = historyRange !== 'all' && row.dataset.period !== historyRange;
+    }
+    prototype.querySelector('[data-filter-status]').textContent =
+      'Периодов в таблице: ' + rows.filter((row) => !row.hidden).length + ' из 5. Остальные разделы показывают исходный период.';
+  });
+}
 function historyScreen(id) {
   const partial = settings.data === 'partial';
   const rows = [
@@ -96,19 +140,32 @@ function historyScreen(id) {
   ];
   return shell(
     'history',
-    `<div class="page-heading"><div><p class="eyebrow">История · август — сентябрь</p><h1>Периоды рядом</h1><p class="muted">Разная полнота записей остаётся видимой.</p></div><span class="date-picker">5 недель</span></div><section class="block"><h2>Последняя неделя</h2>${chart(id)}</section><section class="block"><h2>Энергия по неделям</h2><div class="table-wrap"><table><caption>Средние собственных оценок · шкала 1–5; не оценка периода</caption><thead><tr><th>Неделя</th><th>Среднее</th><th>n / 7</th></tr></thead><tbody>${rows.map((row) => `<tr><td>${row[0]}</td><td>${row[1]}</td><td>${row[2]} / 7</td></tr>`).join('')}</tbody></table></div><div class="observation quality"><span class="kind">Данные</span><p>24–30 августа нет записей об энергии. Пропуск не означает нулевую энергию или пустую неделю.</p></div></section><section class="block"><h2>К чему вернуться</h2><div class="record"><time>7–13 сентября · обзор</time><p class="reflection">Завершённый черновик помог вспомнить неделю конкретнее. Из этого не обязательно делать новое правило.</p></div><div class="record"><time>17–23 августа · решение</time><p>Оставить вечер среды без планов. Вернуться к этому в следующем обзоре.</p></div></section>`,
+    `<div class="page-heading"><div><p class="eyebrow">История · август — сентябрь</p><h1>Периоды рядом</h1><p class="muted">Разная полнота записей остаётся видимой.</p></div><span class="date-picker">5 недель</span></div>${warmVariants.includes(id) ? historyFilters(id) : ''}<section class="block"><h2>Последняя неделя</h2>${chart(id)}</section><section class="block"><h2>Энергия по неделям</h2><div class="table-wrap"><table><caption>Средние собственных оценок · шкала 1–5; не оценка периода</caption><thead><tr><th>Неделя</th><th>Среднее</th><th>n / 7</th></tr></thead><tbody>${rows.map((row) => `<tr data-period="${row[0].includes('сент') ? 'september' : 'august'}"><td>${row[0]}</td><td>${row[1]}</td><td>${row[2]} / 7</td></tr>`).join('')}</tbody></table></div><div class="observation quality"><span class="kind">Данные</span><p>24–30 августа нет записей об энергии. Пропуск не означает нулевую энергию или пустую неделю.</p></div></section><section class="block"><h2>К чему вернуться</h2><div class="record"><time>7–13 сентября · обзор</time><p class="reflection">Завершённый черновик помог вспомнить неделю конкретнее. Из этого не обязательно делать новое правило.</p></div><div class="record"><time>17–23 августа · решение</time><p>Оставить вечер среды без планов. Вернуться к этому в следующем обзоре.</p></div></section>`,
   );
 }
 function render() {
   const studio = document.getElementById('studio');
-  const directions = settings.direction === 'all' ? ['a', 'b', 'c'] : [settings.direction];
-  studio.className = directions.length === 3 ? 'compare' : '';
+  const directions =
+    settings.direction === 'all' ? warmVariants : settings.direction === 'historical' ? ['a', 'b', 'c'] : [settings.direction];
+  studio.className = directions.length > 1 ? 'compare' : '';
+  studio.style.setProperty('--comparison-count', directions.length);
+  document
+    .querySelectorAll('[data-direction]')
+    .forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.direction === settings.direction)));
   studio.innerHTML = directions
     .map(
       (id) =>
-        `<article class="frame ${settings.viewport === 'mobile' ? 'mobile' : ''}"><h2 class="concept-label">${names[id]} / ${titles[settings.screen]} / ${settings.data === 'full' ? 'заполнено' : 'частично'}</h2><div class="prototype theme-${id}" data-concept="${id}">${settings.screen === 'landing' ? landing() : settings.screen === 'today' ? today(id) : settings.screen === 'week' ? week(id) : historyScreen(id)}</div></article>`,
+        `<article class="frame ${settings.viewport === 'mobile' ? 'mobile' : ''}"><h2 class="concept-label">${names[id]} / ${titles[settings.screen]} / ${settings.data === 'full' ? 'заполнено' : 'частично'}</h2><div class="prototype ${warmVariants.includes(id) ? 'theme-b warm-variant' : ''} theme-${id} surface-${settings.screen}" data-concept="${id}">${settings.screen === 'landing' ? landing(id) : settings.screen === 'today' ? today(id) : settings.screen === 'week' ? week(id) : historyScreen(id)}</div></article>`,
     )
     .join('');
+  studio.querySelectorAll('[data-history-range]').forEach((select) => {
+    select.value = historyRange;
+    select.addEventListener('change', () => {
+      historyRange = select.value;
+      applyHistoryFilter();
+    });
+  });
+  applyHistoryFilter();
   studio.querySelectorAll('[data-tooltip]').forEach((point) => {
     const show = () => {
       point.closest('.block').querySelector('.tooltip').textContent = point.dataset.tooltip;
@@ -121,6 +178,7 @@ function render() {
       event.preventDefault();
       settings.screen = link.dataset.screen;
       document.getElementById('screen').value = settings.screen;
+      updateUrl();
       render();
     }),
   );
