@@ -758,7 +758,7 @@ test('explains the app from the permanent help button', async ({ page }) => {
   await page.getByRole('button', { name: 'Закрыть объяснение' }).click();
   await expect(page.getByRole('button', { name: 'Как работает приложение' })).toBeFocused();
   await expect(page.locator('body')).not.toHaveCSS('position', 'fixed');
-  expect(await page.evaluate(() => window.scrollY)).toBe(scrollBeforeOpen);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrollBeforeOpen);
 
   await page.getByRole('button', { name: 'Как работает приложение' }).click();
   await dialog.getByRole('link', { name: 'Настроить записи' }).click();
