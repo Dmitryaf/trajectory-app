@@ -1,21 +1,32 @@
 import type { useAppStore } from '@/stores/app';
 import { defaultSettings } from '@/types';
-import { normalizeSnapshot } from '../backup/snapshot';
-import { getCloudSyncMeta, loadCloudSnapshot, markCloudSyncSynced, type CloudSnapshot, type CloudSyncMeta } from '@/services/cloudSync';
+import { normalizeSnapshot, type ExportPayload } from '../backup/snapshot';
+import {
+  getCloudSyncMeta,
+  loadCloudSnapshot,
+  markCloudSyncConflict,
+  markCloudSyncSynced,
+  type CloudSnapshot,
+  type CloudSyncMeta,
+} from '@/services/cloudSync';
 import { applyCloudSnapshot, formatCloudUpdatedAt } from './snapshot';
-import { saveCloudSyncBase } from './base';
+import { loadCloudSyncBase, saveCloudSyncBase } from './base';
 
 type AppStore = ReturnType<typeof useAppStore>;
 
 type StartupSyncServices = {
   loadSnapshot: () => Promise<CloudSnapshot | null>;
+  loadBase: (userId: string) => Promise<{ revision: number; snapshot: ExportPayload } | null>;
   getMeta: (userId: string) => CloudSyncMeta;
+  markConflict: (userId: string, cloudUpdatedAt: string, cloudRevision?: number) => unknown;
   markSynced: (userId: string, cloudUpdatedAt: string, cloudRevision?: number) => unknown;
 };
 
 const defaultServices: StartupSyncServices = {
   loadSnapshot: loadCloudSnapshot,
+  loadBase: loadCloudSyncBase,
   getMeta: getCloudSyncMeta,
+  markConflict: markCloudSyncConflict,
   markSynced: markCloudSyncSynced,
 };
 
@@ -42,9 +53,10 @@ async function reconcileCloudSnapshot(store: AppStore, userId: string | null | u
     return;
   }
 
+  let meta: CloudSyncMeta | null = null;
   try {
+    meta = services.getMeta(userId);
     const snapshot = await services.loadSnapshot();
-    const meta = services.getMeta(userId);
 
     if (!snapshot) {
       if (hasLocalUserData(store) || meta.pending) {
@@ -64,7 +76,31 @@ async function reconcileCloudSnapshot(store: AppStore, userId: string | null | u
       return;
     }
 
+    if (meta.conflict) {
+      store.holdCloudConflict(snapshot);
+      return;
+    }
+
     if (meta.pending) {
+      await store.syncCloudSnapshot({ force: true });
+      return;
+    }
+
+    if (!hasLocalUserData(store)) {
+      await applyCloudSnapshot(store, userId, snapshot, 'Загружена более свежая облачная копия', {
+        markSynced: services.markSynced,
+      });
+      return;
+    }
+
+    const base = await services.loadBase(userId);
+    if (!base) {
+      services.markConflict(userId, snapshot.updatedAt, snapshot.revision ?? 1);
+      store.holdCloudConflict(snapshot);
+      return;
+    }
+
+    if (!samePayloadData(store.exportData(), base.snapshot)) {
       await store.syncCloudSnapshot({ force: true });
       return;
     }
@@ -74,17 +110,28 @@ async function reconcileCloudSnapshot(store: AppStore, userId: string | null | u
     });
   } catch (error) {
     console.warn('Не удалось загрузить облачную копию');
-    store.setCloudSyncState('pending', 'Локальные данные доступны. Облако пока не проверено.', {
-      error: error instanceof Error ? error.message : 'Не удалось проверить облако',
-    });
+    const conflict = Boolean(meta?.conflict);
+    store.setCloudSyncState(
+      conflict ? 'conflict' : 'pending',
+      conflict
+        ? 'Автозапись остановлена: для выбора между версиями нужно снова проверить облако.'
+        : 'Локальные данные доступны. Облако пока не проверено.',
+      {
+        error: error instanceof Error ? error.message : 'Не удалось проверить облако',
+      },
+    );
   }
 }
 
 export function sameSnapshotData(store: AppStore, snapshot: CloudSnapshot) {
+  return samePayloadData(store.exportData(), snapshot.payload);
+}
+
+export function samePayloadData(leftInput: unknown, rightInput: unknown) {
   try {
-    const localData = { ...store.exportData(), exportedAt: '' };
-    const cloudData = { ...normalizeSnapshot(snapshot.payload), exportedAt: '' };
-    return JSON.stringify(localData) === JSON.stringify(cloudData);
+    const left = { ...normalizeSnapshot(leftInput), exportedAt: '' };
+    const right = { ...normalizeSnapshot(rightInput), exportedAt: '' };
+    return JSON.stringify(left) === JSON.stringify(right);
   } catch {
     return false;
   }

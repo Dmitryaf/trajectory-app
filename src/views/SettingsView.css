@@ -111,19 +111,6 @@
   font-style: normal;
   font-weight: 900;
 }
-.cloud-sync-note {
-  padding: 14px 16px;
-  border: 1px solid var(--account-settings-info-border);
-  border-radius: 15px;
-  background: var(--account-settings-info-surface);
-}
-.cloud-sync-note strong {
-  color: var(--navy);
-}
-.cloud-sync-note p {
-  margin: 4px 0 0;
-  font-size: 13px;
-}
 .danger-zone {
   display: flex;
   justify-content: space-between;

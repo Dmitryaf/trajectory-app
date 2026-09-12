@@ -264,9 +264,13 @@ export function getCloudSyncMeta(userId: string): CloudSyncMeta {
   }
 }
 
-export function saveCloudSyncMeta(userId: string, patch: Partial<CloudSyncMeta>) {
+export function saveCloudSyncMeta(userId: string, patch: Partial<CloudSyncMeta>, storage: Pick<Storage, 'setItem'> = window.localStorage) {
   const next = { ...getCloudSyncMeta(userId), ...patch };
-  window.localStorage.setItem(cloudSyncMetaKey(userId), JSON.stringify(next));
+  try {
+    storage.setItem(cloudSyncMetaKey(userId), JSON.stringify(next));
+  } catch {
+    console.warn('Не удалось сохранить состояние облачной синхронизации');
+  }
   return next;
 }
 

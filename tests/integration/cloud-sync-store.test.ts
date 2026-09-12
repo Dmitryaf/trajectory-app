@@ -8,7 +8,9 @@ import {
   CloudRevisionConflictError,
   getCloudSyncMeta,
   loadCloudSnapshot,
+  markCloudSyncConflict,
   markCloudSyncPending,
+  markCloudSyncSynced,
   saveCloudSnapshot,
 } from '@/services/cloudSync';
 import { useAppStore } from '@/stores/app';
@@ -33,6 +35,8 @@ vi.mock('@/services/cloudSync', () => ({
   isCloudAuthRequired: () => false,
   isCloudSyncConfigured: () => true,
   markCloudSyncPending: vi.fn(),
+  markCloudSyncConflict: vi.fn(),
+  markCloudSyncSynced: vi.fn(),
   loadCloudSnapshot: vi.fn(),
   onCloudAuthChange: vi.fn(),
   saveCloudSnapshot: vi.fn(),
@@ -46,6 +50,14 @@ describe('cloud synchronization state', () => {
     await db.open();
     setActivePinia(createPinia());
     vi.clearAllMocks();
+    vi.mocked(getCloudSyncMeta).mockReturnValue({
+      lastCloudUpdatedAt: '',
+      lastCloudRevision: 0,
+      lastSyncedAt: '',
+      pending: false,
+      conflict: false,
+      error: '',
+    });
   });
 
   afterAll(async () => {
@@ -180,6 +192,194 @@ describe('cloud synchronization state', () => {
     expect(saveCloudSnapshot).toHaveBeenNthCalledWith(1, expect.any(Object), 1);
     expect(saveCloudSnapshot).toHaveBeenNthCalledWith(2, expect.any(Object), 2);
     expect(store.dailyEntries[0]).toMatchObject({ energy: 4, importantFact: 'Изменение с телефона' });
+  });
+
+  it('stops automatic cloud writes when two devices changed the same field differently', async () => {
+    const auth = useAuthStore();
+    auth.session = { user: { id: 'user-1' } } as typeof auth.session;
+    const store = useAppStore();
+    const baseEntry = { ...emptyDailyEntry('2026-08-20'), energy: 3 };
+    store.dailyEntries = [baseEntry];
+    const basePayload = store.exportData();
+    await saveCloudSyncBase('user-1', 1, basePayload);
+    store.dailyEntries = [{ ...baseEntry, energy: 4 }];
+    const remotePayload = { ...basePayload, dailyEntries: [{ ...baseEntry, energy: 2 }] };
+    vi.mocked(getCloudSyncMeta).mockReturnValue({
+      lastCloudUpdatedAt: '2026-08-20T10:00:00.000Z',
+      lastCloudRevision: 1,
+      lastSyncedAt: '2026-08-20T10:00:00.000Z',
+      pending: true,
+      conflict: false,
+      error: '',
+    });
+    vi.mocked(loadCloudSnapshot).mockResolvedValue({
+      payload: remotePayload,
+      updatedAt: '2026-08-20T10:01:00.000Z',
+      revision: 2,
+      userId: 'user-1',
+    });
+    vi.mocked(saveCloudSnapshot).mockRejectedValueOnce(new CloudRevisionConflictError());
+
+    await expect(store.syncCloudSnapshot()).resolves.toEqual({ status: 'conflict' });
+
+    expect(saveCloudSnapshot).toHaveBeenCalledOnce();
+    expect(store.dailyEntries[0]?.energy).toBe(4);
+    expect(markCloudSyncConflict).toHaveBeenCalledWith('user-1', '2026-08-20T10:01:00.000Z', 2);
+    expect(store.cloudSyncStatus).toBe('conflict');
+    expect(store.cloudSyncMessage).toContain('обе версии сохранены');
+  });
+
+  it('stops after a revision conflict when the trusted merge base is missing', async () => {
+    const auth = useAuthStore();
+    auth.session = { user: { id: 'user-1' } } as typeof auth.session;
+    const store = useAppStore();
+    store.dailyEntries = [{ ...emptyDailyEntry('2026-08-20'), energy: 4 }];
+    const remote = {
+      payload: { ...store.exportData(), dailyEntries: [{ ...emptyDailyEntry('2026-08-20'), energy: 2 }] },
+      updatedAt: '2026-08-20T10:01:00.000Z',
+      revision: 2,
+      userId: 'user-1',
+    };
+    vi.mocked(getCloudSyncMeta).mockReturnValue({
+      lastCloudUpdatedAt: '2026-08-20T10:00:00.000Z',
+      lastCloudRevision: 1,
+      lastSyncedAt: '2026-08-20T10:00:00.000Z',
+      pending: true,
+      conflict: false,
+      error: '',
+    });
+    vi.mocked(saveCloudSnapshot).mockRejectedValueOnce(new CloudRevisionConflictError());
+    vi.mocked(loadCloudSnapshot).mockResolvedValue(remote);
+
+    await expect(store.syncCloudSnapshot()).resolves.toEqual({ status: 'conflict' });
+
+    expect(saveCloudSnapshot).toHaveBeenCalledOnce();
+    expect(store.dailyEntries[0]?.energy).toBe(4);
+    expect(store.cloudConflictSnapshot).toMatchObject({ revision: 2, updatedAt: remote.updatedAt });
+  });
+
+  it('does not restart automatic cloud writes while a conflict awaits an explicit choice', async () => {
+    const auth = useAuthStore();
+    auth.session = { user: { id: 'user-1' } } as typeof auth.session;
+    const store = useAppStore();
+    const remote = {
+      payload: store.exportData(),
+      updatedAt: '2026-08-20T10:01:00.000Z',
+      revision: 2,
+      userId: 'user-1',
+    };
+    store.holdCloudConflict(remote);
+
+    await expect(store.syncCloudSnapshot()).resolves.toEqual({ status: 'conflict' });
+
+    expect(saveCloudSnapshot).not.toHaveBeenCalled();
+    expect(markCloudSyncPending).not.toHaveBeenCalled();
+    expect(store.cloudConflictSnapshot).toEqual(remote);
+    expect(store.cloudSyncMessage).toContain('до явного выбора');
+  });
+
+  it('keeps the write guard after reload when only conflict metadata is available', async () => {
+    const auth = useAuthStore();
+    auth.session = { user: { id: 'user-1' } } as typeof auth.session;
+    vi.mocked(getCloudSyncMeta).mockReturnValue({
+      lastCloudUpdatedAt: '2026-08-20T10:01:00.000Z',
+      lastCloudRevision: 2,
+      lastSyncedAt: '2026-08-20T10:00:00.000Z',
+      pending: false,
+      conflict: true,
+      error: '',
+    });
+    const store = useAppStore();
+
+    await expect(store.syncCloudSnapshot()).resolves.toEqual({ status: 'conflict' });
+
+    expect(saveCloudSnapshot).not.toHaveBeenCalled();
+    expect(store.cloudConflictSnapshot).toBeNull();
+    expect(store.cloudSyncStatus).toBe('conflict');
+  });
+
+  it('replaces the cloud snapshot only after the user chooses the local version', async () => {
+    const auth = useAuthStore();
+    auth.session = { user: { id: 'user-1' } } as typeof auth.session;
+    const store = useAppStore();
+    store.dailyEntries = [{ ...emptyDailyEntry('2026-08-20'), energy: 4 }];
+    const remote = {
+      payload: { ...store.exportData(), dailyEntries: [{ ...emptyDailyEntry('2026-08-20'), energy: 2 }] },
+      updatedAt: '2026-08-20T10:01:00.000Z',
+      revision: 2,
+      userId: 'user-1',
+    };
+    store.holdCloudConflict(remote);
+    vi.mocked(saveCloudSnapshot).mockImplementation(async (payload) => ({
+      payload,
+      updatedAt: '2026-08-20T10:02:00.000Z',
+      revision: 3,
+      userId: 'user-1',
+    }));
+
+    await expect(store.resolveCloudConflict('local')).resolves.toEqual({
+      status: 'synced',
+      updatedAt: '2026-08-20T10:02:00.000Z',
+    });
+
+    expect(saveCloudSnapshot).toHaveBeenCalledWith(expect.objectContaining({ dailyEntries: [expect.objectContaining({ energy: 4 })] }), 2);
+    expect(store.dailyEntries[0]?.energy).toBe(4);
+    expect(store.cloudConflictSnapshot).toBeNull();
+    expect(store.cloudSyncStatus).toBe('synced');
+  });
+
+  it('loads the cloud snapshot only after the user chooses the cloud version', async () => {
+    const auth = useAuthStore();
+    auth.session = { user: { id: 'user-1' } } as typeof auth.session;
+    const store = useAppStore();
+    store.dailyEntries = [{ ...emptyDailyEntry('2026-08-20'), energy: 4 }];
+    const remote = {
+      payload: { ...store.exportData(), dailyEntries: [{ ...emptyDailyEntry('2026-08-20'), energy: 2 }] },
+      updatedAt: '2026-08-20T10:01:00.000Z',
+      revision: 2,
+      userId: 'user-1',
+    };
+    store.holdCloudConflict(remote);
+
+    await expect(store.resolveCloudConflict('cloud')).resolves.toEqual({
+      status: 'synced',
+      updatedAt: '2026-08-20T10:01:00.000Z',
+    });
+
+    expect(saveCloudSnapshot).not.toHaveBeenCalled();
+    expect(store.dailyEntries[0]?.energy).toBe(2);
+    expect(markCloudSyncSynced).toHaveBeenCalledWith('user-1', remote.updatedAt, 2);
+    expect(store.cloudConflictSnapshot).toBeNull();
+    expect(store.cloudSyncStatus).toBe('synced');
+  });
+
+  it('keeps both versions when the cloud changes again during explicit resolution', async () => {
+    const auth = useAuthStore();
+    auth.session = { user: { id: 'user-1' } } as typeof auth.session;
+    const store = useAppStore();
+    store.dailyEntries = [{ ...emptyDailyEntry('2026-08-20'), energy: 4 }];
+    const originalRemote = {
+      payload: { ...store.exportData(), dailyEntries: [{ ...emptyDailyEntry('2026-08-20'), energy: 2 }] },
+      updatedAt: '2026-08-20T10:01:00.000Z',
+      revision: 2,
+      userId: 'user-1',
+    };
+    const latestRemote = {
+      ...originalRemote,
+      payload: { ...store.exportData(), dailyEntries: [{ ...emptyDailyEntry('2026-08-20'), energy: 1 }] },
+      updatedAt: '2026-08-20T10:03:00.000Z',
+      revision: 3,
+    };
+    store.holdCloudConflict(originalRemote);
+    vi.mocked(saveCloudSnapshot).mockRejectedValueOnce(new CloudRevisionConflictError());
+    vi.mocked(loadCloudSnapshot).mockResolvedValue(latestRemote);
+
+    await expect(store.resolveCloudConflict('local')).resolves.toEqual({ status: 'conflict' });
+
+    expect(store.dailyEntries[0]?.energy).toBe(4);
+    expect(store.cloudConflictSnapshot).toMatchObject({ revision: 3, updatedAt: latestRemote.updatedAt });
+    expect(markCloudSyncConflict).toHaveBeenCalledWith('user-1', latestRemote.updatedAt, 3);
+    expect(store.cloudSyncStatus).toBe('conflict');
   });
 
   it('removes the saved sync base when local data is cleared for an account boundary', async () => {

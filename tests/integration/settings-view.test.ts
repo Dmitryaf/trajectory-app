@@ -2,7 +2,7 @@
 
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import { copyText } from '@/features/export/browser';
+import { copyText, downloadJson } from '@/features/export/browser';
 import { notifyError, notifySaved, notifyUnknownError } from '@/services/notifications';
 import { useAuthStore } from '@/stores/auth';
 import { emptyDailyEntry } from '@/types';
@@ -19,6 +19,7 @@ vi.mock('@/services/notifications', () => ({
 vi.mock('@/features/export/browser', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/features/export/browser')>()),
   copyText: vi.fn(),
+  downloadJson: vi.fn(),
 }));
 
 describe('settings scenarios', () => {
@@ -61,6 +62,46 @@ describe('settings scenarios', () => {
         .findAll('button')
         .filter((button) => button.text() === 'Удалить аккаунт'),
     ).toHaveLength(1);
+  });
+
+  it('shows both conflict copies and requires confirmation before choosing a version', async () => {
+    const { pinia, store } = createStore();
+    const auth = useAuthStore();
+    auth.configured = true;
+    auth.session = { user: { id: 'user-1', email: 'friend@example.com' } } as typeof auth.session;
+    store.holdCloudConflict({
+      payload: store.exportData(),
+      updatedAt: '2026-09-12T05:00:00.000Z',
+      revision: 4,
+      userId: 'user-1',
+    });
+    store.cloudSyncStatus = 'conflict';
+    const resolveConflict = vi.spyOn(store, 'resolveCloudConflict').mockResolvedValue({
+      status: 'synced',
+      updatedAt: '2026-09-12T05:01:00.000Z',
+    });
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true);
+    const wrapper = mount(SettingsView, { global: { plugins: [pinia] } });
+    await wrapper.findAll('[aria-label="Разделы настроек"] button')[2]!.trigger('click');
+    const cloudCard = wrapper.get('#cloud-settings');
+
+    expect(cloudCard.text()).toContain('Обнаружены разные версии');
+    expect(cloudCard.text()).toContain('обе версии');
+    await cloudCard
+      .findAll('button')
+      .find((button) => button.text() === 'Скачать облачную версию')!
+      .trigger('click');
+    expect(downloadJson).toHaveBeenCalledWith(expect.any(Object), expect.stringMatching(/^trajectory-cloud-conflict-/));
+
+    const localButton = cloudCard.findAll('button').find((button) => button.text() === 'Оставить версию устройства')!;
+    await localButton.trigger('click');
+    expect(resolveConflict).not.toHaveBeenCalled();
+    await localButton.trigger('click');
+    await flushPromises();
+
+    expect(confirm).toHaveBeenCalledTimes(2);
+    expect(resolveConflict).toHaveBeenCalledWith('local');
+    expect(notifySaved).toHaveBeenCalledWith('Облачная копия заменена локальной версией');
   });
 
   it('keeps a confirmed password update visible beside the form until the next input', async () => {
