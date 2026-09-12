@@ -522,13 +522,13 @@ test('keeps change history visible and one metric behind a compact mobile disclo
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
 });
 
-test('moves paginated list height smoothly instead of collapsing between pages', async ({ page }) => {
-  for (const scenario of [
-    { route: '/trends', list: '.history-timeline__list', pagination: '.history-timeline .archive-pagination', width: 390 },
-    { route: '/trends', list: '.history-timeline__list', pagination: '.history-timeline .archive-pagination', width: 1280 },
-    { route: '/results', list: '.results-list', pagination: '.archive-panel .archive-pagination', width: 390 },
-    { route: '/events', list: '.timeline-list', pagination: '.archive-panel .archive-pagination', width: 390 },
-  ]) {
+for (const scenario of [
+  { route: '/trends', list: '.history-timeline__list', pagination: '.history-timeline .archive-pagination', width: 390 },
+  { route: '/trends', list: '.history-timeline__list', pagination: '.history-timeline .archive-pagination', width: 1280 },
+  { route: '/results', list: '.results-list', pagination: '.archive-panel .archive-pagination', width: 390 },
+  { route: '/events', list: '.timeline-list', pagination: '.archive-panel .archive-pagination', width: 390 },
+]) {
+  test(`moves ${scenario.route} list height smoothly at ${scenario.width}px`, async ({ page }) => {
     await page.setViewportSize({ width: scenario.width, height: 1024 });
     await page.goto(scenario.route);
     if (scenario.route === '/results' || scenario.route === '/events') {
@@ -556,8 +556,8 @@ test('moves paginated list height smoothly instead of collapsing between pages',
     await expect(pagination.locator('span')).toHaveText(`${pageCount} из ${pageCount}`);
 
     expect(Math.min(...samples), `${scenario.route} at ${scenario.width}px should not collapse`).toBeGreaterThan(0);
-  }
-});
+  });
+}
 
 test('keeps the document position while paging the change history', async ({ page }) => {
   for (const viewport of [
@@ -758,7 +758,7 @@ test('explains the app from the permanent help button', async ({ page }) => {
   await page.getByRole('button', { name: 'Закрыть объяснение' }).click();
   await expect(page.getByRole('button', { name: 'Как работает приложение' })).toBeFocused();
   await expect(page.locator('body')).not.toHaveCSS('position', 'fixed');
-  expect(await page.evaluate(() => window.scrollY)).toBe(scrollBeforeOpen);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrollBeforeOpen);
 
   await page.getByRole('button', { name: 'Как работает приложение' }).click();
   await dialog.getByRole('link', { name: 'Настроить записи' }).click();
