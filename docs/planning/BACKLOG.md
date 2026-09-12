@@ -203,7 +203,7 @@ AI Rules Hub и managed snapshot синхронизированы на `eb28ff6`
 Оно приоритетнее V2 и C1–C3 и не ждёт визуальной полировки:
 
 - **S1 / N14, локальный срез готов:** same-field/edit-delete блокируют автозапись, обе копии можно скачать, а локальная или облачная версия применяется только после явного выбора; осталась staging-приёмка двух реальных сессий с retry/offline-reconnect;
-- **S2 / N13, локальный срез готов:** браузерные источники инвентаризированы, CSP добавлена в Report-Only без `report-uri`/`report-to`, безопасные базовые заголовки закреплены contract-тестом; остались staging-проверка HTTP/Auth/Realtime/API/PWA/графиков и отдельное решение об enforcement;
+- **S2 / N13, branch Preview проверен частично:** браузерные источники инвентаризированы, CSP добавлена в Report-Only без `report-uri`/`report-to`, безопасные базовые заголовки закреплены contract-тестом; Vercel подтвердил заголовки на HTML, asset и API, а Chromium/WebKit — публичный fail-closed экран. Остались проверки Auth/Realtime/API с сессией/PWA/графиков на постоянном staging и отдельное решение об enforcement;
 - **S3:** существующие #65 auth/delete/RLS, #42 backup/restore, #43 политика данных и #44 monitoring/incident drill;
 - **S4 / #41:** безопасные измерения snapshot, sync, merge и трафика до пересмотра облачной архитектуры.
 
