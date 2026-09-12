@@ -23,6 +23,15 @@ async function selectEntryDate(page: Page, value: string) {
   await expect(dateInput).toHaveValue(value);
 }
 
+async function openAdditionalBlocks(page: Page) {
+  const disclosure = page.locator('.daily-additional-blocks');
+  await expect(disclosure).toBeVisible();
+  if (!(await disclosure.evaluate((element) => (element as HTMLDetailsElement).open))) {
+    await disclosure.locator('summary').click();
+  }
+  await expect(disclosure).toHaveAttribute('open', '');
+}
+
 function addDays(dateKey: string, amount: number): string {
   const date = new Date(`${dateKey}T12:00:00.000Z`);
   date.setUTCDate(date.getUTCDate() + amount);
@@ -52,6 +61,29 @@ async function emulateSafeViewport(
     { ...insets, height: viewportHeight },
   );
 }
+
+test('uses the full visible date control as the pointer and keyboard target', async ({ page }) => {
+  await openDailyEntry(page);
+
+  const control = page.locator('.entry-date-control');
+  const trigger = page.getByRole('button', { name: 'Выбрать дату записи' });
+  const [controlBox, triggerBox] = await Promise.all([control.boundingBox(), trigger.boundingBox()]);
+  expect(controlBox).not.toBeNull();
+  expect(triggerBox).not.toBeNull();
+  expect(triggerBox!.x).toBeCloseTo(controlBox!.x, 0);
+  expect(triggerBox!.y).toBeCloseTo(controlBox!.y, 0);
+  expect(triggerBox!.width).toBeCloseTo(controlBox!.width, 0);
+  expect(triggerBox!.height).toBeCloseTo(controlBox!.height, 0);
+  expect(triggerBox!.height).toBeGreaterThanOrEqual(44);
+
+  await trigger.focus();
+  await expect(trigger).toBeFocused();
+  await trigger.evaluate((element) => {
+    element.addEventListener('click', () => element.setAttribute('data-click-observed', 'true'), { once: true });
+  });
+  await trigger.click({ position: { x: 2, y: 2 } });
+  await expect(trigger).toHaveAttribute('data-click-observed', 'true');
+});
 
 test('keeps native mobile date and time inputs inside their cards', async ({ page }) => {
   await openDailyEntry(page);
@@ -142,6 +174,26 @@ test('moves mobile navigation away while a form field is being edited', async ({
   await expect(navigation).toHaveCSS('opacity', '1');
 });
 
+test('keeps the core entry before keyboard-accessible additional blocks', async ({ page }) => {
+  await openDailyEntry(page);
+  const sleepHeading = page.locator('#sleep h2');
+  const headingBox = await sleepHeading.boundingBox();
+  const navigationBox = await page.locator('.bottom-nav').boundingBox();
+  expect(headingBox).not.toBeNull();
+  expect(navigationBox).not.toBeNull();
+  expect(headingBox!.y).toBeLessThan(navigationBox!.y);
+
+  const disclosure = page.locator('.daily-additional-blocks');
+  const summary = disclosure.locator('summary');
+  await expect(disclosure).not.toHaveAttribute('open', '');
+  await summary.focus();
+  await page.keyboard.press('Enter');
+  await expect(disclosure).toHaveAttribute('open', '');
+  await expect(page.locator('#movement')).toBeVisible();
+  await page.keyboard.press('Enter');
+  await expect(disclosure).not.toHaveAttribute('open', '');
+});
+
 test('saves a dirty daily entry from the mobile action', async ({ page }) => {
   await openDailyEntry(page);
   const floatingSave = page.locator('.floating-save-button');
@@ -177,12 +229,17 @@ test('saves a dirty daily entry from the mobile action', async ({ page }) => {
   await expect(page.getByText('День сохранён на устройстве', { exact: true })).toBeVisible();
   await expect(floatingSave).toBeHidden();
 
+  await openAdditionalBlocks(page);
   const weight = page.getByLabel('Вес');
   await weight.fill('88,2');
+  const additionalBlocks = page.locator('.daily-additional-blocks');
+  await additionalBlocks.locator('summary').click();
+  await expect(additionalBlocks).not.toHaveAttribute('open', '');
   await expect(floatingSave).toContainText('Сохранить изменения');
   await floatingSave.click();
   await expect(page.getByText(/Запись за .* обновлена на устройстве/)).toBeVisible();
   await page.reload();
+  await openAdditionalBlocks(page);
   await expect(weight).toHaveValue('88.2');
 });
 
@@ -226,7 +283,7 @@ test('keeps a long current goal contained and does not dismiss an edited dialog 
 
   const assertContained = async () => {
     const layout = await summary.evaluate((element) => {
-      const title = element.querySelector('strong')!;
+      const title = element.querySelector('.form-card__heading p')!;
       const action = element.querySelector('button')!;
       const summaryBox = element.getBoundingClientRect();
       const titleBox = title.getBoundingClientRect();
@@ -302,7 +359,7 @@ test('keeps navigation, fixed actions and dialogs inside safe areas and a reduce
   expect(saveBox!.x + saveBox!.width).toBeLessThanOrEqual(390 - 18);
   expect(saveBox!.y + saveBox!.height).toBeLessThan(navigationBox!.y);
 
-  await page.locator('.current-goal-summary button').click();
+  await page.getByRole('button', { name: 'Выбрать цель' }).click();
   await emulateSafeViewport(page, { top: 24, right: 18, bottom: 34, left: 18 }, 520);
   const goalBackdrop = page.locator('.goal-dialog-backdrop');
   const goalDialog = page.getByRole('dialog', { name: 'Над чем вы сейчас работаете' });
@@ -395,6 +452,7 @@ test('keeps one experiment identity while extending it across weekly slices', as
     if (await startToday.isVisible()) {
       await startToday.click();
     }
+    await openAdditionalBlocks(page);
     const experimentCard = page.locator('#experiment');
     await expect(experimentCard).toBeVisible();
     await experimentCard.getByRole('button', { name: answer, exact: true }).click();
@@ -402,7 +460,6 @@ test('keeps one experiment identity while extending it across weekly slices', as
     const saveButton = page.locator('.floating-save-button');
     await saveButton.click();
     await expect(saveButton).toBeHidden();
-    await expect(page.getByText('День сохранён на устройстве', { exact: true }).last()).toBeVisible();
   };
 
   await saveExperimentDay(previousEntryDate, 'Нет', 'В прошлой неделе долго готовился');

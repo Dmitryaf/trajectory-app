@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures';
-import { demoFilePath } from './demo-data';
+import { buildRepeatedUsePayload } from './demo-data';
 
 test('offers the browser install action and keeps the iOS fallback in one guide', async ({ page }) => {
   await page.goto('/settings#install-settings');
@@ -42,7 +42,15 @@ test('offers the browser install action and keeps the iOS fallback in one guide'
 test('suggests installation after repeated use and respects Later', async ({ page }) => {
   await page.goto('/settings');
   const mobilePlatform = await page.evaluate(() => /iphone|ipad|ipod|android/i.test(navigator.userAgent));
-  await page.locator('input[type="file"]').setInputFiles(demoFilePath);
+  const today = await page.evaluate(() => {
+    const date = new Date();
+    return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+  });
+  await page.locator('input[type="file"]').setInputFiles({
+    name: 'trajectory-repeated-use.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(buildRepeatedUsePayload(today))),
+  });
   await page.getByText('Резервная копия восстановлена', { exact: true }).waitFor();
   await page.goto('/');
   await page.evaluate(() => {
@@ -58,6 +66,8 @@ test('suggests installation after repeated use and respects Later', async ({ pag
     await expect(suggestion).toBeHidden();
     return;
   }
+  await expect(page.getByLabel('Период готов к обзору')).toBeHidden();
+  await expect(page.getByLabel('Вчера без записи')).toBeHidden();
   await expect(suggestion).toBeVisible();
   await expect(suggestion).toContainText('Открывайте «Траекторию» без браузера');
   await suggestion.getByRole('button', { name: 'Позже' }).click();

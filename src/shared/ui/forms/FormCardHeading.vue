@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import UiIcon from '@/shared/ui/icons/UiIcon.vue';
+import type { UiIconName } from '@/shared/ui/icons/icons';
+
 withDefaults(
   defineProps<{
-    icon: string;
+    icon: UiIconName;
     tone?: 'default' | 'purple' | 'blue' | 'green' | 'amber' | 'orange';
   }>(),
   { tone: 'default' },
@@ -10,7 +13,7 @@ withDefaults(
 
 <template>
   <header class="form-card__heading">
-    <span class="section-icon" :class="`section-icon--${tone}`" aria-hidden="true">{{ icon }}</span>
+    <span class="section-icon" :class="`section-icon--${tone}`"><UiIcon :name="icon" /></span>
     <slot />
   </header>
 </template>
@@ -43,6 +46,7 @@ withDefaults(
   background: var(--form-heading-neutral-surface);
   color: var(--form-heading-neutral-text);
   font-weight: 850;
+  font-size: 19px;
   box-shadow: inset 0 0 0 1px var(--form-heading-highlight);
 }
 .section-icon--purple {

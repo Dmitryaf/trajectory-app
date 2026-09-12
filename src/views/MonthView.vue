@@ -30,7 +30,7 @@ import {
   resultsForPeriod,
   specialDayLabel,
   summarize,
-} from '@/services/analytics';
+} from '@/features/analytics';
 import { addDays, dateRange, endOfMonth, formatDate, fromDateKey, startOfMonth, startOfWeek, todayKey, toDateKey } from '@/services/dates';
 import { buildWeightSeries } from '@/features/analytics/weightSeries';
 import { pageCount, pageItems } from '@/services/pagination';
@@ -359,11 +359,11 @@ function shiftMonth(offset: number) {
 <template>
   <PageShell class="page--review page--month">
     <ReviewHeading
-      label="Месячная сводка"
       title="Месяц"
       summary="Сравните недели, важные события и результаты. Решите, что продолжить или изменить."
       :action="hasPeriodData ? (reviewAvailable ? 'К итогу' : 'Итог позже') : undefined"
       href="#month-review"
+      period="month"
     />
     <PeriodNavigator
       :title="formatDate(start, { month: 'long', year: 'numeric' })"

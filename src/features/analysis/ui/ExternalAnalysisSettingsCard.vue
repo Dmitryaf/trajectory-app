@@ -15,7 +15,7 @@ const { copyCustomPrompt, copyPrompt, downloadCustomData, downloadData, end, isC
 
 <template>
   <SettingsCard id="analysis-settings" class="settings-card--analysis" tone="purple">
-    <FormCardHeading icon="↗" tone="green">
+    <FormCardHeading icon="goal" tone="green">
       <div>
         <h2>Данные для внешнего анализа</h2>
         <p>

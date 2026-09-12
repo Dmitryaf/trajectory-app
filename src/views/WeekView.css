@@ -1,23 +1,3 @@
-.insight-card {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  padding: 18px 20px;
-  margin-bottom: 16px;
-  border: 1px solid var(--week-prompt-border);
-  border-radius: 18px;
-  background: linear-gradient(135deg, var(--week-prompt-surface-start), var(--week-prompt-surface-end));
-  box-shadow: 0 8px 22px var(--week-prompt-shadow);
-}
-.insight-card__mark {
-  color: var(--week-prompt-action);
-  font-size: 22px;
-  font-weight: 800;
-}
-.insight-card p {
-  margin: 0;
-  color: var(--week-prompt-text);
-}
 .page--week .dashboard-card,
 .page--week .review-card {
   margin-bottom: 16px;
@@ -48,11 +28,6 @@
 .review-plan-field {
   min-height: 88px;
 }
-.period-records__content {
-  display: grid;
-  gap: 12px;
-  padding-bottom: 16px;
-}
 .period-records--featured {
   display: grid;
   gap: 12px;
@@ -71,73 +46,6 @@
   font-size: 12px;
   font-weight: 800;
   text-transform: capitalize;
-}
-.period-record-card {
-  min-width: 0;
-  padding: 17px;
-  border: 1px solid var(--month-insight-border);
-  border-radius: 17px;
-  background: linear-gradient(135deg, var(--weekly-rhythm-item-surface), var(--month-insight-gradient));
-}
-.period-records__content > .period-record-card {
-  margin-bottom: 0;
-}
-.period-record-card--disclosure {
-  padding: 0;
-  overflow: hidden;
-}
-.period-record-card--disclosure > summary {
-  display: grid;
-  gap: 11px;
-  padding: 17px;
-  cursor: pointer;
-  list-style: none;
-}
-.period-record-card--disclosure > summary::-webkit-details-marker {
-  display: none;
-}
-.period-record-card--disclosure[open] > summary {
-  border-bottom: 1px solid var(--month-insight-border);
-  background: var(--surface);
-}
-.period-record-card__heading {
-  display: flex;
-  min-width: 0;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 14px;
-}
-.period-record-card__heading strong {
-  display: block;
-  margin: 0;
-  color: var(--navy);
-  font-size: 18px;
-  line-height: 1.2;
-}
-.period-record-card__heading .eyebrow {
-  margin-bottom: 5px;
-}
-.period-record-card__breakdown {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 12px;
-}
-.period-record-card__breakdown span {
-  padding: 5px 8px;
-  border-radius: 999px;
-  background: var(--month-insight-pill-surface);
-  color: var(--month-insight-pill-text);
-  font-size: 11px;
-  font-weight: 750;
-}
-.period-record-card__details {
-  padding: 16px 17px;
-  background: var(--month-insight-panel-surface);
-}
-.experiment-period-card + .experiment-period-card,
-.experiment-note-page {
-  margin-top: 12px;
 }
 .note-item,
 .factor-note-item {
@@ -326,18 +234,6 @@
   }
   .special-day-item p {
     grid-column: 2;
-  }
-  .period-record-card,
-  .period-record-card--disclosure > summary,
-  .period-record-card__details {
-    padding-right: 13px;
-    padding-left: 13px;
-  }
-  .period-record-card__heading {
-    gap: 10px;
-  }
-  .period-record-card__heading strong {
-    font-size: 16px;
   }
 }
 @media (max-width: 390px) {

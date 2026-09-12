@@ -14,8 +14,8 @@
 }
 
 .primary-button {
-  color: var(--text-inverse);
-  background: linear-gradient(135deg, var(--navy), var(--brand-strong));
+  color: var(--action-primary-text);
+  background: linear-gradient(135deg, var(--action-primary-surface-start), var(--action-primary-surface-end));
   box-shadow: 0 10px 24px var(--action-primary-shadow);
 }
 
@@ -24,13 +24,13 @@
 }
 
 .secondary-button {
-  color: var(--navy);
+  color: var(--action-secondary-text);
   background: var(--action-secondary-surface);
   text-decoration: none;
 }
 
 .secondary-button:hover {
-  background: var(--action-neutral-surface);
+  background: var(--action-secondary-hover-surface);
 }
 
 .danger-button {

@@ -1,9 +1,15 @@
 import { fileURLToPath, URL } from 'node:url';
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(
+      JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version,
+    ),
+  },
   build: {
     rollupOptions: {
       output: {
@@ -29,8 +35,8 @@ export default defineConfig({
         name: 'Траектория',
         short_name: 'Траектория',
         description: 'Личные записи о состоянии, действиях и важных событиях',
-        theme_color: '#11182b',
-        background_color: '#f4f6fb',
+        theme_color: '#102d2c',
+        background_color: '#f3f1eb',
         display: 'standalone',
         id: '/',
         scope: '/',

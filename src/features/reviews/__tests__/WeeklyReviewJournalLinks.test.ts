@@ -3,7 +3,6 @@
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { readFirstUseFunnel } from '@/features/first-use/funnel';
 import WeeklyReviewJournalLinks from '../ui/WeeklyReviewJournalLinks.vue';
 import { useAppStore } from '@/stores/app';
 import { defaultSettings, emptyWeeklyReview, type LifeEventRecord, type ResultRecord } from '@/types';
@@ -51,7 +50,6 @@ describe('weekly review journal links', () => {
       note: '',
     });
     expect(result.text()).toContain('Уже есть в Журнале');
-    expect(readFirstUseFunnel().map((item) => item.name)).toContain('first_use_journal_record_saved');
 
     await event.get('input[type="date"]').setValue('2026-07-30');
     await event.get('select').setValue('event');
@@ -114,7 +112,6 @@ describe('weekly review journal links', () => {
     expect((result.get('input[type="date"]').element as HTMLInputElement).value).toBe('2026-07-29');
     expect((result.get('select').element as HTMLSelectElement).value).toBe('career');
     expect(result.get('button').attributes('disabled')).toBeUndefined();
-    expect(readFirstUseFunnel().map((item) => item.name)).not.toContain('first_use_journal_record_saved');
 
     await result.get('button').trigger('click');
     await vi.waitFor(() => expect(result.text()).toContain('Уже есть в Журнале'));

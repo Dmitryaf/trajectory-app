@@ -2,7 +2,8 @@
 import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import { computed, getCurrentInstance, onMounted, reactive, ref, watch } from 'vue';
 import type { Router } from 'vue-router';
-import { recordFirstUseEvent } from '../funnel';
+import { captureProductEvent, emitProductEvent } from '@/features/telemetry/productTelemetry';
+import { captureDecisionSave, captureReviewSave } from '@/features/reviews/telemetry';
 import { firstUsePeriodOptions, recommendedFirstUsePeriod, type FirstUsePeriodOption } from '../period';
 import WeeklyReviewJournalLinks from '@/features/reviews/ui/WeeklyReviewJournalLinks.vue';
 import WeeklyReviewOverview from '@/features/reviews/ui/WeeklyReviewOverview.vue';
@@ -15,10 +16,12 @@ import { emptyWeeklyReview, type FirstUseState, type FirstUseStep, type WeeklyRe
 
 type DecisionChoice = '' | 'continue' | 'change' | 'later';
 
+const props = withDefaults(defineProps<{ showAvailablePrompt?: boolean }>(), { showAvailablePrompt: true });
+const emit = defineEmits<{ availableHidden: [] }>();
+
 const store = useAppStore();
 const router = getCurrentInstance()?.appContext.config.globalProperties.$router as Router | undefined;
 const editRequested = new URL(window.location.href).searchParams.get('first-use') === 'edit';
-const hiddenForNow = ref(false);
 const saving = ref(false);
 const saveError = ref('');
 const review = reactive<WeeklyReview>(emptyWeeklyReview(''));
@@ -38,7 +41,9 @@ const firstUse = computed(() => store.settings.firstUse);
 const isChoice = computed(
   () => firstUse.value.status === 'not_started' || (firstUse.value.status === 'in_progress' && firstUse.value.lastStep === 'choice'),
 );
-const showAvailablePrompt = computed(() => firstUse.value.status === 'available' && store.dailyEntries.length > 0 && !hiddenForNow.value);
+const availablePromptVisible = computed(
+  () => props.showAvailablePrompt && firstUse.value.status === 'available' && store.dailyEntries.length > 0,
+);
 const isRecovery = computed(() => firstUse.value.status === 'in_progress' && !isChoice.value);
 const currentStep = computed(() => firstUse.value.lastStep);
 const currentStepIndex = computed(() => steps.indexOf(currentStep.value));
@@ -69,7 +74,7 @@ watch(
   () => isRecovery.value && currentStep.value === 'overview',
   (visible) => {
     if (visible) {
-      recordFirstUseEvent('first_use_overview_viewed');
+      emitProductEvent('first_use_overview_viewed', {});
     }
   },
   { immediate: true },
@@ -132,13 +137,14 @@ async function saveFirstUse(next: FirstUseState) {
 }
 
 async function beginRecovery() {
+  const recordStart = captureProductEvent('first_use_started', {});
   saveError.value = '';
   saving.value = true;
   try {
     const weekStart = targetWeekStart.value;
     const periodEnd = targetPeriodEnd.value;
     await saveFirstUse({ status: 'in_progress', weekStart, periodEnd, lastStep: 'results', overviewSeen: false, updatedAt: '' });
-    recordFirstUseEvent('first_use_recovery_started');
+    recordStart();
   } catch {
     saveError.value = 'Не удалось начать. Попробуйте ещё раз.';
   } finally {
@@ -189,6 +195,10 @@ async function dismiss() {
   }
 }
 
+function hideAvailablePrompt() {
+  emit('availableHidden');
+}
+
 function applyCurrentAnswer() {
   if (currentStep.value === 'results') {
     review.results = lines(resultsText.value);
@@ -217,35 +227,15 @@ function applyCurrentAnswer() {
   }
 }
 
-function currentAnswerHasContent() {
-  if (currentStep.value === 'results') {
-    return review.results.some((item) => item.trim());
-  }
-  if (currentStep.value === 'highlights') {
-    return review.highlights.some((item) => item.trim());
-  }
-  if (currentStep.value === 'state_context') {
-    return Boolean(review.stateContext.trim());
-  }
-  if (currentStep.value === 'support_obstacle') {
-    return Boolean(review.support.trim() || review.obstacle.trim());
-  }
-  if (currentStep.value === 'decision') {
-    return Boolean(review.nextLever.trim());
-  }
-  return false;
-}
-
 async function moveTo(nextStep: FirstUseStep, saveAnswer: boolean) {
   saveError.value = '';
   saving.value = true;
   try {
     if (saveAnswer) {
       applyCurrentAnswer();
+      const recordDecision = captureDecisionSave(review, store.reviewByWeek(review.weekStart));
       await store.saveReview(plainCopy(review));
-      if (currentAnswerHasContent()) {
-        recordFirstUseEvent('first_use_first_answer_saved');
-      }
+      recordDecision();
     }
     await saveFirstUse({
       status: 'in_progress',
@@ -279,6 +269,8 @@ function previousStep() {
 }
 
 async function completeRecovery() {
+  const recordComplete = captureProductEvent('first_use_completed', {});
+  const recordReview = captureReviewSave(review, store.reviewByWeek(review.weekStart));
   saveError.value = '';
   saving.value = true;
   try {
@@ -292,6 +284,8 @@ async function completeRecovery() {
       overviewSeen: true,
       updatedAt: '',
     });
+    recordComplete();
+    recordReview();
     if (router) {
       await router.push({ path: '/week', query: { week: weekStart }, hash: '#first-use-overview' });
     }
@@ -353,7 +347,7 @@ async function completeRecovery() {
     <p v-if="saveError" class="first-use-card__error" role="alert">{{ saveError }}</p>
   </section>
 
-  <section v-else-if="showAvailablePrompt" class="first-use-card first-use-card--available" aria-label="Первый обзор недели">
+  <section v-else-if="availablePromptVisible" class="first-use-card first-use-card--available" aria-label="Первый обзор недели">
     <div>
       <strong>Собрать недавнюю неделю?</strong>
       <p>Выберите период. Несколько коротких вопросов помогут увидеть его целиком.</p>
@@ -378,7 +372,7 @@ async function completeRecovery() {
       <ActionButton variant="secondary" class="context-action" type="button" :disabled="saving" @click="beginRecovery"
         >Открыть обзор</ActionButton
       >
-      <button class="first-use-card__text-button" type="button" @click="hiddenForNow = true">Не сейчас</button>
+      <button class="first-use-card__text-button" type="button" @click="hideAvailablePrompt">Не сейчас</button>
       <button class="first-use-card__text-button" type="button" :disabled="saving" @click="dismiss">Больше не показывать</button>
     </div>
     <p v-if="saveError" class="first-use-card__error" role="alert">{{ saveError }}</p>

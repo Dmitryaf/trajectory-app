@@ -2,10 +2,11 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { expect, test } from './fixtures';
 import { demoFilePath } from './demo-data';
+import { expectPageFitsViewport } from './layout-assertions';
 
 const require = createRequire(import.meta.url);
 const axeSource = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
-const criticalRoutes = ['/', '/week', '/month', '/trends', '/more', '/settings'];
+const criticalRoutes = ['/', '/week', '/month', '/trends', '/more', '/results', '/events', '/settings'];
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/settings');
@@ -39,12 +40,19 @@ test('has no serious automated accessibility violations on critical routes', asy
 
 test('keeps the critical path keyboard-visible and traps focus in dialogs', async ({ page }) => {
   await page.goto('/');
-  const weekLink = page.getByRole('link', { name: 'Неделя' });
-  await weekLink.focus();
-  await expect(weekLink).toBeFocused();
-  expect(await weekLink.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe('none');
-  await weekLink.press('Enter');
+  const reviewLink = page.getByRole('navigation', { name: 'Основная навигация' }).getByRole('link', { name: 'Обзор' });
+  await reviewLink.focus();
+  await expect(reviewLink).toBeFocused();
+  expect(await reviewLink.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe('none');
+  await reviewLink.press('Enter');
   await expect(page).toHaveURL(/\/week/);
+
+  const monthLink = page.getByRole('navigation', { name: 'Период обзора' }).getByRole('link', { name: 'Месяц' });
+  await monthLink.focus();
+  await expect(monthLink).toBeFocused();
+  expect(await monthLink.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe('none');
+  await monthLink.press('Enter');
+  await expect(page).toHaveURL(/\/month/);
 
   await page.getByRole('button', { name: 'Как работает приложение' }).click();
   const dialog = page.getByRole('dialog', { name: 'Зачем нужна «Траектория»' });
@@ -67,11 +75,7 @@ test('reflows critical routes at 200 percent without hiding navigation', async (
     await page.evaluate(() => {
       document.documentElement.style.zoom = '2';
     });
-    const widths = await page.evaluate(() => ({
-      viewport: document.documentElement.clientWidth,
-      content: document.documentElement.scrollWidth,
-    }));
-    expect(widths.content, `${route} should reflow at 200%`).toBeLessThanOrEqual(widths.viewport);
+    await expectPageFitsViewport(page, `${route} at 200%`);
     await expect(page.getByRole('navigation', { name: 'Основная навигация' })).toBeVisible();
   }
 });

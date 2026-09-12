@@ -2,7 +2,6 @@
 import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import DateInput from '@/shared/ui/forms/DateInput.vue';
 import { computed, reactive, ref, watch } from 'vue';
-import { recordFirstUseEvent } from '@/features/first-use/funnel';
 import { addDays, formatDate } from '@/services/dates';
 import { useAppStore } from '@/stores/app';
 import { lifeEventTypeOptions, resultAreaOptions, type LifeEventType, type ResultRecord, type WeeklyReview } from '@/types';
@@ -120,7 +119,6 @@ async function saveToJournal(item: JournalItem) {
         note: '',
       });
     }
-    recordFirstUseEvent('first_use_journal_record_saved');
   } catch {
     saveErrors[item.key] = 'Не удалось сохранить. Попробуйте ещё раз.';
   } finally {

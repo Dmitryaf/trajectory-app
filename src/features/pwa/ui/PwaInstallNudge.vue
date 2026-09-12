@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import ActionButton from '@/shared/ui/actions/ActionButton.vue';
-import { computed, ref } from 'vue';
+import UiIcon from '@/shared/ui/icons/UiIcon.vue';
+import { computed, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import { postponePwaInstallNudge, readPwaInstallNudgeDismissedUntil, shouldShowPwaInstallNudge } from '../installNudge';
 import { initPwaInstallation, promptPwaInstallation, pwaInstalled, pwaInstallPromptAvailable, pwaPlatform } from '../installation';
 
-const props = defineProps<{ savedEntryCount: number }>();
+const props = withDefaults(defineProps<{ savedEntryCount: number; active?: boolean }>(), { active: true });
+const emit = defineEmits<{ availabilityChange: [available: boolean] }>();
 const dismissedUntil = ref(readPwaInstallNudgeDismissedUntil());
 const installing = ref(false);
 
 initPwaInstallation();
 
-const visible = computed(() =>
+const available = computed(() =>
   shouldShowPwaInstallNudge({
     savedEntryCount: props.savedEntryCount,
     installed: pwaInstalled.value,
@@ -19,8 +21,11 @@ const visible = computed(() =>
     dismissedUntil: dismissedUntil.value,
   }),
 );
+const visible = computed(() => props.active && available.value);
 const canPrompt = computed(() => pwaInstallPromptAvailable.value);
 const guideLabel = computed(() => (pwaPlatform.value === 'ios' ? 'Как установить на iPhone' : 'Как установить'));
+
+watch(available, (value) => emit('availabilityChange', value), { immediate: true });
 
 function postpone() {
   dismissedUntil.value = postponePwaInstallNudge();
@@ -44,7 +49,7 @@ async function install() {
 
 <template>
   <aside v-if="visible" class="pwa-install-nudge" aria-label="Установка приложения">
-    <span class="pwa-install-nudge__mark" aria-hidden="true">⌂</span>
+    <span class="pwa-install-nudge__mark"><UiIcon name="install" /></span>
     <div>
       <strong>Открывайте «Траекторию» без браузера</strong>
       <p>Добавьте приложение на домашний экран телефона.</p>

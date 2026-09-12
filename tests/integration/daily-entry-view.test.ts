@@ -8,9 +8,15 @@ import { LocalStorageQuotaError } from '@/services/storageProtection';
 import CurrentGoalDialog from '@/features/daily-entry/ui/CurrentGoalDialog.vue';
 import { emptyDailyEntry, emptyWeeklyReview } from '@/types';
 import { DAILY_ENTRY_SCHEMA_VERSION } from '@/model/dataVersions';
-import { addDays, todayKey } from '@/services/dates';
+import { addDays, startOfWeek, todayKey } from '@/services/dates';
 import TodayView from '@/views/TodayView.vue';
 import { createStore, routerLinkStub } from '../helpers/viewScenario';
+
+const emittedTelemetry = vi.hoisted(() => vi.fn());
+vi.mock('@/features/telemetry/productTelemetry', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/telemetry/productTelemetry')>()),
+  captureProductEvent: (name: string, props: unknown) => () => emittedTelemetry(name, props),
+}));
 
 vi.mock('@/services/notifications', () => ({
   notifyError: vi.fn(),
@@ -20,6 +26,31 @@ vi.mock('@/services/notifications', () => ({
 }));
 
 describe('daily entry scenario', () => {
+  it('emits a content-free daily event only after the explicit save succeeds', async () => {
+    const { pinia, store } = createStore();
+    let complete!: () => void;
+    vi.spyOn(store, 'saveEntry').mockImplementation(
+      (entry) =>
+        new Promise((resolve) => {
+          complete = () => resolve(entry);
+        }),
+    );
+    const wrapper = mount(TodayView, { global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } } });
+    const card = wrapper.findAll('.form-card').find((item) => item.find('h2').text() === 'Заметка дня')!;
+    await card.get('textarea').setValue('PRIVATE DAILY CANARY');
+    await flushPromises();
+    expect(emittedTelemetry).not.toHaveBeenCalled();
+    await wrapper.get('form').trigger('submit');
+    expect(emittedTelemetry).not.toHaveBeenCalled();
+    complete();
+    await flushPromises();
+    expect(emittedTelemetry).toHaveBeenCalledWith(
+      'daily_entry_saved',
+      expect.objectContaining({ save_kind: 'created', entry_count_bucket: '1' }),
+    );
+    expect(JSON.stringify(emittedTelemetry.mock.calls)).not.toContain('PRIVATE DAILY CANARY');
+    wrapper.unmount();
+  });
   it('guides the first entry without treating yesterday as a missed day', () => {
     const { pinia } = createStore();
     const wrapper = mount(TodayView, {
@@ -32,7 +63,9 @@ describe('daily entry scenario', () => {
     expect(wrapper.text()).toContain('Зачем это заполнять?');
     expect(wrapper.text()).not.toContain('Вчера без записи');
     expect(wrapper.find('.quick-capture').exists()).toBe(false);
-    expect(wrapper.text()).toContain('Сначала выберите, над чем сейчас хотите работать.');
+    expect(wrapper.text()).toContain('Цель необязательна. Выберите её, если хотите связать дневные действия с периодом.');
+    expect(wrapper.find('.current-goal-summary').exists()).toBe(false);
+    expect(wrapper.get('#goal-actions').classes()).toContain('form-card--direction-empty');
     expect(wrapper.get('#goal-actions .context-action').text()).toBe('Выбрать цель');
     expect(wrapper.text()).not.toContain('Конкретное действие');
   });
@@ -49,7 +82,8 @@ describe('daily entry scenario', () => {
     expect(wrapper.text()).not.toContain('С чего начать');
     expect(wrapper.text()).toContain('Состояние и условия');
     expect(wrapper.text()).toContain('Текущая цель');
-    expect(wrapper.text()).toContain('Остальные части дня');
+    expect(wrapper.text()).toContain('Дополнительные разделы');
+    expect(wrapper.get('.daily-additional-blocks').attributes('open')).toBeUndefined();
     expect(wrapper.text()).toContain('Короткий итог дня');
     expect(wrapper.text()).not.toContain('Сон перед этой датой и сколько сил было в этот день.');
   });
@@ -96,6 +130,9 @@ describe('daily entry scenario', () => {
 
     expect(wrapper.html().indexOf('id="goal-actions"')).toBeLessThan(wrapper.html().indexOf('id="career"'));
     expect(goalCard.get('h2').text()).toBe('Шаг по текущей цели');
+    expect(wrapper.find('.current-goal-summary').exists()).toBe(false);
+    expect(goalCard.classes()).not.toContain('form-card--direction-empty');
+    expect(wrapper.text().match(/Подготовить доклад/g)).toHaveLength(1);
     expect(goalCard.get('.goal-context-details').attributes('open')).toBeUndefined();
     expect(workCard.get('h2').text()).toBe('Рабочий контекст');
     expect(workCard.text()).toContain('не считается шагом по текущей цели');
@@ -127,6 +164,39 @@ describe('daily entry scenario', () => {
     expect(wrapper.text()).toContain('Собрать недавнюю неделю?');
     expect(wrapper.text()).toContain('Не сейчас');
     expect(wrapper.find('.checkin-grid').exists()).toBe(true);
+  });
+
+  it('shows one optional cue and falls back after first-use is postponed', async () => {
+    const { pinia, store } = createStore();
+    store.settings.firstUse = {
+      status: 'available',
+      weekStart: '',
+      periodEnd: '',
+      lastStep: 'choice',
+      overviewSeen: false,
+      updatedAt: '',
+    };
+    store.dailyEntries = [-2, -1, 0].map((offset) => ({
+      ...emptyDailyEntry(addDays(todayKey(), offset)),
+      importantFact: `Запись ${offset}`,
+    }));
+    store.weeklyReviews = [{ ...emptyWeeklyReview(startOfWeek(todayKey())), ifThenPlan: 'Если устану, сокращу необязательную задачу' }];
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+
+    expect(wrapper.find('.first-use-card--available').exists()).toBe(true);
+    expect(wrapper.find('[aria-label="Текущий план недели"]').exists()).toBe(false);
+    expect(wrapper.find('.ai-analysis-nudge').exists()).toBe(false);
+
+    await wrapper
+      .findAll('.first-use-card__text-button')
+      .find((button) => button.text() === 'Не сейчас')!
+      .trigger('click');
+
+    expect(wrapper.find('.first-use-card--available').exists()).toBe(false);
+    expect(wrapper.get('[aria-label="Текущий план недели"]').text()).toContain('Если устану, сокращу необязательную задачу');
+    expect(wrapper.find('.ai-analysis-nudge').exists()).toBe(false);
   });
 
   it('shows only one current cue and keeps a weekly plan visible without daily tracking', () => {
@@ -255,18 +325,24 @@ describe('daily entry scenario', () => {
     };
     const saveEntry = vi.spyOn(store, 'saveEntry').mockImplementation(async (entry) => entry);
     const wrapper = mount(TodayView, {
+      attachTo: document.body,
       global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
     });
     const experimentCard = wrapper.get('#experiment');
     const note = experimentCard.get('#experiment-note');
+    const additionalBlocks = wrapper.get('.daily-additional-blocks');
 
     expect(experimentCard.text()).toContain('Период: 20 июля — 27 июля 2026 г.');
+    expect(additionalBlocks.attributes('open')).toBeUndefined();
 
     expect(note.attributes('maxlength')).toBe('500');
     await note.setValue('x'.repeat(501));
     await wrapper.get('form').trigger('submit');
+    await flushPromises();
     expect(saveEntry).not.toHaveBeenCalled();
     expect(wrapper.get('[role="alert"]').text()).toContain('Заметка к эксперименту длиннее 500 символов');
+    expect(additionalBlocks.attributes('open')).toBe('');
+    expect(document.activeElement).toBe(note.element);
 
     await note.setValue('Заранее убрал телефон, но поздний звонок сбил план');
     await experimentCard
@@ -283,6 +359,7 @@ describe('daily entry scenario', () => {
         experimentNote: 'Заранее убрал телефон, но поздний звонок сбил план',
       }),
     );
+    wrapper.unmount();
   });
 
   it('opens the native date picker from the full desktop date control', async () => {
@@ -458,12 +535,30 @@ describe('daily entry scenario', () => {
     await wrapper.get('[aria-label="Дата записи"]').setValue('2026-07-20');
 
     const goalCard = wrapper.get('#goal-actions');
+    expect(goalCard.classes()).not.toContain('form-card--direction-empty');
     expect(goalCard.text()).toContain('Для этой записи цель не была сохранена.');
     expect(goalCard.text()).not.toContain('Новая текущая цель');
     expect(goalCard.text()).not.toContain('Новый критерий результата');
     expect(goalCard.text()).not.toContain('Новое внешнее подтверждение');
     expect(goalCard.find('.card-settings-link').exists()).toBe(false);
     expect(wrapper.get('#nutrition').text()).not.toContain('Новый ориентир питания');
+  });
+
+  it('keeps a historical day without a goal compact and independent from the current goal', async () => {
+    const { pinia, store } = createStore();
+    store.settings.activeFocusTitle = 'Новая текущая цель';
+    store.dailyEntries = [{ ...emptyDailyEntry('2026-07-20'), importantFact: 'Историческая запись' }];
+    const wrapper = mount(TodayView, {
+      global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } },
+    });
+
+    await wrapper.get('[aria-label="Дата записи"]').setValue('2026-07-20');
+
+    const goalCard = wrapper.get('#goal-actions');
+    expect(goalCard.classes()).toContain('form-card--direction-empty');
+    expect(goalCard.text()).toContain('Для этой даты цель не была сохранена. Текущие настройки не изменяют историю.');
+    expect(goalCard.text()).not.toContain('Новая текущая цель');
+    expect(goalCard.find('.context-action').exists()).toBe(false);
   });
 
   it('shows context independently when the sleep block is hidden', () => {
@@ -629,7 +724,7 @@ describe('daily entry scenario', () => {
     const factCard = wrapper.findAll('.form-card').find((card) => card.find('h2').text() === 'Заметка дня');
     await factCard!.get('textarea').setValue('Не потерять введённый текст');
 
-    await wrapper.get('.current-goal-summary button').trigger('click');
+    await wrapper.get('#goal-actions .context-action').trigger('click');
     const goalDialog = wrapper.getComponent(CurrentGoalDialog);
     expect(goalDialog.props('open')).toBe(true);
     await flushPromises();
@@ -642,7 +737,7 @@ describe('daily entry scenario', () => {
 
     expect(store.settings.activeFocusTitle).toBe('Подготовиться к собеседованию');
     expect(store.settings.externalEvidenceCriterion).toBe('Получить независимую обратную связь');
-    expect(wrapper.get('.current-goal-summary').text()).toContain('Подготовиться к собеседованию');
+    expect(wrapper.get('#goal-actions').text()).toContain('Подготовиться к собеседованию');
     expect(factCard!.get('textarea').element).toHaveProperty('value', 'Не потерять введённый текст');
     expect(confirm).not.toHaveBeenCalled();
     expect(notifySaved).toHaveBeenCalledWith('Текущая цель сохранена');
@@ -654,7 +749,7 @@ describe('daily entry scenario', () => {
       global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub, Teleport: true } },
     });
 
-    await wrapper.get('.current-goal-summary button').trigger('click');
+    await wrapper.get('#goal-actions .context-action').trigger('click');
     const goalDialog = wrapper.getComponent(CurrentGoalDialog);
     const titleInput = goalDialog.get('#current-goal-title');
     await titleInput.setValue('Несохранённое изменение цели');
@@ -687,14 +782,15 @@ describe('daily entry scenario', () => {
       global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub, Teleport: true } },
     });
 
-    await wrapper.get('.current-goal-summary button').trigger('click');
+    await wrapper.get('#goal-actions .card-settings-link').trigger('click');
     const goalDialog = wrapper.getComponent(CurrentGoalDialog);
     const removeButton = goalDialog.findAll('button').find((button) => button.text() === 'Убрать цель');
     await removeButton!.trigger('click');
     await flushPromises();
 
     expect(store.settings.activeFocusTitle).toBe('');
-    expect(wrapper.get('.current-goal-summary').text()).toContain('Пока не выбрана');
+    expect(wrapper.get('#goal-actions').text()).toContain('Цель необязательна');
+    expect(wrapper.get('#goal-actions').classes()).toContain('form-card--direction-empty');
     expect(notifySaved).toHaveBeenCalledWith('Текущая цель убрана');
   });
 
@@ -712,6 +808,7 @@ describe('daily entry scenario', () => {
     await flushPromises();
 
     expect(saveEntry).toHaveBeenCalledOnce();
+    expect(emittedTelemetry).not.toHaveBeenCalled();
     expect(notifyUnknownError).toHaveBeenCalledWith(quotaError, 'Не удалось сохранить день');
     expect(quotaError.message).toContain('Ранее сохранённые записи остались');
     expect(quotaError.message).toContain('повторите сохранение');

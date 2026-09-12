@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { pwaPlatform } from '@/features/pwa/installation';
+import UiIcon from '@/shared/ui/icons/UiIcon.vue';
 
 const props = defineProps<{
   email: string;
@@ -34,13 +35,13 @@ function signOut() {
     </summary>
     <div class="account-menu__panel">
       <RouterLink to="/settings" class="account-menu__action" @click="close">
-        <span aria-hidden="true">⚙</span><strong>Настройки</strong>
+        <span><UiIcon name="settings" /></span><strong>Настройки</strong>
       </RouterLink>
       <RouterLink v-if="pwaPlatform !== 'other'" to="/settings#install-settings" class="account-menu__action" @click="close">
-        <span aria-hidden="true">⌂</span><strong>Установить приложение</strong>
+        <span><UiIcon name="install" /></span><strong>Установить приложение</strong>
       </RouterLink>
       <button class="account-menu__action account-menu__logout" type="button" :disabled="loading" @click="signOut">
-        <span aria-hidden="true">↪</span><strong>Выйти</strong>
+        <span><UiIcon name="sign-out" /></span><strong>Выйти</strong>
       </button>
     </div>
   </details>

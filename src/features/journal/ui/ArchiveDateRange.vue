@@ -43,16 +43,16 @@ function showAllTime() {
 
 <template>
   <div class="archive-date-filter">
-    <label>
-      <span>С</span>
+    <label class="archive-filter-field">
+      <span class="archive-filter-field__label">С</span>
       <DateInput
         :model-value="dateFrom"
         :aria-label="`Начальная дата ${contextLabel}`"
         @update:model-value="emit('update:dateFrom', $event ?? '')"
       />
     </label>
-    <label>
-      <span>По</span>
+    <label class="archive-filter-field">
+      <span class="archive-filter-field__label">По</span>
       <DateInput
         :model-value="dateTo"
         :aria-label="`Конечная дата ${contextLabel}`"
@@ -106,7 +106,7 @@ function showAllTime() {
   cursor: default;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 1023px) {
   .archive-date-filter {
     grid-column: 1 / -1;
   }

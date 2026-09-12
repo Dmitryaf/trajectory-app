@@ -83,25 +83,6 @@ export function useSettingsForm() {
     ...settings.customContextFactorOptions.filter((option) => option.archived),
   ]);
   const cloudSession = computed(() => auth.session);
-  const cloudStatusTitle = computed(() => {
-    if (!auth.configured) {
-      return 'Облако не подключено';
-    }
-    if (store.cloudSyncStatus === 'synced') {
-      return 'Облако синхронизировано';
-    }
-    if (store.cloudSyncStatus === 'syncing') {
-      return 'Идёт синхронизация';
-    }
-    if (store.cloudSyncStatus === 'pending') {
-      return 'Есть локальные изменения';
-    }
-    if (store.cloudSyncStatus === 'conflict') {
-      return 'Синхронизация повторяется';
-    }
-    return 'Статус облака';
-  });
-  const cloudStatusText = computed(() => store.cloudSyncMessage || 'Синхронизация готова.');
   const storageProtectionTitle = computed(() => {
     if (store.storagePersistenceStatus === 'persisted') {
       return 'Локальное хранилище защищено';
@@ -411,16 +392,12 @@ export function useSettingsForm() {
     newActivityLabel,
     newLifeAreaLabel,
     newContextFactorLabel,
-    auth,
     allCareerOptions,
     activeActivityOptions,
     hiddenActivityOptions,
     allLifeAreaOptions,
     activeContextFactorOptions,
     hiddenContextFactorOptions,
-    cloudSession,
-    cloudStatusTitle,
-    cloudStatusText,
     storageProtectionTitle,
     storageProtectionText,
     experimentCanConclude,

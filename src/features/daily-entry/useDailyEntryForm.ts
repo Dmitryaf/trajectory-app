@@ -15,6 +15,7 @@ import {
   type DailyEntryMetrics,
 } from './model';
 import { setSyncEditorDirty } from '../sync/editing';
+import { captureDailySave } from './telemetry';
 
 type AppStore = ReturnType<typeof useAppStore>;
 
@@ -258,6 +259,7 @@ export function useDailyEntryForm(store: AppStore) {
       !hasSavedEntry.value,
     );
     const wasExistingEntry = hasSavedEntry.value;
+    const recordSave = captureDailySave(entry, store.dailyEntries, wasExistingEntry);
     saving.value = true;
     try {
       if (draftSavePromise) {
@@ -268,6 +270,7 @@ export function useDailyEntryForm(store: AppStore) {
         draftTimer = undefined;
       }
       const savedEntry = await store.saveEntry(entry);
+      recordSave();
       applyEntry(savedEntry);
       originalEntrySnapshot.value = snapshotDailyEntry(form, currentMetrics());
       persistedDraftSnapshot.value = '';

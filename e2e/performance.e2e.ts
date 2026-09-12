@@ -62,9 +62,11 @@ async function runRound(browser: Browser): Promise<RoundResult> {
   await page.goto('/settings');
   await page.locator('input[type="file"]').setInputFiles(demoFilePath);
   await page.getByText('Резервная копия восстановлена', { exact: true }).waitFor();
+  await page.getByRole('navigation', { name: 'Основная навигация' }).getByRole('link', { name: 'Обзор' }).click();
+  await page.locator('.page--week').waitFor();
   await page.evaluate(() => performance.clearResourceTimings());
   const monthTransitionMs = await elapsed(async () => {
-    await page.getByRole('link', { name: 'Месяц' }).click();
+    await page.getByRole('navigation', { name: 'Период обзора' }).getByRole('link', { name: 'Месяц' }).click();
     await page.locator('.page--month').waitFor();
     await page.locator('.month-analysis-details > summary').click();
     await page.locator('.echart-panel').first().waitFor();

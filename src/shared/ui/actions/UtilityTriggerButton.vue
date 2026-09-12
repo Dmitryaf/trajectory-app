@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import UiIcon from '@/shared/ui/icons/UiIcon.vue';
+import type { UiIconName } from '@/shared/ui/icons/icons';
 
 defineOptions({ inheritAttrs: false });
-withDefaults(defineProps<{ icon: string; variant?: 'feedback' | 'help' | 'inline' }>(), { variant: 'feedback' });
+withDefaults(defineProps<{ icon: UiIconName; variant?: 'feedback' | 'help' | 'inline' }>(), { variant: 'feedback' });
 
 const element = ref<HTMLButtonElement>();
 defineExpose({ element });
@@ -10,7 +12,7 @@ defineExpose({ element });
 
 <template>
   <button ref="element" class="utility-trigger" :class="`utility-trigger--${variant}`" type="button" v-bind="$attrs">
-    <span aria-hidden="true">{{ icon }}</span>
+    <span><UiIcon :name="icon" /></span>
     <strong><slot /></strong>
   </button>
 </template>

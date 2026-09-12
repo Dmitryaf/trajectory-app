@@ -31,7 +31,7 @@ defineEmits<{
 
 <template>
   <SettingsCard id="experiment-settings" class="settings-card--experiment" tone="orange">
-    <FormCardHeading icon="⌁" tone="orange">
+    <FormCardHeading icon="context" tone="orange">
       <div>
         <h2>Личный эксперимент</h2>
         <p>Попробуйте одно изменение несколько дней или недель, а потом запишите, что вы заметили.</p>
