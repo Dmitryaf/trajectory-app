@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import ActionButton from '@/shared/ui/actions/ActionButton.vue';
-import { computed, nextTick, onMounted, ref } from 'vue';
-import { recordFirstUseEvent } from '@/features/first-use/funnel';
+import { computed, nextTick, ref } from 'vue';
 import PasswordField from '@/shared/ui/forms/PasswordField.vue';
 import UiIcon from '@/shared/ui/icons/UiIcon.vue';
 import FormFieldLabel from '@/shared/ui/forms/FormFieldLabel.vue';
@@ -91,8 +90,6 @@ const submitLabel = computed(() => {
   return mode.value === 'sign-up' ? 'Создать аккаунт' : 'Войти';
 });
 
-onMounted(() => recordFirstUseEvent('first_use_presentation_viewed'));
-
 const canSubmit = computed(() => {
   if (email.value.trim().length <= 3 || auth.loading) {
     return false;
@@ -150,7 +147,6 @@ async function submit() {
   try {
     if (mode.value === 'sign-up') {
       const result = await auth.signUp(email.value.trim(), password.value, inviteCode.value.trim());
-      recordFirstUseEvent('first_use_signup_completed');
       confirmationEmail.value = result.confirmationRequired ? email.value.trim() : '';
       status.value = result.confirmationRequired ? '' : 'Аккаунт создан.';
     } else {

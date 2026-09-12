@@ -5,6 +5,7 @@ import { notifyInfo, notifySaved, notifyUnknownError } from '@/services/notifica
 import { plainCopy } from '@/services/plain';
 import { useAppStore } from '@/stores/app';
 import type { MonthlyReview, WeeklyReview } from '@/types';
+import { captureReviewSave } from './telemetry';
 
 type Period = 'week' | 'month';
 type PeriodReview = WeeklyReview | MonthlyReview;
@@ -75,8 +76,11 @@ export function usePeriodReview<T extends PeriodReview>(options: PeriodReviewOpt
       return;
     }
     reviewSaving.value = true;
+    const prepared = plainCopy(review);
+    const recordSave = captureReviewSave(prepared, savedReview.value);
     try {
-      await options.persistReview(plainCopy(review));
+      await options.persistReview(prepared);
+      recordSave();
       notifySaved(labels.saved);
     } catch (error) {
       notifyUnknownError(error, labels.saveError);

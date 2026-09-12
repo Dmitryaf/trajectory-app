@@ -37,7 +37,7 @@ export default defineConfig({
     },
     {
       name: 'mobile-webkit',
-      testMatch: mobileWebKitTests,
+      testMatch: [...mobileWebKitTests, '**/telemetry-consent.e2e.ts'],
       use: { ...devices['iPhone 13'] },
     },
     {

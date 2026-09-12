@@ -10,6 +10,12 @@ import TrendsView from '@/views/TrendsView.vue';
 import WeekView from '@/views/WeekView.vue';
 import { createStore, routerLinkStub } from '../helpers/viewScenario';
 
+const emittedTelemetry = vi.hoisted(() => vi.fn());
+vi.mock('@/features/telemetry/productTelemetry', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/telemetry/productTelemetry')>()),
+  captureProductEvent: (name: string, props: unknown) => () => emittedTelemetry(name, props),
+}));
+
 vi.mock('@/services/notifications', () => ({
   notifyError: vi.fn(),
   notifyInfo: vi.fn(),
@@ -45,6 +51,7 @@ describe('period review navigation', () => {
     await monthButton.trigger('click');
     await flushPromises();
 
+    expect(emittedTelemetry).not.toHaveBeenCalled();
     expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось сохранить обзор недели');
     expect(notifyUnknownError).toHaveBeenCalledWith(expect.any(Error), 'Не удалось сохранить итог месяца');
     expect((week.get('#week-review input').element as HTMLInputElement).value).toBe('Черновик недели');
@@ -57,6 +64,8 @@ describe('period review navigation', () => {
     await flushPromises();
     expect(saveReview).toHaveBeenCalledTimes(2);
     expect(saveMonthlyReview).toHaveBeenCalledTimes(2);
+    expect(emittedTelemetry).toHaveBeenCalledWith('week_review_saved', { save_kind: 'updated' });
+    expect(emittedTelemetry).toHaveBeenCalledWith('month_review_saved', { save_kind: 'updated' });
   });
 
   it('blocks repeated prompt copying in weekly and monthly reviews', async () => {

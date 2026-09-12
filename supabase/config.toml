@@ -30,3 +30,6 @@ verify_enabled = true
 
 [storage.vector]
 enabled = false
+
+[functions.product-events]
+verify_jwt = true

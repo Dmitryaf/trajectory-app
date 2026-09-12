@@ -66,15 +66,9 @@ test('saves and resumes the first week recovery on a small screen', async ({ pag
   await restoredOverview.getByText('Добавить точные даты в Журнал').click();
   await expect(restoredOverview.getByText('Уже есть в Журнале')).toHaveCount(2);
 
-  const localFunnel = await page.evaluate(() => window.localStorage.getItem('trajectory:first-use-funnel:v1'));
-  expect(localFunnel).not.toBeNull();
-  expect(localFunnel).toContain('first_use_recovery_started');
-  expect(localFunnel).toContain('first_use_first_answer_saved');
-  expect(localFunnel).toContain('first_use_journal_record_saved');
-  expect(localFunnel).toContain('first_use_overview_viewed');
-  expect(localFunnel).not.toContain('Закончил черновик');
-  expect(localFunnel).not.toContain('Состоялся важный разговор');
-  expect(localFunnel).not.toContain('К середине недели было мало сил');
+  // Anonymous/local use must not create analytics or revive the pre-consent funnel.
+  expect(await page.evaluate(() => window.localStorage.getItem('trajectory:first-use-funnel:v1'))).toBeNull();
+  expect(await page.evaluate(() => window.localStorage.getItem('trajectory:product-telemetry:v1'))).toBeNull();
 
   await page.locator('.bottom-nav a[href="/"]').press('Enter');
   await page.locator('.bottom-nav a[href="/week"]').press('Enter');

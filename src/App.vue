@@ -10,9 +10,9 @@ import 'vue-sonner/style.css';
 import AccountMenu from './features/auth/ui/AccountMenu.vue';
 import AuthGate from './features/auth/ui/AuthGate.vue';
 import HowItWorksDialog from './features/first-use/ui/HowItWorksDialog.vue';
-import PasswordResetScreen from './features/auth/ui/PasswordResetScreen.vue';
 import EyebrowText from './shared/ui/typography/EyebrowText.vue';
-import { recordFirstUseReturnEvents } from './features/first-use/funnel';
+import { clearFirstUseFunnel } from './features/first-use/funnel';
+import { useProductTelemetry } from './features/telemetry/useProductTelemetry';
 import { isFirstUsePrimary } from './features/first-use/priority';
 import { createResumeCloudRefresh } from './features/sync/resume';
 import { prepareLocalCacheOwner, reconcileCloudSnapshotAfterResume, reconcileCloudSnapshotOnStartup } from './features/sync/startup';
@@ -27,12 +27,23 @@ const store = useAppStore();
 const auth = useAuthStore();
 const router = useRouter();
 const FeedbackDialog = defineAsyncComponent(() => import('./features/feedback/ui/FeedbackDialog.vue'));
+const PasswordResetScreen = defineAsyncComponent(() => import('./features/auth/ui/PasswordResetScreen.vue'));
 const canOpenApp = computed(() => auth.initialized && auth.isAuthenticated);
 const feedbackEnabled = import.meta.env.VITE_FEEDBACK_ENABLED === 'true';
 const appDataReady = ref(false);
+const loadedOwner = ref('');
 const appDataLoadError = ref('');
 const appDataLoadingText = ref('Загружаю записи…');
 const effectiveLoadError = computed(() => store.loadError || appDataLoadError.value);
+const flushProductTelemetry = useProductTelemetry(
+  () =>
+    canOpenApp.value &&
+    appDataReady.value &&
+    loadedOwner.value === (auth.session?.user.id ?? '') &&
+    store.loaded &&
+    !effectiveLoadError.value &&
+    !auth.recoveryRequired,
+);
 const firstUseOwnsToday = computed(
   () =>
     router.currentRoute.value.path === '/' &&
@@ -60,6 +71,7 @@ function currentCloudRefreshState() {
 }
 
 function requestAutomaticCloudRefresh(force = false) {
+  flushProductTelemetry();
   if (hasUnsavedSyncEditors()) {
     cloudRefreshDeferred = true;
     return;
@@ -141,17 +153,29 @@ onBeforeUnmount(() => {
   }
 });
 
-watch(canOpenApp, async (allowed) => {
-  if (allowed) {
-    await loadAppData();
-    startCloudUpdates();
-  } else if (auth.requiresAuth) {
-    stopCloudSubscription?.();
-    stopCloudSubscription = undefined;
-    resetAppDataState();
-    store.unload();
-  }
-});
+watch(
+  () => [canOpenApp.value, auth.session?.user.id ?? ''] as const,
+  async ([allowed, owner], previous) => {
+    if (previous && previous[1] !== owner) {
+      appDataReady.value = false;
+      await appDataLoadPromise;
+      if (owner !== (auth.session?.user.id ?? '')) {
+        return;
+      }
+      resetAppDataState();
+      store.unload();
+    }
+    if (allowed) {
+      await loadAppData();
+      startCloudUpdates();
+    } else if (auth.requiresAuth) {
+      stopCloudSubscription?.();
+      stopCloudSubscription = undefined;
+      resetAppDataState();
+      store.unload();
+    }
+  },
+);
 
 watch(
   () => auth.recoveryRequired,
@@ -178,6 +202,7 @@ async function loadAppData() {
   appDataReady.value = false;
   appDataLoadError.value = '';
   appDataLoadingText.value = 'Загружаю записи…';
+  const owner = auth.session?.user.id ?? '';
   appDataLoadPromise = (async () => {
     try {
       const userId = auth.requiresAuth ? auth.session?.user.id : null;
@@ -187,13 +212,14 @@ async function loadAppData() {
         appDataLoadingText.value = 'Сверяю записи с облаком…';
       }
       await reconcileCloudSnapshotOnStartup(store, userId);
-      recordFirstUseReturnEvents();
+      clearFirstUseFunnel();
     } catch (error) {
       console.error('Не удалось подготовить записи');
       reportClientError('APP_DATA_LOAD_FAILED');
       appDataLoadError.value = error instanceof Error ? error.message : 'Не удалось подготовить записи';
     } finally {
-      appDataReady.value = true;
+      loadedOwner.value = owner;
+      appDataReady.value = owner === (auth.session?.user.id ?? '');
       appDataLoadPromise = null;
     }
   })();

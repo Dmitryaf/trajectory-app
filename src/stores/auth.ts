@@ -1,3 +1,4 @@
+import { productTelemetry } from '@/features/telemetry/productTelemetry';
 import { defineStore } from 'pinia';
 import type { Session } from '@supabase/supabase-js';
 import {
@@ -280,6 +281,7 @@ export const useAuthStore = defineStore('auth', {
         throw error;
       }
 
+      productTelemetry.clearDeletedAccount(userId);
       clearCloudSyncMeta(userId);
       try {
         await clearLocalCloudSession();

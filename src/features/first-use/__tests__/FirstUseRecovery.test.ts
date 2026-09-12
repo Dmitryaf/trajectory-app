@@ -3,7 +3,12 @@
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { readFirstUseFunnel } from '../funnel';
+const { recordedEvents } = vi.hoisted(() => ({ recordedEvents: [] as string[] }));
+vi.mock('@/features/telemetry/productTelemetry', () => ({
+  captureProductEvent: (name: string) => () => recordedEvents.push(name),
+  emitProductEvent: (name: string) => recordedEvents.push(name),
+  productTelemetry: { clearDeletedAccount: vi.fn() },
+}));
 import FirstUseRecovery from '../ui/FirstUseRecovery.vue';
 import { useAppStore } from '@/stores/app';
 import { defaultSettings, emptyWeeklyReview, type AppSettings, type WeeklyReview } from '@/types';
@@ -29,6 +34,7 @@ function setupStore() {
 
 describe('first-use week recovery', () => {
   beforeEach(() => {
+    recordedEvents.length = 0;
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 7, 8, 12));
     document.body.innerHTML = '';
@@ -54,7 +60,7 @@ describe('first-use week recovery', () => {
       periodEnd: '2026-08-08',
       lastStep: 'results',
     });
-    expect(readFirstUseFunnel().map((event) => event.name)).toContain('first_use_recovery_started');
+    expect(recordedEvents).toContain('first_use_started');
     expect(wrapper.text()).toContain('Что вам удалось закончить или получить?');
   });
 
@@ -84,7 +90,7 @@ describe('first-use week recovery', () => {
     expect(store.settings.firstUse.status).toBe('not_started');
     expect(wrapper.text()).toContain('Соберите недавнюю неделю');
     expect(wrapper.get('.first-use-card--choice .primary-button').attributes('disabled')).toBeUndefined();
-    expect(readFirstUseFunnel().map((event) => event.name)).not.toContain('first_use_recovery_started');
+    expect(recordedEvents).not.toContain('first_use_started');
   });
 
   it('saves an answer in the weekly review before opening the next step', async () => {
@@ -109,7 +115,6 @@ describe('first-use week recovery', () => {
     expect(store.settings.firstUse.lastStep).toBe('highlights');
     expect(wrapper.text()).toContain('Что важного произошло?');
     expect(wrapper.get('#first-use-highlights').attributes('placeholder')).toBeUndefined();
-    expect(readFirstUseFunnel().map((event) => event.name)).toContain('first_use_first_answer_saved');
   });
 
   it('keeps an unsaved answer on the same step and allows retrying', async () => {
@@ -132,7 +137,6 @@ describe('first-use week recovery', () => {
 
     expect(store.settings.firstUse.lastStep).toBe('results');
     expect((wrapper.get('#first-use-results').element as HTMLTextAreaElement).value).toBe('Ответ не должен пропасть');
-    expect(readFirstUseFunnel().map((event) => event.name)).not.toContain('first_use_first_answer_saved');
 
     await wrapper.get('.first-use-recovery__footer .primary-button').trigger('click');
     await vi.waitFor(() => expect(store.settings.firstUse.lastStep).toBe('highlights'));
@@ -187,7 +191,7 @@ describe('first-use week recovery', () => {
     expect(wrapper.text()).toContain('Вот чем была наполнена ваша неделя');
     expect(wrapper.text()).toContain('Закончил черновик');
     expect(wrapper.text()).toContain('Поговорил с другом');
-    expect(readFirstUseFunnel().map((event) => event.name)).toContain('first_use_overview_viewed');
+    expect(recordedEvents).toContain('first_use_overview_viewed');
     expect(wrapper.get('.first-use-recovery__footer .primary-button').attributes('disabled')).toBeUndefined();
     await wrapper.get('.first-use-recovery__footer .primary-button').trigger('click');
 

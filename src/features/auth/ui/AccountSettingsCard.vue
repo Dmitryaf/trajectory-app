@@ -5,6 +5,7 @@ import SettingsCard from '@/features/settings/ui/SettingsCard.vue';
 import FormCardHeading from '@/shared/ui/forms/FormCardHeading.vue';
 import FormFieldLabel from '@/shared/ui/forms/FormFieldLabel.vue';
 import { useAccountSettings } from '../useAccountSettings';
+import TelemetryConsent from '@/features/telemetry/ui/TelemetryConsent.vue';
 
 defineProps<{
   passwordRecoveryRequested: boolean;
@@ -66,6 +67,7 @@ const { auth, changePassword, deleteAccount, newPassword, newPasswordConfirmatio
           </p>
         </div>
       </details>
+      <TelemetryConsent />
       <div class="danger-zone">
         <div>
           <strong>Удалить аккаунт</strong>

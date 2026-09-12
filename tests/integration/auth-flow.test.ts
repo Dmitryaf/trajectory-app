@@ -5,7 +5,6 @@ import { createPinia, setActivePinia } from 'pinia';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import { describe, expect, it, vi } from 'vitest';
 import AuthGate from '@/features/auth/ui/AuthGate.vue';
-import { readFirstUseFunnel } from '@/features/first-use/funnel';
 import { useAuthStore } from '@/stores/auth';
 import PasswordResetView from '@/views/PasswordResetView.vue';
 
@@ -25,7 +24,6 @@ describe('beta authentication', () => {
     expect(wrapper.text()).not.toContain('не ваши данные');
     expect(wrapper.text()).toContain('Приложение не оценивает ваши дни');
     expect(wrapper.text()).toContain('Короткие записи за несколько дней');
-    expect(readFirstUseFunnel().map((event) => event.name)).toContain('first_use_presentation_viewed');
 
     await wrapper.get('[aria-label="Уровни примера"] button:nth-child(3)').trigger('click');
     expect(wrapper.text()).toContain('Неделя видна целиком');
@@ -83,7 +81,6 @@ describe('beta authentication', () => {
     await wrapper.get('form').trigger('submit');
 
     expect(auth.signUp).toHaveBeenCalledWith('friend@example.com', 'safe-password', 'BETA-INVITE-2026');
-    expect(readFirstUseFunnel().map((event) => event.name)).toContain('first_use_signup_completed');
     expect(wrapper.find('form').exists()).toBe(false);
     expect(wrapper.text()).toContain('Аккаунт создан');
     expect(wrapper.text()).toContain('friend@example.com');

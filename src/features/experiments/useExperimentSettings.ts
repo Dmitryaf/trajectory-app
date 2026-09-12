@@ -4,6 +4,7 @@ import { notifyError } from '@/services/notifications';
 import { plainCopy } from '@/services/plain';
 import { useAppStore } from '@/stores/app';
 import type { AppSettings } from '@/types';
+import { captureProductEvent } from '@/features/telemetry/productTelemetry';
 import {
   createExperimentId,
   createExperimentRecord,
@@ -13,6 +14,10 @@ import {
 } from './model';
 
 type SaveSettings = (message?: string, action?: string, nextSettings?: AppSettings) => Promise<boolean>;
+
+function startsExperiment(next: AppSettings['experiment'], previous: AppSettings['experiment']) {
+  return next.active && (!previous.active || next.id !== previous.id);
+}
 
 export function useExperimentSettings(settings: AppSettings, isSaving: (action: string) => boolean, save: SaveSettings) {
   const store = useAppStore();
@@ -79,8 +84,13 @@ export function useExperimentSettings(settings: AppSettings, isSaving: (action: 
       return;
     }
     const extending = experimentIdentityLocked.value && experiment.endDate > store.settings.experiment.endDate;
+    const starting = startsExperiment(experiment, store.settings.experiment);
+    const recordStart = captureProductEvent('experiment_started', {});
     if (await save(extending ? 'Эксперимент продлён' : 'Эксперимент сохранён', 'experiment', nextSettings)) {
       Object.assign(settings, nextSettings);
+      if (starting) {
+        recordStart();
+      }
     }
   }
 

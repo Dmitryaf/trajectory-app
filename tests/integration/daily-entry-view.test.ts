@@ -12,6 +12,12 @@ import { addDays, startOfWeek, todayKey } from '@/services/dates';
 import TodayView from '@/views/TodayView.vue';
 import { createStore, routerLinkStub } from '../helpers/viewScenario';
 
+const emittedTelemetry = vi.hoisted(() => vi.fn());
+vi.mock('@/features/telemetry/productTelemetry', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/telemetry/productTelemetry')>()),
+  captureProductEvent: (name: string, props: unknown) => () => emittedTelemetry(name, props),
+}));
+
 vi.mock('@/services/notifications', () => ({
   notifyError: vi.fn(),
   notifyInfo: vi.fn(),
@@ -20,6 +26,31 @@ vi.mock('@/services/notifications', () => ({
 }));
 
 describe('daily entry scenario', () => {
+  it('emits a content-free daily event only after the explicit save succeeds', async () => {
+    const { pinia, store } = createStore();
+    let complete!: () => void;
+    vi.spyOn(store, 'saveEntry').mockImplementation(
+      (entry) =>
+        new Promise((resolve) => {
+          complete = () => resolve(entry);
+        }),
+    );
+    const wrapper = mount(TodayView, { global: { plugins: [pinia], stubs: { RouterLink: routerLinkStub } } });
+    const card = wrapper.findAll('.form-card').find((item) => item.find('h2').text() === 'Заметка дня')!;
+    await card.get('textarea').setValue('PRIVATE DAILY CANARY');
+    await flushPromises();
+    expect(emittedTelemetry).not.toHaveBeenCalled();
+    await wrapper.get('form').trigger('submit');
+    expect(emittedTelemetry).not.toHaveBeenCalled();
+    complete();
+    await flushPromises();
+    expect(emittedTelemetry).toHaveBeenCalledWith(
+      'daily_entry_saved',
+      expect.objectContaining({ save_kind: 'created', entry_count_bucket: '1' }),
+    );
+    expect(JSON.stringify(emittedTelemetry.mock.calls)).not.toContain('PRIVATE DAILY CANARY');
+    wrapper.unmount();
+  });
   it('guides the first entry without treating yesterday as a missed day', () => {
     const { pinia } = createStore();
     const wrapper = mount(TodayView, {
@@ -777,6 +808,7 @@ describe('daily entry scenario', () => {
     await flushPromises();
 
     expect(saveEntry).toHaveBeenCalledOnce();
+    expect(emittedTelemetry).not.toHaveBeenCalled();
     expect(notifyUnknownError).toHaveBeenCalledWith(quotaError, 'Не удалось сохранить день');
     expect(quotaError.message).toContain('Ранее сохранённые записи остались');
     expect(quotaError.message).toContain('повторите сохранение');

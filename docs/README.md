@@ -6,6 +6,7 @@
 | --------------------------------------------------------------------- | ------------------------------------------------------------- |
 | Назначение продукта, необязательность ввода, язык интерфейса          | [PRODUCT_RULES](product/PRODUCT_RULES.md)                     |
 | Пропуски, знаменатели, выборка, восстановленная неделя, совместимость | [ANALYTICS_DATA_CONTRACT](product/ANALYTICS_DATA_CONTRACT.md) |
+| Продуктовые события, opt-in и операторские когорты                    | [OBSERVABILITY_CONTRACT](product/OBSERVABILITY_CONTRACT.md)   |
 | Устройство кода, владельцы и синхронизация                            | [ARCHITECTURE](development/ARCHITECTURE.md)                   |
 | Регрессии компоновки и измерение производительности                   | [QUALITY](development/QUALITY.md)                             |
 | Ветки, среды и допуск к выпуску                                       | [DELIVERY](operations/DELIVERY.md)                            |

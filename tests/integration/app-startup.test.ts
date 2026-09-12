@@ -18,7 +18,7 @@ const resume = vi.hoisted(() => ({
   refresh: undefined as (() => Promise<void>) | undefined,
   request: vi.fn().mockResolvedValue(false),
 }));
-const funnel = vi.hoisted(() => ({ recordFirstUseEvent: vi.fn(), recordFirstUseReturnEvents: vi.fn() }));
+const funnel = vi.hoisted(() => ({ clearFirstUseFunnel: vi.fn() }));
 const cloud = vi.hoisted(() => ({
   callback: undefined as (() => void) | undefined,
   subscribe: vi.fn((_userId: string, callback: () => void) => {
@@ -142,7 +142,7 @@ describe('application startup', () => {
 
     expect(wrapper.find('[data-testid="working-screen"]').exists()).toBe(true);
     expect(wrapper.find('.bottom-nav').exists()).toBe(true);
-    expect(funnel.recordFirstUseReturnEvents).toHaveBeenCalledOnce();
+    expect(funnel.clearFirstUseFunnel).toHaveBeenCalledOnce();
     expect(cloud.subscribe).toHaveBeenCalledWith('user-1', expect.any(Function));
 
     cloud.callback!();
@@ -161,6 +161,17 @@ describe('application startup', () => {
     await resume.refresh!();
     expect(sync.reconcileCloudSnapshotAfterResume).toHaveBeenCalledWith(store, 'user-1');
     expect(sync.reconcileCloudSnapshotOnStartup).toHaveBeenCalledTimes(startupCalls);
+
+    // Direct A -> B switch remains authenticated, but must reload the correct owner's data.
+    auth.session = { user: { id: 'user-2', email: 'second@example.com' } } as typeof auth.session;
+    await flushPromises();
+    expect(wrapper.find('[data-testid="working-screen"]').exists()).toBe(false);
+    expect(sync.prepareLocalCacheOwner).toHaveBeenLastCalledWith(store, 'user-2');
+    expect(sync.reconcileCloudSnapshotOnStartup).toHaveBeenLastCalledWith(store, 'user-2');
+    finishCloudCheck();
+    await flushPromises();
+    expect(wrapper.find('[data-testid="working-screen"]').exists()).toBe(true);
+    expect(cloud.subscribe).toHaveBeenLastCalledWith('user-2', expect.any(Function));
     wrapper.unmount();
   });
 });

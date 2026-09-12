@@ -2,7 +2,8 @@
 import ActionButton from '@/shared/ui/actions/ActionButton.vue';
 import { computed, getCurrentInstance, onMounted, reactive, ref, watch } from 'vue';
 import type { Router } from 'vue-router';
-import { recordFirstUseEvent } from '../funnel';
+import { captureProductEvent, emitProductEvent } from '@/features/telemetry/productTelemetry';
+import { captureDecisionSave, captureReviewSave } from '@/features/reviews/telemetry';
 import { firstUsePeriodOptions, recommendedFirstUsePeriod, type FirstUsePeriodOption } from '../period';
 import WeeklyReviewJournalLinks from '@/features/reviews/ui/WeeklyReviewJournalLinks.vue';
 import WeeklyReviewOverview from '@/features/reviews/ui/WeeklyReviewOverview.vue';
@@ -73,7 +74,7 @@ watch(
   () => isRecovery.value && currentStep.value === 'overview',
   (visible) => {
     if (visible) {
-      recordFirstUseEvent('first_use_overview_viewed');
+      emitProductEvent('first_use_overview_viewed', {});
     }
   },
   { immediate: true },
@@ -136,13 +137,14 @@ async function saveFirstUse(next: FirstUseState) {
 }
 
 async function beginRecovery() {
+  const recordStart = captureProductEvent('first_use_started', {});
   saveError.value = '';
   saving.value = true;
   try {
     const weekStart = targetWeekStart.value;
     const periodEnd = targetPeriodEnd.value;
     await saveFirstUse({ status: 'in_progress', weekStart, periodEnd, lastStep: 'results', overviewSeen: false, updatedAt: '' });
-    recordFirstUseEvent('first_use_recovery_started');
+    recordStart();
   } catch {
     saveError.value = 'Не удалось начать. Попробуйте ещё раз.';
   } finally {
@@ -225,35 +227,15 @@ function applyCurrentAnswer() {
   }
 }
 
-function currentAnswerHasContent() {
-  if (currentStep.value === 'results') {
-    return review.results.some((item) => item.trim());
-  }
-  if (currentStep.value === 'highlights') {
-    return review.highlights.some((item) => item.trim());
-  }
-  if (currentStep.value === 'state_context') {
-    return Boolean(review.stateContext.trim());
-  }
-  if (currentStep.value === 'support_obstacle') {
-    return Boolean(review.support.trim() || review.obstacle.trim());
-  }
-  if (currentStep.value === 'decision') {
-    return Boolean(review.nextLever.trim());
-  }
-  return false;
-}
-
 async function moveTo(nextStep: FirstUseStep, saveAnswer: boolean) {
   saveError.value = '';
   saving.value = true;
   try {
     if (saveAnswer) {
       applyCurrentAnswer();
+      const recordDecision = captureDecisionSave(review, store.reviewByWeek(review.weekStart));
       await store.saveReview(plainCopy(review));
-      if (currentAnswerHasContent()) {
-        recordFirstUseEvent('first_use_first_answer_saved');
-      }
+      recordDecision();
     }
     await saveFirstUse({
       status: 'in_progress',
@@ -287,6 +269,8 @@ function previousStep() {
 }
 
 async function completeRecovery() {
+  const recordComplete = captureProductEvent('first_use_completed', {});
+  const recordReview = captureReviewSave(review, store.reviewByWeek(review.weekStart));
   saveError.value = '';
   saving.value = true;
   try {
@@ -300,6 +284,8 @@ async function completeRecovery() {
       overviewSeen: true,
       updatedAt: '',
     });
+    recordComplete();
+    recordReview();
     if (router) {
       await router.push({ path: '/week', query: { week: weekStart }, hash: '#first-use-overview' });
     }
