@@ -33,12 +33,14 @@
 - [BACKEND_AUTH_CI.md](./operations/BACKEND_AUTH_CI.md) — настройка backend, авторизации и CI.
 - [DATA_GOVERNANCE.md](./operations/DATA_GOVERNANCE.md) — работа с пользовательскими данными.
 - [INCIDENT_RESPONSE.md](./operations/INCIDENT_RESPONSE.md) — безопасное наблюдение ошибок и порядок реакции на инциденты.
+- [SECURITY_HEADERS.md](./operations/SECURITY_HEADERS.md) — инвентаризация браузерных источников, CSP Report-Only и staging-приёмка политики заголовков.
 - [HOSTING_MIGRATION.md](./operations/HOSTING_MIGRATION.md) — перенос хостинга.
 - [PUBLIC_REPOSITORY.md](./operations/PUBLIC_REPOSITORY.md) — граница между внутренними и публичными материалами.
 
 ### `planning/` — текущая работа
 
 - [BACKLOG.md](./planning/BACKLOG.md) — единый актуальный бэклог.
+- [BETA_RETENTION_RESEARCH_2026-09-12.md](./planning/BETA_RETENTION_RESEARCH_2026-09-12.md) — текущий beta-сигнал, исследовательные основания и минимальная проверка повторной ценности.
 - [BETA_NOTES_2026-07-30.md](./planning/BETA_NOTES_2026-07-30.md) — разбор заметок первой недели беты.
 - [FIRST_USE_STRATEGY.md](./planning/FIRST_USE_STRATEGY.md) — подтверждённая аудитория, обещание и сценарий первого полезного результата.
 

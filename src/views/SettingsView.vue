@@ -19,6 +19,7 @@ import { settingsGroupForHash, settingsGroups, type SettingsGroup } from '../fea
 import SettingsCard from '../features/settings/ui/SettingsCard.vue';
 import SettingsOptionAction from '../features/settings/ui/SettingsOptionAction.vue';
 import { useSettingsForm } from '../features/settings/useSettingsForm';
+import CloudSyncSettingsCard from '../features/sync/ui/CloudSyncSettingsCard.vue';
 import type { DailyBlockId, LifeAreaId } from '../types';
 
 const settingsGroupStyle = { animation: 'page-in 0.25s ease-out' };
@@ -64,16 +65,12 @@ const {
   newActivityLabel,
   newLifeAreaLabel,
   newContextFactorLabel,
-  auth,
   allCareerOptions,
   activeActivityOptions,
   hiddenActivityOptions,
   allLifeAreaOptions,
   activeContextFactorOptions,
   hiddenContextFactorOptions,
-  cloudSession,
-  cloudStatusTitle,
-  cloudStatusText,
   storageProtectionTitle,
   storageProtectionText,
   experimentCanConclude,
@@ -471,33 +468,7 @@ const {
         </div>
       </SettingsCard>
 
-      <SettingsCard id="cloud-settings" class="settings-card--cloud" tone="success">
-        <FormCardHeading icon="sync" tone="green">
-          <div>
-            <h2>Автоматическая облачная копия</h2>
-            <p>
-              После каждого изменения приложение сохраняет данные на устройстве и обновляет облачную копию. Экспортировать их вручную не
-              нужно.
-            </p>
-          </div>
-        </FormCardHeading>
-        <div v-if="!auth.configured" class="cloud-sync-note">
-          <strong>Облачная копия недоступна</strong>
-          <p>В этой сборке синхронизация не настроена.</p>
-        </div>
-        <template v-else>
-          <div v-if="cloudSession" class="cloud-sync-note" :class="`cloud-sync-note--${store.cloudSyncStatus}`">
-            <strong>{{ cloudStatusTitle }}</strong>
-            <p>{{ cloudStatusText }}</p>
-            <p v-if="store.cloudSyncError">Ошибка: {{ store.cloudSyncError }}</p>
-          </div>
-          <div v-else class="cloud-sync-note">
-            <strong>Сессия не найдена</strong>
-            <p>Обнови страницу и войди снова. До входа приложение не загружает записи.</p>
-          </div>
-          <p v-if="cloudSession" class="muted">Изменения с других устройств появляются автоматически, когда приложение открыто.</p>
-        </template>
-      </SettingsCard>
+      <CloudSyncSettingsCard @resolved="replaceSettingsFromStore" />
 
       <ExternalAnalysisSettingsCard />
     </section>

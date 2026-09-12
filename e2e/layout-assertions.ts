@@ -110,13 +110,30 @@ export async function sampleHeights(locator: Locator, duration = 400) {
       new Promise<number[]>((resolve) => {
         const heights: number[] = [];
         const startedAt = performance.now();
-        const sample = () => {
-          heights.push(element.getBoundingClientRect().height);
-          if (performance.now() - startedAt >= sampleDuration) {
-            resolve(heights);
+        let animationFrame = 0;
+        let finished = false;
+
+        const finish = () => {
+          if (finished) {
             return;
           }
-          requestAnimationFrame(sample);
+          finished = true;
+          window.cancelAnimationFrame(animationFrame);
+          window.clearTimeout(deadline);
+          resolve(heights);
+        };
+
+        const deadline = window.setTimeout(finish, sampleDuration + 500);
+        const sample = () => {
+          if (finished) {
+            return;
+          }
+          heights.push(element.getBoundingClientRect().height);
+          if (performance.now() - startedAt >= sampleDuration) {
+            finish();
+            return;
+          }
+          animationFrame = requestAnimationFrame(sample);
         };
         sample();
       }),

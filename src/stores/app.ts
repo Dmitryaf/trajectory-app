@@ -5,7 +5,9 @@ import {
   getCloudSyncMeta,
   isCloudSyncConfigured,
   loadCloudSnapshot,
+  markCloudSyncConflict,
   markCloudSyncPending,
+  markCloudSyncSynced,
   saveCloudSnapshot,
   type CloudSnapshot,
 } from '../services/cloudSync';
@@ -34,7 +36,7 @@ import { experimentEntryLinkError, experimentIntegrityError, linkLegacyExperimen
 import { validDate } from '../model/normalization';
 import { startOfMonth, startOfWeek } from '../services/dates';
 import { loadCloudSyncBase, saveCloudSyncBase } from '../features/sync/base';
-import { mergeCloudSnapshots } from '../features/sync/merge';
+import { CloudMergeConflictError, mergeCloudSnapshots } from '../features/sync/merge';
 import {
   checkStoragePersistence,
   requestStoragePersistence,
@@ -48,6 +50,13 @@ type CloudSyncStatus = 'disabled' | 'idle' | 'syncing' | 'synced' | 'pending' | 
 
 export type CloudSyncResult =
   { status: 'synced'; updatedAt: string } | { status: 'pending'; error: string } | { status: 'disabled' | 'conflict' | 'queued' };
+
+class CloudDataConflictError extends Error {
+  constructor(public readonly remote: CloudSnapshot) {
+    super('Локальная и облачная версии содержат несовместимые изменения');
+    this.name = 'CloudDataConflictError';
+  }
+}
 
 async function saveSnapshotWithConflictResolution(
   userId: string | undefined,
@@ -74,7 +83,17 @@ async function saveSnapshotWithConflictResolution(
         continue;
       }
       const base = await loadCloudSyncBase(userId);
-      payload = mergeCloudSnapshots(base?.snapshot ?? emptyExportPayload(), payload, remote.payload);
+      if (!base) {
+        throw new CloudDataConflictError(remote);
+      }
+      try {
+        payload = mergeCloudSnapshots(base.snapshot, payload, remote.payload);
+      } catch (mergeError) {
+        if (mergeError instanceof CloudMergeConflictError) {
+          throw new CloudDataConflictError(remote);
+        }
+        throw mergeError;
+      }
       await importMerged(payload);
       expectedRevision = remote.revision ?? 1;
     }
@@ -91,6 +110,7 @@ export const useAppStore = defineStore('app', {
     cloudSyncUpdatedAt: '',
     cloudSyncError: '',
     cloudSyncQueued: false,
+    cloudConflictSnapshot: null as CloudSnapshot | null,
     storagePersistenceStatus: 'unknown' as StoragePersistenceStatus,
     storagePersistenceRequested: false,
     storagePersistenceRevision: 0,
@@ -434,6 +454,51 @@ export const useAppStore = defineStore('app', {
       this.cloudSyncUpdatedAt = details.updatedAt ?? this.cloudSyncUpdatedAt;
       this.cloudSyncError = details.error ?? '';
     },
+    holdCloudConflict(snapshot: CloudSnapshot) {
+      this.cloudConflictSnapshot = plainCopy(snapshot);
+      this.setCloudSyncState(
+        'conflict',
+        'Локальная и облачная версии изменены по-разному. Автоматическая запись остановлена; обе версии сохранены.',
+      );
+    },
+    async resolveCloudConflict(choice: 'local' | 'cloud') {
+      const userId = useAuthStore().session?.user.id;
+      const conflict = this.cloudConflictSnapshot;
+      if (!userId || !conflict) {
+        throw new Error('Не удалось открыть обе версии данных');
+      }
+
+      this.setCloudSyncState('syncing', 'Применяю выбранную версию…');
+      try {
+        let updatedAt = conflict.updatedAt;
+        if (choice === 'cloud') {
+          await this.importData(conflict.payload, { syncCloud: false, preserveDailyDrafts: true });
+          await saveCloudSyncBase(userId, conflict.revision ?? 1, conflict.payload);
+          markCloudSyncSynced(userId, conflict.updatedAt, conflict.revision ?? 1);
+        } else {
+          const saved = await saveCloudSnapshot(this.exportData(), conflict.revision ?? 1);
+          await saveCloudSyncBase(userId, saved.revision ?? (conflict.revision ?? 1) + 1, saved.payload);
+          updatedAt = saved.updatedAt;
+        }
+        this.cloudConflictSnapshot = null;
+        this.setCloudSyncState('synced', `Облако синхронизировано: ${new Date(updatedAt).toLocaleString('ru-RU')}`, { updatedAt });
+        return { status: 'synced', updatedAt } as CloudSyncResult;
+      } catch (error) {
+        if (error instanceof CloudRevisionConflictError) {
+          const latest = await loadCloudSnapshot();
+          if (latest) {
+            markCloudSyncConflict(userId, latest.updatedAt, latest.revision ?? 1);
+            this.holdCloudConflict(latest);
+            return { status: 'conflict' } as CloudSyncResult;
+          }
+        }
+        const message = error instanceof Error ? error.message : 'Не удалось применить выбранную версию';
+        this.setCloudSyncState('conflict', 'Обе версии сохранены. Попробуйте выбрать вариант ещё раз после восстановления сети.', {
+          error: message,
+        });
+        throw error;
+      }
+    },
     async checkLocalStoragePersistence() {
       const revision = ++this.storagePersistenceRevision;
       this.storagePersistenceStatus = 'checking';
@@ -462,12 +527,20 @@ export const useAppStore = defineStore('app', {
         this.setCloudSyncState('disabled');
         return { status: 'disabled' } as CloudSyncResult;
       }
+
+      const userId = useAuthStore().session?.user.id;
+      if (userId && (this.cloudConflictSnapshot || getCloudSyncMeta(userId).conflict)) {
+        this.setCloudSyncState(
+          'conflict',
+          'Локальная и облачная версии изменены по-разному. Автоматическая запись остановлена до явного выбора.',
+        );
+        return { status: 'conflict' } as CloudSyncResult;
+      }
       if (this.cloudSyncStatus === 'syncing') {
         this.cloudSyncQueued = true;
         return { status: 'queued' } as CloudSyncResult;
       }
 
-      const userId = useAuthStore().session?.user.id;
       if (userId) {
         markCloudSyncPending(userId, 'Локальные изменения ожидают синхронизации');
       }
@@ -482,6 +555,11 @@ export const useAppStore = defineStore('app', {
           updatedAt = saved.updatedAt;
           this.setCloudSyncState('synced', `Облако обновлено: ${new Date(updatedAt).toLocaleString('ru-RU')}`, { updatedAt });
         } catch (error) {
+          if (error instanceof CloudDataConflictError && userId) {
+            markCloudSyncConflict(userId, error.remote.updatedAt, error.remote.revision ?? 1);
+            this.holdCloudConflict(error.remote);
+            return { status: 'conflict' } as CloudSyncResult;
+          }
           const message = error instanceof Error ? error.message : 'Не удалось сохранить облачную копию';
           if (userId) {
             markCloudSyncPending(userId, message);
@@ -502,6 +580,7 @@ export const useAppStore = defineStore('app', {
       this.cloudSyncUpdatedAt = '';
       this.cloudSyncError = '';
       this.cloudSyncQueued = false;
+      this.cloudConflictSnapshot = null;
       this.storagePersistenceStatus = 'unknown';
       this.storagePersistenceRequested = false;
       this.storagePersistenceRevision = 0;
@@ -515,16 +594,3 @@ export const useAppStore = defineStore('app', {
     },
   },
 });
-
-function emptyExportPayload(): ExportPayload {
-  return {
-    version: BACKUP_VERSION,
-    exportedAt: '',
-    dailyEntries: [],
-    results: [],
-    lifeEvents: [],
-    weeklyReviews: [],
-    monthlyReviews: [],
-    settings: structuredClone(defaultSettings),
-  };
-}
